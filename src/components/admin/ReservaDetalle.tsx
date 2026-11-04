@@ -278,7 +278,8 @@ export default function ReservaDetalle({
             {b.promoCode && (
               <p className="text-[#1B4332]/45 font-dm text-xs mt-1">
                 Código promocional <span className="font-mono">{b.promoCode}</span>
-                {b.promoDiscount > 0 && ` · −${fmx(b.promoDiscount)}`}
+                {/* `promoDiscount` es un PORCENTAJE (tourPricing.ts), no pesos: salía «−$10». */}
+                {b.promoDiscount > 0 && ` · −${b.promoDiscount} %`}
               </p>
             )}
 

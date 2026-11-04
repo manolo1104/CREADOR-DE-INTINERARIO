@@ -227,6 +227,8 @@ export async function convertirCotizacionEnReserva(
         where: { id: q.id },
         data:  {
           status: "aceptada",
+          // KPI «Cotización → reserva a 14 días» (4 nov 2026): la primera vez.
+          ...(q.status !== "aceptada" ? { aceptadaEn: new Date() } : {}),
           packageItems: conMetaCotizacion(q.packageItems, { reservaFolio: previa.confirmationNumber, reservaId: previa.id }) as never,
         },
       });
@@ -385,12 +387,15 @@ export async function convertirCotizacionEnReserva(
         origen:         origenValido(opciones.origen ?? "whatsapp"),
         // El lead del CRM de la cotización sigue en su reserva (4 nov 2026).
         oportunidadId:  q.oportunidadId ?? null,
+        // Qué cotización la originó (KPI «Cotización → reserva», 4 nov 2026).
+        cotizacionId:   q.id,
       },
     });
     const cotizacion = await tx.tourQuote.update({
       where: { id: q.id },
       data:  {
         status: "aceptada",
+        ...(q.status !== "aceptada" ? { aceptadaEn: new Date() } : {}),
         packageItems: conMetaCotizacion(q.packageItems, { reservaFolio: reserva.confirmationNumber, reservaId: reserva.id }) as never,
       },
     });

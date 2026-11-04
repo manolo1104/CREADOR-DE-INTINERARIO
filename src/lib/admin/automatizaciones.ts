@@ -13,7 +13,10 @@ export const RESPONSABLE_OPERACION = "Erick";
 /** Quién registra el dinero: los saldos vencidos son suyos. */
 export const RESPONSABLE_COBROS = "Manolo";
 
-export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas";
+export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "lectura-google" | "corte-lunes";
+
+/** Quién cierra el corte semanal (el socio que captura los costos). */
+export const RESPONSABLE_CORTE = "Martín";
 
 export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] = [
   { clave: "cotizado-24h", etiqueta: "Cotizado sin respuesta 24 h", detalle: "Lead en Cotizado desde hace 24 h y sin ningún seguimiento pendiente." },
@@ -21,6 +24,9 @@ export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] 
   { clave: "liga-24h", etiqueta: "Liga de pago sin pagar 24 h", detalle: "Se mandó una liga de pago hace 24 h y no se ha pagado." },
   { clave: "salida-48h", etiqueta: "Confirmar salida (48 h)", detalle: "Pasado mañana sale un tour: confirmar a los clientes punto de encuentro, hora y qué llevar." },
   { clave: "agrupar-salidas", etiqueta: "Juntar salidas", detalle: "El mismo tour a 3 días o menos, una salida bajo el mínimo y juntas caben: proponerle al grupo más chico cambiarse de fecha (un guía y una camioneta menos)." },
+  // Indicadores (4 nov 2026): los datos que se capturan a mano y sin los que un KPI sale «Sin dato».
+  { clave: "lectura-google", etiqueta: "Lectura semanal de Google", detalle: "Si la última lectura de reseñas de Google tiene más de 6 días: anotar la calificación y el número de reseñas (KPI «Reseñas»)." },
+  { clave: "corte-lunes", etiqueta: "Corte del lunes", detalle: "La semana terminó y su corte no está cerrado: cerrarlo (KPIs «Margen de contribución» y «Cortes cerrados a tiempo»)." },
 ];
 
 export interface TareaPorRegla {
@@ -126,6 +132,34 @@ export function reglaSalida(salidas: SalidaProxima[], hoy: string): TareaPorRegl
       vence: addDaysYMD(s.fecha, -2) < hoy ? hoy : addDaysYMD(s.fecha, -2),
       salidaClave: s.clave,
     }));
+}
+
+/**
+ * La lectura de Google de la semana (4 nov 2026): las reseñas se anotan a mano
+ * (decisión de Manolo, 21 oct) y sin lectura el KPI «Reseñas» no se mide. Una
+ * tarea por semana (`lectura-google:<lunes>`), solo si la última tiene más de 6 días.
+ */
+export function reglaLecturaGoogle(ultimaLectura: string | null, hoy: string, lunes: string): TareaPorRegla[] {
+  if (ultimaLectura && diffDiasYMD(ultimaLectura, hoy) <= 6) return [];
+  return [{
+    claveRegla: `lectura-google:${lunes}`, regla: "lectura-google",
+    titulo: "Anotar la lectura de Google en Reseñas: calificación y número de reseñas de hoy",
+    responsable: RESPONSABLE_COBROS, vence: hoy,
+  }];
+}
+
+/**
+ * El corte de la semana que terminó (4 nov 2026): plan As Is / To Be, «corte
+ * cerrado cada lunes». Una tarea por semana (`corte-lunes:<lunes de esa semana>`),
+ * con vencimiento el lunes siguiente: si se cierra después, ya cuenta tarde.
+ */
+export function reglaCorteLunes(cerrado: boolean, semanaTerminada: string, primeraSemana: string): TareaPorRegla[] {
+  if (cerrado || semanaTerminada < primeraSemana) return [];
+  return [{
+    claveRegla: `corte-lunes:${semanaTerminada}`, regla: "corte-lunes",
+    titulo: `Cerrar el corte de la semana del ${semanaTerminada} (Corte semanal → Hacer corte)`,
+    responsable: RESPONSABLE_CORTE, vence: addDaysYMD(semanaTerminada, 7),
+  }];
 }
 
 // ── El correo del resumen diario de las 7:30 (puro: lo prueba Vitest) ─────────

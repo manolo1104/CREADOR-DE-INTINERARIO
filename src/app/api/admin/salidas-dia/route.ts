@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { checklistDe, limpiarChecklist, paraGuardar } from "@/lib/admin/checklistSalida";
+import { limpiarIncidencias, nuevaIncidencia } from "@/lib/admin/incidencias";
 import { addDaysYMD } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +13,7 @@ const TIPOS = ["fija", "privada"] as const;
 const texto = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);
 
 /**
- * PATCH { clave, guia?, vehiculo?, estado?, tipo?, notas?, checklist? }
+ * PATCH { clave, guia?, vehiculo?, estado?, tipo?, notas?, checklist?, incidencia?, quitarIncidencia? }
  * Guarda lo operativo de una salida (`Salida`); se crea al primer toque.
  * La sección es «Salidas del día» (también la ve el guía). Lo marcado en el
  * checklist queda con quién y cuándo.
@@ -77,21 +78,38 @@ export async function PATCH(req: NextRequest) {
     data.checklist = paraGuardar(nuevo);
   }
 
+  // Bitácora de incidencias (4 nov 2026): { incidencia: { tipo, gravedad, causa, accion } }
+  // la anota con quién y cuándo (el guía también); { quitarIncidencia: id } la
+  // quita (solo Operación: lo que anotó el guía no se borra desde su teléfono).
+  if (body.incidencia !== undefined || body.quitarIncidencia !== undefined) {
+    if (body.quitarIncidencia !== undefined && sesion?.rol === "guia") return NextResponse.json({ error: "Eso lo quita Operación." }, { status: 403 });
+    const previo = await prisma.salida.findUnique({ where: { clave }, select: { incidencias: true } }).catch(() => null);
+    let lista = limpiarIncidencias(previo?.incidencias);
+    if (body.incidencia !== undefined) {
+      const nueva = nuevaIncidencia(body.incidencia, quien, new Date(), `i-${Date.now().toString(36)}`);
+      if ("error" in nueva) return NextResponse.json({ error: nueva.error }, { status: 400 });
+      lista = [...lista, nueva];
+    }
+    if (body.quitarIncidencia !== undefined) lista = lista.filter(i => i.id !== String(body.quitarIncidencia));
+    data.incidencias = lista;
+  }
+
   try {
     const s = await prisma.salida.upsert({
       where: { clave },
       create: { clave, tourSlug, fecha, ...(data as any) },
       update: data as any,
     });
-    const cambios = Object.keys(data).filter(k => k !== "checklist");
+    const cambios = Object.keys(data).filter(k => k !== "checklist" && k !== "incidencias");
     await registrarEnBitacora({
       accion: "modificó", entidad: "salida", referencia: clave,
-      resumen: `Salida ${tourSlug} del ${fecha}: ${[...cambios, ...(data.checklist ? ["checklist"] : [])].join(", ") || "sin cambios"}`,
+      resumen: `Salida ${tourSlug} del ${fecha}: ${[...cambios, ...(data.checklist ? ["checklist"] : []), ...(body.incidencia !== undefined ? ["incidencia anotada"] : body.quitarIncidencia !== undefined ? ["incidencia quitada"] : [])].join(", ") || "sin cambios"}`,
     });
     return NextResponse.json({
       ok: true,
       registro: { tipo: s.tipo, guia: s.guia ?? "", vehiculo: s.vehiculo ?? "", estado: s.estado, notas: s.notas ?? "" },
       checklist: checklistDe(tourSlug, s.checklist),
+      incidencias: limpiarIncidencias(s.incidencias),
     });
   } catch (e: any) {
     console.error("admin/salidas-dia PATCH:", e?.message);

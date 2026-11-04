@@ -227,7 +227,8 @@ export async function marcarLinkPagado(
     if (cot && cot.status !== "aceptada") {
       await prisma.tourQuote.update({
         where: { id: cot.id },
-        data:  { status: "aceptada" },
+        // aceptadaEn: KPI «Cotización → reserva a 14 días» (4 nov 2026).
+        data:  { status: "aceptada", aceptadaEn: new Date() },
       });
     }
     // Su lead: anticipo pagado (no lanza).

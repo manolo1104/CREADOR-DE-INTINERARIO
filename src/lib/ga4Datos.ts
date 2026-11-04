@@ -28,6 +28,9 @@ export function canalDe(grupo: string, fuente: string, campana: string): CanalGA
   const f = fuente.toLowerCase();
   const c = campana.toLowerCase();
   if (c.includes("perfil-maps") || f.includes("maps.google") || f === "maps") return "maps";
+  // Asistentes de IA: GA4 ya los agrupa («AI Assistant»); el origen cubre los
+  // que aún llegan como referidos (chatgpt.com, perplexity.ai, gemini, claude.ai…).
+  if (grupo === "AI Assistant" || /chatgpt|openai|perplexity|gemini\.google|claude\.ai|copilot|deepseek/.test(f)) return "ia";
   switch (grupo) {
     case "Organic Search": return "seo";
     case "Direct": return "directo";
@@ -45,7 +48,8 @@ export function canalDe(grupo: string, fuente: string, campana: string): CanalGA
   }
 }
 
-function auth() {
+/** El robot de Google (cuenta de servicio) con los permisos de solo lectura que se pidan. */
+export function auth(scopes: string[] = ["https://www.googleapis.com/auth/analytics.readonly"]) {
   const key = (process.env.GOOGLE_PRIVATE_KEY ?? "")
     .replace(/\\n/g, "\n")
     .replace(/\r\n/g, "\n")
@@ -54,7 +58,7 @@ function auth() {
     .replace(/\s*-----END PRIVATE KEY-----/g, "\n-----END PRIVATE KEY-----");
   return new google.auth.GoogleAuth({
     credentials: { type: "service_account", client_email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL, private_key: key },
-    scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+    scopes,
   });
 }
 

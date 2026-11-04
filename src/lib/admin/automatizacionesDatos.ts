@@ -16,8 +16,10 @@ import { usuariosAdmin } from "./usuarios";
 import { ahoraMX } from "./crm";
 import { correoDe } from "./recordatorios";
 import {
-  RESPONSABLE_OPERACION, correoResumen, reglaCotizado, reglaLiga, reglaSaldo, reglaSalida, type LineaResumen, type TareaPorRegla,
+  RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaSaldo, reglaSalida, type LineaResumen, type TareaPorRegla,
 } from "./automatizaciones";
+import { historialGoogle } from "./satisfaccion";
+import { PRIMERA_SEMANA_CORTE, lunesDe } from "./corteSemanal";
 
 /** Ligas más viejas que esto no generan tarea: son de antes de la regla. */
 const DIAS_LIGA = 14;
@@ -30,6 +32,13 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
   const { hoy } = ahoraMX(ahora);
   const responsables = responsablesPanel();
 
+  // Indicadores (4 nov 2026): la lectura de Google y el corte de la semana pasada.
+  const lunes = lunesDe(hoy);
+  const semanaPasada = addDaysYMD(lunes, -7);
+  const [google, cortePasado] = await Promise.all([
+    historialGoogle().catch(() => []),
+    prisma.corteSemanal.findUnique({ where: { semana: semanaPasada }, select: { estado: true } }).catch(() => null),
+  ]);
   const [cotizados, reservas, ligas, salidas] = await Promise.all([
     prisma.oportunidad.findMany({
       where: { etapa: "cotizado" },
@@ -75,6 +84,8 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
       oportunidadId: (l.cotizacionId && cotsLiga.find(q => q.id === l.cotizacionId)?.oportunidadId) || (l.reservaId && resLiga.find(r => r.id === l.reservaId)?.oportunidadId) || null,
     })), ahora, hoy, responsables),
     ...reglaSalida(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, reservas: s.pasajeros.length })), hoy),
+    ...reglaLecturaGoogle(google.at(-1)?.fecha ?? null, hoy, lunes),
+    ...reglaCorteLunes(cortePasado?.estado === "cerrado", semanaPasada, PRIMERA_SEMANA_CORTE),
     // Juntar salidas (4 nov 2026): una tarea por par, a Operación, para proponerlo al cliente.
     ...(await sugerenciasAgrupar(hoy).catch(() => [])).map(g => ({
       claveRegla: `agrupar-salidas:${g.mover.clave}>${g.hacia.clave}`, regla: "agrupar-salidas" as const,

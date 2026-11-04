@@ -12,6 +12,7 @@ import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { ChipEstado } from "@/components/admin/ui/ChipEstado";
 import { TONO_ESTADO_SALIDA, fechaLarga, fmx } from "../comun";
+import { IncidenciasSalida } from "./IncidenciasSalida";
 
 const ESTADOS: { clave: RegistroSalida["estado"]; etiqueta: string }[] = [
   { clave: "programada", etiqueta: "Programada" }, { clave: "confirmada", etiqueta: "Confirmada" },
@@ -184,6 +185,9 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
               <button type="submit" disabled={!nuevoItem.trim() || guardando} className="panel-foco panel-pulsable min-h-[44px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-4 text-[13px] font-dm font-medium text-[var(--panel-tinta)] disabled:opacity-40">Agregar</button>
             </form>
           </section>
+
+          {/* Incidencias (4 nov 2026): la bitácora de lo que salió mal en esta salida. */}
+          <IncidenciasSalida clave={s.clave} inicial={s.incidencias ?? []} puedeQuitar={puedeAsignar} />
 
           {/* Protocolo */}
           <section className="panel-card p-4">

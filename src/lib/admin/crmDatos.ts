@@ -382,8 +382,16 @@ export async function leadDesdeCotizacion(
       const contacto = await contactoPara({ nombre: q.customerName, telefono: normalizarTelefono(q.customerPhone), correo: q.customerEmail?.trim() || null });
       op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } }, orderBy: { createdAt: "desc" } });
       if (!op) {
+        // Canal HONESTO (KPI «Leads con canal de origen», 4 nov 2026): antes todo
+        // lead nacido de una cotización quedaba «WhatsApp» por omisión y el KPI
+        // salía 100 % sin que nadie lo hubiera registrado. Si su chat está en la
+        // Bandeja, escribió por WhatsApp; si no, queda «por confirmar» y Erick
+        // lo completa en la ficha.
+        const tieneChat = await prisma.conversacion.count({
+          where: { OR: [{ contactoId: contacto.id }, ...(contacto.telefono ? [{ telefono: contacto.telefono }] : [])] },
+        }).catch(() => 0);
         op = await prisma.oportunidad.create({
-          data: { contactoId: contacto.id, etapa: objetivo, canal: "whatsapp", ...datos, monto: q.totalAmount || null, responsable: quien, creadoPor: quien },
+          data: { contactoId: contacto.id, etapa: objetivo, canal: tieneChat ? "whatsapp" : "por_confirmar", ...datos, monto: q.totalAmount || null, responsable: quien, creadoPor: quien },
         });
         await registrarEtapa(op.id, null, objetivo, `Regla: ${motivo}`, "regla");
         await registrarEnBitacora({ accion: "creó", entidad: "lead", referencia: q.quoteNumber, resumen: `Lead nuevo desde la cotización ${q.quoteNumber}: ${contacto.nombre} (${etiquetaEtapa(objetivo)})` });

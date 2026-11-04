@@ -165,6 +165,8 @@ export async function POST(req: NextRequest) {
           where: { id: q.id },
           data:  {
             status:    "aceptada",
+            // KPI «Cotización → reserva a 14 días» (4 nov 2026).
+            aceptadaEn: new Date(),
             // "pausada" y no "terminado": deja dicho en el panel POR QUÉ dejó
             // de recibir correos, que es distinto de haberse agotado sola.
             lineItems: conMeta(q.lineItems, { seqEstado: "pausada" }) as never,

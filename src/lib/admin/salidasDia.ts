@@ -1,5 +1,6 @@
 // Solo servidor: arma las salidas de un rango de fechas con sus pasajeros,
 // su registro operativo (`Salida`), su checklist y sus números.
+import { limpiarIncidencias, type Incidencia } from "./incidencias";
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD } from "@/lib/dates";
 import { TOURS_DB, partesRecogida, tourDurTexto } from "@/lib/tours";
@@ -58,6 +59,8 @@ export interface SalidaOperativa extends SalidaAgrupada {
   estadoPax: EstadoSalida;
   registro: RegistroSalida;
   checklist: ItemChecklist[];
+  /** Bitácora de incidencias de la salida (4 nov 2026). */
+  incidencias: Incidencia[];
   conceptos: ConceptoCosto[];
   /**
    * De dónde salen los costos de `numeros` (4 nov 2026, Manolo): «corte» = los
@@ -128,8 +131,12 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
     // un corte guardado, la utilidad sale de lo capturado ahí; si no, se estima
     // con el Cotizador y se dice que es estimado.
     const tarjetas = pasajeros.map(p => corte.get(claveTarjeta(s.fecha, s.slug, p.bookingId)));
-    const conCorte = pasajeros.length > 0 && tarjetas.every(Boolean);
-    const costoCorte = conCorte ? tarjetas.reduce((t, x) => t + (x?.costos ?? 0), 0) : 0;
+    const costoCorte = tarjetas.every(Boolean) ? tarjetas.reduce((t, x) => t + (x?.costos ?? 0), 0) : 0;
+    // 🔴 Un corte con $0 de costos para esta salida (tarjetas sin capturar o
+    // fuera del corte) NO es «costos reales»: daba 100 % de margen en
+    // Rentabilidad y en Portafolio mientras esta pantalla decía «Faltan costos»
+    // (4 nov 2026). Sin costos en el corte, manda el Cotizador (o nada).
+    const conCorte = pasajeros.length > 0 && tarjetas.every(Boolean) && costoCorte > 0;
     const numeros = conCorte
       ? numerosDeSalida(s.monto, s.personas, [{ concepto: "Costos del corte", monto: costoCorte, tipo: "fijo" }])
       : numerosDeSalida(s.monto, s.personas, conceptos);
@@ -145,6 +152,7 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
         ? { tipo: reg.tipo, guia: reg.guia ?? "", vehiculo: reg.vehiculo ?? "", estado: reg.estado, notas: reg.notas ?? "" }
         : REGISTRO_VACIO,
       checklist: checklistDe(s.slug, reg?.checklist),
+      incidencias: limpiarIncidencias((reg as { incidencias?: unknown } | undefined)?.incidencias),
       conceptos,
       numeros,
       fuenteCostos: conCorte ? "corte" as const : numeros.conCostos ? "cotizador" as const : null,

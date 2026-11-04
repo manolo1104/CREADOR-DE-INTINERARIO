@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { MessageCircle, Send } from "lucide-react";
-import { trackPackageInquiry, trackWhatsapp } from "@/lib/analytics";
+import { trackPackageInquiry } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaqueteFormUI } from "@/lib/i18n/paquetes.en";
 
@@ -54,7 +55,10 @@ export function PaqueteFormCta({ packageName, price, destacado, compacto }: Prop
     if (!nombre.trim()) return;
 
     trackPackageInquiry(packageName, price);
-    trackWhatsapp("package_form", price);
+    // 🔴 Abría WhatsApp con `window.open` y solo le avisaba a GA4: el panel no
+    // lo contaba (4 nov 2026). `WHATSAPP_CLICK` lo guarda el panel y el puente
+    // de `tourTracker` lo manda a GA4 como `whatsapp_contact`, una sola vez.
+    trackTourEvent("WHATSAPP_CLICK", { context: "package_form", boton: "formulario-paquete", amount: price, paquete: packageName });
 
     const msg = encodeURIComponent(
       t.waMsg(packageName, nombre, fecha || t.porDefinir, personas || t.porConfirmar),

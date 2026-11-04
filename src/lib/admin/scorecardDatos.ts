@@ -13,6 +13,8 @@ import { avanceChecklist } from "./checklistSalida";
 import { historialGoogle } from "./satisfaccion";
 import { etapaDe } from "@/lib/vencimientoCotizacion";
 import { calcularScorecard, numeroSemana, type Scorecard } from "./scorecard";
+import { cargarComercial, cotizo, reservo } from "./indicadores/comercial";
+import { periodoDe, cohorteMadura } from "./indicadores/periodo";
 
 export interface RevisionSemanalDatos {
   semana: string;
@@ -30,7 +32,7 @@ export interface SalidaResumen {
   estadoPax: SalidaOperativa["estadoPax"]; margen: number | null; checklist: { hechos: number; total: number }; guia: string;
 }
 
-export interface Pendiente { tipo: "saldos" | "cotizaciones" | "salida" | "bajo-minimo"; titulo: string; detalle: string; href: string; tono: "problema" | "atencion" | "neutro" }
+export interface Pendiente { tipo: "saldos" | "cotizaciones" | "salida" | "bajo-minimo" | "chats"; titulo: string; detalle: string; href: string; tono: "problema" | "atencion" | "neutro" }
 
 export interface DatosScorecard {
   semana: { lunes: string; domingo: string; etiqueta: string; numero: number; esActual: boolean };
@@ -56,6 +58,16 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   const mesFin = ymdMX(new Date(Date.UTC(Number(lunes.slice(0, 4)), Number(lunes.slice(5, 7)), 0, 12)));
 
   const leadsCrm = await prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }).catch(() => 0);
+  // La cohorte de la semana con la MISMA función que «Embudo comercial» (4 nov 2026).
+  const pSemana = periodoDe("semana", lunes, hoy);
+  const comercial = await cargarComercial([pSemana], hoy).catch(() => null);
+  const leadsSemana = comercial ? comercial.leads.filter(l => l.ymd >= lunes && l.ymd <= domingo) : [];
+  const manana = addDaysYMD(hoy, 1);
+  const [sinResponder, salidasManana] = await Promise.all([
+    // Chats cuyo último mensaje es del cliente y lleva más de 10 min sin respuesta (plan: «alerta a los 10 min»).
+    prisma.conversacion.count({ where: { noEsCliente: false, archivada: false, ultimoDe: "cliente", ultimoEntranteEn: { lt: new Date(Date.now() - 10 * 60_000), gte: new Date(Date.now() - 48 * 3_600_000) } } }).catch(() => 0),
+    salidasEntre(manana, manana).catch(() => []),
+  ]);
   const [creadas, delMes, cotizaciones, enTour, revisionRaw, google, salidas, salidasHoy, enviadas, vivas] = await Promise.all([
     prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }),
     prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: inicioMX(mesIni), lte: finMX(mesFin) } }, select: { totalAmount: true } }),
@@ -106,10 +118,15 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
     margenConCostos: conCostos.reduce((t, s) => t + s.numeros.margen, 0),
     salidasConCostos: conCostos.length,
     reservasOperadas: operadas,
+    cohorte: leadsSemana.length ? {
+      leads: leadsSemana.length, cotizados: leadsSemana.filter(cotizo).length, reservaron: leadsSemana.filter(reservo).length,
+      preliminar: !cohorteMadura(pSemana, hoy),
+    } : null,
   });
 
   // Pendientes de hoy.
   const pendientes: Pendiente[] = [];
+  if (sinResponder) pendientes.push({ tipo: "chats", tono: "problema", href: "/admin/bandeja", titulo: `${sinResponder} chat${sinResponder === 1 ? "" : "s"} sin responder hace más de 10 min`, detalle: "La meta es contestar el 90 % en 5 minutos" });
   const vencidas = vivas.filter(b => saldoPendiente(b) > 0 && ultimoDia(b) < hoy);
   if (vencidas.length) pendientes.push({ tipo: "saldos", tono: "problema", href: "/admin/cobros", titulo: `${vencidas.length} saldo${vencidas.length === 1 ? "" : "s"} vencido${vencidas.length === 1 ? "" : "s"}`, detalle: `$${vencidas.reduce((t, b) => t + saldoPendiente(b), 0).toLocaleString("es-MX")} de tours que ya pasaron: cobrar o registrar el cobro` });
   const porVencer = enviadas.filter(q => etapaDe(q, hoy) === "por-vencer").length;
@@ -117,6 +134,10 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   for (const s of salidasHoy) {
     const av = avanceChecklist(s.checklist);
     pendientes.push({ tipo: "salida", tono: av.hechos < av.total ? "atencion" : "neutro", href: `/admin/salidas-dia/${encodeURIComponent(s.clave)}`, titulo: `Hoy · ${s.tourNombre} · ${s.personas} pax`, detalle: `Checklist ${av.hechos} de ${av.total}${s.registro.guia ? ` · guía ${s.registro.guia}` : " · sin guía asignado"}` });
+  }
+  for (const s of salidasManana) {
+    const av = avanceChecklist(s.checklist);
+    pendientes.push({ tipo: "salida", tono: s.registro.guia ? "neutro" : "atencion", href: `/admin/salidas-dia/${encodeURIComponent(s.clave)}`, titulo: `Mañana · ${s.tourNombre} · ${s.personas} pax`, detalle: `Checklist ${av.hechos} de ${av.total}${s.registro.guia ? ` · guía ${s.registro.guia}` : " · sin guía asignado"}` });
   }
   const bajo = salidas.filter(s => s.estadoPax === "bajo-minimo" && s.fecha >= hoy);
   if (bajo.length) pendientes.push({ tipo: "bajo-minimo", tono: "atencion", href: "/admin/calendario", titulo: `${bajo.length} salida${bajo.length === 1 ? "" : "s"} con 2 personas o menos esta semana`, detalle: "Conviene llenarlas o juntarlas: con 2 el margen cae" });

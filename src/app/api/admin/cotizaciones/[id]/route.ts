@@ -24,6 +24,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (body[k] !== undefined) data[k] = body[k];
     }
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
+    // Cuándo se aceptó (KPI «Cotización → reserva a 14 días», 4 nov 2026): solo
+    // la primera vez que pasa a «aceptada»; volver a guardarla no la mueve.
+    if (data.status === "aceptada" && antes?.status !== "aceptada") data.aceptadaEn = new Date();
     // El descuento: sellado con quién y cuándo si cambió (ver `descuento.ts`).
     let eventoDescuento = null;
     // En las cotizaciones el `_meta` de precio va en `packageItems`.

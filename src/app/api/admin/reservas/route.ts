@@ -94,6 +94,8 @@ export async function POST(req: NextRequest) {
         origen:                origenValido(body.origen, "por_confirmar"),
         // El lead del que viene (al convertir una cotización): se mide la conversión real.
         oportunidadId:         (await leadExistente(body.oportunidadId)) ?? (await leadDeCotizacion(body.cotizacionId)),
+        // La cotización que se convirtió (KPI «Cotización → reserva», 4 nov 2026).
+        cotizacionId:          typeof body.cotizacionId === "string" && body.cotizacionId ? body.cotizacionId.slice(0, 40) : null,
       },
     }).catch(async (e) => {
       // No se creó: el código vuelve a quedar libre.

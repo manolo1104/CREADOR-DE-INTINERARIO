@@ -146,6 +146,9 @@ model TourQuote {
   status        String   @default("borrador") // borrador | enviada | aceptada | expirada | archivada
   /// La oportunidad del CRM de la que salió (Fase 2, 3 nov 2026). Opcional: las de antes no tienen.
   oportunidadId String?
+  /// Cuándo pasó a «aceptada» (KPI «Cotización → reserva a 14 días», 4 nov 2026).
+  /// Opcional: las aceptadas antes de esta fecha no lo tienen y se estiman.
+  aceptadaEn    DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -302,6 +305,9 @@ model TourBooking {
   salidaId              String?
   /// La oportunidad del CRM que terminó en esta reserva (Fase 2, 3 nov 2026).
   oportunidadId         String?
+  /// La cotización (`TourQuote.id`) que se convirtió en esta reserva (4 nov
+  /// 2026). Opcional: las de antes y las que no vienen de una cotización no lo traen.
+  cotizacionId          String?
   /// Check-in previo y encuesta de satisfacción (21 oct 2026). Tabla aparte, no
   /// el `_meta`: el PATCH de Reservas reescribe `lineItems` entero.
   encuesta              EncuestaReserva?
@@ -314,6 +320,7 @@ model TourBooking {
   @@index([origen])
   @@index([salidaId])
   @@index([oportunidadId])
+  @@index([cotizacionId])
 }
 
 model BlogPost {
@@ -955,6 +962,9 @@ model Salida {
   estado    String   @default("programada")
   /// [{ clave, texto, hecho, por, en }] — ver `lib/admin/checklistSalida.ts`.
   checklist Json?
+  /// Bitácora de incidencias de la salida (4 nov 2026): [{ id, tipo, gravedad,
+  /// causa, accion, por, en }] — ver `lib/admin/incidencias.ts`. El guía también anota.
+  incidencias Json?
   notas     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -967,6 +977,26 @@ model Salida {
 /// panel porque no hay Bandeja de WhatsApp (Fase 2) ni score automático
 /// (Fase 3) se captura a mano una vez por semana, y el scorecard lo lee de
 /// aquí. Cuando esos datos salgan solos, esta tabla queda como respaldo.
+/// Bitácora de CAMBIOS del negocio (4 nov 2026). Regla del plan As Is / To Be:
+/// «cada cambio se anota con su fecha; sin fecha no se puede saber qué movió el
+/// número». No es la Bitácora de quién hizo qué: es «el 11 nov se publicó
+/// OXXO/SPEI» para leer las tendencias antes y después.
+model CambioMedido {
+  id        String   @id @default(cuid())
+  /// YYYY-MM-DD, el día en que el cambio quedó vivo.
+  fecha     String
+  /// demanda | comercial | operacion | producto | precio | servicio | datos
+  frente    String
+  titulo    String
+  detalle   String?
+  /// Claves de los KPIs que debería mover (`lib/admin/indicadores/catalogo.ts`).
+  kpis      String[] @default([])
+  creadoPor String
+  createdAt DateTime @default(now())
+
+  @@index([fecha])
+}
+
 model RevisionSemanal {
   id             String   @id @default(cuid())
   /// Lunes de la semana, YYYY-MM-DD.

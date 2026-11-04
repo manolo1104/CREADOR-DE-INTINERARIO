@@ -5,14 +5,26 @@ import {
 
 describe("menú por áreas (rediseño, 3 nov 2026)", () => {
   it("los grupos van en el orden del prompt y cada pestaña tiene página propia", () => {
-    expect(GRUPOS_MENU).toEqual(["Hoy", "Comercial", "Operación", "Dinero", "Calidad", "Agente", "Control"]);
+    // 4 nov 2026: por frente de medición del plan As Is / To Be.
+    expect(GRUPOS_MENU).toEqual(["Hoy", "Demanda", "Comercial", "Operación", "Producto y precio", "Servicio", "Dinero", "Agente", "Control"]);
     const paginas = PESTANAS.map(p => p.pagina);
     expect(new Set(paginas).size).toBe(paginas.length);
     expect(new Set(PESTANAS.map(p => p.seccion)).size).toBe(PESTANAS.length);
   });
   it("las secciones nuevas llevan la marca «Nuevo»; las de siempre no", () => {
     const nuevas = PESTANAS.filter(p => p.nueva).map(p => p.seccion);
-    expect(nuevas).toEqual(["bandeja", "leads", "seguimientos", "salidas-dia", "rutas", "proveedores", "rentabilidad", "score", "agente"]);
+    expect(nuevas).toEqual(["metas", "demanda", "bandeja", "leads", "seguimientos", "score", "embudo", "salidas-dia", "rutas", "proveedores", "ocupacion", "portafolio", "precios", "experiencia", "rentabilidad", "agente"]);
+  });
+  it("las pestañas de indicadores: el socio ve todas; operación solo Experiencia; el guía ninguna", () => {
+    const kpis = ["metas", "demanda", "embudo", "ocupacion", "portafolio", "precios", "experiencia"] as const;
+    expect(SECCIONES_POR_ROL.socio).toEqual(expect.arrayContaining([...kpis]));
+    expect(SECCIONES_POR_ROL.operacion.filter(s => (kpis as readonly string[]).includes(s))).toEqual(["experiencia"]);
+    expect(SECCIONES_POR_ROL.guia.filter(s => (kpis as readonly string[]).includes(s))).toEqual([]);
+  });
+  it("las pestañas de indicadores no son portada: el socio y operación siguen entrando a la Bandeja", () => {
+    expect(primeraPagina(seccionesValidas("socio", undefined))).toBe("/admin/bandeja");
+    expect(primeraPagina(seccionesValidas("operacion", undefined))).toBe("/admin/bandeja");
+    expect(primeraPagina(["metas"])).toBe("/admin/metas");
   });
 });
 

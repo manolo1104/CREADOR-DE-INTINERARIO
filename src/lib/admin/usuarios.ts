@@ -19,7 +19,10 @@ export type SeccionAdmin =
   // Rediseño del panel (3 nov 2026). Llegan por fases; mientras, cada una es
   // una página «Nuevo» que explica qué va a tener y lleva a lo que hoy existe.
   | "bandeja" | "leads" | "seguimientos" | "salidas-dia" | "rutas"
-  | "proveedores" | "rentabilidad" | "score" | "agente";
+  | "proveedores" | "rentabilidad" | "score" | "agente"
+  // Indicadores por categoría (plan As Is / To Be, 4 nov 2026): una pestaña de
+  // KPIs por frente del documento, más «Metas» para la revisión mensual.
+  | "metas" | "demanda" | "embudo" | "ocupacion" | "portafolio" | "precios" | "experiencia";
 
 export interface UsuarioAdmin {
   user: string;              // lo que se teclea en el login (minúsculas)
@@ -49,6 +52,9 @@ const OPERACION: SeccionAdmin[] = [
   // números del negocio"—. Fuera por decisión de Manolo, 23 sep 2026.
   // Rediseño (3 nov 2026): lo comercial, las salidas del día y su propio score.
   "bandeja", "leads", "seguimientos", "salidas-dia", "score",
+  // Indicadores (4 nov 2026): de los nuevos, solo Experiencia (reseñas, NPS y
+  // clientes que vuelven): no trae dinero ni márgenes.
+  "experiencia",
 ];
 // guía: solo sus salidas del día (con flechas para ver los días que siguen).
 // El Calendario se le quitó en la revisión del 4 nov 2026: manda al navegador
@@ -60,7 +66,9 @@ const GUIA: SeccionAdmin[] = ["salidas-dia"];
 // otros dos roles: lo que se le quita, se le quita también al socio y al
 // dueño. Al sacarlo de ahí se quedó sin él TODO el mundo, Manolo incluido.
 // Rediseño (3 nov 2026): rutas y protocolos, proveedores y la rentabilidad.
-const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "cortes", "cotizador", "rutas", "proveedores", "rentabilidad"];
+const SOCIO: SeccionAdmin[] = [...OPERACION, "ingresos", "cortes", "cotizador", "rutas", "proveedores", "rentabilidad",
+  // Indicadores (4 nov 2026): Martín revisa las metas con Manolo el primer lunes de cada mes.
+  "metas", "demanda", "embudo", "ocupacion", "portafolio", "precios"];
 // dueño: todo. La bitácora (quién hizo qué) es SOLO suya: si quien está siendo
 // registrado pudiera leerla, dejaría de servir para lo que se hizo.
 // Análisis (21 oct 2026) cruza datos personales del check-in con el dinero:
@@ -84,7 +92,10 @@ export function puedeVer(rol: RolAdmin, seccion: SeccionAdmin): boolean {
 // las páginas no puede leer la base. Lo de arriba (por rol) es solo lo que
 // cada quien ve mientras Manolo no haya decidido nada.
 
-export type GrupoMenu = "Hoy" | "Comercial" | "Operación" | "Dinero" | "Calidad" | "Agente" | "Control";
+// 4 nov 2026 (Manolo: «secciona las pestañas por categoría… necesito medir la
+// demanda, producto y precio»): los grupos siguen los frentes del plan As Is /
+// To Be. «Calidad» pasó a llamarse «Servicio».
+export type GrupoMenu = "Hoy" | "Demanda" | "Comercial" | "Operación" | "Producto y precio" | "Servicio" | "Dinero" | "Agente" | "Control";
 
 export interface Pestana {
   seccion: SeccionAdmin;
@@ -103,26 +114,33 @@ export interface Pestana {
  */
 export const PESTANAS: Pestana[] = [
   { seccion: "inicio",       pagina: "/admin",              etiqueta: "Inicio",             grupo: "Hoy" },
+  { seccion: "metas",        pagina: "/admin/metas",        etiqueta: "Metas y KPIs",       grupo: "Hoy", nueva: true },
+  { seccion: "demanda",      pagina: "/admin/demanda",      etiqueta: "Web y canales",      grupo: "Demanda", nueva: true },
+  { seccion: "analisis",     pagina: "/admin/analisis",     etiqueta: "Análisis",           grupo: "Demanda" },
   { seccion: "bandeja",      pagina: "/admin/bandeja",      etiqueta: "Bandeja",            grupo: "Comercial", nueva: true },
   { seccion: "leads",        pagina: "/admin/leads",        etiqueta: "Leads",              grupo: "Comercial", nueva: true },
   { seccion: "seguimientos", pagina: "/admin/seguimientos", etiqueta: "Seguimientos",       grupo: "Comercial", nueva: true },
   { seccion: "cotizaciones", pagina: "/admin/cotizaciones", etiqueta: "Cotizaciones",       grupo: "Comercial" },
   { seccion: "clientes",     pagina: "/admin/clientes",     etiqueta: "Clientes",           grupo: "Comercial" },
+  { seccion: "score",        pagina: "/admin/score",        etiqueta: "Score WhatsApp",     grupo: "Comercial", nueva: true },
+  { seccion: "embudo",       pagina: "/admin/embudo",       etiqueta: "Embudo comercial",   grupo: "Comercial", nueva: true },
   { seccion: "calendario",   pagina: "/admin/calendario",   etiqueta: "Calendario",         grupo: "Operación" },
   { seccion: "salidas-dia",  pagina: "/admin/salidas-dia",  etiqueta: "Salidas del día",    grupo: "Operación", nueva: true },
   { seccion: "reservas",     pagina: "/admin/reservas",     etiqueta: "Reservas",           grupo: "Operación" },
   { seccion: "salidas",      pagina: "/admin/salidas",      etiqueta: "Viaje CDMX",         grupo: "Operación" },
   { seccion: "rutas",        pagina: "/admin/rutas",        etiqueta: "Rutas y protocolos", grupo: "Operación", nueva: true },
   { seccion: "proveedores",  pagina: "/admin/proveedores",  etiqueta: "Proveedores",        grupo: "Operación", nueva: true },
+  { seccion: "ocupacion",    pagina: "/admin/ocupacion",    etiqueta: "Ocupación",          grupo: "Operación", nueva: true },
+  { seccion: "portafolio",   pagina: "/admin/portafolio",   etiqueta: "Portafolio",         grupo: "Producto y precio", nueva: true },
+  { seccion: "precios",      pagina: "/admin/precios",      etiqueta: "Precios",            grupo: "Producto y precio", nueva: true },
+  { seccion: "experiencia",  pagina: "/admin/experiencia",  etiqueta: "Experiencia",        grupo: "Servicio", nueva: true },
+  { seccion: "resenas",      pagina: "/admin/resenas",      etiqueta: "Reseñas",            grupo: "Servicio" },
+  { seccion: "fotos",        pagina: "/admin/fotos",        etiqueta: "Fotos",              grupo: "Servicio" },
   { seccion: "cobros",       pagina: "/admin/cobros",       etiqueta: "Cobros",             grupo: "Dinero" },
   { seccion: "cortes",       pagina: "/admin/cortes",       etiqueta: "Corte semanal",      grupo: "Dinero" },
   { seccion: "cotizador",    pagina: "/admin/cotizador",    etiqueta: "Cotizador",          grupo: "Dinero" },
   { seccion: "rentabilidad", pagina: "/admin/rentabilidad", etiqueta: "Rentabilidad",       grupo: "Dinero", nueva: true },
   { seccion: "ingresos",     pagina: "/admin/ingresos",     etiqueta: "Ventas",             grupo: "Dinero" },
-  { seccion: "analisis",     pagina: "/admin/analisis",     etiqueta: "Análisis",           grupo: "Dinero" },
-  { seccion: "score",        pagina: "/admin/score",        etiqueta: "Score WhatsApp",     grupo: "Calidad", nueva: true },
-  { seccion: "resenas",      pagina: "/admin/resenas",      etiqueta: "Reseñas",            grupo: "Calidad" },
-  { seccion: "fotos",        pagina: "/admin/fotos",        etiqueta: "Fotos",              grupo: "Calidad" },
   { seccion: "agente",       pagina: "/admin/agente",       etiqueta: "Agente",             grupo: "Agente", nueva: true },
   { seccion: "bitacora",     pagina: "/admin/bitacora",     etiqueta: "Bitácora",           grupo: "Control" },
   { seccion: "curso",        pagina: "/admin/curso",        etiqueta: "Curso IA",           grupo: "Control" },
@@ -147,9 +165,16 @@ export function seccionesValidas(rol: RolAdmin, raw: unknown): SeccionAdmin[] {
   return PESTANAS.map(p => p.seccion).filter(x => x !== SECCION_SOLO_DUENO && base.includes(x));
 }
 
-/** A dónde mandar a alguien: su primera pestaña, en el orden del menú. */
+/**
+ * A dónde mandar a alguien: su primera pestaña, en el orden del menú. Las de
+ * INDICADORES no sirven de portada (4 nov 2026): van arriba en el menú, pero
+ * Martín y Erick entran a trabajar (Bandeja, Calendario), no a leer tableros;
+ * solo si es lo único que ven. Así nadie cambia de portada por el menú nuevo.
+ */
 export function primeraPagina(secciones: SeccionAdmin[]): string | null {
-  return PESTANAS.find(p => secciones.includes(p.seccion))?.pagina ?? null;
+  const NO_ES_PORTADA: SeccionAdmin[] = ["metas", "demanda", "analisis", "embudo", "ocupacion", "portafolio", "precios", "experiencia"];
+  return PESTANAS.find(p => secciones.includes(p.seccion) && !NO_ES_PORTADA.includes(p.seccion))?.pagina
+    ?? PESTANAS.find(p => secciones.includes(p.seccion))?.pagina ?? null;
 }
 
 // ── Qué se puede TOCAR, no solo ver ─────────────────────────────────────────
@@ -242,6 +267,15 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   { prefijo: "/api/admin/score",     seccion: "score"        },
   { prefijo: "/admin/agente",        seccion: "agente"       },
   { prefijo: "/api/admin/agente",    seccion: "agente"       },
+  // Indicadores por categoría (4 nov 2026). La bitácora de cambios se anota desde Metas.
+  { prefijo: "/admin/metas",         seccion: "metas"        },
+  { prefijo: "/api/admin/cambios",   seccion: "metas"        },
+  { prefijo: "/admin/demanda",       seccion: "demanda"      },
+  { prefijo: "/admin/embudo",        seccion: "embudo"       },
+  { prefijo: "/admin/ocupacion",     seccion: "ocupacion"    },
+  { prefijo: "/admin/portafolio",    seccion: "portafolio"   },
+  { prefijo: "/admin/precios",       seccion: "precios"      },
+  { prefijo: "/admin/experiencia",   seccion: "experiencia"  },
 ];
 
 export function seccionRestringida(pathname: string): SeccionAdmin | null {

@@ -51,6 +51,19 @@ export function lineasDe(b: ConLineas): LineaTour[] {
   return raw.filter((l: any) => l && !l._meta && (l.tourSlug || l.tourName));
 }
 
+/**
+ * ¿La reserva incluye noches de hotel que vendimos nosotros? (KPI «Reservas con
+ * hotel», 4 nov 2026). Sí cuando `packageItems` trae un renglón de hotel, o
+ * cuando es el viaje CDMX, que lleva su noche. OJO: NO es dónde duerme el
+ * cliente — eso lo dice `hospedajeDeReserva()` y puede ser otro hotel.
+ */
+export function incluyeHotel(b: { packageItems?: unknown; tourSlug?: string; lineItems?: unknown }): boolean {
+  const pk = Array.isArray(b.packageItems) ? (b.packageItems as any[]) : [];
+  if (pk.some(p => p && !p._meta && (p.hotel || p.habitacion || Number(p.noches) > 0))) return true;
+  const VIAJE = "viaje-cdmx-xilitla"; // = VIAJE_SLUG (lib/viajeCdmx/config.ts)
+  return b.tourSlug === VIAJE || (Array.isArray(b.lineItems) && (b.lineItems as any[]).some(l => l && !l._meta && l.tourSlug === VIAJE));
+}
+
 /** La línea `_meta` (método de pago, folio, pickup, numPersonas). */
 export function metaDe(b: { lineItems?: unknown }): Record<string, any> {
   const raw = b.lineItems;

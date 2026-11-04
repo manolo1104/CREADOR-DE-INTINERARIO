@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import {
   BookOpen, FileText, TrendingUp, Users, Menu, X, LogOut, MapPin, Calendar, LayoutDashboard, Volume2, VolumeX,
   Calculator, GraduationCap, ScrollText, Scissors, Link2, Camera, Star, Bus, PieChart, Inbox, KanbanSquare,
-  ClipboardCheck, Truck, Route, Boxes, MessageSquareText, Bot,
+  ClipboardCheck, Truck, Route, Boxes, MessageSquareText, Bot, Target, Globe, Filter, Gauge, LayoutGrid, Tag, Smile,
 } from "lucide-react";
 import { isSfxMuted, setSfxMuted, playClick } from "@/lib/admin/sfx";
 import { ETIQUETA_ROL, GRUPOS_MENU, PESTANAS, type RolAdmin, type SeccionAdmin } from "@/lib/admin/usuarios";
@@ -21,6 +21,8 @@ const ICONO: Record<SeccionAdmin, typeof BookOpen> = {
   salidas: Bus, rutas: Route, proveedores: Boxes, cobros: Link2, cortes: Scissors, cotizador: Calculator,
   rentabilidad: PieChart, ingresos: TrendingUp, analisis: PieChart, score: MessageSquareText, resenas: Star,
   fotos: Camera, agente: Bot, bitacora: ScrollText, curso: GraduationCap,
+  // Indicadores por categoría (4 nov 2026).
+  metas: Target, demanda: Globe, embudo: Filter, ocupacion: Gauge, portafolio: LayoutGrid, precios: Tag, experiencia: Smile,
 };
 
 const GRUPOS = GRUPOS_MENU.map(titulo => ({

@@ -31,6 +31,12 @@ export interface EntradaScorecard {
   salidasConCostos: number;
   /** Reservas cuyo último tour cayó en la semana (para la tasa de reseñas). */
   reservasOperadas: number;
+  /**
+   * La cohorte del CRM de la semana (4 nov 2026): leads que entraron y hasta
+   * dónde llegaron. Es la MISMA fórmula de «Embudo comercial»
+   * (`indicadores/comercial.ts`): si viene con leads, manda en «Lead → reserva».
+   */
+  cohorte?: { leads: number; cotizados: number; reservaron: number; preliminar: boolean } | null;
 }
 
 export const METAS = {
@@ -47,7 +53,9 @@ export const METAS = {
 export interface Kpi {
   clave: string;
   etiqueta: string;
-  area: "Embudo" | "Comercial" | "Operación" | "Dinero" | "Calidad";
+  // 4 nov 2026: «Calidad» pasó a llamarse «Servicio» (menú por categorías) y el
+  // score del operador es Comercial, como en el plan As Is / To Be.
+  area: "Embudo" | "Comercial" | "Operación" | "Dinero" | "Servicio";
   valor: string;
   contexto: string;
   estado: { tono: TonoEstado; texto: string };
@@ -98,12 +106,17 @@ export function calcularScorecard(e: EntradaScorecard): Scorecard {
     estado: r5 === null ? sinDato : contraMeta(r5, METAS.respuesta5min),
     conDato: r5 !== null,
   });
-  // 3. Lead → reserva.
-  const conv = leads !== null && leads > 0 ? pct(e.reservasCreadas, leads) : null;
+  // 3. Lead → reserva. Con leads en el CRM, por cohorte (misma fórmula que
+  // «Embudo comercial»); sin ellos, como antes: reservas de la semana ÷ leads
+  // de la revisión del jueves.
+  const coh = e.cohorte && e.cohorte.leads > 0 ? e.cohorte : null;
+  const conv = coh ? pct(coh.reservaron, coh.leads) : leads !== null && leads > 0 ? pct(e.reservasCreadas, leads) : null;
   kpis.push({
     clave: "conversion", etiqueta: "Lead → reserva", area: "Comercial",
     valor: conv === null ? "—" : `${conv} %`,
-    contexto: conv === null ? `${e.reservasCreadas} reservas esta semana; faltan los leads` : `${e.reservasCreadas} reservas de ${leads} leads · meta ${METAS.leadReserva} %`,
+    contexto: coh
+      ? `${coh.reservaron} de ${coh.leads} leads de la semana ya reservaron${coh.preliminar ? " (preliminar: tienen 14 días)" : ""} · meta ${METAS.leadReserva} %`
+      : conv === null ? `${e.reservasCreadas} reservas esta semana; faltan los leads` : `${e.reservasCreadas} reservas de ${leads} leads · meta ${METAS.leadReserva} %`,
     estado: conv === null ? sinDato : contraMeta(conv, METAS.leadReserva),
     conDato: conv !== null,
   });
@@ -135,7 +148,7 @@ export function calcularScorecard(e: EntradaScorecard): Scorecard {
   });
   // 7. Score WhatsApp.
   kpis.push({
-    clave: "score", etiqueta: "Score WhatsApp", area: "Calidad",
+    clave: "score", etiqueta: "Score WhatsApp", area: "Comercial",
     valor: e.score === null ? "—" : `${e.score} / 100`,
     contexto: e.score === null ? "De la revisión del jueves" : `Meta ${METAS.score}`,
     estado: e.score === null ? sinDato : e.score >= 85 ? { tono: "bien", texto: "Meta cumplida" } : e.score >= 70 ? { tono: "atencion", texto: "Cerca" } : { tono: "problema", texto: "Hay que corregir" },
@@ -144,7 +157,7 @@ export function calcularScorecard(e: EntradaScorecard): Scorecard {
   // 8. Reseñas.
   const tasa = e.resenasNuevas !== null && e.reservasOperadas > 0 ? pct(e.resenasNuevas, e.reservasOperadas) : null;
   kpis.push({
-    clave: "resenas", etiqueta: "Reseñas", area: "Calidad",
+    clave: "resenas", etiqueta: "Reseñas", area: "Servicio",
     valor: tasa === null ? "—" : `${tasa} %`,
     contexto: tasa === null ? (e.reservasOperadas === 0 ? "Sin reservas operadas esta semana" : "Anota las reseñas nuevas de Google") : `${e.resenasNuevas} reseñas de ${e.reservasOperadas} reservas operadas · meta ${METAS.resenas} %`,
     estado: tasa === null ? sinDato : contraMeta(tasa, METAS.resenas),

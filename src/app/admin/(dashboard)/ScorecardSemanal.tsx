@@ -51,6 +51,8 @@ export function ScorecardSemanal({ datos }: { datos: DatosScorecard }) {
         <div>
           <p className="panel-eyebrow mb-1">Semana {semana.numero} · {semana.etiqueta}{semana.esActual ? " · esta semana" : ""}</p>
           <h2 className="font-cormorant text-[26px] font-medium leading-none text-[var(--panel-tinta)]">Scorecard semanal</h2>
+          {/* Los 30 indicadores del plan, por categoría (4 nov 2026). */}
+          <Link href="/admin/metas" className="panel-foco mt-1 inline-block text-[12.5px] font-dm font-medium text-[var(--panel-acento)] hover:underline">Ver todos los KPIs y metas →</Link>
         </div>
         <div className="flex items-center gap-2">
           <Link href={`/admin?semana=${addDaysYMD(semana.lunes, -7)}`} aria-label="Semana anterior" className="panel-foco inline-flex h-10 w-10 items-center justify-center rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white"><ChevronLeft className="h-4 w-4" aria-hidden="true" /></Link>
