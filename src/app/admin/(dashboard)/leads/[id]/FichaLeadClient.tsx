@@ -26,7 +26,10 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
     proximoPaso: f.proximoPaso ?? "", proximoPasoEn: f.proximoPasoEn ?? "",
   });
   const [nota, setNota] = useState("");
-  const [tarea, setTarea] = useState({ titulo: "", responsable: f.responsable ?? responsables[0] ?? "", vence: hoy });
+  // El próximo seguimiento: por omisión a Erick (él atiende el WhatsApp) salvo que el lead tenga responsable.
+  const porOmision = f.responsable && responsables.includes(f.responsable) ? f.responsable : responsables.find(r => r === "Erick") ?? responsables[0] ?? "";
+  const [tarea, setTarea] = useState({ titulo: "", responsable: porOmision, vence: hoy, hora: "" });
+  const siguiente = f.tareas.find(t => t.estado !== "hecha");
   const [folio, setFolio] = useState("");
   const [ocupado, setOcupado] = useState<string | null>(null);
   const [msj, setMsj] = useState<{ texto: string; error?: boolean } | null>(null);
@@ -66,7 +69,7 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
 
   return (
     <div className="mt-3">
-      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
+      <header className="mb-5 flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div>
           <h1 className="font-cormorant text-[34px] font-medium leading-[1.1] text-[var(--panel-tinta)]">{f.contacto.nombre}</h1>
           <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-dm text-[var(--panel-tinta-media)]">
@@ -75,6 +78,11 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
             <span>Capturado por {f.creadoPor ?? "—"} · {fHora(f.createdAt)}</span>
           </p>
         </div>
+        {siguiente && (
+          <p className={`order-last w-full text-[13px] font-dm ${COLOR_FECHA[estadoFecha(siguiente.vence, hoy)]}`}>
+            Próximo seguimiento: <strong>{siguiente.titulo}</strong> · <span className="capitalize">{fechaCorta(siguiente.vence)}</span>{siguiente.hora ? ` ${siguiente.hora}` : ""} · {siguiente.responsable}
+          </p>
+        )}
         {f.etapa === "perdido"
           ? <ChipEstado tono="problema">Perdido · {etiquetaMotivoPerdida(f.motivoPerdida)}</ChipEstado>
           : <ChipEstado tono={f.etapa === "confirmado" || f.etapa === "operado" ? "bien" : "neutro"}>{etiquetaEtapa(f.etapa)}</ChipEstado>}
@@ -108,7 +116,7 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
             <label className={etiquetaCls}>Teléfono<input type="tel" value={d.telefono} onChange={set("telefono")} className={`${inputCls} mt-1 normal-case tracking-normal`} /></label>
             <label className={etiquetaCls}>Correo<input type="email" value={d.correo} onChange={set("correo")} className={`${inputCls} mt-1 normal-case tracking-normal`} /></label>
             <label className={etiquetaCls}>Idioma<select value={d.idioma} onChange={set("idioma")} className={`${inputCls} mt-1 normal-case tracking-normal`}><option value="es">Español</option><option value="en">Inglés</option></select></label>
-            <label className={etiquetaCls}>Canal<select value={d.canal} onChange={set("canal")} className={`${inputCls} mt-1 normal-case tracking-normal`}>{ORIGENES_ELEGIBLES.map(o => <option key={o} value={o}>{ORIGEN_ETIQUETA[o].split(" (")[0]}</option>)}{!ORIGENES_ELEGIBLES.includes(d.canal as never) && <option value={d.canal}>{d.canal}</option>}</select></label>
+            <label className={etiquetaCls}>Canal<select value={d.canal} onChange={set("canal")} className={`${inputCls} mt-1 normal-case tracking-normal`}>{ORIGENES_ELEGIBLES.map(o => <option key={o} value={o}>{ORIGEN_ETIQUETA[o].split(" (")[0]}</option>)}{!ORIGENES_ELEGIBLES.includes(d.canal as never) && <option value={d.canal}>{(ORIGEN_ETIQUETA[d.canal as keyof typeof ORIGEN_ETIQUETA] ?? d.canal).split(" (")[0]}</option>}</select></label>
             <label className={etiquetaCls}>Responsable<select value={d.responsable} onChange={set("responsable")} className={`${inputCls} mt-1 normal-case tracking-normal`}><option value="">—</option>{responsables.map(r => <option key={r} value={r}>{r}</option>)}</select></label>
           </div>
           <fieldset>
@@ -140,6 +148,16 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
         <div className="space-y-5">
           <section className="panel-card space-y-4 p-4">
             <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Acciones</h2>
+            <form className="rounded-[var(--panel-radio-sm)] bg-[var(--panel-atencion-fondo)] p-3" onSubmit={async e => { e.preventDefault(); if (await llamar("/api/admin/tareas", "POST", { ...tarea, hora: tarea.hora || null, oportunidadId: f.id }, "tarea", `Seguimiento agendado: a ${tarea.responsable} le llegará el recordatorio`)) setTarea(t => ({ ...t, titulo: "", hora: "" })); }}>
+              <label className={etiquetaCls}>Agendar próximo seguimiento<input value={tarea.titulo} onChange={e => setTarea(t => ({ ...t, titulo: e.target.value }))} className={`${inputCls} mt-1 normal-case tracking-normal`} placeholder="Ej. preguntar si ya decidió la fecha" /></label>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                <input aria-label="Día" type="date" value={tarea.vence} onChange={e => setTarea(t => ({ ...t, vence: e.target.value }))} className={inputCls} />
+                <input aria-label="Hora" type="time" value={tarea.hora} onChange={e => setTarea(t => ({ ...t, hora: e.target.value }))} className={inputCls} />
+                <select aria-label="Responsable" value={tarea.responsable} onChange={e => setTarea(t => ({ ...t, responsable: e.target.value }))} className={inputCls}>{responsables.map(r => <option key={r} value={r}>{r}</option>)}</select>
+              </div>
+              <button type="submit" disabled={!tarea.titulo.trim() || !!ocupado} className={`${botonPrimario} mt-2`}>Agendar y avisar</button>
+              <p className="mt-1 text-[11.5px] font-dm text-[#4A3A12]">Le llega un correo a esa hora (sin hora, a primera hora del día) y un aviso en el panel.</p>
+            </form>
             <div className="flex flex-wrap gap-2">
               {f.contacto.telefono && <a href={`https://wa.me/${f.contacto.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className={botonSecundario}><Phone className="h-4 w-4" aria-hidden="true" />Abrir WhatsApp</a>}
               <Link href="/admin/cotizaciones" className={botonSecundario}><FileText className="h-4 w-4" aria-hidden="true" />Nueva cotización</Link>
@@ -147,14 +165,6 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
             <form onSubmit={async e => { e.preventDefault(); if (await lead({ accion: "nota", texto: nota }, "nota", "Nota agregada")) setNota(""); }}>
               <label className={etiquetaCls}>Nota<textarea rows={2} value={nota} onChange={e => setNota(e.target.value)} className={`${inputCls} mt-1 normal-case tracking-normal`} placeholder="Lo hablado por llamada, lo que pidió…" /></label>
               <button type="submit" disabled={!nota.trim() || !!ocupado} className={`${botonSecundario} mt-2`}>Agregar nota</button>
-            </form>
-            <form onSubmit={async e => { e.preventDefault(); if (await llamar("/api/admin/tareas", "POST", { ...tarea, oportunidadId: f.id }, "tarea", "Seguimiento creado")) setTarea(t => ({ ...t, titulo: "" })); }}>
-              <label className={etiquetaCls}>Nuevo seguimiento<input value={tarea.titulo} onChange={e => setTarea(t => ({ ...t, titulo: e.target.value }))} className={`${inputCls} mt-1 normal-case tracking-normal`} placeholder="Ej. preguntar si ya decidió la fecha" /></label>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <select aria-label="Responsable" value={tarea.responsable} onChange={e => setTarea(t => ({ ...t, responsable: e.target.value }))} className={inputCls}>{responsables.map(r => <option key={r} value={r}>{r}</option>)}</select>
-                <input aria-label="Vence" type="date" value={tarea.vence} onChange={e => setTarea(t => ({ ...t, vence: e.target.value }))} className={inputCls} />
-              </div>
-              <button type="submit" disabled={!tarea.titulo.trim() || !!ocupado} className={`${botonSecundario} mt-2`}>Crear seguimiento</button>
             </form>
             <form onSubmit={async e => { e.preventDefault(); if (await lead({ accion: "vincular", folio }, "vincular", `Se enlazó ${folio.toUpperCase()}`)) setFolio(""); }}>
               <label className={etiquetaCls}>Enlazar cotización o reserva<input value={folio} onChange={e => setFolio(e.target.value)} className={`${inputCls} mt-1 normal-case tracking-normal`} placeholder="COT-… o HP-M-…" /></label>
@@ -175,7 +185,7 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
                         onClick={() => void llamar(`/api/admin/tareas/${t.id}`, "PATCH", { accion: t.estado === "hecha" ? "reabrir" : "hecha" }, "t", "Listo")}
                         className={`panel-foco flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${t.estado === "hecha" ? "border-[var(--panel-bien)] bg-[var(--panel-bien)] text-white" : "border-[var(--panel-borde-fuerte)]"}`}><Check className="h-4 w-4" aria-hidden="true" /></button>
                       <span className={`flex-1 text-[13px] font-dm ${t.estado === "hecha" ? "text-[var(--panel-tinta-suave)] line-through" : "text-[var(--panel-tinta)]"}`}>{t.titulo}<span className="block text-[11.5px] text-[var(--panel-tinta-media)]">{t.responsable}</span></span>
-                      {t.estado !== "hecha" && <span className={`text-[12px] font-dm capitalize ${COLOR_FECHA[ef]}`}>{ef === "vencido" ? "Vencida " : ""}{fechaCorta(t.vence)}</span>}
+                      {t.estado !== "hecha" && <span className={`text-[12px] font-dm capitalize ${COLOR_FECHA[ef]}`}>{ef === "vencido" ? "Vencida " : ""}{fechaCorta(t.vence)}{t.hora ? ` ${t.hora}` : ""}</span>}
                     </li>
                   );
                 })}

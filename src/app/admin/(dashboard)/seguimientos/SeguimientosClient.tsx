@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Phone, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import type { TareaFila } from "@/lib/admin/crmDatos";
-import { agruparTareas, estadoFecha, etiquetaEtapa } from "@/lib/admin/crm";
+import { agruparTareas } from "@/lib/admin/crm";
+import { FilaSeguimiento, cambiarSeguimiento, type AccionSeguimiento } from "./FilaSeguimiento";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { EstadoVacio } from "@/components/admin/ui/EstadoVacio";
-import { COLOR_FECHA, botonPrimario, botonSecundario, fechaCorta, inputCls } from "../leads/comun";
+import { botonPrimario, botonSecundario, inputCls } from "../leads/comun";
 
 /**
  * Seguimientos (Fase 2): lo vencido, lo de hoy y lo próximo, por responsable.
@@ -21,23 +22,22 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
   const [base, setBase] = useState(iniciales);
   if (base !== iniciales) { setBase(iniciales); setTareas(iniciales); }
   const [filtro, setFiltro] = useState<string>(responsables.includes(quien) ? quien : "");
-  const [nueva, setNueva] = useState({ titulo: "", responsable: quien || responsables[0] || "", vence: hoy });
+  const [nueva, setNueva] = useState({ titulo: "", responsable: quien || responsables[0] || "", vence: hoy, hora: "" });
   const [abierto, setAbierto] = useState(false);
   const [msj, setMsj] = useState<{ texto: string; error?: boolean } | null>(null);
 
-  async function cambiar(t: TareaFila, accion: "hecha" | "reabrir" | "posponer", dias?: number) {
+  async function cambiar(t: TareaFila, accion: AccionSeguimiento, dias?: number) {
     playClick();
     const antes = tareas;
     setTareas(ts => ts.map(x => x.id === t.id ? { ...x, estado: accion === "hecha" ? "hecha" : accion === "reabrir" ? "pendiente" : x.estado } : x));
-    const r = await fetch(`/api/admin/tareas/${t.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion, dias }) }).catch(() => null);
-    const d = await r?.json().catch(() => null);
-    if (!r?.ok) { playError(); setTareas(antes); setMsj({ texto: d?.error || "No se pudo guardar", error: true }); return; }
-    if (accion === "posponer") setTareas(ts => ts.map(x => x.id === t.id ? { ...x, vence: d.vence } : x));
+    const r = await cambiarSeguimiento(t, accion, dias);
+    if (r.error) { playError(); setTareas(antes); setMsj({ texto: r.error, error: true }); return; }
+    if (accion === "posponer" && r.vence) setTareas(ts => ts.map(x => x.id === t.id ? { ...x, vence: r.vence as string } : x));
     playSuccess(); router.refresh();
   }
   async function crear(e: React.FormEvent) {
     e.preventDefault();
-    const r = await fetch("/api/admin/tareas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(nueva) }).catch(() => null);
+    const r = await fetch("/api/admin/tareas", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...nueva, hora: nueva.hora || null }) }).catch(() => null);
     const d = await r?.json().catch(() => null);
     if (!r?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo crear", error: true }); return; }
     playSuccess(); setNueva(n => ({ ...n, titulo: "" })); setAbierto(false); setMsj({ texto: "Seguimiento creado" }); router.refresh();
@@ -55,12 +55,13 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
         acciones={<button type="button" onClick={() => { playClick(); setAbierto(a => !a); }} className={botonPrimario}><Plus className="h-4 w-4" aria-hidden="true" />Nuevo seguimiento</button>} />
 
       {abierto && (
-        <form onSubmit={crear} className="panel-card mb-4 grid gap-2 p-4 sm:grid-cols-[2fr_1fr_1fr_auto]">
+        <form onSubmit={crear} className="panel-card mb-4 grid gap-2 p-4 sm:grid-cols-[2fr_1fr_1fr_1fr_auto]">
           <input aria-label="Qué hay que hacer" required value={nueva.titulo} onChange={e => setNueva(n => ({ ...n, titulo: e.target.value }))} placeholder="Qué hay que hacer" className={inputCls} />
           <select aria-label="Responsable" value={nueva.responsable} onChange={e => setNueva(n => ({ ...n, responsable: e.target.value }))} className={inputCls}>{responsables.map(r => <option key={r} value={r}>{r}</option>)}</select>
           <input aria-label="Vence" type="date" value={nueva.vence} onChange={e => setNueva(n => ({ ...n, vence: e.target.value }))} className={inputCls} />
+          <input aria-label="Hora" type="time" value={nueva.hora} onChange={e => setNueva(n => ({ ...n, hora: e.target.value }))} className={inputCls} />
           <button type="submit" className={botonPrimario}>Crear</button>
-          <p className="text-[11.5px] font-dm text-[var(--panel-tinta-suave)] sm:col-span-4">Para un cliente, créalo desde su ficha en Leads: así queda como su próximo paso.</p>
+          <p className="text-[11.5px] font-dm text-[var(--panel-tinta-suave)] sm:col-span-5">Para un cliente, créalo desde su ficha en Leads: así queda como su próximo paso.</p>
         </form>
       )}
 
@@ -83,7 +84,7 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
             <div key={titulo} className="panel-card mb-3 overflow-hidden">
               <p className={`px-4 pt-3 text-[11px] font-dm font-semibold uppercase tracking-[0.12em] ${titulo === "Vencidos" ? "text-[var(--panel-problema)]" : "text-[var(--panel-tinta-suave)]"}`}>{titulo} · {ts.length}</p>
               <ul className="divide-y divide-[var(--panel-borde)]">
-                {ts.map(t => <Fila key={t.id} t={t} hoy={hoy} onCambiar={cambiar} />)}
+                {ts.map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} />)}
               </ul>
             </div>
           ))}
@@ -104,27 +105,5 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
         </details>
       )}
     </div>
-  );
-}
-
-function Fila({ t, hoy, onCambiar }: { t: TareaFila; hoy: string; onCambiar: (t: TareaFila, a: "hecha" | "posponer", dias?: number) => void }) {
-  const ef = estadoFecha(t.vence, hoy);
-  return (
-    <li className="flex flex-wrap items-center gap-3 px-4 py-3">
-      <button type="button" aria-label="Marcar hecho" onClick={() => onCambiar(t, "hecha")}
-        className="panel-foco flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-suave)] hover:border-[var(--panel-bien)] hover:text-[var(--panel-bien)]"><Check className="h-4 w-4" aria-hidden="true" /></button>
-      <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-dm font-medium text-[var(--panel-tinta)]">{t.titulo}</p>
-        <p className="flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
-          <span className={`capitalize ${COLOR_FECHA[ef]}`}>{ef === "vencido" ? "Venció " : ef === "hoy" ? "Hoy · " : ""}{fechaCorta(t.vence)}</span>
-          {t.cliente && t.oportunidadId && <Link href={`/admin/leads/${t.oportunidadId}`} className="panel-foco font-medium text-[var(--panel-acento)] hover:underline">{t.cliente}{t.etapa ? ` · ${etiquetaEtapa(t.etapa)}` : ""}</Link>}
-          {t.telefono && <a href={`https://wa.me/${t.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="panel-foco inline-flex items-center gap-1 text-[#1f7a4d] hover:underline"><Phone className="h-3 w-3" aria-hidden="true" />WhatsApp</a>}
-        </p>
-      </div>
-      <div className="flex gap-1.5">
-        <button type="button" onClick={() => onCambiar(t, "posponer", 1)} className="panel-foco min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+1 día</button>
-        <button type="button" onClick={() => onCambiar(t, "posponer", 3)} className="panel-foco min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+3 días</button>
-      </div>
-    </li>
   );
 }

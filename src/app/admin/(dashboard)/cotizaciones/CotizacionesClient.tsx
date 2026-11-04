@@ -620,6 +620,8 @@ export default function CotizacionesClient(
         // solo debe $0" al intentar registrar el cobro de verdad.
         // En cuanto se registra el cobro, `sincronizarDeposito` la pasa a pagada.
         status:         "pending",
+        // El lead de la cotización: la reserva queda enlazada y lo hace avanzar.
+        oportunidadId:  q.oportunidadId ?? null,
         tourId:         q.tourSlug,
         tourName:       q.tourName,
         tourSlug:       q.tourSlug,
@@ -668,6 +670,8 @@ export default function CotizacionesClient(
   function downloadPDF(q: TourQuote) {
     const win = window.open("", "_blank");
     if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
+    // Descargar el PDF es mandarla: su lead pasa a Cotizado (3 nov 2026).
+    fetch(`/api/admin/cotizaciones/${q.id}/pdf`, { method: "POST", keepalive: true }).catch(() => {});
 
     const rawPkgs  = (q as any).packageItems ?? [];
     const meta     = getMeta(rawPkgs);

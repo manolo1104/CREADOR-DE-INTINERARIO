@@ -9,7 +9,7 @@ import { registrarEnBitacora } from "./bitacora";
 import { montoCobrado } from "./dinero";
 import { lineasDe } from "./reserva";
 import {
-  esEtapa, estaAbierta, etapaPorReglas, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
+  esEtapa, estaAbierta, etapaPorReglas, horaValida, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
   etiquetaEtapa, type Etapa,
 } from "./crm";
 
@@ -181,14 +181,14 @@ export async function vincularFolio(id: string, folioCrudo: unknown, quien: stri
 
 // ── Tareas ──────────────────────────────────────────────────────────────────
 
-export async function crearTarea(d: { titulo?: unknown; responsable?: unknown; vence?: unknown; oportunidadId?: unknown; salidaClave?: unknown }, quien: string) {
+export async function crearTarea(d: { titulo?: unknown; responsable?: unknown; vence?: unknown; hora?: unknown; oportunidadId?: unknown; salidaClave?: unknown }, quien: string) {
   const titulo = texto(d.titulo, 200);
   if (!titulo) throw new ErrorCrm("Escribe qué hay que hacer.");
   const vence = ymd(d.vence) ?? hoyMX();
   const oportunidadId = texto(d.oportunidadId, 40);
   if (oportunidadId && !(await prisma.oportunidad.findUnique({ where: { id: oportunidadId }, select: { id: true } }))) throw new ErrorCrm("Ese lead no existe.");
   const t = await prisma.tarea.create({
-    data: { titulo, responsable: texto(d.responsable, 60) ?? quien, vence, oportunidadId, salidaClave: texto(d.salidaClave, 200), creadaPor: quien, origen: "manual" },
+    data: { titulo, responsable: texto(d.responsable, 60) ?? quien, vence, hora: horaValida(d.hora), oportunidadId, salidaClave: texto(d.salidaClave, 200), creadaPor: quien, origen: "manual" },
   });
   // El próximo paso del lead es su tarea más cercana.
   if (oportunidadId) await sincronizarProximoPaso(oportunidadId);
@@ -203,7 +203,7 @@ export async function cambiarTarea(id: string, accion: unknown, dias: unknown, q
   else if (accion === "reabrir") r = await prisma.tarea.update({ where: { id }, data: { estado: "pendiente", hechaPor: null, hechaEn: null } });
   else if (accion === "posponer") {
     const n = Math.max(1, Math.min(30, Math.round(Number(dias) || 1)));
-    r = await prisma.tarea.update({ where: { id }, data: { vence: addDaysYMD(t.vence < hoyMX() ? hoyMX() : t.vence, n) } });
+    r = await prisma.tarea.update({ where: { id }, data: { vence: addDaysYMD(t.vence < hoyMX() ? hoyMX() : t.vence, n), avisadaEn: null } });
   } else throw new ErrorCrm("Acción no válida.");
   await registrarEnBitacora({ accion: "modificó", entidad: "tarea", referencia: t.titulo.slice(0, 60), resumen: `Seguimiento «${t.titulo.slice(0, 80)}»: ${accion === "posponer" ? `pospuesto a ${r.vence}` : accion}` });
   if (t.oportunidadId) await sincronizarProximoPaso(t.oportunidadId, accion === "hecha" ? t.titulo : null);
@@ -216,7 +216,7 @@ export async function cambiarTarea(id: string, accion: unknown, dias: unknown, q
  * (uno escrito a mano en la ficha se respeta).
  */
 async function sincronizarProximoPaso(oportunidadId: string, tituloCerrado: string | null = null) {
-  const sig = await prisma.tarea.findFirst({ where: { oportunidadId, estado: "pendiente" }, orderBy: { vence: "asc" } });
+  const sig = await prisma.tarea.findFirst({ where: { oportunidadId, estado: "pendiente" }, orderBy: [{ vence: "asc" }, { hora: "asc" }] });
   if (sig) { await prisma.oportunidad.update({ where: { id: oportunidadId }, data: { proximoPaso: sig.titulo, proximoPasoEn: sig.vence } }); return; }
   if (tituloCerrado) await prisma.oportunidad.updateMany({ where: { id: oportunidadId, proximoPaso: tituloCerrado }, data: { proximoPaso: null, proximoPasoEn: null } });
 }
@@ -250,7 +250,7 @@ export async function fichaOportunidad(id: string) {
     where: { id },
     include: {
       contacto: { include: { oportunidades: { select: { id: true, etapa: true, createdAt: true, tours: true }, orderBy: { createdAt: "desc" } } } },
-      historial: { orderBy: { createdAt: "desc" } }, notasLista: { orderBy: { createdAt: "desc" } }, tareas: { orderBy: { vence: "asc" } },
+      historial: { orderBy: { createdAt: "desc" } }, notasLista: { orderBy: { createdAt: "desc" } }, tareas: { orderBy: [{ vence: "asc" }, { hora: "asc" }] },
     },
   });
   if (!op) return null;
@@ -266,7 +266,7 @@ export async function fichaOportunidad(id: string) {
     otras: op.contacto.oportunidades.filter(o => o.id !== id).map(o => ({ id: o.id, etapa: o.etapa, createdAt: o.createdAt.toISOString(), tours: o.tours })),
     historial: op.historial.map(h => ({ id: h.id, anterior: h.anterior, nueva: h.nueva, por: h.por, origen: h.origen, en: h.createdAt.toISOString() })),
     notas: op.notasLista.map(n => ({ id: n.id, autor: n.autor, texto: n.texto, en: n.createdAt.toISOString() })),
-    tareas: op.tareas.map(t => ({ id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, estado: t.estado, hechaPor: t.hechaPor, en: t.createdAt.toISOString() })),
+    tareas: op.tareas.map(t => ({ id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, hora: t.hora, estado: t.estado, hechaPor: t.hechaPor, en: t.createdAt.toISOString() })),
     cotizaciones: cotizaciones.map(c => ({ id: c.id, folio: c.quoteNumber, status: c.status, total: c.totalAmount, tour: c.tourName, fecha: c.tourDate, en: c.createdAt.toISOString() })),
     reservas: reservas.map(r => ({ id: r.id, folio: r.confirmationNumber, status: r.status, total: r.totalAmount, cobrado: montoCobrado(r), tour: r.tourName, fecha: r.tourDate, en: r.createdAt.toISOString() })),
   };
@@ -277,10 +277,10 @@ export async function tareasPendientes() {
   const ts = await prisma.tarea.findMany({
     where: { OR: [{ estado: "pendiente" }, { estado: "hecha", hechaEn: { gte: new Date(Date.now() - 86400000) } }] },
     include: { oportunidad: { include: { contacto: { select: { nombre: true, telefono: true } } } } },
-    orderBy: { vence: "asc" }, take: 500,
+    orderBy: [{ vence: "asc" }, { hora: "asc" }], take: 500,
   });
   return ts.map(t => ({
-    id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, estado: t.estado, origen: t.origen, hechaPor: t.hechaPor,
+    id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, hora: t.hora, estado: t.estado, origen: t.origen, hechaPor: t.hechaPor,
     oportunidadId: t.oportunidadId, salidaClave: t.salidaClave,
     cliente: t.oportunidad?.contacto.nombre ?? null, telefono: t.oportunidad?.contacto.telefono ?? null,
     etapa: t.oportunidad?.etapa ?? null,
@@ -299,6 +299,73 @@ export async function contadoresCrm(): Promise<{ leads: number; vencidos: number
     return { leads, vencidos };
   } catch {
     return { leads: 0, vencidos: 0 };
+  }
+}
+
+// ── Cambios de etapa automáticos (3 nov 2026, pedido de Manolo) ─────────────
+// «La creación de cotización agrega automáticamente el lead, el flujo empieza
+// desde Calificado y una vez que se manda por correo o se descarga el PDF pasa
+// a Cotizado.» Nunca tumban la operación que los dispara: si algo falla, se
+// anota en el log y la cotización o la reserva se guardan igual.
+
+const ESTADOS_SIN_LEAD = ["expirada", "archivada", "aceptada"];
+
+/**
+ * El lead de una cotización: el que ya tiene enlazado, el abierto de esa
+ * persona, o uno nuevo con los datos de la cotización. Sube a `objetivo`
+ * (Calificado al crearla, Cotizado al mandarla o descargar su PDF), nunca baja.
+ */
+export async function leadDesdeCotizacion(quoteId: string, objetivo: "calificado" | "cotizado", quien: string, motivo: string): Promise<string | null> {
+  try {
+    const q = await prisma.tourQuote.findUnique({ where: { id: quoteId } });
+    if (!q) return null;
+    if (!q.oportunidadId && ESTADOS_SIN_LEAD.includes(q.status)) return null;
+    const datos = { tours: toursDe(q), fechaViaje: ymd(q.tourDate), pax: (q.adults + q.children) || null };
+    let op = q.oportunidadId ? await prisma.oportunidad.findUnique({ where: { id: q.oportunidadId } }) : null;
+    if (!op) {
+      const contacto = await contactoPara({ nombre: q.customerName, telefono: normalizarTelefono(q.customerPhone), correo: q.customerEmail?.trim() || null });
+      op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } }, orderBy: { createdAt: "desc" } });
+      if (!op) {
+        op = await prisma.oportunidad.create({
+          data: { contactoId: contacto.id, etapa: objetivo, canal: "whatsapp", ...datos, monto: q.totalAmount || null, responsable: quien, creadoPor: quien },
+        });
+        await registrarEtapa(op.id, null, objetivo, `Regla: ${motivo}`, "regla");
+        await registrarEnBitacora({ accion: "creó", entidad: "lead", referencia: q.quoteNumber, resumen: `Lead nuevo desde la cotización ${q.quoteNumber}: ${contacto.nombre} (${etiquetaEtapa(objetivo)})` });
+      }
+      await prisma.tourQuote.update({ where: { id: q.id }, data: { oportunidadId: op.id } });
+    }
+    const etapa = subirA(op.etapa as Etapa, objetivo);
+    const data: Record<string, unknown> = {};
+    if (q.totalAmount) data.monto = q.totalAmount;
+    if (!op.tours.length && datos.tours.length) data.tours = datos.tours;
+    if (!op.fechaViaje && datos.fechaViaje) data.fechaViaje = datos.fechaViaje;
+    if (!op.pax && datos.pax) data.pax = datos.pax;
+    if (etapa !== op.etapa) data.etapa = etapa;
+    if (Object.keys(data).length) await prisma.oportunidad.update({ where: { id: op.id }, data });
+    if (etapa !== op.etapa) await registrarEtapa(op.id, op.etapa, etapa, `Regla: ${motivo}`, "regla");
+    return op.id;
+  } catch (e) {
+    console.error("leadDesdeCotizacion:", (e as Error)?.message);
+    return null;
+  }
+}
+
+/**
+ * Una reserva enlazada a un lead lo hace avanzar: con dinero cobrado, a
+ * Confirmado; sin cobro todavía, a En seguimiento. Nunca baja.
+ */
+export async function leadDesdeReserva(bookingId: string, motivo: string): Promise<void> {
+  try {
+    const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
+    if (!r?.oportunidadId || r.status === "cancelled") return;
+    const op = await prisma.oportunidad.findUnique({ where: { id: r.oportunidadId } });
+    if (!op) return;
+    const etapa = subirA(op.etapa as Etapa, montoCobrado(r) > 0 ? "confirmado" : "seguimiento");
+    if (etapa === op.etapa) return;
+    await prisma.oportunidad.update({ where: { id: op.id }, data: { etapa } });
+    await registrarEtapa(op.id, op.etapa, etapa, `Regla: ${motivo}`, "regla");
+  } catch (e) {
+    console.error("leadDesdeReserva:", (e as Error)?.message);
   }
 }
 

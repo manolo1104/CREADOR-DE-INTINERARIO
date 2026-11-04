@@ -24,6 +24,15 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/conciliar-pagos
 
+      - name: Recordatorios de seguimiento (respaldo)
+        # El servidor los manda solo cada 5 min; esto es por si se reinició.
+        # Cada seguimiento sale una sola vez aunque coincidan los dos.
+        continue-on-error: true
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/recordatorios
+
       - name: Viaje CDMX (apartados, saldos, lista de espera)
         # Suelta los lugares de apartados vencidos (cancelando antes su cobro),
         # crea la reserva de un pago que quedó sin ella, manda la liga del

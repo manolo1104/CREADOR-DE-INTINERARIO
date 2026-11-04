@@ -65,3 +65,35 @@ describe("seguimientos", () => {
     ]);
   });
 });
+
+describe("recordatorios de seguimiento", () => {
+  it("hora válida de 24 h", async () => {
+    const { horaValida } = await import("../crm");
+    expect(horaValida("9:05")).toBe("09:05");
+    expect(horaValida("21:30")).toBe("21:30");
+    expect(horaValida("24:00")).toBeNull();
+    expect(horaValida("")).toBeNull();
+  });
+  it("cuándo toca avisar (hora de México, de 8 a 21 h)", async () => {
+    const { tocaAvisar } = await import("../crm");
+    const t = (vence: string, hora: string | null, extra = {}) => ({ vence, hora, estado: "pendiente", avisadaEn: null, ...extra });
+    expect(tocaAvisar(t("2026-11-04", "11:00"), "2026-11-04", "10:50")).toBe(false);
+    expect(tocaAvisar(t("2026-11-04", "11:00"), "2026-11-04", "10:56")).toBe(true); // 5 min antes
+    expect(tocaAvisar(t("2026-11-04", null), "2026-11-04", "08:00")).toBe(true);    // sin hora: a primera hora
+    expect(tocaAvisar(t("2026-11-04", null), "2026-11-04", "07:59")).toBe(false);   // fuera de horario
+    expect(tocaAvisar(t("2026-11-02", "18:00"), "2026-11-04", "09:00")).toBe(true); // vencida
+    expect(tocaAvisar(t("2026-11-05", null), "2026-11-04", "12:00")).toBe(false);   // mañana
+    expect(tocaAvisar(t("2026-11-04", null, { avisadaEn: new Date() }), "2026-11-04", "12:00")).toBe(false);
+    expect(tocaAvisar(t("2026-11-04", null, { estado: "hecha" }), "2026-11-04", "12:00")).toBe(false);
+  });
+  it("hora de México de un instante", async () => {
+    const { ahoraMX } = await import("../crm");
+    expect(ahoraMX(new Date("2026-11-04T17:30:00Z"))).toEqual({ hoy: "2026-11-04", hhmm: "11:30" });
+    expect(ahoraMX(new Date("2026-11-05T03:10:00Z"))).toEqual({ hoy: "2026-11-04", hhmm: "21:10" });
+  });
+  it("el orden pone la hora: sin hora al final del día", async () => {
+    const { ordenTareas } = await import("../crm");
+    const ts = [{ id: "a", responsable: "E", estado: "pendiente", vence: "2026-11-04", hora: null }, { id: "b", responsable: "E", estado: "pendiente", vence: "2026-11-04", hora: "16:00" }, { id: "c", responsable: "E", estado: "pendiente", vence: "2026-11-04", hora: "09:30" }];
+    expect([...ts].sort(ordenTareas).map(t => t.id)).toEqual(["c", "b", "a"]);
+  });
+});

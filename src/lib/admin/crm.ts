@@ -120,11 +120,11 @@ export function estadoFecha(fecha: string | null | undefined, hoy: string): Esta
   return "proximo";
 }
 
-export interface TareaLigera { id: string; responsable: string; vence: string; estado: string }
+export interface TareaLigera { id: string; responsable: string; vence: string; estado: string; hora?: string | null }
 
 /** Seguimientos: vencidas, de hoy y próximas, por responsable (las hechas fuera). */
 export function agruparTareas<T extends TareaLigera>(tareas: T[], hoy: string) {
-  const pendientes = tareas.filter(t => t.estado !== "hecha").sort((a, b) => a.vence.localeCompare(b.vence));
+  const pendientes = tareas.filter(t => t.estado !== "hecha").sort(ordenTareas);
   const porResponsable = new Map<string, { vencidas: T[]; hoy: T[]; proximas: T[] }>();
   for (const t of pendientes) {
     const g = porResponsable.get(t.responsable) ?? { vencidas: [], hoy: [], proximas: [] };
@@ -135,6 +135,46 @@ export function agruparTareas<T extends TareaLigera>(tareas: T[], hoy: string) {
   return Array.from(porResponsable.entries())
     .map(([responsable, g]) => ({ responsable, ...g }))
     .sort((a, b) => b.vencidas.length - a.vencidas.length || a.responsable.localeCompare(b.responsable));
+}
+
+/** Por fecha y, el mismo día, por hora (las de sin hora al final del día). */
+export const ordenTareas = (a: TareaLigera, b: TareaLigera) =>
+  `${a.vence} ${a.hora ?? "99"}`.localeCompare(`${b.vence} ${b.hora ?? "99"}`);
+
+/** "09:30" válida (24 h) o null. */
+export function horaValida(v: unknown): string | null {
+  const m = String(v ?? "").trim().match(/^([01]?\d|2[0-3]):([0-5]\d)$/);
+  return m ? `${m[1].padStart(2, "0")}:${m[2]}` : null;
+}
+
+/** Fecha y hora de México de un instante: { hoy: "YYYY-MM-DD", hhmm: "HH:MM" }. */
+export function ahoraMX(d: Date = new Date()): { hoy: string; hhmm: string } {
+  const p = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Mexico_City", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d);
+  const v = (t: string) => p.find(x => x.type === t)?.value ?? "00";
+  return { hoy: `${v("year")}-${v("month")}-${v("day")}`, hhmm: `${v("hour") === "24" ? "00" : v("hour")}:${v("minute")}` };
+}
+
+/** Horario en que se mandan recordatorios: de 8:00 a 21:00 (hora de México). */
+export const HORARIO_AVISOS = { desde: "08:00", hasta: "21:00" } as const;
+
+/**
+ * ¿Ya toca avisarle al responsable? Pendiente y sin aviso, y: venció un día
+ * anterior, o es de hoy sin hora, o es de hoy y ya llegó su hora (con 5 min
+ * de margen). Nunca fuera del horario de avisos.
+ */
+export function tocaAvisar(t: { vence: string; hora?: string | null; estado: string; avisadaEn?: Date | string | null }, hoy: string, hhmm: string): boolean {
+  if (t.estado !== "pendiente" || t.avisadaEn) return false;
+  if (hhmm < HORARIO_AVISOS.desde || hhmm >= HORARIO_AVISOS.hasta) return false;
+  if (t.vence < hoy) return true;
+  if (t.vence > hoy) return false;
+  if (!t.hora) return true;
+  return t.hora <= sumarMinutos(hhmm, 5);
+}
+
+function sumarMinutos(hhmm: string, n: number): string {
+  const [h, m] = hhmm.split(":").map(Number);
+  const t = Math.min(23 * 60 + 59, h * 60 + m + n);
+  return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
 }
 
 /** Los motivos de pérdida de un conjunto, de más a menos. */

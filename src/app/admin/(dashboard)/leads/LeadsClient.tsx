@@ -8,8 +8,10 @@ import {
   DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors,
   type DragEndEvent, type DragStartEvent,
 } from "@dnd-kit/core";
-import type { LeadTarjeta } from "@/lib/admin/crmDatos";
-import { ETAPAS_PIPELINE, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
+import type { LeadTarjeta, TareaFila } from "@/lib/admin/crmDatos";
+import { ETAPAS_PIPELINE, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, ordenTareas, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
+import { addDaysYMD } from "@/lib/dates";
+import { FilaSeguimiento, cambiarSeguimiento, type AccionSeguimiento } from "../seguimientos/FilaSeguimiento";
 import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
 import { colorDeTour, codigoDeTour } from "@/lib/admin/coloresTour";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
@@ -29,8 +31,8 @@ type Vista = "pipeline" | "perdido" | "operado";
  * arrastran entre columnas (o se mueven desde la ficha); soltar en «Perdido»
  * pide el motivo. Perdidos y Operados van en vistas aparte.
  */
-export default function LeadsClient({ leads: iniciales, tours, responsables, quien, hoy }: {
-  leads: LeadTarjeta[]; tours: TourOpcion[]; responsables: string[]; quien: string; hoy: string;
+export default function LeadsClient({ leads: iniciales, tareas = [], tours, responsables, quien, hoy }: {
+  leads: LeadTarjeta[]; tareas?: TareaFila[]; tours: TourOpcion[]; responsables: string[]; quien: string; hoy: string;
 }) {
   const router = useRouter();
   const [leads, setLeads] = useState(iniciales);
@@ -140,6 +142,11 @@ export default function LeadsClient({ leads: iniciales, tours, responsables, qui
       )}
 
       {vista === "pipeline" && (
+        <SeguimientosUrgentes tareas={tareas.filter(t => !responsable || t.responsable === responsable)} hoy={hoy}
+          onError={texto => setMsj({ texto, error: true })} />
+      )}
+
+      {vista === "pipeline" && (
         <section className="panel-card mt-5 p-4">
           <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Motivos de pérdida del mes</h2>
           {motivosMes.length === 0 ? <p className="mt-1 text-[13px] font-dm text-[var(--panel-tinta-media)]">Ningún lead perdido este mes.</p> : (
@@ -203,11 +210,15 @@ function TarjetaArrastrable({ l, hoy, onClic }: { l: LeadTarjeta; hoy: string; o
 }
 
 function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; onClic?: (e: React.MouseEvent) => void; flotando?: boolean }) {
+  const router = useRouter();
   const ef = estadoFecha(l.proximoPasoEn, hoy);
+  // Toda la tarjeta abre la ficha (Manolo, 3 nov 2026), en cualquier etapa;
+  // justo después de un arrastre no (onClic lo cancela).
+  const abrir = (e: React.MouseEvent) => { onClic?.(e); if (!e.defaultPrevented && !flotando) router.push(`/admin/leads/${l.id}`); };
   return (
-    <article className={`panel-card cursor-grab p-3 active:cursor-grabbing ${flotando ? "rotate-1 shadow-[var(--panel-sombra-lg)]" : ""}`}>
+    <article onClick={abrir} className={`panel-card cursor-pointer p-3 hover:shadow-[var(--panel-sombra)] ${flotando ? "rotate-1 shadow-[var(--panel-sombra-lg)]" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <Link href={`/admin/leads/${l.id}`} onClick={onClic} className="panel-foco min-w-0 truncate text-[14px] font-dm font-semibold text-[var(--panel-tinta)] hover:underline">{l.nombre}</Link>
+        <Link href={`/admin/leads/${l.id}`} onClick={e => { e.stopPropagation(); onClic?.(e); }} className="panel-foco min-w-0 truncate text-[14px] font-dm font-semibold text-[var(--panel-tinta)] hover:underline">{l.nombre}</Link>
         {l.monto ? <span className="panel-cifra shrink-0 text-[12.5px] font-dm text-[var(--panel-tinta)]">{fmx(l.monto)}</span> : null}
       </div>
       {l.tours.length > 0 && (
@@ -253,5 +264,51 @@ function ListaCerrados({ leads, vista }: { leads: LeadTarjeta[]; vista: "perdido
         </tbody>
       </table>
     </div>
+  );
+}
+
+/**
+ * Debajo de las etapas, lo más urgente (Manolo, 3 nov 2026): seguimientos
+ * vencidos, de hoy y de los próximos 7 días, con hecho y +1 día a la mano.
+ */
+function SeguimientosUrgentes({ tareas, hoy, onError }: { tareas: TareaFila[]; hoy: string; onError: (t: string) => void }) {
+  const router = useRouter();
+  const [ocultas, setOcultas] = useState<string[]>([]);
+  const hasta = addDaysYMD(hoy, 7);
+  const vivas = tareas.filter(t => !ocultas.includes(t.id) && t.vence <= hasta).sort(ordenTareas);
+  const grupos = [
+    { titulo: "Vencidos", ts: vivas.filter(t => t.vence < hoy), rojo: true },
+    { titulo: "Hoy", ts: vivas.filter(t => t.vence === hoy), rojo: false },
+    { titulo: "Próximos 7 días", ts: vivas.filter(t => t.vence > hoy), rojo: false },
+  ].filter(g => g.ts.length);
+  async function cambiar(t: TareaFila, accion: AccionSeguimiento, dias?: number) {
+    playClick();
+    setOcultas(o => [...o, t.id]);
+    const r = await cambiarSeguimiento(t, accion, dias);
+    if (r.error) { playError(); setOcultas(o => o.filter(x => x !== t.id)); onError(r.error); return; }
+    playSuccess(); router.refresh();
+  }
+  return (
+    <section className="mt-5" aria-label="Seguimientos urgentes">
+      <div className="mb-2 flex items-baseline justify-between">
+        <h2 className="font-cormorant text-[24px] text-[var(--panel-tinta)]">Seguimientos · lo más urgente</h2>
+        <Link href="/admin/seguimientos" className="panel-foco text-[13px] font-dm font-medium text-[var(--panel-acento)] hover:underline">Ver todos</Link>
+      </div>
+      {grupos.length === 0 ? (
+        <p className="panel-card p-4 text-[13px] font-dm text-[var(--panel-tinta-media)]">Nada pendiente en los próximos 7 días. Agenda el siguiente paso desde la ficha de cada lead.</p>
+      ) : (
+        <div className="grid gap-3 lg:grid-cols-3">
+          {grupos.map(g => (
+            <div key={g.titulo} className="panel-card overflow-hidden">
+              <p className={`px-4 pt-3 text-[11px] font-dm font-semibold uppercase tracking-[0.12em] ${g.rojo ? "text-[var(--panel-problema)]" : "text-[var(--panel-tinta-suave)]"}`}>{g.titulo} · {g.ts.length}</p>
+              <ul className="divide-y divide-[var(--panel-borde)]">
+                {g.ts.slice(0, 8).map(t => <FilaSeguimiento key={t.id} t={t} hoy={hoy} onCambiar={cambiar} conResponsable />)}
+              </ul>
+              {g.ts.length > 8 && <Link href="/admin/seguimientos" className="panel-foco block px-4 pb-3 text-[12.5px] font-dm text-[var(--panel-acento)] hover:underline">+{g.ts.length - 8} más</Link>}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

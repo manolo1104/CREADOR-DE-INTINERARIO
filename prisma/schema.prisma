@@ -1082,6 +1082,10 @@ model Tarea {
   responsable   String
   /// YYYY-MM-DD
   vence         String
+  /// HH:MM (hora de México), opcional. Con hora, el recordatorio sale a esa hora.
+  hora          String?
+  /// Cuándo se le avisó al responsable (correo y panel). Una vez por tarea.
+  avisadaEn     DateTime?
   /// pendiente | hecha
   estado        String       @default("pendiente")
   /// manual | regla | agente
