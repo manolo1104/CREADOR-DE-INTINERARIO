@@ -203,11 +203,15 @@ function TarjetaArrastrable({ l, hoy, onClic }: { l: LeadTarjeta; hoy: string; o
 }
 
 function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; onClic?: (e: React.MouseEvent) => void; flotando?: boolean }) {
+  const router = useRouter();
   const ef = estadoFecha(l.proximoPasoEn, hoy);
+  // Toda la tarjeta abre la ficha (Manolo, 3 nov 2026), en cualquier etapa;
+  // justo después de un arrastre no (onClic lo cancela).
+  const abrir = (e: React.MouseEvent) => { onClic?.(e); if (!e.defaultPrevented && !flotando) router.push(`/admin/leads/${l.id}`); };
   return (
-    <article className={`panel-card cursor-grab p-3 active:cursor-grabbing ${flotando ? "rotate-1 shadow-[var(--panel-sombra-lg)]" : ""}`}>
+    <article onClick={abrir} className={`panel-card cursor-pointer p-3 hover:shadow-[var(--panel-sombra)] ${flotando ? "rotate-1 shadow-[var(--panel-sombra-lg)]" : ""}`}>
       <div className="flex items-start justify-between gap-2">
-        <Link href={`/admin/leads/${l.id}`} onClick={onClic} className="panel-foco min-w-0 truncate text-[14px] font-dm font-semibold text-[var(--panel-tinta)] hover:underline">{l.nombre}</Link>
+        <Link href={`/admin/leads/${l.id}`} onClick={e => { e.stopPropagation(); onClic?.(e); }} className="panel-foco min-w-0 truncate text-[14px] font-dm font-semibold text-[var(--panel-tinta)] hover:underline">{l.nombre}</Link>
         {l.monto ? <span className="panel-cifra shrink-0 text-[12.5px] font-dm text-[var(--panel-tinta)]">{fmx(l.monto)}</span> : null}
       </div>
       {l.tours.length > 0 && (
