@@ -147,9 +147,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       throw e;
     });
     if (porLiberar) await liberarCodigoCumple(porLiberar, updated.confirmationNumber);
-    // Su lead: cancelar su única reserva viva lo pierde con ese motivo; reactivarla lo regresa.
+    // Su lead: cancelar su única reserva viva lo pierde con ese motivo; si le
+    // queda otra, se pone al día con lo que sigue vivo (5 nov 2026).
     if (cancela) await leadTrasCancelarReserva(updated.id, sesion?.nombre ?? "Desconocido");
-    if (reactiva) await leadTrasReactivarReserva(updated.id);
     // El estado de pago lo dicen los cobros (revisión del 4 nov 2026): tras cambiar
     // el total, reactivarla o ponerle un estado a mano, se recalcula pagada ↔
     // pendiente. Solo si su dinero ya vive en cobros (las históricas no se tocan).
@@ -162,6 +162,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         if (debe !== updated.status) await prisma.tourBooking.update({ where: { id: updated.id }, data: { status: debe } });
       }
     }
+    // Reactivada: su lead se pone al día con TODAS sus reservas vivas, ya con el
+    // dinero recalculado (si se perdió por ella, vuelve).
+    if (reactiva) await leadTrasReactivarReserva(updated.id);
     // Editada (total, pagos, fechas): su lead se pone al día según el dinero.
     if (!cancela && !reactiva && updated.status !== "cancelled") await leadDesdeReserva(updated.id, `reserva ${updated.confirmationNumber} editada`);
     if (cancela && (await liberarCodigosDeFolio(updated.confirmationNumber))) {

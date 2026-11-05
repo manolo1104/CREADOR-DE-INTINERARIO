@@ -55,6 +55,16 @@ function hospedajeDe(packageItems: unknown): string[] {
   });
 }
 
+/**
+ * ¿La cotización sigue viva? Borrador o enviada que no ha vencido (5 nov
+ * 2026). Las aceptadas ya son reserva (manda la reserva) y las vencidas o
+ * archivadas ya no valen nada para el lead.
+ */
+export function cotizacionViva(q: { status: string; tourDate?: string | null; lineItems?: unknown; packageItems?: unknown; createdAt: Date | string }, hoy: string): boolean {
+  if (q.status !== "borrador" && q.status !== "enviada") return false;
+  return etapaDe(q, hoy) !== "vencida";
+}
+
 /** La cotización que manda: la más reciente que no esté archivada. */
 export function cotizacionVigente<T extends CotizacionCruda>(cs: T[]): T | null {
   const vivas = cs.filter(c => c.status !== "archivada");

@@ -13,7 +13,7 @@ export const RESPONSABLE_OPERACION = "Erick";
 /** Quién registra el dinero: los saldos vencidos son suyos. */
 export const RESPONSABLE_COBROS = "Manolo";
 
-export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "lectura-google" | "corte-lunes";
+export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "lectura-google" | "corte-lunes" | "consulta-nueva";
 
 /** Quién cierra el corte semanal (el socio que captura los costos). */
 export const RESPONSABLE_CORTE = "Martín";
@@ -27,7 +27,56 @@ export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] 
   // Indicadores (4 nov 2026): los datos que se capturan a mano y sin los que un KPI sale «Sin dato».
   { clave: "lectura-google", etiqueta: "Lectura semanal de Google", detalle: "Si la última lectura de reseñas de Google tiene más de 6 días: anotar la calificación y el número de reseñas (KPI «Reseñas»)." },
   { clave: "corte-lunes", etiqueta: "Corte del lunes", detalle: "La semana terminó y su corte no está cerrado: cerrarlo (KPIs «Margen de contribución» y «Cortes cerrados a tiempo»)." },
+  // 5 nov 2026: un «¡gracias!» después del viaje ya no abre un lead nuevo.
+  { clave: "consulta-nueva", etiqueta: "¿Consulta nueva?", detalle: "Escribe por WhatsApp alguien cuyo lead se cerró (Operado o Perdido) hace menos de 14 días: en vez de abrirle otro lead, se le pregunta a Operación si es un viaje nuevo." },
 ];
+
+/** Quién «hace» un seguimiento automático que se cerró solo porque su motivo desapareció. */
+export const HECHA_POR_REGLA = "Regla (ya no aplica)";
+
+/** Lo que se sabe hoy del motivo de un seguimiento automático. `undefined` = no se pudo leer. */
+export interface HechosSeguimiento {
+  /** cotizado-24h y consulta-nueva: la etapa de su lead. */
+  etapaLead?: string | null;
+  /** consulta-nueva: el contacto ya tiene un lead abierto (el mismo revivido u otro nuevo). */
+  contactoConLeadAbierto?: boolean;
+  /** liga-24h: activo | pagado | cancelado; null si la liga ya no existe. */
+  ligaEstado?: string | null;
+  /** saldo-vencido: lo que falta cobrar; null si la reserva ya no existe o se canceló. */
+  saldo?: number | null;
+  /** salida-48h y agrupar-salidas: el día de la salida. */
+  fechaSalida?: string | null;
+  /** corte-lunes: ¿ya se cerró ese corte? */
+  corteCerrado?: boolean;
+  /** lectura-google: ¿ya hay una lectura de los últimos 6 días? */
+  lecturaReciente?: boolean;
+}
+
+/**
+ * ¿El motivo de este seguimiento automático ya desapareció? (5 nov 2026: antes
+ * se quedaban pendientes para siempre, salían como «Vencidos» en el resumen de
+ * las 7:30 y Erick perseguía cosas resueltas). Con un dato que no se pudo leer
+ * (`undefined`) nunca se cierra. Las tareas que piden que una persona decida
+ * (p. ej. «pagó la liga pero no se pudo pasar a reserva») no se cierran solas.
+ */
+export function yaNoAplica(regla: string | null, h: HechosSeguimiento, hoy: string): boolean {
+  switch (regla) {
+    case "cotizado-24h": return h.etapaLead !== undefined && h.etapaLead !== "cotizado";
+    case "consulta-nueva": return h.contactoConLeadAbierto === true;
+    case "liga-24h": return h.ligaEstado !== undefined && h.ligaEstado !== "activo";
+    case "saldo-vencido": return h.saldo !== undefined && !(h.saldo !== null && h.saldo > 0);
+    case "salida-48h":
+    case "agrupar-salidas": return typeof h.fechaSalida === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.fechaSalida) && h.fechaSalida < hoy;
+    case "corte-lunes": return h.corteCerrado === true;
+    case "lectura-google": return h.lecturaReciente === true;
+    default: return false;
+  }
+}
+
+/** El seguimiento de «¿es consulta nueva?» (`consulta-nueva`). */
+export function tituloConsultaNueva(cliente: string, etapa: string): string {
+  return `¿Consulta nueva? ${cliente} volvió a escribir por WhatsApp y su lead está ${etapa}. Si quiere otro viaje, «Nueva cotización» le abre un lead nuevo; si no, márcalo hecho.`.slice(0, 200);
+}
 
 export interface TareaPorRegla {
   claveRegla: string;

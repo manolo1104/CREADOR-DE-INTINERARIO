@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
-import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
+import { leadDesdeCotizacion, leadParaCotizacionNueva } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +15,6 @@ export async function GET() {
     console.error("admin/cotizaciones GET:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
-}
-
-async function leadExistente(v: unknown): Promise<string | null> {
-  if (typeof v !== "string" || !v || v.length > 40) return null;
-  const op = await prisma.oportunidad.findUnique({ where: { id: v }, select: { id: true } }).catch(() => null);
-  return op?.id ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -52,10 +46,15 @@ export async function POST(req: NextRequest) {
         packageItems:  (sellado.lineItems as any) ?? undefined,
         extraItems:    body.extraItems   ?? undefined,
         status:        "borrador",
-        // Creada desde la ficha de un lead: queda enlazada a ese lead (si existe).
-        oportunidadId: await leadExistente(body.oportunidadId),
       },
     });
+    // Creada desde la ficha de un lead (o la Bandeja): queda enlazada a ese lead
+    // si sigue abierto. Si ya está Operado o Perdido, la venta nueva va a un lead
+    // abierto de esa persona o a uno nuevo (5 nov 2026). Después de guardar la
+    // cotización, para no dejar un lead vacío si guardarla falla.
+    const quien = sesion?.nombre ?? "Desconocido";
+    const destino = body.oportunidadId ? await leadParaCotizacionNueva(body.oportunidadId, quien).catch(() => null) : null;
+    if (destino) await prisma.tourQuote.update({ where: { id: quote.id }, data: { oportunidadId: destino.id } });
     await registrarEnBitacora({
       accion:     "creó",
       entidad:    "cotización",
@@ -66,9 +65,9 @@ export async function POST(req: NextRequest) {
 
     // Toda cotización nace con su lead en «Calificado» (3 nov 2026): el de esa
     // persona si ya tenía uno abierto, o uno nuevo con estos datos.
-    const oportunidadId = await leadDesdeCotizacion(quote.id, "calificado", sesion?.nombre ?? "Desconocido", `cotización ${quote.quoteNumber} creada`);
+    const oportunidadId = await leadDesdeCotizacion(quote.id, "calificado", quien, `cotización ${quote.quoteNumber} creada`);
 
-    return NextResponse.json({ ok: true, id: quote.id, quoteNumber, oportunidadId });
+    return NextResponse.json({ ok: true, id: quote.id, quoteNumber, oportunidadId, leadNuevo: !!destino?.nuevo });
   } catch (e: any) {
     console.error("admin/cotizaciones POST:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

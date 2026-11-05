@@ -547,10 +547,14 @@ export default function CotizacionesClient(
     }
 
     if (r.ok) {
+      const creada = modal === "edit" ? null : await r.json().catch(() => null);
       const ref = await fetch("/api/admin/cotizaciones");
       setQuotes(await ref.json());
       closeModal();
-      flash(modal === "edit" ? "✅ Cotización actualizada · su lead ya tiene los datos nuevos" : "✅ Cotización creada · su lead quedó en Calificado");
+      flash(modal === "edit" ? "✅ Cotización actualizada · su lead ya tiene los datos nuevos"
+        // Su lead anterior estaba Operado o Perdido: la venta nueva no se queda ahí (5 nov 2026).
+        : creada?.leadNuevo ? "✅ Cotización creada · su lead anterior ya estaba cerrado: se le abrió uno nuevo en Calificado"
+        : "✅ Cotización creada · su lead quedó en Calificado");
       // La ficha del lead lee estos datos: que no se quede con los de antes.
       router.refresh();
     } else {

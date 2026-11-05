@@ -54,6 +54,10 @@ export function textoVisible(tipo: string, texto: string | null | undefined): st
 
 const quitarAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
+const RE_TEXTO_DEL_SITIO = /me interesa (el tour|el paquete|la noche)|quiero informacion sobre los tours|vengo desde|vengo de la (web|pagina)|quiero(ria)? reservar|i'?m interested in/;
+/** ¿Es el texto prellenado de un botón del sitio? */
+export const esTextoDelSitio = (texto: string | null | undefined) => RE_TEXTO_DEL_SITIO.test(quitarAcentos(String(texto ?? "")));
+
 /**
  * ¿El primer mensaje viene de un botón del sitio? Los botones mandan texto
  * prellenado («me interesa el tour "Expedición Tamul"…», `lib/whatsapp.ts`).
@@ -61,9 +65,50 @@ const quitarAcentos = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").
  */
 export function origenDelPrimerMensaje(texto: string | null | undefined, tours: { slug: string; nombre: string }[]): { canal: "whatsapp" | "whatsapp_sitio"; tours: string[] } {
   const t = quitarAcentos(String(texto ?? ""));
-  const delSitio = /me interesa (el tour|el paquete|la noche)|quiero informacion sobre los tours|vengo desde|vengo de la (web|pagina)|quiero(ria)? reservar|i'?m interested in/.test(t);
+  const delSitio = RE_TEXTO_DEL_SITIO.test(t);
   const nombrados = tours.filter(x => x.nombre && t.includes(quitarAcentos(x.nombre))).map(x => x.slug);
   return { canal: delSitio ? "whatsapp_sitio" : "whatsapp", tours: Array.from(new Set(nombrados)).slice(0, 3) };
+}
+
+/**
+ * El mensaje que dice de dónde vino el chat (5 nov 2026). Antes solo se leía el
+ * que disparaba el lead, y el código del sitio se perdía si ese no era el que lo
+ * traía: el lote del puente se reintentó, los mensajes llegaron desordenados o
+ * el lead nació con «Crear lead». Primero el que trae el código de referencia
+ * (`ref`), luego el que trae el texto prellenado del sitio, y si no, el actual.
+ * `previos`: los entrantes del chat, del más viejo al más nuevo.
+ */
+export function textoDeOrigen(texto: string | null | undefined, previos: (string | null | undefined)[], refDe: (t: string) => string | null): string | null {
+  const candidatos = [texto, ...previos].filter((t): t is string => typeof t === "string" && t.trim() !== "");
+  return candidatos.find(t => !!refDe(t)) ?? candidatos.find(esTextoDelSitio) ?? candidatos[0] ?? null;
+}
+
+/**
+ * Un lead que nació de WhatsApp SIN código y hace muy poco (los mensajes
+ * llegaron desordenados) se completa con el código que trae el siguiente
+ * mensaje. Uno más viejo no: ya era lead antes de ese clic.
+ */
+export function completarOrigenWeb(lead: { creadoPor: string | null; origenWeb: unknown; createdAt: Date }, ahora: Date, ventanaMs = 60 * 60_000): boolean {
+  return lead.creadoPor === "WhatsApp" && !lead.origenWeb && ahora.getTime() - lead.createdAt.getTime() <= ventanaMs;
+}
+
+/**
+ * Un mensaje que sale marca el chat como leído solo si es igual o más nuevo
+ * que lo último que escribió el cliente (5 nov 2026): el puente encola el
+ * saliente del celular 1.5 s después y llegaba tarde, borrando el «no leído»
+ * de una respuesta de la clienta que nadie había visto.
+ */
+export function salienteMarcaLeido(fecha: Date, ultimoEntranteEn: Date | null | undefined): boolean {
+  return !ultimoEntranteEn || fecha.getTime() >= ultimoEntranteEn.getTime();
+}
+
+/**
+ * Un mensaje que ya estaba guardado y vuelve a llegar (el puente reintentó el
+ * lote) igual puede tener que crear el lead, si falló justo después de
+ * guardarlo: entrante, del cliente y de las últimas 24 h.
+ */
+export function reintentoQueRevisaLead(m: { direccion: string; importado: boolean; fecha: Date }, ahora: Date): boolean {
+  return m.direccion === "entra" && !m.importado && ahora.getTime() - m.fecha.getTime() <= 24 * 3600_000;
 }
 
 /** Horario en que cuenta el «primer mensaje en 5 min» (regla del prompt: 8:00–20:00). */

@@ -614,6 +614,8 @@ export function useCarritoCheckout() {
           // guardado (por ejemplo, en silencio al llenar sus datos).
           enviarCotizacion: true,
           email: correo, phone: phone || null, items,
+          // Su nombre (si ya lo escribió), para su lead del CRM (5 nov 2026).
+          nombre: name.trim() || null,
           // El idioma viaja con la cotización: define en qué idioma salen el
           // correo inmediato y los tres recordatorios del cron.
           locale,
@@ -653,6 +655,8 @@ export function useCarritoCheckout() {
       body: JSON.stringify({
         silencioso: true,
         email: email.trim(), phone: phone || null, items, locale,
+        // Su nombre, para su lead del CRM (5 nov 2026).
+        nombre: name.trim() || null,
         hospedaje: conHotel ? { habitaciones: habs, noches, checkin, checkout } : null,
         traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
           ? { ciudad: rutaTraslado.slug, personas: paxTraslado }

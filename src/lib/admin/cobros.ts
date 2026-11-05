@@ -356,7 +356,8 @@ export async function anularCobro(id: string, motivo: string, quien: string): Pr
   });
 
   const cobrado = antes.reservaId ? await sincronizarDeposito(antes.reservaId) : 0;
-  // Su lead regresa a la etapa que dice el dinero (p. ej. Confirmado → Anticipo pagado). No lanza.
+  // Su lead regresa a la etapa que dice el dinero (p. ej. Confirmado → Anticipo pagado),
+  // también si la reserva ya estaba cancelada: cuenta lo que sigue vivo (5 nov 2026). No lanza.
   if (antes.reservaId) await import("./crmDatos").then(m => m.leadDesdeReserva(antes.reservaId!, `se anuló un cobro de ${pesos(antes.monto)}`)).catch(() => {});
 
   await registrarEnBitacora({

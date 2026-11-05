@@ -15,6 +15,7 @@ import { saldoPendiente } from "@/lib/admin/dinero";
 import { diasDeTourDe } from "@/lib/admin/salidas";
 import { contarMotivos } from "@/lib/admin/crm";
 import { leerOrigenWeb } from "@/lib/admin/origenWeb";
+import { HECHA_POR_REGLA } from "@/lib/admin/automatizaciones";
 import { ETIQUETA_CANAL } from "@/lib/admin/analisisComun";
 import { SECCIONES, seccionDePagina } from "./secciones";
 import { cohorteMadura, finMX, inicioMX } from "./periodo";
@@ -289,7 +290,9 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   const idsSeg = Array.from(new Set(cotTrans.map(t => t.oportunidadId)));
   const seg = idsSeg.length ? await prisma.oportunidad.findMany({
     where: { id: { in: idsSeg } },
-    select: { id: true, contactoId: true, historial: { select: { nueva: true, createdAt: true } }, tareas: { where: { hechaEn: { not: null } }, select: { hechaEn: true } } },
+    // Un seguimiento que se cerró solo porque ya no aplicaba (5 nov 2026) no es
+    // un seguimiento que alguien hizo: no cuenta como «a tiempo».
+    select: { id: true, contactoId: true, historial: { select: { nueva: true, createdAt: true } }, tareas: { where: { hechaEn: { not: null }, OR: [{ hechaPor: null }, { hechaPor: { not: HECHA_POR_REGLA } }] }, select: { hechaEn: true } } },
   }).catch(() => []) : [];
   const contactos = Array.from(new Set(seg.map(o => o.contactoId)));
   const convs = contactos.length ? await prisma.conversacion.findMany({

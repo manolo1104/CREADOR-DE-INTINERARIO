@@ -125,7 +125,8 @@ export async function POST(req: NextRequest) {
     });
 
     // Sin lead (capturada directo en Reservas): entra al CRM con el de esa persona o uno nuevo.
-    if (!booking.oportunidadId) await leadParaReservaSinLead(booking.id, sesion?.nombre ?? "Desconocido");
+    // Su etapa la pone `leadDesdeReserva` de abajo, ya con lo abonado por liga.
+    if (!booking.oportunidadId) await leadParaReservaSinLead(booking.id, sesion?.nombre ?? "Desconocido", { recalcular: false });
     // Lo que ya se pagó con la liga de pago de su cotización se abona aquí (antes la reserva nacía en $0).
     const abonadoPorLiga = cotizacionId
       ? await abonarLigasDeCotizacion(cotizacionId, booking.id).catch(e => { console.error("abonarLigasDeCotizacion:", (e as Error)?.message); return 0; })

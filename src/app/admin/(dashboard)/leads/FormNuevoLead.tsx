@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
 import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
-import { PERFILES } from "@/lib/admin/crm";
+import { PERFILES, avisoLeadExistente } from "@/lib/admin/crm";
 import { colorDeTour } from "@/lib/admin/coloresTour";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { botonPrimario, botonSecundario, canalCorto, etiquetaCls, inputCls, type TourOpcion } from "./comun";
@@ -37,8 +37,8 @@ export function FormNuevoLead({ tours, responsables, quien, onCerrar, onCreado }
       const d = await r.json().catch(() => null);
       if (!r.ok || !d?.ok) { playError(); setError(d?.error || "No se pudo guardar"); return; }
       playSuccess();
-      if (d.existente) { router.push(`/admin/leads/${d.id}`); return; }
-      onCreado(`Lead de ${f.nombre} creado`);
+      // Ya tenía uno abierto: lo capturado se juntó en ese y se dice qué (5 nov 2026; antes saltaba a su ficha sin avisar y se perdía).
+      onCreado(d.existente ? avisoLeadExistente(f.nombre, d.etapa, Array.isArray(d.agregado) ? d.agregado : []) : `Lead de ${f.nombre} creado`);
       router.refresh();
     } catch { playError(); setError("No se pudo guardar"); }
     finally { setGuardando(false); }

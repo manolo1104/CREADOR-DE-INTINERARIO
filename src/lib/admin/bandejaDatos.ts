@@ -4,12 +4,14 @@
 import { refDelTexto } from "@/lib/refWhatsapp";
 import { origenWebDeClic } from "./origenWeb";
 import { prisma } from "@/lib/prisma";
+import { hoyMX } from "@/lib/dates";
 import { TOURS_LISTA } from "@/lib/tours";
 import { registrarEnBitacora } from "./bitacora";
-import { contactoPara, registrarEtapa } from "./crmDatos";
-import { RESPONSABLE_OPERACION } from "./automatizaciones";
+import { contactoPara, juntarContactos, leadCerradoReciente, registrarEtapa, sincronizarProximoPaso } from "./crmDatos";
+import { RESPONSABLE_OPERACION, tituloConsultaNueva } from "./automatizaciones";
+import { etiquetaEtapa } from "./crm";
 import {
-  esChatIndividual, origenDelPrimerMensaje, telefonoDeChat, textoVisible, tipoDeMensaje,
+  completarOrigenWeb, esChatIndividual, origenDelPrimerMensaje, reintentoQueRevisaLead, salienteMarcaLeido, telefonoDeChat, textoDeOrigen, textoVisible, tipoDeMensaje,
   type EventoAck, type EventoConexion, type EventoMensaje, type EventoPuente,
 } from "./bandeja";
 
@@ -34,7 +36,14 @@ export async function registrarEventos(eventos: EventoPuente[]): Promise<{ guard
 /** Guarda un mensaje (idempotente por su id de WhatsApp). Devuelve "lead" si creó uno. */
 async function registrarMensaje(ev: EventoMensaje): Promise<"ok" | "lead" | "repetido" | null> {
   if (!esChatIndividual(ev.chatId) || !ev.waId || typeof ev.waId !== "string") return null;
-  if (await prisma.mensaje.findUnique({ where: { waId: ev.waId }, select: { id: true } })) return "repetido";
+  const previo = await prisma.mensaje.findUnique({ where: { waId: ev.waId }, select: { id: true, conversacionId: true, direccion: true, importado: true, fecha: true } });
+  if (previo) {
+    // Ya estaba guardado: el puente reintentó el lote. Si algo falló justo
+    // después de guardarlo, su lead no nació (y con él, su código del sitio):
+    // se revisa otra vez, sin tumbar el lote si vuelve a fallar (5 nov 2026).
+    if (reintentoQueRevisaLead(previo, new Date())) await revisarLeadDeReintento(previo.conversacionId, ev.texto ?? null);
+    return "repetido";
+  }
   const fecha = Number.isFinite(Number(ev.fecha)) && Number(ev.fecha) > 0 ? new Date(Number(ev.fecha)) : new Date();
   const tipo = tipoDeMensaje(ev.tipoMensaje);
   const texto = String(ev.texto ?? "").slice(0, 4000) || null;
@@ -71,25 +80,102 @@ async function registrarMensaje(ev: EventoMensaje): Promise<"ok" | "lead" | "rep
   if (entra && (!conv.ultimoEntranteEn || fecha > conv.ultimoEntranteEn)) data.ultimoEntranteEn = fecha;
   if (!importado) {
     if (entra) { data.noLeidos = { increment: 1 }; data.archivada = false; }
-    else data.noLeidos = 0; // contestaron desde el celular: ya se leyó
+    // Contestaron desde el celular: ya se leyó. Solo si este saliente es igual o
+    // más nuevo que lo último del cliente (5 nov 2026): el del celular llega
+    // 1.5 s tarde y borraba el «no leído» de la respuesta que la clienta acababa de mandar.
+    else if (salienteMarcaLeido(fecha, conv.ultimoEntranteEn)) data.noLeidos = 0;
   }
   if (Object.keys(data).length) conv = await prisma.conversacion.update({ where: { id: conv.id }, data });
-  if (!conv.contactoId && conv.telefono) await enlazarContacto(conv.id);
+  // También cuando el teléfono de un «@lid» llega después: el contacto sin
+  // teléfono se completa o el chat pasa al contacto que ya tiene ese número.
+  if (conv.telefono && (!conv.contactoId || falta.telefono)) await enlazarContacto(conv.id);
 
   if (entra && !importado && !conv.noEsCliente) return (await asegurarLead(conv.id, texto)) ? "lead" : "ok";
   return "ok";
 }
 
-/** El contacto del CRM de un chat: por teléfono (único) o, si no se sabe, uno nuevo con su nombre. */
+/** El mensaje repetido de un lote reintentado: su lead se revisa sin tumbar el lote. */
+async function revisarLeadDeReintento(conversacionId: string, texto: string | null) {
+  try {
+    const conv = await prisma.conversacion.findUnique({ where: { id: conversacionId }, select: { noEsCliente: true } });
+    if (conv && !conv.noEsCliente) await asegurarLead(conversacionId, texto);
+  } catch (e) {
+    console.error("bandeja: lead del reintento:", (e as Error)?.message);
+  }
+}
+
+/**
+ * El contacto del CRM de un chat: por teléfono (único) o, si no se sabe, uno
+ * nuevo con su nombre. Si el chat ya tenía contacto (5 nov 2026):
+ *  - y ese contacto ya no existe, se vuelve a enlazar (antes cada mensaje
+ *    fallaba al crear su lead y el chat se quedaba sin lead para siempre);
+ *  - y nació SIN teléfono (chat «@lid») y el número ya llegó: se le pone; si ese
+ *    número ya es de otro contacto (p. ej. el de su cotización), el chat pasa a
+ *    ese y sus leads se juntan ahí, sin duplicar contacto ni lead.
+ */
 async function enlazarContacto(conversacionId: string): Promise<string | null> {
   const conv = await prisma.conversacion.findUnique({ where: { id: conversacionId } });
   if (!conv) return null;
-  if (conv.contactoId) return conv.contactoId;
+  if (conv.contactoId) {
+    const actual = await prisma.contacto.findUnique({ where: { id: conv.contactoId } });
+    if (actual) {
+      if (!conv.telefono || actual.telefono) return actual.id;
+      const delNumero = await prisma.contacto.findUnique({ where: { telefono: conv.telefono } });
+      if (!delNumero) {
+        const puesto = await prisma.contacto.update({ where: { id: actual.id }, data: { telefono: conv.telefono } }).then(() => true)
+          .catch(e => { if ((e as { code?: string })?.code === "P2002") return false; throw e; });
+        if (puesto) return actual.id;
+      }
+      const otro = delNumero ?? await prisma.contacto.findUnique({ where: { telefono: conv.telefono } });
+      if (!otro || otro.id === actual.id) return actual.id;
+      await juntarContactos(otro.id, actual.id, "su chat de WhatsApp llegó primero sin el número");
+      return otro.id;
+    }
+  }
   const contacto = conv.telefono
     ? await contactoPara({ nombre: conv.nombre || conv.telefono, telefono: conv.telefono, correo: null })
     : await prisma.contacto.create({ data: { nombre: conv.nombre || "Sin nombre (WhatsApp)" } });
   await prisma.conversacion.update({ where: { id: conv.id }, data: { contactoId: contacto.id } });
   return contacto.id;
+}
+
+/** La página y el canal del clic del sitio que trae ese código (últimos 14 días). */
+async function origenDeRef(ref: string) {
+  const clic = await prisma.trackEvent.findFirst({
+    where: { event: "WHATSAPP_CLICK", createdAt: { gte: new Date(Date.now() - 14 * 86_400_000) }, data: { path: ["ref"], equals: ref } },
+    orderBy: { createdAt: "desc" }, select: { path: true, tourSlug: true, createdAt: true, data: true },
+  }).catch(() => null);
+  const origenWeb = origenWebDeClic(ref, clic);
+  const toursDelClic = origenWeb?.tour && TOURS_LISTA.some(t => t.slug === origenWeb.tour) ? [origenWeb.tour] : [];
+  return { origenWeb, toursDelClic };
+}
+
+/**
+ * Escribe alguien cuyo lead se cerró (Operado o Perdido) hace menos de 14 días
+ * (5 nov 2026): un «¡gracias, nos encantó!» o una duda del reembolso no es un
+ * lead nuevo. Se anota en ese lead y Operación decide si es consulta nueva
+ * (un seguimiento a la vez, como mucho uno al día).
+ */
+async function avisarConsultaNueva(lead: { id: string; etapa: string; contacto: { nombre: string } }, texto: string | null) {
+  const pendiente = await prisma.tarea.findFirst({ where: { oportunidadId: lead.id, regla: "consulta-nueva", estado: "pendiente" }, select: { id: true } });
+  if (pendiente) return;
+  const hoy = hoyMX();
+  try {
+    await prisma.tarea.create({
+      data: {
+        titulo: tituloConsultaNueva(lead.contacto.nombre, etiquetaEtapa(lead.etapa)), responsable: RESPONSABLE_OPERACION, vence: hoy,
+        oportunidadId: lead.id, origen: "regla", regla: "consulta-nueva", claveRegla: `consulta-nueva:${lead.id}:${hoy}`, creadaPor: "Regla automática",
+      },
+    });
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") return; // ya se avisó hoy
+    throw e;
+  }
+  const dijo = String(texto ?? "").trim();
+  await prisma.notaOportunidad.create({
+    data: { oportunidadId: lead.id, autor: "WhatsApp", texto: `Volvió a escribir por WhatsApp${dijo ? `: «${dijo.slice(0, 300)}»` : ""}. El lead estaba ${etiquetaEtapa(lead.etapa)} y no se abrió otro: Operación revisa si es una consulta nueva.` },
+  });
+  await sincronizarProximoPaso(lead.id);
 }
 
 /**
@@ -100,18 +186,39 @@ async function enlazarContacto(conversacionId: string): Promise<string | null> {
 async function asegurarLead(conversacionId: string, texto: string | null): Promise<boolean> {
   const contactoId = await enlazarContacto(conversacionId);
   if (!contactoId) return false;
-  const abierta = await prisma.oportunidad.findFirst({ where: { contactoId, etapa: { in: ABIERTAS } }, select: { id: true } });
-  if (abierta) return false;
-  const origen = origenDelPrimerMensaje(texto, TOURS_LISTA.map(t => ({ slug: t.slug, nombre: t.nombre })));
+  const abierta = await prisma.oportunidad.findFirst({
+    where: { contactoId, etapa: { in: ABIERTAS } }, orderBy: { createdAt: "desc" },
+    select: { id: true, creadoPor: true, origenWeb: true, createdAt: true, canal: true, tours: true },
+  });
+  if (abierta) {
+    // Los mensajes llegaron desordenados y el lead nació hace un momento sin el
+    // código del sitio que trae ESTE mensaje: se completa (5 nov 2026).
+    const ref = refDelTexto(texto);
+    if (ref && completarOrigenWeb(abierta, new Date())) {
+      const { origenWeb, toursDelClic } = await origenDeRef(ref);
+      await prisma.oportunidad.update({
+        where: { id: abierta.id },
+        data: { origenWeb: origenWeb as object, ...(abierta.canal === "whatsapp" ? { canal: "whatsapp_sitio" } : {}), ...(!abierta.tours.length && toursDelClic.length ? { tours: toursDelClic } : {}) },
+      });
+    }
+    return false;
+  }
+  // Su lead se cerró hace poco: no se abre otro (5 nov 2026).
+  const cerrado = await leadCerradoReciente(contactoId, ["operado", "perdido"]);
+  if (cerrado) { await avisarConsultaNueva(cerrado, texto); return false; }
+  // El origen se lee de todo el chat, no solo del mensaje que dispara el lead
+  // (5 nov 2026): el código pudo venir en uno anterior (lote reintentado,
+  // mensajes desordenados o lead creado con «Crear lead»).
+  const previos = (await prisma.mensaje.findMany({
+    where: { conversacionId, direccion: "entra", importado: false, fecha: { gte: new Date(Date.now() - 14 * 86_400_000) } },
+    orderBy: { fecha: "asc" }, take: 30, select: { texto: true },
+  })).map(m => m.texto);
+  const textoOrigen = textoDeOrigen(texto, previos, refDelTexto);
+  const origen = origenDelPrimerMensaje(textoOrigen, TOURS_LISTA.map(t => ({ slug: t.slug, nombre: t.nombre })));
   // El código de referencia del botón del sitio (4 nov 2026): une este lead con
   // el clic — la página donde tocó WhatsApp y de dónde llegó la visita.
-  const ref = refDelTexto(texto);
-  const clic = ref ? await prisma.trackEvent.findFirst({
-    where: { event: "WHATSAPP_CLICK", createdAt: { gte: new Date(Date.now() - 14 * 86_400_000) }, data: { path: ["ref"], equals: ref } },
-    orderBy: { createdAt: "desc" }, select: { path: true, tourSlug: true, createdAt: true, data: true },
-  }).catch(() => null) : null;
-  const origenWeb = ref ? origenWebDeClic(ref, clic) : null;
-  const toursDelClic = origenWeb?.tour && TOURS_LISTA.some(t => t.slug === origenWeb.tour) ? [origenWeb.tour] : [];
+  const ref = refDelTexto(textoOrigen);
+  const { origenWeb, toursDelClic } = ref ? await origenDeRef(ref) : { origenWeb: null, toursDelClic: [] as string[] };
   const op = await prisma.oportunidad.create({
     data: {
       contactoId, etapa: "nuevo", canal: ref ? "whatsapp_sitio" : origen.canal, tours: origen.tours.length ? origen.tours : toursDelClic,

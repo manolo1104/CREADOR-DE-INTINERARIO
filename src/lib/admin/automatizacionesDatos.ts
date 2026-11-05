@@ -5,7 +5,7 @@
 // resumen se reclama en `Config` antes de mandarse.
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
-import { addDaysYMD } from "@/lib/dates";
+import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
 import { saldoPendiente } from "./dinero";
 import { diasDeTourDe } from "./salidas";
 import { salidasEntre } from "./salidasDia";
@@ -13,10 +13,11 @@ import { sugerenciasAgrupar } from "./agruparDatos";
 import { tituloAgrupar } from "./agrupar";
 import { sincronizarProximoPaso } from "./crmDatos";
 import { usuariosAdmin } from "./usuarios";
-import { ahoraMX } from "./crm";
+import { ahoraMX, estaAbierta } from "./crm";
 import { correoDe } from "./recordatorios";
 import {
-  RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaSaldo, reglaSalida, type LineaResumen, type TareaPorRegla,
+  HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaSaldo, reglaSalida, yaNoAplica,
+  type HechosSeguimiento, type LineaResumen, type TareaPorRegla,
 } from "./automatizaciones";
 import { historialGoogle } from "./satisfaccion";
 import { PRIMERA_SEMANA_CORTE, lunesDe } from "./corteSemanal";
@@ -94,14 +95,90 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
   ];
 }
 
+/** La parte de la clave «regla:objeto» que nombra al objeto (la liga, la reserva, la semana…). */
+const objetoDe = (claveRegla: string | null) => (claveRegla ?? "").split(":").slice(1).join(":");
+
+/**
+ * Cierra los seguimientos automáticos cuyo motivo ya desapareció (5 nov 2026):
+ * la liga ya se pagó o se canceló, el saldo ya se cobró, el lead salió de
+ * Cotizado, la salida ya pasó, el corte ya se cerró, ya hay lectura de Google,
+ * o quien volvió a escribir ya tiene un lead abierto. Quedan hechos por «Regla
+ * (ya no aplica)», con su fecha. Devuelve cuántos cerró.
+ */
+export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date()): Promise<number> {
+  const { hoy } = ahoraMX(ahora);
+  const pendientes = await prisma.tarea.findMany({
+    where: { estado: "pendiente", origen: "regla", regla: { in: ["cotizado-24h", "consulta-nueva", "liga-24h", "saldo-vencido", "salida-48h", "agrupar-salidas", "corte-lunes", "lectura-google"] } },
+    select: { id: true, titulo: true, regla: true, claveRegla: true, oportunidadId: true, salidaClave: true },
+  });
+  if (!pendientes.length) return 0;
+  const de = (regla: string) => pendientes.filter(t => t.regla === regla);
+  const idsLead = Array.from(new Set(pendientes.filter(t => (t.regla === "cotizado-24h" || t.regla === "consulta-nueva") && t.oportunidadId).map(t => t.oportunidadId!)));
+  const idsLiga = de("liga-24h").map(t => objetoDe(t.claveRegla)).filter(Boolean);
+  const idsReserva = de("saldo-vencido").map(t => objetoDe(t.claveRegla)).filter(Boolean);
+  const semanas = de("corte-lunes").map(t => objetoDe(t.claveRegla)).filter(Boolean);
+  const [leads, ligas, reservas, cortes, google] = await Promise.all([
+    idsLead.length ? prisma.oportunidad.findMany({ where: { id: { in: idsLead } }, select: { id: true, etapa: true, contactoId: true } }) : [],
+    idsLiga.length ? prisma.linkPago.findMany({ where: { id: { in: idsLiga } }, select: { id: true, estado: true } }) : [],
+    idsReserva.length ? prisma.tourBooking.findMany({ where: { id: { in: idsReserva } } }) : [],
+    semanas.length ? prisma.corteSemanal.findMany({ where: { semana: { in: semanas } }, select: { semana: true, estado: true } }) : [],
+    de("lectura-google").length ? historialGoogle().then(h => h.at(-1)?.fecha ?? null).catch(() => undefined) : Promise.resolve(undefined),
+  ]);
+  const contactos = Array.from(new Set(leads.map(l => l.contactoId)));
+  const conAbierto = new Set(contactos.length
+    ? (await prisma.oportunidad.findMany({ where: { contactoId: { in: contactos } }, select: { contactoId: true, etapa: true } })).filter(o => estaAbierta(o.etapa)).map(o => o.contactoId)
+    : []);
+
+  const hechosDe = (t: (typeof pendientes)[number]): HechosSeguimiento => {
+    switch (t.regla) {
+      case "cotizado-24h": case "consulta-nueva": {
+        const l = leads.find(x => x.id === t.oportunidadId);
+        return { etapaLead: l ? l.etapa : null, contactoConLeadAbierto: l ? conAbierto.has(l.contactoId) : undefined };
+      }
+      case "liga-24h": return { ligaEstado: ligas.find(x => x.id === objetoDe(t.claveRegla))?.estado ?? null };
+      case "saldo-vencido": {
+        const r = reservas.find(x => x.id === objetoDe(t.claveRegla));
+        return { saldo: !r || r.status === "cancelled" ? null : saldoPendiente(r) };
+      }
+      case "salida-48h": case "agrupar-salidas": return { fechaSalida: (t.salidaClave ?? "").slice(0, 10) };
+      case "corte-lunes": return { corteCerrado: cortes.find(c => c.semana === objetoDe(t.claveRegla))?.estado === "cerrado" };
+      case "lectura-google": return { lecturaReciente: google === undefined ? undefined : !!google && diffDiasYMD(google, hoy) <= 6 };
+      default: return {};
+    }
+  };
+  const cerrar = pendientes.filter(t => yaNoAplica(t.regla, hechosDe(t), hoy));
+  if (!cerrar.length) return 0;
+  await prisma.tarea.updateMany({ where: { id: { in: cerrar.map(t => t.id) }, estado: "pendiente" }, data: { estado: "hecha", hechaPor: HECHA_POR_REGLA, hechaEn: ahora } });
+  for (const t of cerrar) if (t.oportunidadId) await sincronizarProximoPaso(t.oportunidadId, t.titulo).catch(() => {});
+  return cerrar.length;
+}
+
+/**
+ * De las tareas que tocan hoy (por su clave), las que ya existen. Las que se
+ * cerraron solas porque su motivo había desaparecido y ahora vuelven a tocar se
+ * reabren; las que cerró una persona, no (5 nov 2026).
+ */
+export async function reabrirLasQueVolvieron(claves: string[]): Promise<Set<string | null>> {
+  const existentes = claves.length ? await prisma.tarea.findMany({ where: { claveRegla: { in: claves } }, select: { id: true, claveRegla: true, estado: true, hechaPor: true, oportunidadId: true } }) : [];
+  const reabrir = existentes.filter(t => t.estado === "hecha" && t.hechaPor === HECHA_POR_REGLA);
+  if (reabrir.length) {
+    await prisma.tarea.updateMany({ where: { id: { in: reabrir.map(t => t.id) }, hechaPor: HECHA_POR_REGLA }, data: { estado: "pendiente", hechaPor: null, hechaEn: null, avisadaEn: null } });
+    for (const t of reabrir) if (t.oportunidadId) await sincronizarProximoPaso(t.oportunidadId).catch(() => {});
+  }
+  return new Set(existentes.map(t => t.claveRegla));
+}
+
 /**
  * Crea las tareas que tocan y no existen todavía. Devuelve cuántas creó. Una
- * que ya existió (aunque esté hecha) no renace: la clave es única.
+ * que ya existió (aunque esté hecha) no renace: la clave es única. Antes cierra
+ * las que ya no aplican, y una que se cerró sola porque su motivo desapareció
+ * vuelve a abrirse si el motivo regresa (p. ej. se anuló el cobro del saldo).
  */
-export async function aplicarReglas(ahora: Date = new Date()): Promise<{ creadas: number; porRegla: Record<string, number> }> {
+export async function aplicarReglas(ahora: Date = new Date()): Promise<{ creadas: number; porRegla: Record<string, number>; cerradas: number }> {
+  const cerradas = await cerrarSeguimientosQueYaNoAplican(ahora).catch(e => { console.error("cerrar seguimientos:", (e as Error)?.message); return 0; });
   const tocan = await tareasQueTocan(ahora);
-  if (!tocan.length) return { creadas: 0, porRegla: {} };
-  const ya = new Set((await prisma.tarea.findMany({ where: { claveRegla: { in: tocan.map(t => t.claveRegla) } }, select: { claveRegla: true } })).map(t => t.claveRegla));
+  if (!tocan.length) return { creadas: 0, porRegla: {}, cerradas };
+  const ya = await reabrirLasQueVolvieron(tocan.map(t => t.claveRegla));
   const porRegla: Record<string, number> = {};
   let creadas = 0;
   for (const t of tocan) {
@@ -121,7 +198,7 @@ export async function aplicarReglas(ahora: Date = new Date()): Promise<{ creadas
     creadas++; porRegla[t.regla] = (porRegla[t.regla] ?? 0) + 1;
     if (t.oportunidadId) await sincronizarProximoPaso(t.oportunidadId).catch(() => {});
   }
-  return { creadas, porRegla };
+  return { creadas, porRegla, cerradas };
 }
 
 // ── Resumen diario de las 7:30 (regla del prompt: «resumen de pendientes del operador») ──

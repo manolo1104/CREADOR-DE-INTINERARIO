@@ -497,6 +497,8 @@ export default function ReservarPaquetePage() {
         personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId,
         // Para que el correo de rescate salga en el idioma del cliente.
         locale,
+        // Su nombre, para su lead del CRM (5 nov 2026).
+        nombre: name.trim(),
       }),
     }).catch(() => {});
 

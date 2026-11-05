@@ -650,7 +650,8 @@ export async function convertirCotizacionEnReserva(
     // liga): la reserva entra al CRM con el lead de esa persona o uno nuevo, y
     // la cotización queda enlazada a él. Antes solo lo hacía el panel.
     if (!r.reserva.oportunidadId) {
-      const opId = await crm.leadParaReservaSinLead(r.reserva.id, actor.nombre).catch(() => null);
+      // Sin recalcular aquí: lo hace `leadDesdeReserva` de abajo, y solo si el abono entró.
+      const opId = await crm.leadParaReservaSinLead(r.reserva.id, actor.nombre, { recalcular: false }).catch(() => null);
       if (opId) await prisma.tourQuote.updateMany({ where: { id: r.cotizacion.id, oportunidadId: null }, data: { oportunidadId: opId } }).catch(() => {});
     }
     // Su lead pasa a la etapa que dice lo cobrado. Con el cuadro del panel,

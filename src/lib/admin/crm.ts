@@ -131,6 +131,135 @@ export function viajeYaPaso(fechas: (string | null | undefined)[], hoy: string):
 /** Etapas que pasan solas a Operado cuando el viaje ya pasó. Las anteriores no: sin pago registrado hay que revisarlas. */
 export const ETAPAS_QUE_SE_OPERAN: Etapa[] = ["anticipo", "confirmado"];
 
+// ── El lead se mueve con los hechos (lote 2 de la auditoría, 5 nov 2026) ────
+
+/** Entre estas etapas el lead sube o baja según el dinero de sus reservas. */
+export const ETAPAS_DE_DINERO: Etapa[] = ["seguimiento", "anticipo", "confirmado"];
+
+/** Lo que importa de una reserva VIVA (no cancelada) del lead. */
+export interface ReservaDelLead { cobrado: number; total: number; ultimoDia: string | null }
+
+/**
+ * La etapa que dicen las reservas vivas del lead, sin importar cuál reserva
+ * disparó el cambio (5 nov 2026). Antes cada camino hacía su cuenta y un pago
+ * web, una cancelación o un cobro anulado dejaban el lead donde estaba.
+ *  - Sin reservas vivas, el dinero no dice nada: se queda (su etapa pudo venir de una liga).
+ *  - En Seguimiento, Anticipo o Confirmado manda lo cobrado: sube o baja.
+ *  - Antes (Nuevo, Calificado, Cotizado) solo sube.
+ *  - Perdido vuelve solo con un hecho nuevo (`revivir`: reserva nueva, cobro, liga pagada).
+ *  - Operado vuelve con un hecho nuevo y un viaje que todavía no pasa.
+ */
+export function etapaPorHechos(h: { etapa: Etapa; reservas: ReservaDelLead[]; hoy: string; revivir: boolean }): Etapa {
+  if (!h.reservas.length) return h.etapa;
+  const cobrado = h.reservas.reduce((t, r) => t + r.cobrado, 0);
+  const total = h.reservas.reduce((t, r) => t + r.total, 0);
+  const porCobro = etapaPorCobro(cobrado, total);
+  if (h.etapa === "perdido") return h.revivir ? porCobro : "perdido";
+  if (h.etapa === "operado") return h.revivir && h.reservas.some(r => !!r.ultimoDia && r.ultimoDia >= h.hoy) ? porCobro : "operado";
+  if (ETAPAS_DE_DINERO.includes(h.etapa)) return porCobro;
+  return subirA(h.etapa, porCobro);
+}
+
+/**
+ * Lo que vale el lead: la suma de sus reservas vivas; sin reservas, el total de
+ * su cotización vigente; sin ninguna, lo que ya tenía (p. ej. un estimado a mano).
+ */
+export function montoPorHechos(h: { reservas: ReservaDelLead[]; cotizacionVigente: number | null; actual: number | null }): number | null {
+  if (h.reservas.length) {
+    const total = h.reservas.reduce((t, r) => t + r.total, 0);
+    return total > 0 ? total : h.actual;
+  }
+  return h.cotizacionVigente && h.cotizacionVigente > 0 ? h.cotizacionVigente : h.actual;
+}
+
+/**
+ * El canal del lead tras enlazarle una reserva (5 nov 2026). El canal que una
+ * persona eligió al capturarla manda, salvo dos casos que borraban lo que ya se
+ * sabía: «web» en una reserva dice cómo PAGÓ (en línea), no por dónde llegó; y
+ * «WhatsApp» no le quita el detalle a «WhatsApp desde un botón del sitio».
+ */
+export function canalTrasReserva(canalLead: string, origenReserva: string | null | undefined): string {
+  const o = String(origenReserva ?? "").trim();
+  if (!o || o === "por_confirmar" || o === canalLead) return canalLead;
+  if (canalLead === "por_confirmar") return o;
+  if (o === "web") return canalLead;
+  if (canalLead === "whatsapp_sitio" && o === "whatsapp") return canalLead;
+  return o;
+}
+
+/** Cuántos días después de cerrarse (Operado o Perdido) un mensaje ya no se toma como consulta nueva. */
+export const DIAS_CIERRE_RECIENTE = 14;
+
+/** ¿El lead se cerró hace menos de `dias`? */
+export function cerradoHaceMenosDe(cerradoEn: Date | string | null | undefined, ahora: Date, dias: number = DIAS_CIERRE_RECIENTE): boolean {
+  if (!cerradoEn) return false;
+  const t = new Date(cerradoEn).getTime();
+  return Number.isFinite(t) && ahora.getTime() - t < dias * 86_400_000;
+}
+
+/**
+ * Las fechas que dicen si el viaje del lead ya pasó: las de sus reservas vivas
+ * y las de sus cotizaciones vivas (una venta nueva cotizada sobre un lead
+ * Confirmado ya no lo deja operar antes de tiempo, 5 nov 2026). Sin ninguna, la del lead.
+ */
+export function fechasDelViaje(reservas: (string | null | undefined)[], cotizacionesVivas: (string | null | undefined)[], fechaLead: string | null): (string | null | undefined)[] {
+  return reservas.length || cotizacionesVivas.length ? [...reservas, ...cotizacionesVivas] : [fechaLead];
+}
+
+/** Lo que trae una captura de «Nuevo lead». */
+export interface DatosCaptura {
+  tours: string[]; fechaViaje: string | null; pax: number | null; perfil: string | null;
+  quiereHospedaje: boolean | null; monto: number | null; canal: string | null;
+}
+
+/**
+ * «Nuevo lead» de alguien que ya tiene uno abierto (5 nov 2026): antes se
+ * tiraba lo capturado. Ahora se completa lo que le FALTA al lead (lo que ya
+ * tenía no se pisa) y la regla Nuevo → Calificado se vuelve a aplicar.
+ * Devuelve qué cambia y, en palabras, qué se agregó.
+ */
+export function completarLead(actual: DatosCaptura & { etapa: Etapa }, llega: DatosCaptura): { data: Partial<DatosCaptura> & { etapa?: Etapa }; agregado: string[] } {
+  const data: Partial<DatosCaptura> & { etapa?: Etapa } = {};
+  const agregado: string[] = [];
+  if (!actual.tours.length && llega.tours.length) { data.tours = llega.tours; agregado.push("tours"); }
+  if (!actual.fechaViaje && llega.fechaViaje) { data.fechaViaje = llega.fechaViaje; agregado.push("fecha del viaje"); }
+  if (!actual.pax && llega.pax) { data.pax = llega.pax; agregado.push("personas"); }
+  if (!actual.perfil && llega.perfil) { data.perfil = llega.perfil; agregado.push("perfil"); }
+  // La casilla sin marcar no dice «no quiere»: solo un sí completa.
+  if (actual.quiereHospedaje == null && llega.quiereHospedaje === true) { data.quiereHospedaje = true; agregado.push("hospedaje"); }
+  if (!actual.monto && llega.monto) { data.monto = llega.monto; agregado.push("monto estimado"); }
+  if (actual.canal === "por_confirmar" && llega.canal && llega.canal !== "por_confirmar") { data.canal = llega.canal; agregado.push("canal"); }
+  const etapa = etapaPorReglas(actual.etapa, { tours: data.tours ?? actual.tours, fechaViaje: data.fechaViaje ?? actual.fechaViaje, pax: data.pax ?? actual.pax });
+  if (etapa !== actual.etapa) data.etapa = etapa;
+  return { data, agregado };
+}
+
+/** «a», «a y b», «a, b y c». */
+export const enLista = (xs: string[]) => xs.length <= 1 ? (xs[0] ?? "") : `${xs.slice(0, -1).join(", ")} y ${xs[xs.length - 1]}`;
+
+/** Lo que la pantalla dice cuando «Nuevo lead» cae en un lead que ya estaba abierto (5 nov 2026). */
+export function avisoLeadExistente(nombre: string, etapa: string, agregado: string[]): string {
+  const base = `${nombre} ya tenía un lead abierto (${etiquetaEtapa(etapa)}): no se creó otro`;
+  return agregado.length ? `${base}; se le agregó ${enLista(agregado)}.` : `${base} y no había nada nuevo que agregarle.`;
+}
+
+/**
+ * Qué puede poner una cotización en su lead (5 nov 2026): lo vivo manda.
+ *  - Con reservas vivas, el monto, la fecha, los tours y las personas salen de ellas: la cotización no toca nada.
+ *  - Con OTRA cotización viva, el monto es el de la vigente y solo se llena lo vacío.
+ *  - Si es la única, como antes: su total y, al editarla, sus datos.
+ */
+export function loQueMandaLaCotizacion(h: { reservasVivas: number; otrasCotizacionesVivas: number; sincronizar: boolean }): { monto: "ninguno" | "esta" | "vigente"; pisar: boolean; llenarVacios: boolean } {
+  if (h.reservasVivas > 0) return { monto: "ninguno", pisar: false, llenarVacios: false };
+  if (h.otrasCotizacionesVivas > 0) return { monto: "vigente", pisar: false, llenarVacios: true };
+  return { monto: "esta", pisar: h.sincronizar, llenarVacios: true };
+}
+
+/** «Vacío» para juntarlo con otro del mismo contacto: sin cotizaciones ni reservas, y todavía al principio. */
+export function leadVacio(l: { etapa: string; cotizaciones: number; reservas: number }): boolean {
+  return l.cotizaciones === 0 && l.reservas === 0 && (l.etapa === "nuevo" || l.etapa === "calificado");
+}
+
 export type ValidacionCambio = { ok: true } | { ok: false; error: string };
 
 /** Mover de etapa a mano: cualquiera puede, pero Perdido exige motivo. */
