@@ -11,6 +11,7 @@
 // registra donde se pueda y una persona decide.
 
 import { montoCobrado, type CashFields } from "./dinero";
+import { referenciaDeConcepto } from "./candadosCobro";
 
 const pesos = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 const MAX_TITULO = 200;
@@ -177,31 +178,53 @@ export function unicoCobroVivoDe(cobros: CobroDeStripe[], monto: number): CobroD
 export type DecisionReembolso =
   | { accion: "anular"; cobroId: string }
   | { accion: "nada" }
-  | { accion: "avisar"; por: "parcial" | "sin-cobro" | "no-cuadra" };
+  | { accion: "avisar"; por: "parcial" | "sin-cobro" | "no-cuadra" | "resto" };
 
 /**
  * Stripe devolvió dinero de un pago. Solo se anula solo el cobro cuando no hay
  * duda: devolución COMPLETA y un único cobro vivo de ese mismo importe. Una
  * devolución parcial no se puede reflejar anulando (el cobro se anula entero),
  * así que se avisa con lo que hay que hacer.
+ *
+ * `huboParcialAntes`: de ese mismo cargo ya se había devuelto una parte. 🔴
+ * Revisión del lote 3 (5 nov 2026): el aviso de entonces pide anular el cobro
+ * y registrar a mano lo que se quedó; ese renglón nuevo no lleva la referencia
+ * del pago y aquí no se ve. Si ya no queda nada vivo de ese pago, callarse lo
+ * dejaba contado aunque Stripe ya devolvió todo.
  */
-export function decidirReembolso(p: { cobros: CobroDeStripe[]; cargo: number; reembolsado: number }): DecisionReembolso {
+export function decidirReembolso(p: { cobros: CobroDeStripe[]; cargo: number; reembolsado: number; huboParcialAntes?: boolean }): DecisionReembolso {
   if (p.reembolsado < p.cargo) return { accion: "avisar", por: "parcial" };
   const vivos = p.cobros.filter((c) => !c.anulado);
-  if (!vivos.length) return p.cobros.length ? { accion: "nada" } : { accion: "avisar", por: "sin-cobro" };
+  if (!vivos.length) {
+    if (!p.cobros.length) return { accion: "avisar", por: "sin-cobro" };
+    return p.huboParcialAntes ? { accion: "avisar", por: "resto" } : { accion: "nada" };
+  }
   const unico = unicoCobroVivoDe(vivos, p.cargo);
   return unico ? { accion: "anular", cobroId: unico.id } : { accion: "avisar", por: "no-cuadra" };
 }
 
 /** El seguimiento para Manolo tras un reembolso; null = no hace falta. */
-export function tituloReembolso(d: DecisionReembolso, p: { folio: string | null; cliente: string | null; cargo: number; reembolsado: number }): string | null {
+export function tituloReembolso(d: DecisionReembolso, p: { folio: string | null; cliente: string | null; cargo: number; reembolsado: number; huboParcialAntes?: boolean }): string | null {
   const de = p.folio ? `${p.folio}${p.cliente ? ` (${recorta(p.cliente, 40)})` : ""}` : (recorta(p.cliente, 40) || "un pago");
   const dev = pesos(p.reembolsado);
   switch (d.accion) {
     case "nada": return null;
     case "anular":
+      // Ya había devuelto una parte: lo que se registró a mano entonces sigue vivo (revisión del lote 3, 5 nov 2026).
+      if (p.huboParcialAntes) {
+        return titulo(
+          `Stripe terminó de devolver el pago de ${pesos(p.cargo)} de ${de}: su cobro se anuló solo. Si tras la primera devolución registraste a mano lo que se quedó, anúlalo también.`,
+          `Stripe terminó de devolver ${pesos(p.cargo)} de ${de}: su cobro se anuló solo; anula también lo que registraste a mano tras la primera devolución.`,
+        );
+      }
       return titulo(`Stripe devolvió ${dev} de ${de}: su cobro se anuló solo. Si la reserva ya no va, cancélala con su motivo.`, `Stripe devolvió ${dev} de ${de}: su cobro se anuló solo.`);
     case "avisar":
+      if (d.por === "resto") {
+        return titulo(
+          `Stripe terminó de devolver el pago de ${pesos(p.cargo)} de ${de} (antes había devuelto una parte): anula en sus cobros lo que registraste a mano de ese pago.`,
+          `Stripe terminó de devolver ${pesos(p.cargo)} de ${de} (antes devolvió una parte): anula lo que registraste a mano de ese pago.`,
+        );
+      }
       if (d.por === "parcial") {
         const queda = pesos(p.cargo - p.reembolsado);
         return titulo(
@@ -230,6 +253,57 @@ const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "o
 function fechaCortaYMD(ymd: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd);
   return m ? `${Number(m[3])} ${MESES[Number(m[2]) - 1] ?? m[2]}` : ymd;
+}
+
+// ── De qué pago de Stripe es cada cobro (revisión del lote 3, 5 nov 2026) ───
+
+interface CobroConReferencia { referencia?: string | null; concepto?: string | null; stripeRef?: string | null }
+
+/** La sesión de pago de Stripe («cs_…») que trae la referencia de un cobro de liga, o null. */
+function sesionDeCobro(c: CobroConReferencia): string | null {
+  const ref = String(c.referencia ?? referenciaDeConcepto(c.concepto) ?? "").trim();
+  return /^cs_(live|test)_/.test(ref) ? ref : null;
+}
+
+/**
+ * Los cobros de UNA liga pagada antes del 5 nov 2026: no guardaron el
+ * PaymentIntent (con el que llega un reembolso), pero sí su sesión de pago en
+ * la referencia. El código de antes la recortaba a 60 caracteres: basta con
+ * que la sesión EMPIECE con lo que quedó guardado. 🔴 Sin esto, la devolución
+ * de una de esas ligas no encontraba su cobro y el dinero seguía contado.
+ */
+export function cobrosDeLaSesion<T extends CobroConReferencia>(cobros: T[], sesionId: string): T[] {
+  return cobros.filter((c) => {
+    if (c.stripeRef === sesionId) return true;
+    const s = sesionDeCobro(c);
+    return !!s && s.length >= 20 && sesionId.startsWith(s);
+  });
+}
+
+/**
+ * Del pago con tarjeta en el sitio: los cobros de Stripe de la reserva SIN los
+ * de sus ligas de pago (esos llevan su sesión «cs_…» y son OTRO pago). 🔴 Antes
+ * la devolución del pago del sitio podía anular el cobro de la liga del saldo
+ * si era del mismo importe y el del sitio ya estaba anulado a mano.
+ */
+export function cobrosDelPagoWeb<T extends CobroConReferencia>(cobros: T[]): T[] {
+  return cobros.filter((c) => !sesionDeCobro(c));
+}
+
+// ── La baja de correos no apaga una venta en curso ──────────────────────────
+
+/**
+ * De las cotizaciones enviadas de quien se da de baja de los correos, las que
+ * pasan a «vencida»: solo las que NO tienen una liga de pago viva. 🔴 Revisión
+ * del lote 3 (5 nov 2026): vencida, la conciliación de cada hora le apagaba la
+ * liga que el cliente tenía en su WhatsApp y el panel ya no dejaba mandarle
+ * otra («la cotización venció»), aunque solo pidió no recibir correos. Sus
+ * correos igual se detienen (el cron consulta `estaDeBaja`) y vence sola en su
+ * fecha límite, que es cuando su liga sí debe apagarse.
+ */
+export function cotizacionesQueVencePorBaja(enviadas: string[], conLigaViva: (string | null)[]): string[] {
+  const vivas = new Set(conLigaViva.filter((x): x is string => !!x));
+  return enviadas.filter((id) => !vivas.has(id));
 }
 
 // ── Cobros → «Lo que falta de una reserva» ──────────────────────────────────

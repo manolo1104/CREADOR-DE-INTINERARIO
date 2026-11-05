@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
-  accionDeConciliacion, avisoTrasAbonarLiga, decidirLigaSaldoViaje, decidirReembolso, motivoParaApagarLiga,
-  reservasParaPagoRestante, tituloContracargo, tituloLigaDeOtraCuenta, tituloLigaSinDestino, tituloReembolso,
-  tituloViajeSinAnticipo, unicoCobroVivoDe, type HechosLiga,
+  accionDeConciliacion, avisoTrasAbonarLiga, cobrosDeLaSesion, cobrosDelPagoWeb, cotizacionesQueVencePorBaja, decidirLigaSaldoViaje,
+  decidirReembolso, motivoParaApagarLiga, reservasParaPagoRestante, tituloContracargo, tituloLigaDeOtraCuenta, tituloLigaSinDestino,
+  tituloReembolso, tituloViajeSinAnticipo, unicoCobroVivoDe, type HechosLiga,
 } from "@/lib/admin/ligasReglas";
 import {
   dineroAlCrearReserva, evidenciasUsables, puedeAnularCobro, puedeQuitarComprobante, referenciaAlEditar, referenciaDeConcepto,
@@ -260,5 +260,62 @@ describe("hechos de ejemplo: el tipo acepta lo que arma la base", () => {
   it("una liga de cotización con su reserva viva", () => {
     const h: HechosLiga = { cotizacion: { status: "aceptada" }, reserva: { folio: "HP-M-9", status: "pending", total: 100, cobrado: 30 } };
     expect(motivoParaApagarLiga(deCotizacion, h)).toBeNull();
+  });
+});
+
+// ── Revisión del lote 3 (5 nov 2026): lo que se le escapó al arreglo ─────────
+
+describe("revisión: la baja de correos no apaga una venta en curso", () => {
+  it("🔴 una cotización con su liga viva no se vence por la baja; las demás sí", () => {
+    expect(cotizacionesQueVencePorBaja(["q1", "q2", "q3"], ["q2", null])).toEqual(["q1", "q3"]);
+    expect(cotizacionesQueVencePorBaja(["q1"], [])).toEqual(["q1"]);
+    expect(cotizacionesQueVencePorBaja([], ["q1"])).toEqual([]);
+  });
+});
+
+describe("revisión: de qué pago de Stripe es cada cobro (reembolsos)", () => {
+  // Así mide una sesión de Stripe (~66): el código de antes guardaba solo 60 en el concepto.
+  const sesion = "cs_live_a1B2c3D4e5F6g7H8i9J0kLmNoPqRsTuVwXyZ0123456789abcdefghijklmn";
+  const viejo = { id: "v", concepto: `Cobro liga de pago · ${sesion.slice(0, 60)}`, referencia: null, stripeRef: null };
+  const nuevo = { id: "n", concepto: `Cobro liga de pago · ${sesion}`, referencia: sesion, stripeRef: "pi_1" };
+  const web = { id: "w", concepto: "Cobro liga de pago", referencia: null, stripeRef: null };
+  const historico = { id: "h", concepto: "Cobro anterior al desglose", referencia: null, stripeRef: null };
+  const spei = { id: "s", concepto: "Cobro transferencia · 123456", referencia: "123456", stripeRef: null };
+  it("🔴 el cobro de una liga pagada antes del arreglo se reconoce por su sesión, aunque la guardara recortada", () => {
+    expect(cobrosDeLaSesion([viejo, web, historico, spei], sesion).map(c => c.id)).toEqual(["v"]);
+    expect(cobrosDeLaSesion([nuevo], sesion).map(c => c.id)).toEqual(["n"]);
+    expect(cobrosDeLaSesion([{ ...web, stripeRef: sesion }], sesion).map(c => c.id)).toEqual(["w"]);
+    expect(cobrosDeLaSesion([viejo], "cs_live_OTRA_sesion_distinta_de_la_que_se_pago_00000000000000000000")).toEqual([]);
+    // Un trozo demasiado corto no basta para decir que es esa sesión.
+    expect(cobrosDeLaSesion([{ ...viejo, concepto: "Cobro liga de pago · cs_live_a1" }], sesion)).toEqual([]);
+  });
+  it("🔴 la devolución del pago del sitio no toma el cobro de una liga de la misma reserva", () => {
+    expect(cobrosDelPagoWeb([web, historico, viejo, nuevo]).map(c => c.id)).toEqual(["w", "h"]);
+  });
+});
+
+describe("revisión: devolución parcial y luego el resto (cobros#8)", () => {
+  const original = { id: "m1", monto: 3600, anulado: true };
+  it("🔴 ya se había devuelto una parte y lo de ese pago ya está anulado: avisa en vez de callarse", () => {
+    const d = decidirReembolso({ cobros: [original], cargo: 3600, reembolsado: 3600, huboParcialAntes: true });
+    expect(d).toEqual({ accion: "avisar", por: "resto" });
+    const t = tituloReembolso(d, { folio: "HP-1", cliente: "Ana", cargo: 3600, reembolsado: 3600, huboParcialAntes: true })!;
+    expect(t).toContain("antes había devuelto una parte");
+    expect(t).toContain("$3,600");
+    expect(t.length).toBeLessThanOrEqual(200);
+  });
+  it("sin devolución parcial antes, que ya esté anulado no pide nada (como antes)", () => {
+    expect(decidirReembolso({ cobros: [original], cargo: 3600, reembolsado: 3600 })).toEqual({ accion: "nada" });
+  });
+  it("si el cobro original sigue vivo se anula solo, y el aviso recuerda lo registrado a mano", () => {
+    const d = decidirReembolso({ cobros: [{ ...original, anulado: false }], cargo: 3600, reembolsado: 3600, huboParcialAntes: true });
+    expect(d).toEqual({ accion: "anular", cobroId: "m1" });
+    const t = tituloReembolso(d, { folio: "HP-1", cliente: "María Guadalupe de los Ángeles Hernández", cargo: 3600, reembolsado: 3600, huboParcialAntes: true })!;
+    expect(t).toContain("se anuló solo");
+    expect(t).toMatch(/a mano/);
+    expect(t.length).toBeLessThanOrEqual(200);
+  });
+  it("una parcial sigue siendo parcial aunque hubiera otra antes", () => {
+    expect(decidirReembolso({ cobros: [{ ...original, anulado: false }], cargo: 3600, reembolsado: 1400, huboParcialAntes: true })).toEqual({ accion: "avisar", por: "parcial" });
   });
 });

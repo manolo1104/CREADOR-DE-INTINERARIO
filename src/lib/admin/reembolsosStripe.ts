@@ -22,8 +22,10 @@ import { prisma } from "@/lib/prisma";
 import { hoyMX, ymdMX } from "@/lib/dates";
 import { anularCobro } from "@/lib/admin/cobros";
 import { registrarEnBitacora, pesos, type Actor } from "@/lib/admin/bitacora";
-import { crearSeguimientoUnico } from "@/lib/admin/linksPago";
-import { decidirReembolso, tituloContracargo, tituloReembolso, unicoCobroVivoDe } from "@/lib/admin/ligasReglas";
+import { crearSeguimientoUnico, puertoStripe } from "@/lib/admin/linksPago";
+import {
+  cobrosDeLaSesion, cobrosDelPagoWeb, decidirReembolso, tituloContracargo, tituloReembolso, unicoCobroVivoDe,
+} from "@/lib/admin/ligasReglas";
 
 /** Quién firma en la bitácora lo que hace Stripe solo. */
 const STRIPE: Actor = { usuario: "stripe", nombre: "Stripe", rol: "sistema" };
@@ -34,20 +36,43 @@ const idDe = (x: string | { id: string } | null | undefined): string | null => (
  * Los cobros (renglones) de un pago de Stripe y la reserva o liga a la que
  * pertenece. Primero por la referencia exacta (`stripeRef`, desde el 5 nov
  * 2026); si no, la reserva que se pagó en el sitio con ese PaymentIntent y sus
- * cobros de Stripe sin referencia (los de antes).
+ * cobros de Stripe sin referencia (los de antes), sin los de sus ligas.
+ *
+ * 🔴 Revisión del lote 3 (5 nov 2026): una liga pagada ANTES de este arreglo
+ * no guardó su PaymentIntent, ni su cobro la referencia; su devolución se
+ * ignoraba y el dinero seguía contado. Se le pregunta a Stripe de qué sesión
+ * es ese pago, se le anota a la liga y sus cobros se reconocen por la sesión.
  */
 async function pagoDelPanel(paymentIntentId: string) {
   let cobros: Movimiento[] = await prisma.movimiento.findMany({ where: { tipo: "cobro", stripeRef: paymentIntentId } });
-  const liga = await prisma.linkPago.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
+  let liga = await prisma.linkPago.findFirst({ where: { stripePaymentIntentId: paymentIntentId } });
   let reservaId: string | null = cobros[0]?.reservaId ?? liga?.reservaId ?? null;
   if (!cobros.length && !liga) {
     const b = await prisma.tourBooking.findUnique({ where: { stripePaymentIntentId: paymentIntentId }, select: { id: true } });
     if (b) {
       reservaId = b.id;
-      cobros = await prisma.movimiento.findMany({
-        where: { tipo: "cobro", reservaId: b.id, metodoPago: "stripe", OR: [{ stripeRef: null }, { stripeRef: paymentIntentId }] },
-      });
+      // Sin los cobros de sus ligas: son OTRO pago aunque sean del mismo importe.
+      cobros = cobrosDelPagoWeb(await prisma.movimiento.findMany({
+        where: { tipo: "cobro", reservaId: b.id, metodoPago: "stripe", stripeRef: null },
+      }));
+    } else {
+      // ¿Una liga de antes del 5 nov 2026? Stripe dice de qué sesión es el pago.
+      const s = await puertoStripe()?.sesionDelPago?.(paymentIntentId);
+      if (s) {
+        liga = await prisma.linkPago.findFirst({
+          where: { OR: [{ stripeSessionId: s.id }, ...(s.paymentLinkId ? [{ stripeLinkId: s.paymentLinkId }] : [])] },
+        });
+        // Anotado, el siguiente aviso de ese pago (otro reembolso, un contracargo) la encuentra sin preguntar.
+        if (liga && !liga.stripePaymentIntentId) {
+          await prisma.linkPago.updateMany({ where: { id: liga.id, stripePaymentIntentId: null }, data: { stripePaymentIntentId: paymentIntentId } });
+        }
+        reservaId = liga?.reservaId ?? null;
+      }
     }
+  }
+  // Los cobros de una liga de antes del 5 nov 2026 no llevan el PaymentIntent: van por su sesión de pago.
+  if (!cobros.length && liga?.reservaId && liga.stripeSessionId) {
+    cobros = cobrosDeLaSesion(await prisma.movimiento.findMany({ where: { tipo: "cobro", reservaId: liga.reservaId } }), liga.stripeSessionId);
   }
   const reserva = reservaId
     ? await prisma.tourBooking.findUnique({ where: { id: reservaId }, select: { id: true, confirmationNumber: true, customerName: true, oportunidadId: true } })
@@ -74,7 +99,14 @@ export async function manejarReembolso(cargo: Stripe.Charge): Promise<void> {
   // Si un intento anterior ya lo anuló por ESTE reembolso, no se decide de nuevo
   // (el aviso sí se vuelve a intentar: pudo fallar justo después).
   const yaAnulado = cobros.find(c => c.anulado && (c.motivoAnulacion ?? "").includes(cargo.id));
-  const d = yaAnulado ? { accion: "anular" as const, cobroId: yaAnulado.id } : decidirReembolso({ cobros: lista, cargo: montoCargo, reembolsado });
+  // ¿De este cargo ya se había devuelto una parte? Su aviso quedó con otra
+  // clave y pedía corregir a mano: lo que se registró entonces no se ve aquí
+  // (revisión del lote 3, 5 nov 2026).
+  const huboParcialAntes = reembolsado >= montoCargo && !!(await prisma.tarea.findFirst({
+    where: { claveRegla: { startsWith: `reembolso:${cargo.id}:` }, NOT: { claveRegla: `reembolso:${cargo.id}:${cargo.amount_refunded}` } },
+    select: { id: true },
+  }));
+  const d = yaAnulado ? { accion: "anular" as const, cobroId: yaAnulado.id } : decidirReembolso({ cobros: lista, cargo: montoCargo, reembolsado, huboParcialAntes });
 
   if (d.accion === "anular" && !yaAnulado) {
     await anularCobro(d.cobroId, `Reembolso en Stripe (${hoyMX()}) · ${cargo.id}`, STRIPE.nombre, STRIPE);
@@ -85,7 +117,7 @@ export async function manejarReembolso(cargo: Stripe.Charge): Promise<void> {
     if (fila) await marcarCobro(fila, `⚠️ Stripe devolvió ${pesos(reembolsado)} de este pago.`);
   }
 
-  const titulo = tituloReembolso(d, { folio: reserva?.confirmationNumber ?? null, cliente: reserva?.customerName ?? liga?.cliente ?? null, cargo: montoCargo, reembolsado });
+  const titulo = tituloReembolso(d, { folio: reserva?.confirmationNumber ?? null, cliente: reserva?.customerName ?? liga?.cliente ?? null, cargo: montoCargo, reembolsado, huboParcialAntes });
   if (titulo) {
     await crearSeguimientoUnico({
       titulo, clave: `reembolso:${cargo.id}:${cargo.amount_refunded}`, regla: "reembolso-stripe",

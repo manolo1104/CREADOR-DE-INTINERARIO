@@ -49,6 +49,12 @@ export interface PuertoStripeLigas {
   apagar(stripeLinkId: string): Promise<"apagada" | "no-existe">;
   /** Las sesiones de pago completas y pagadas de la liga, o «no-existe». */
   sesionesPagadas(stripeLinkId: string): Promise<SesionPagadaLiga[] | "no-existe">;
+  /**
+   * La sesión de pago de un PaymentIntent y su liga, o null (revisión del lote
+   * 3, 5 nov 2026): las ligas pagadas antes no guardaron su PaymentIntent y un
+   * reembolso o contracargo llega solo con él. Opcional para los dobles de prueba.
+   */
+  sesionDelPago?(paymentIntentId: string): Promise<{ id: string; paymentLinkId: string | null } | null>;
 }
 
 const puertoReal: PuertoStripeLigas = {
@@ -79,6 +85,13 @@ const puertoReal: PuertoStripeLigas = {
       if (e instanceof Stripe.errors.StripeInvalidRequestError && e.code === "resource_missing") return "no-existe";
       throw e;
     }
+  },
+  async sesionDelPago(paymentIntentId) {
+    // Si Stripe falla, lanza: el webhook contesta 500 y Stripe vuelve a avisar.
+    const r = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 });
+    const s = r.data[0];
+    if (!s) return null;
+    return { id: s.id, paymentLinkId: typeof s.payment_link === "string" ? s.payment_link : s.payment_link?.id ?? null };
   },
 };
 

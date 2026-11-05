@@ -4,6 +4,7 @@ import { emailDeToken } from "@/lib/baja";
 import { mismoCorreo, FUENTE_BAJA } from "@/lib/estaDeBaja";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
 import { actividad, logger } from "@/lib/logger";
+import { cotizacionesQueVencePorBaja } from "@/lib/admin/ligasReglas";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -44,7 +45,19 @@ export async function POST(req: NextRequest) {
      *
      * Lo que NO se toca: las reservas. Una confirmación de compra no es
      * publicidad y se sigue mandando.
+     *
+     * 🔴 Ni la cotización con su liga de pago viva (revisión del lote 3, 5 nov
+     * 2026): vencida, la conciliación de cada hora le apagaba al cliente la
+     * liga de su WhatsApp. Sus correos igual se detienen (`estaDeBaja`) y
+     * vence sola en su fecha límite. Ver `cotizacionesQueVencePorBaja`.
      */
+    const enviadas = (await prisma.tourQuote.findMany({
+      where: { customerEmail: mismoCorreo(email), status: "enviada" }, select: { id: true },
+    })).map((q) => q.id);
+    const conLigaViva = enviadas.length
+      ? (await prisma.linkPago.findMany({ where: { estado: "activo", cotizacionId: { in: enviadas } }, select: { cotizacionId: true } })).map((l) => l.cotizacionId)
+      : [];
+    const aVencer = cotizacionesQueVencePorBaja(enviadas, conLigaViva);
     const [leads, carritos, cotizaciones, curso, , cumple] = await prisma.$transaction([
       prisma.lead.updateMany({
         // Sin distinguir mayúsculas: el token lleva el correo en minúsculas y
@@ -60,7 +73,7 @@ export async function POST(req: NextRequest) {
         data:  { status: "baja" },
       }),
       prisma.tourQuote.updateMany({
-        where: { customerEmail: mismoCorreo(email), status: "enviada" },
+        where: { id: { in: aVencer }, status: "enviada" },
         data:  { status: "expirada" },
       }),
       // Curso "Turismo con IA": solo prospectos. A un ALUMNO no se le apagan
