@@ -331,6 +331,8 @@ async function vencer(id: string, lineItems: unknown, venceEl: string) {
     where: { id },
     data:  { status: "expirada", lineItems: conMeta(lineItems, { venceEl, seqEstado: "terminado" }) as never },
   });
+  // Vencida, su liga de anticipo ya no se puede pagar (lote 3, 5 nov 2026). No lanza.
+  await import("@/lib/admin/linksPago").then(m => m.apagarLigasDe({ cotizacionIds: [id] }, "la cotización venció")).catch(() => {});
 }
 
 // (La regla de la baja vive en `lib/estaDeBaja.ts`, igual para todos los crons.)

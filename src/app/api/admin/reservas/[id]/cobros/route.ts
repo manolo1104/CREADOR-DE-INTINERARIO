@@ -10,6 +10,24 @@ import {
 } from "@/lib/admin/cobros";
 import { avisoCobroRepetido } from "@/lib/admin/cobroRepetido";
 import { RECEPTORES } from "@/lib/admin/corteSemanal";
+import { evidenciasUsables, puedeAnularCobro } from "@/lib/admin/candadosCobro";
+
+/**
+ * Los comprobantes que manda la pantalla y de verdad sirven: existen, son de
+ * esta reserva y no cuelgan ya de otro cobro (lote 3, 5 nov 2026). Antes bastaba
+ * mandar cualquier id para pasar el «comprobante obligatorio».
+ */
+async function comprobantesUsables(pedidos: unknown, reservaId: string): Promise<string[]> {
+  const ids = Array.isArray(pedidos) ? pedidos.filter((x): x is string => typeof x === "string").slice(0, 10) : [];
+  if (!ids.length) return [];
+  const encontrados = await prisma.evidencia.findMany({ where: { id: { in: ids } }, select: { id: true, bookingId: true, movimientoId: true } });
+  return evidenciasUsables(ids, encontrados, reservaId);
+}
+
+/** Lo que figura cobrado de la reserva ahora (la pantalla lo pinta tras cada acción). */
+async function depositoActual(reservaId: string): Promise<number> {
+  return (await prisma.tourBooking.findUnique({ where: { id: reservaId }, select: { depositoPagado: true } }))?.depositoPagado ?? 0;
+}
 
 /**
  * Quién tiene el dinero: solo los dos socios (Manolo, 20 oct 2026). Antes era
@@ -48,9 +66,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // 🔴 El comprobante se sube ANTES que el cobro (la subida devuelve su id) y
     // aquí se comprueba que llegó. Al revés no se puede: un archivo necesita el
     // renglón al que colgarse, y un renglón sin comprobante ya estaría guardado.
-    const evidenciaIds: string[] = Array.isArray(b?.evidenciaIds)
-      ? b.evidenciaIds.filter((x: unknown) => typeof x === "string").slice(0, 10)
-      : [];
+    // Solo cuentan los de esta reserva que no son ya de otro cobro (5 nov 2026).
+    const evidenciaIds = await comprobantesUsables(b?.evidenciaIds, params.id);
     if (requiereComprobante(metodo) && evidenciaIds.length === 0) {
       return NextResponse.json(
         { error: "Ese método necesita comprobante: sube la captura o el PDF." },
@@ -145,7 +162,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     if (evidenciaIds.length) {
       await prisma.evidencia.updateMany({
-        where: { id: { in: evidenciaIds }, bookingId: params.id },
+        where: { id: { in: evidenciaIds }, bookingId: params.id, movimientoId: null },
         data:  { movimientoId: r.cobro.id },
       });
     }
@@ -175,8 +192,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       // Quien anula movimientos, siempre. Y además quien lo capturó HOY, para
       // que un dedazo de la mañana no tenga que esperar a que llegue un socio.
-      const esSuyoDeHoy = cobro.creadoPor === sesion.nombre && cobro.fecha === hoyMX();
-      if (!puedeHacer(sesion.rol, "anularMovimiento") && !esSuyoDeHoy) {
+      // 🔴 «Hoy» es el día en que se CAPTURÓ, no la fecha del cobro: esa se
+      // puede editar, y se movía a hoy para anular uno viejo (5 nov 2026).
+      if (!puedeAnularCobro({ puedeAnular: puedeHacer(sesion.rol, "anularMovimiento"), quien: sesion.nombre, creadoPor: cobro.creadoPor, creadoEn: cobro.createdAt, hoy: hoyMX() })) {
         return NextResponse.json(
           { error: "Solo puedes anular un cobro que tú registraste hoy. Pídeselo a un socio." },
           { status: 403 },
@@ -208,7 +226,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       // transferencia) exige el comprobante, igual que al registrarlo. Solo si
       // el método CAMBIA: los que registró Stripe solos no traen foto y se
       // pueden corregir de otra cosa sin inventarles una.
-      const evidenciaNueva = Array.isArray(b?.evidenciaIds) && b.evidenciaIds.length > 0;
+      // El comprobante nuevo cuenta solo si es de esta reserva y está libre.
+      const evidenciaIds = await comprobantesUsables(b?.evidenciaIds, params.id);
+      const evidenciaNueva = evidenciaIds.length > 0;
       if (b?.metodo !== undefined && b.metodo !== cobro.metodoPago && requiereComprobante(b.metodo) && !evidenciaNueva) {
         const tiene = await prisma.evidencia.count({ where: { movimientoId: id } });
         if (tiene === 0) {
@@ -223,16 +243,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }, sesion.nombre);
 
       // El comprobante se sube aparte y llega aquí sólo para engancharlo.
-      const evidenciaIds: string[] = Array.isArray(b?.evidenciaIds)
-        ? b.evidenciaIds.filter((x: unknown) => typeof x === "string").slice(0, 10)
-        : [];
       if (evidenciaIds.length) {
         await prisma.evidencia.updateMany({
-          where: { id: { in: evidenciaIds }, bookingId: params.id },
+          where: { id: { in: evidenciaIds }, bookingId: params.id, movimientoId: null },
           data:  { movimientoId: id },
         });
       }
-      return NextResponse.json({ ok: true, cobros: await cobrosDeReserva(params.id) });
+      // Con lo cobrado de verdad: sin esto la pantalla ponía $0 (5 nov 2026).
+      return NextResponse.json({ ok: true, cobrado: await depositoActual(params.id), cobros: await cobrosDeReserva(params.id) });
     }
 
     if (b?.accion === "entregar") {
@@ -241,7 +259,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       const ids = Array.isArray(b?.cobroIds) ? b.cobroIds.map(String) : [];
       const total = await marcarEntregado(ids, sesion.nombre, sesion.nombre);
-      return NextResponse.json({ ok: true, total, cobros: await cobrosDeReserva(params.id) });
+      return NextResponse.json({ ok: true, total, cobrado: await depositoActual(params.id), cobros: await cobrosDeReserva(params.id) });
     }
 
     return NextResponse.json({ error: "Acción no reconocida" }, { status: 400 });

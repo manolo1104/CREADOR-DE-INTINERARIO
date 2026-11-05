@@ -594,8 +594,10 @@ export default function CotizacionesClient(
     if (!confirm("¿Marcar como vencida?")) return;
     const r = await fetch(`/api/admin/cotizaciones/${id}`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) {
+      const d = await r.json().catch(() => ({}));
       setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
-      flash("✅ Cotización marcada como vencida");
+      // Su liga sin pagar se apaga sola (lote 3, 5 nov 2026): que se note.
+      flash(`✅ Cotización marcada como vencida${d?.ligasApagadas > 0 ? " · su liga de pago ya no se puede pagar" : ""}`);
       router.refresh();
     } else {
       flash("❌ No se pudo actualizar la cotización");
@@ -640,14 +642,16 @@ export default function CotizacionesClient(
   }
 
   async function hardDeleteQ(id: string) {
-    if (!confirm("¿Eliminar completamente esta cotización?\n\nSi su lead solo existía por ella, el lead también se quita. Si el cliente no la quiso, mejor márcala como Perdido en su ficha.")) return;
+    if (!confirm("¿Eliminar completamente esta cotización?\n\nSi su lead solo existía por ella, el lead también se quita. Si tiene una liga de pago sin pagar, se apaga. Si el cliente no la quiso, mejor márcala como Perdido en su ficha.")) return;
     const r = await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) {
       const d = await r.json().catch(() => ({}));
       setQuotes(q => q.filter(x => x.id !== id));
-      flash(d?.lead === "borrado" ? "✅ Cotización eliminada · su lead también se quitó (no tenía nada más)"
+      const ligas = d?.pagosSinReserva > 0 ? " · ⚠️ ya tenía un pago por liga sin reserva: Manolo tiene el seguimiento"
+        : d?.ligasApagadas > 0 ? " · su liga de pago ya no se puede pagar" : "";
+      flash((d?.lead === "borrado" ? "✅ Cotización eliminada · su lead también se quitó (no tenía nada más)"
         : d?.lead === "actualizado" ? "✅ Cotización eliminada · su lead se queda (tiene más cosas) y quedó anotado"
-        : "✅ Cotización eliminada");
+        : "✅ Cotización eliminada") + ligas);
       router.refresh();
     } else {
       flash("❌ No se pudo eliminar la cotización");
@@ -1399,7 +1403,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
       {cobrando && (
         <CobroModal reserva={cobrando} quien={quien} onClose={() => setCobrando(null)}
-          onGuardado={cobrado => { flash(`✅ Pago registrado: ${cobrado.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} cobrados. El lead quedó al día.`); router.refresh(); }} />
+          onGuardado={(cobrado, que) => { flash(`✅ ${que === "anulado" ? "Cobro anulado" : "Pago registrado"}: ${cobrado.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} cobrados. El lead quedó al día.`); router.refresh(); }} />
       )}
 
       {/* Modal nueva/editar cotización */}

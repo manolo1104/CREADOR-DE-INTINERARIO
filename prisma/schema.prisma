@@ -589,6 +589,15 @@ model Movimiento {
   anuladoAt  DateTime?
   motivoAnulacion String?
 
+  /// Sólo en cobros: el folio de la transferencia, los últimos 4 dígitos o la
+  /// sesión de Stripe. Antes vivía solo dentro de `concepto` y corregir el
+  /// método la borraba (lote 3 de la auditoría, 5 nov 2026).
+  referencia String?
+  /// Sólo en cobros de Stripe: el PaymentIntent (o la sesión) que lo pagó. Es
+  /// único: si Stripe repite el aviso, el mismo pago no se abona dos veces
+  /// aunque la primera vez haya fallado a la mitad (5 nov 2026).
+  stripeRef  String?   @unique
+
   creadoPor String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -716,9 +725,16 @@ model LinkPago {
 
   pagadoAt          DateTime?
   stripeSessionId   String?
+  /// El PaymentIntent del pago: un reembolso o un contracargo de Stripe llega
+  /// con él, y con él se encuentra el cobro que hay que anular (5 nov 2026).
+  stripePaymentIntentId String?
   /// Lo que Stripe dice que se cobró de verdad, por si difiere del monto.
   montoPagado       Int?
   correoDelPagador  String?
+
+  /// Por qué se apagó (p. ej. «se canceló la reserva HP-…»). Vacío si la
+  /// canceló una persona desde Cobros antes de que existiera (5 nov 2026).
+  motivoCancelacion String?
 
   creadoPor String?
   createdAt DateTime @default(now())
@@ -727,6 +743,7 @@ model LinkPago {
   @@index([estado, createdAt])
   @@index([reservaId])
   @@index([cotizacionId])
+  @@index([stripePaymentIntentId])
 }
 
 /// Ajustes sueltos del sitio que edita el panel (p. ej. el estado del río).

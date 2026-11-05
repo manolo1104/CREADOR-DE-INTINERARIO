@@ -21,6 +21,8 @@ import {
 } from "./automatizaciones";
 import { historialGoogle } from "./satisfaccion";
 import { PRIMERA_SEMANA_CORTE, lunesDe } from "./corteSemanal";
+import { hechosDeLigas } from "./linksPago";
+import { motivoParaApagarLiga } from "./ligasReglas";
 
 /** Ligas más viejas que esto no generan tarea: son de antes de la regla. */
 const DIAS_LIGA = 14;
@@ -40,7 +42,7 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
     historialGoogle().catch(() => []),
     prisma.corteSemanal.findUnique({ where: { semana: semanaPasada }, select: { estado: true } }).catch(() => null),
   ]);
-  const [cotizados, reservas, ligas, salidas] = await Promise.all([
+  const [cotizados, reservas, ligasActivas, salidas] = await Promise.all([
     prisma.oportunidad.findMany({
       where: { etapa: "cotizado" },
       include: {
@@ -64,6 +66,13 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
     where: { oportunidadId: { in: cotizados.map(c => c.id) } },
     select: { oportunidadId: true, quoteNumber: true, updatedAt: true }, orderBy: { updatedAt: "desc" },
   }) : [];
+
+  // 🔴 Solo las ligas que todavía cobran algo vivo (lote 3, 5 nov 2026): la de
+  // una cotización borrada o vencida, o de una reserva cancelada o ya pagada,
+  // pedía «recordarle con fecha límite» que pagara. Esas las apaga el panel
+  // (o la conciliación de cada hora); aquí nunca piden recordatorio.
+  const hechosLiga = ligasActivas.length ? await hechosDeLigas(ligasActivas).catch(() => new Map()) : new Map();
+  const ligas = ligasActivas.filter(l => !motivoParaApagarLiga(l, hechosLiga.get(l.id)));
 
   // El lead de cada liga (por su cotización o su reserva).
   const cotsLiga = ligas.some(l => l.cotizacionId) ? await prisma.tourQuote.findMany({ where: { id: { in: ligas.map(l => l.cotizacionId).filter((x): x is string => !!x) } }, select: { id: true, oportunidadId: true } }) : [];

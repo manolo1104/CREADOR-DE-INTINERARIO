@@ -55,6 +55,25 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // ── Reembolsos y contracargos (lote 3 de la auditoría, 5 nov 2026) ─────────
+  // Lo que se devuelve en Stripe ya no se queda contado como cobrado en el
+  // panel: el cobro se anula (devolución completa y clara) o se marca, y Manolo
+  // recibe el seguimiento. Solo toca pagos del panel; si algo falla, 500 y
+  // Stripe reintenta (todo es de una sola vez: el seguimiento tiene clave).
+  // 🔴 Hay que suscribir `charge.refunded` y `charge.dispute.created` en el
+  // endpoint de Stripe para que lleguen.
+  if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+    try {
+      const { manejarReembolso, manejarContracargo } = await import("@/lib/admin/reembolsosStripe");
+      if (event.type === "charge.refunded") await manejarReembolso(event.data.object as Stripe.Charge);
+      else await manejarContracargo(event.data.object as Stripe.Dispute);
+    } catch (e: unknown) {
+      logger.error("stripe_reembolso_fallo", { tipo: event.type, reason: e instanceof Error ? e.message : String(e) });
+      return NextResponse.json({ error: "reembolso" }, { status: 500 });
+    }
+    return NextResponse.json({ received: true });
+  }
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object;
     logger.info("stripe_webhook_payment_succeeded", {
@@ -73,6 +92,8 @@ export async function POST(req: NextRequest) {
           session.id,
           Math.round((session.amount_total ?? 0) / 100),
           session.customer_details?.email || session.customer_email || null,
+          // El PaymentIntent: con él el cobro no se repite y un reembolso lo encuentra (5 nov 2026).
+          typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
         );
       } catch (e) {
         // Revisión del 4 nov 2026: si el cobro no se pudo registrar, la liga se

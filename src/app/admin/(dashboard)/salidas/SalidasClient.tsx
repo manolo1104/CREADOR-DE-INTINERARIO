@@ -329,7 +329,7 @@ function Pasajeros({ s, todas, puedeEditar, quien, onCambio }: {
           reserva={{ id: cobrando.id, confirmationNumber: cobrando.folio, customerName: cobrando.nombre, totalAmount: cobrando.total, depositoPagado: cobrando.pagado, stripePaymentIntentId: cobrando.stripePaymentIntentId }}
           quien={quien}
           onClose={() => setCobrando(null)}
-          onGuardado={async () => { setCobrando(null); await onCambio("Cobro registrado."); }}
+          onGuardado={async (_cobrado, que) => { setCobrando(null); await onCambio(que === "anulado" ? "Cobro anulado." : "Cobro registrado."); }}
         />
       )}
     </div>

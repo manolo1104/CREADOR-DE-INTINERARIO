@@ -13,8 +13,9 @@ import {
 import { hoyMX } from "@/lib/dates";
 import { motivoParaGuardar } from "@/lib/admin/cancelacion";
 import { leadDesdeReserva, leadTrasCancelarReserva, leadTrasReactivarReserva } from "@/lib/admin/crmDatos";
-import { sincronizarDeposito } from "@/lib/admin/cobros";
-import { montoCobrado } from "@/lib/admin/dinero";
+import { asegurarHistorico, sincronizarDeposito } from "@/lib/admin/cobros";
+import { cobradoAFijarAntesDeEditar, montoCobrado } from "@/lib/admin/dinero";
+import { apagarLigasDe } from "@/lib/admin/linksPago";
 import { lineasDe } from "@/lib/admin/reserva";
 import { pedidosSinCupo } from "@/lib/cupoTour";
 
@@ -138,6 +139,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         canjeado = codigo;
       }
     }
+    // 🔴 Cambia el total de una reserva sin renglones de cobro (reservas#5, 5 nov
+    // 2026): lo que ya figura cobrado se fija ANTES con el total de antes. Una
+    // vieja pagada por Stripe con depósito 0 cuenta como pagada al 100 % del
+    // total VIGENTE: sin esto quedaba «pagada» sin cobrar lo que se sumó.
+    if (antes && antes.status !== "cancelled" && data.totalAmount !== undefined) {
+      const renglones = await prisma.movimiento.count({ where: { reservaId: antes.id, tipo: "cobro" } });
+      if (cobradoAFijarAntesDeEditar(antes, Number(data.totalAmount) || 0, renglones) > 0) await asegurarHistorico(antes.id);
+    }
     const updated = await prisma.tourBooking.update({
       where: { id: params.id },
       data,
@@ -150,6 +159,12 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Su lead: cancelar su única reserva viva lo pierde con ese motivo; si le
     // queda otra, se pone al día con lo que sigue vivo (5 nov 2026).
     if (cancela) await leadTrasCancelarReserva(updated.id, sesion?.nombre ?? "Desconocido");
+    // 🔴 Cancelada, sus ligas sin pagar —la del saldo y la del anticipo de su
+    // cotización— dejan de poder pagarse (lote 3, 5 nov 2026). Antes el cliente
+    // podía pagar una reserva cancelada y la regla pedía recordárselo. No lanza.
+    const ligas = cancela
+      ? await apagarLigasDe({ reservaIds: [updated.id], cotizacionIds: [updated.cotizacionId] }, `se canceló la reserva ${updated.confirmationNumber}`)
+      : { apagadas: 0, fallidas: 0 };
     // El estado de pago lo dicen los cobros (revisión del 4 nov 2026): tras cambiar
     // el total, reactivarla o ponerle un estado a mano, se recalcula pagada ↔
     // pendiente. Solo si su dinero ya vive en cobros (las históricas no se tocan).
@@ -191,7 +206,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
     }
     // Lo que quedó de verdad (el estado pudo cambiar al recalcular con los cobros).
-    return NextResponse.json({ ok: true, updated: (await prisma.tourBooking.findUnique({ where: { id: updated.id } })) ?? updated });
+    return NextResponse.json({ ok: true, ligasApagadas: ligas.apagadas, updated: (await prisma.tourBooking.findUnique({ where: { id: updated.id } })) ?? updated });
   } catch (e: any) {
     console.error("admin/reservas/[id]:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

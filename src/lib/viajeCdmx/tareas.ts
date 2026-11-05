@@ -12,7 +12,8 @@ import { prisma } from "@/lib/prisma";
 import { stripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
 import { diffDiasYMD, hoyMX } from "@/lib/dates";
-import { crearLinkDePago, cancelarLinkDePago } from "@/lib/admin/linksPago";
+import { crearLinkDePago, cancelarLinkDePago, crearSeguimientoUnico } from "@/lib/admin/linksPago";
+import { decidirLigaSaldoViaje, tituloViajeSinAnticipo } from "@/lib/admin/ligasReglas";
 import { conMeta, metaDe } from "@/lib/admin/reserva";
 import { barrerApartados } from "./apartar";
 import { confirmarPasaje } from "./confirmar";
@@ -70,61 +71,77 @@ export async function conciliarDesdeLaBase(ahora: Date = new Date()): Promise<{ 
 
 interface LigaSaldo { id: string; url: string; monto: number; enviada: string; recordatorio?: string }
 
-/** La liga del saldo y su recordatorio el día que vence. */
-export async function liquidaciones(): Promise<{ ligas: number; recordatorios: number }> {
+/**
+ * La liga del saldo y su recordatorio el día que vence. Lo que se hace con
+ * cada lugar lo decide `decidirLigaSaldoViaje` (lote 3, 5 nov 2026): un lugar
+ * pagado en línea sin anticipo registrado ya no recibe una liga por el TOTAL,
+ * y una liga apagada (al cancelar el lugar) no se le recuerda: se hace otra.
+ */
+export async function liquidaciones(): Promise<{ ligas: number; recordatorios: number; sinAnticipo: number }> {
   const hoy = hoyMX();
   const reservas = await prisma.tourBooking.findMany({
     where: { salidaId: { not: null }, status: "pending", tourDate: { gte: hoy }, totalAmount: { gt: 0 } },
   });
-  if (!reservas.length) return { ligas: 0, recordatorios: 0 };
+  if (!reservas.length) return { ligas: 0, recordatorios: 0, sinAnticipo: 0 };
   const salidas = new Map(
     (await prisma.salidaGrupal.findMany({ where: { id: { in: Array.from(new Set(reservas.map((r) => r.salidaId!))) } } }))
       .map((s) => [s.id, s]),
   );
+  // En qué quedó cada liga guardada (activa, pagada o apagada).
+  const idsLiga = reservas.map((r) => (metaDe(r).ligaSaldo as LigaSaldo | undefined)?.id).filter((x): x is string => !!x);
+  const estadoLiga = new Map(
+    (idsLiga.length ? await prisma.linkPago.findMany({ where: { id: { in: idsLiga } }, select: { id: true, estado: true } }) : [])
+      .map((l) => [l.id, l.estado]),
+  );
 
-  let ligas = 0, recordatorios = 0;
+  let ligas = 0, recordatorios = 0, sinAnticipo = 0;
   for (const r of reservas) {
     const s = salidas.get(r.salidaId!);
     if (!s || s.estado === "cancelada") continue;
     const saldo = r.totalAmount - r.depositoPagado;
-    if (saldo < 10 || !EMAIL_OK.test(r.customerEmail)) continue;
-    const vence = saldoVence(s);
-    const faltan = diffDiasYMD(hoy, vence);
-    if (faltan > LIGA_SALDO_DIAS_ANTES) continue;
-
-    const meta = metaDe(r);
-    let liga = meta.ligaSaldo as LigaSaldo | undefined;
+    const faltan = diffDiasYMD(hoy, saldoVence(s));
+    const guardada = (metaDe(r).ligaSaldo as LigaSaldo | undefined) || undefined;
+    const d = decidirLigaSaldoViaje({
+      total: r.totalAmount, cobrado: r.depositoPagado, pagoEnLinea: !!r.stripePaymentIntentId,
+      correoValido: EMAIL_OK.test(r.customerEmail), faltanDias: faltan, diasAntes: LIGA_SALDO_DIAS_ANTES, hoy,
+      liga: guardada ? { monto: guardada.monto, enviada: guardada.enviada, recordatorio: guardada.recordatorio, estado: estadoLiga.get(guardada.id) ?? null } : null,
+    });
     try {
-      // Un pago parcial cambió el saldo: la liga vieja cobraría de más.
-      if (liga && liga.monto !== saldo) {
-        await cancelarLinkDePago(liga.id).catch(() => {});
-        liga = undefined;
+      if (d.accion === "sin-anticipo") {
+        await crearSeguimientoUnico({
+          titulo: tituloViajeSinAnticipo({ folio: r.confirmationNumber, cliente: r.customerName }),
+          clave: `viaje-sin-anticipo:${r.id}`, regla: "viaje-sin-anticipo", oportunidadId: r.oportunidadId, creadaPor: "Viaje CDMX",
+        });
+        sinAnticipo++;
+        continue;
       }
-      if (!liga) {
+      if (d.accion === "crear") {
+        // Un pago parcial cambió el saldo: la liga vieja cobraría de más.
+        if (d.apagarLaAnterior && guardada) await cancelarLinkDePago(guardada.id, "cambió el saldo del viaje").catch(() => {});
         const nueva = await crearLinkDePago({
           titulo: `Saldo · ${VIAJE_NOMBRE} · ${rangoCorto(s.fechaSalida, s.fechaRegreso)}`,
           detalle: `${r.customerName} · ${r.adults} persona${r.adults === 1 ? "" : "s"} · sale el ${fechaLarga(s.fechaSalida)} · ${r.confirmationNumber}`,
-          monto: saldo,
+          monto: d.monto,
           cliente: r.customerName,
           reservaId: r.id,
           nota: "Liga automática del saldo del viaje CDMX",
         }, "Sistema");
-        liga = { id: nueva.id, url: nueva.url, monto: saldo, enviada: hoy };
-        await correoLiquidacion(r, s, nueva.url, saldo);
+        const liga: LigaSaldo = { id: nueva.id, url: nueva.url, monto: d.monto, enviada: hoy };
+        await correoLiquidacion(r, s, nueva.url, d.monto);
         await prisma.tourBooking.update({ where: { id: r.id }, data: { lineItems: conMeta(r.lineItems, { ligaSaldo: liga }) as never } });
         ligas++;
         continue;
       }
-      if (faltan <= 0 && !liga.recordatorio && liga.enviada !== hoy) {
-        await correoLiquidacion(r, s, liga.url, saldo);
-        await prisma.tourBooking.update({ where: { id: r.id }, data: { lineItems: conMeta(r.lineItems, { ligaSaldo: { ...liga, recordatorio: hoy } }) as never } });
+      if (d.accion === "recordar" && guardada) {
+        await correoLiquidacion(r, s, guardada.url, saldo);
+        await prisma.tourBooking.update({ where: { id: r.id }, data: { lineItems: conMeta(r.lineItems, { ligaSaldo: { ...guardada, recordatorio: hoy } }) as never } });
         recordatorios++;
       }
     } catch (e) {
       logger.error("viaje_cdmx_liquidacion_fallo", { reserva: r.confirmationNumber, reason: e instanceof Error ? e.message : String(e) });
     }
   }
-  return { ligas, recordatorios };
+  return { ligas, recordatorios, sinAnticipo };
 }
 
 /**

@@ -12,6 +12,8 @@ import { abonarLigasDeCotizacion } from "@/lib/admin/linksPago";
 import { pedidosSinCupo } from "@/lib/cupoTour";
 import { crearReservaDeCotizacion, esErrorCotizacion } from "@/lib/cotizaciones/convertir";
 import { avisoSobrecupo, pedidosDeCupo } from "@/lib/cotizaciones/reglasConversion";
+import { puedeHacer } from "@/lib/admin/usuarios";
+import { dineroAlCrearReserva } from "@/lib/admin/candadosCobro";
 
 /** El lead que manda el panel, solo si existe (un id roto no se guarda). */
 async function leadExistente(v: unknown): Promise<string | null> {
@@ -64,6 +66,10 @@ export async function POST(req: NextRequest) {
     const sinLugar = pedidosCupo.length ? await pedidosSinCupo(pedidosCupo).catch(() => []) : [];
     const avisoCupo = avisoSobrecupo(sinLugar, "capturada en el panel");
     const cotizacionId = typeof body.cotizacionId === "string" && body.cotizacionId ? body.cotizacionId.slice(0, 40) : null;
+    // 🔴 Lo cobrado sale de los renglones de cobro (lote 3, 5 nov 2026): quien no
+    // es socio ya no puede crearla con depósito ni «pagada» mandándolo por la API
+    // (el PATCH ya lo impedía; el panel manda 0 y «pending»).
+    const dinero = dineroAlCrearReserva(body, !!sesion && puedeHacer(sesion.rol, "anularMovimiento"));
     // 🔴 Con `cotizacionId` (5 nov 2026): candado sobre la cotización y 409 si
     // ya tiene una reserva viva (la liga pagada la convirtió sola, otra persona
     // la convirtió o fue un doble clic). La cotización queda «aceptada» con su
@@ -78,7 +84,7 @@ export async function POST(req: NextRequest) {
       adults:                Number(body.adults)   || 1,
       children:              Number(body.children) || 0,
       totalAmount:           Math.round(Number(body.totalAmount) || 0),
-      depositoPagado:        Math.round(Number(body.depositoPagado) || 0),
+      depositoPagado:        dinero.depositoPagado,
       promoCode:             body.promoCode || null,
       promoDiscount:         Number(body.promoDiscount) || 0,
       stripePaymentIntentId: body.stripePaymentIntentId || null,
@@ -90,7 +96,7 @@ export async function POST(req: NextRequest) {
       packageItems:          body.packageItems ?? undefined,
       extraItems:            body.extraItems   ?? undefined,
       // Sin estado explícito, lo dice el dinero (antes nacía «pagada» con $0).
-      status:                body.status || (Math.round(Number(body.depositoPagado) || 0) >= Math.round(Number(body.totalAmount) || 0) && Number(body.totalAmount) > 0 ? "paid" : "pending"),
+      status:                dinero.status,
       guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
       idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
       // Una reserva capturada a mano casi nunca entró por la web: el

@@ -91,7 +91,12 @@ export async function confirmarPasaje(
           adults:   personas,
           children: 0,
           totalAmount: total,
-          depositoPagado: 0, // lo deja cuadrado el renglón de cobro, abajo
+          // 🔴 Nace con lo cobrado, como las reservas del sitio (lote 3, 5 nov
+          // 2026): antes nacía en 0 y solo el cobro «silencioso» de abajo lo
+          // ponía. Si ese cobro fallaba, la reserva se quedaba en $0 para
+          // siempre y el cron le mandaba la liga por el TOTAL. El renglón de
+          // cobro solo lo desglosa (`sinRescate`).
+          depositoPagado: cobrado,
           stripePaymentIntentId: pi.id,
           customerName:  apartado?.nombre || meta.customerName || "Cliente",
           customerEmail: apartado?.email || meta.customerEmail || pi.receipt_email || "",
@@ -150,6 +155,8 @@ export async function confirmarPasaje(
       reservaId: reserva.id, monto: cobrado, metodo: "stripe",
       nota: `Anticipo en línea del viaje (${r.metodo} por Stripe)`,
       sinRescate: true,
+      // Una sola vez por pago, y un reembolso de Stripe lo encuentra.
+      stripeRef: pi.id,
     });
         // Al CRM (revisión del 4 nov 2026): la reserva de la web también es un lead, enlazado al de esa persona o uno nuevo. No lanza.
         await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(reserva.id, "Web")).catch(() => {});

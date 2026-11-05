@@ -205,6 +205,17 @@ async function reservaPreviaDeCotizacion(
 }
 
 /**
+ * La reserva que ya salió de esta cotización —la viva, si hay alguna—, sin
+ * candado (lote 3, 5 nov 2026). La usa la liga pagada para saber, ANTES de
+ * mover el lead, si el pago cae sobre una reserva cancelada.
+ */
+export async function reservaDeCotizacion(q: Pick<TourQuote, "id" | "quoteNumber" | "packageItems">): Promise<TourBooking | null> {
+  const viva = await reservaPreviaDeCotizacion(prisma, q, { soloVivas: true });
+  if (viva) return viva.reserva;
+  return (await reservaPreviaDeCotizacion(prisma, q))?.reserva ?? null;
+}
+
+/**
  * El POST de Reservas cuando trae `cotizacionId` (lote 1 de la auditoría, 5
  * nov 2026). El cuadro de Convertir ya no pasa por ahí, pero si algo lo sigue
  * llamando no puede hacer una segunda reserva de la misma cotización: candado

@@ -6,6 +6,8 @@ import {
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import { leadDesdeCotizacion, leadTrasBorrarCotizacion } from "@/lib/admin/crmDatos";
+import { apagarLigasDe, crearSeguimientoUnico } from "@/lib/admin/linksPago";
+import { tituloLigaSinDestino } from "@/lib/admin/ligasReglas";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +39,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       eventoDescuento = sellado.evento;
     }
     const quote = await prisma.tourQuote.update({ where: { id: params.id }, data });
+    // Vencida o archivada a mano: su liga de anticipo deja de poder pagarse (lote 3, 5 nov 2026).
+    if ((quote.status === "expirada" || quote.status === "archivada") && antes?.status !== quote.status) {
+      await apagarLigasDe({ cotizacionIds: [quote.id] }, quote.status === "expirada" ? "la cotización venció" : "la cotización se archivó");
+    }
     if (eventoDescuento) {
       await registrarEnBitacora({
         accion:     "modificó",
@@ -76,12 +82,29 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     const borradoTotal = searchParams.get("hard") === "1";
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
     let lead: "borrado" | "actualizado" | null = null;
+    // 🔴 Sus ligas sin pagar se apagan (lote 3 de la auditoría, 5 nov 2026):
+    // antes seguían vivas en el chat del cliente y, si las pagaba, el dinero
+    // quedaba en Stripe sin reserva ni aviso.
+    let ligas = { apagadas: 0, fallidas: 0 };
+    // Un pago de su liga que todavía no está en ninguna reserva no se pierde al
+    // borrarla: no se frena el borrado, pero Manolo recibe el seguimiento.
+    const pagosSueltos = borradoTotal
+      ? await prisma.linkPago.findMany({ where: { cotizacionId: params.id, estado: "pagado", reservaId: null } })
+      : [];
     if (borradoTotal) {
       await prisma.tourQuote.delete({ where: { id: params.id } });
       // Su lead: se va con ella si solo existía por ella; si no, se anota y se pone al día.
       if (antes?.oportunidadId) lead = await leadTrasBorrarCotizacion(antes.oportunidadId, antes.quoteNumber, (await sesionActual())?.nombre ?? "Desconocido");
+      ligas = await apagarLigasDe({ cotizacionIds: [params.id] }, `se borró la cotización${antes ? ` ${antes.quoteNumber}` : ""}`);
+      for (const l of pagosSueltos) {
+        await crearSeguimientoUnico({
+          titulo: tituloLigaSinDestino({ tipo: "cotizacion-borrada" }, { titulo: l.titulo, cliente: l.cliente ?? antes?.customerName, monto: l.montoPagado ?? l.monto }),
+          clave: `liga-sin-destino:${l.id}`, regla: "liga-sin-destino", creadaPor: "Cotizaciones",
+        }).catch(e => console.error("seguimiento de liga pagada sin reserva:", (e as Error)?.message));
+      }
     } else {
       await prisma.tourQuote.update({ where: { id: params.id }, data: { status: "expirada" } });
+      ligas = await apagarLigasDe({ cotizacionIds: [params.id] }, "la cotización venció");
     }
 
     await registrarEnBitacora({
@@ -93,7 +116,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
           (borradoTotal ? " (borrada de la base)" : " marcada como expirada")
         : `Cotización ${params.id} (ya no estaba en la base)`,
     });
-    return NextResponse.json({ ok: true, lead });
+    return NextResponse.json({ ok: true, lead, ligasApagadas: ligas.apagadas, pagosSinReserva: pagosSueltos.length });
   } catch (e: any) {
     console.error("admin/cotizaciones DELETE:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

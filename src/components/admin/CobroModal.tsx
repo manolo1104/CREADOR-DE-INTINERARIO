@@ -4,7 +4,7 @@ import { cobradoDe } from "@/lib/admin/dinero";
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Loader2, Banknote, ArrowLeftRight, Building2, CreditCard, MoreHorizontal, Check, Pencil } from "lucide-react";
-import { METODOS_COBRO, requiereComprobante, type MetodoCobro } from "@/lib/admin/metodosCobro";
+import { METODOS_COBRO, avisoDeCobro, requiereComprobante, type AccionCobro, type MetodoCobro } from "@/lib/admin/metodosCobro";
 import { RECEPTORES } from "@/lib/admin/corteSemanal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import Comprobantes, { type ArchivoComprobante } from "./Comprobantes";
@@ -27,6 +27,8 @@ export interface CobroFila {
   entregadoA: string | null;
   entregadoAt: string | null;
   nota: string | null;
+  /** Folio, últimos 4 dígitos o sesión de Stripe: se precarga al corregir. */
+  referencia: string | null;
   anulado: boolean;
   motivoAnulacion: string | null;
   creadoPor: string | null;
@@ -64,7 +66,12 @@ export default function CobroModal({
   reserva: ReservaCobrable;
   quien: string;
   onClose: () => void;
-  onGuardado: (cobrado: number) => void;
+  /**
+   * El dinero cambió: se registró o se anuló un cobro. Corregir el método o la
+   * referencia NO lo llama (lote 3, 5 nov 2026): antes ponía «$0 cobrado» en
+   * la lista y avisaba «Cobro registrado» sin haber registrado nada.
+   */
+  onGuardado: (cobrado: number, que: Exclude<AccionCobro, "corregido">) => void;
 }) {
   const yaCobrado = cobradoDe(reserva as Parameters<typeof cobradoDe>[0]);
   const saldo = Math.max(0, reserva.totalAmount - yaCobrado);
@@ -177,7 +184,7 @@ export default function CobroModal({
 
     playSuccess();
     setCobros(d.cobros ?? []);
-    onGuardado(d.cobrado ?? 0);
+    onGuardado(d.cobrado ?? 0, "registrado");
     onClose();
   }
 
@@ -192,8 +199,8 @@ export default function CobroModal({
     const d = await r?.json().catch(() => null);
     if (!r?.ok) { playError(); flash(`❌ ${d?.error || "No se pudo anular"}`); return; }
     setCobros(d.cobros ?? []);
-    onGuardado(d.cobrado ?? 0);
-    flash("✅ Cobro anulado");
+    onGuardado(d.cobrado ?? 0, "anulado");
+    flash(avisoDeCobro("anulado"));
   }
 
   const vivos = cobros.filter(c => !c.anulado);
@@ -370,7 +377,7 @@ export default function CobroModal({
                 <Renglon
                   key={c.id} cobro={c} reservaId={reserva.id}
                   onAnular={() => anular(c)}
-                  onCambio={(lista, cobrado) => { setCobros(lista); onGuardado(cobrado); }}
+                  onCambio={lista => { setCobros(lista); flash(avisoDeCobro("corregido")); }}
                   flash={flash}
                 />
               ))}
@@ -427,13 +434,15 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
   cobro: CobroFila;
   reservaId: string;
   onAnular: () => void;
-  onCambio: (cobros: CobroFila[], cobrado: number) => void;
+  /** Solo la lista: corregir no mueve el dinero. */
+  onCambio: (cobros: CobroFila[]) => void;
   flash: (m: string) => void;
 }) {
   const [editando, setEditando] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [metodo, setMetodo] = useState(c.metodo);
-  const [folio,  setFolio]  = useState("");
+  // La referencia que ya tenía (folio del SPEI, sesión de Stripe): vacía se conserva.
+  const [folio,  setFolio]  = useState(c.referencia ?? "");
   const [archivos, setArchivos] = useState<ArchivoComprobante[]>([]);
   // Los cobros viejos dicen «Erick», «Guía»…: aquí se corrige a uno de los socios.
   const [recibio, setRecibio] = useState((RECEPTORES as string[]).includes(c.recibidoPor ?? "") ? (c.recibidoPor as string) : "");
@@ -459,7 +468,7 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
     playSuccess();
     setEditando(false);
     setArchivos([]);
-    onCambio(d.cobros ?? [], d.cobrado ?? 0);
+    onCambio(d.cobros ?? []);
   }
 
   if (editando) {
@@ -493,7 +502,7 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
         </div>
         <input
           value={folio} onChange={e => setFolio(e.target.value)}
-          placeholder="Referencia (opcional)"
+          placeholder="Referencia (si la dejas vacía, se queda la que tenía)"
           className="panel-foco w-full min-h-[44px] border border-[#1B4332]/15 rounded-sm px-2 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332] mb-2"
         />
         {c.comprobantes.length === 0 && (

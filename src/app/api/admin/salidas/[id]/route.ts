@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sesionActual } from "@/lib/admin/sesion";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { editarSalida, type FormSalida } from "@/lib/viajeCdmx/admin";
+import { apagarLigasDeSalida } from "@/lib/viajeCdmx/pasajeros";
 import { respuestaDeError } from "@/lib/viajeCdmx/respuesta";
 
 export const dynamic = "force-dynamic";
@@ -25,6 +26,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
   try { b = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {
     const { antes, despues } = await editarSalida(params.id, b);
+    // Cancelada: las ligas del saldo de sus pasajeros ya no se pueden pagar (lote 3, 5 nov 2026).
+    if (despues.estado === "cancelada" && antes.estado !== "cancelada") await apagarLigasDeSalida(despues.id, despues.fechaSalida);
     const detalle = Object.keys(ETIQUETAS)
       .filter((k) => JSON.stringify(comparable((antes as never)[k])) !== JSON.stringify(comparable((despues as never)[k])))
       .map((k) => ({ campo: ETIQUETAS[k], antes: comparable((antes as never)[k]), despues: comparable((despues as never)[k]) }));

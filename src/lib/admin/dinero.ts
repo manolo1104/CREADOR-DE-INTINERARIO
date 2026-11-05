@@ -49,3 +49,16 @@ export function cobradoDe(b: { depositoPagado?: number | null; stripePaymentInte
 export function saldoPendiente(b: CashFields): number {
   return Math.max(0, b.totalAmount - montoCobrado(b));
 }
+
+/**
+ * Lo cobrado que hay que dejar fijo en un renglón ANTES de cambiarle el total a
+ * una reserva sin renglones de cobro, o 0 si no hace falta (lote 3, 5 nov
+ * 2026). Una reserva vieja pagada por Stripe con depósito 0 cuenta como
+ * «pagada al 100 %» del total VIGENTE: subirle el total la dejaba «pagada» sin
+ * cobrar lo nuevo, y el siguiente cobro rescataba el total nuevo como si ya
+ * hubiera entrado. Con el renglón fijado con el total de antes, eso no pasa.
+ */
+export function cobradoAFijarAntesDeEditar(antes: CashFields, totalNuevo: number, renglonesDeCobro: number): number {
+  if (renglonesDeCobro > 0 || Math.round(totalNuevo) === antes.totalAmount) return 0;
+  return montoCobrado(antes);
+}

@@ -16,6 +16,7 @@ import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, t
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
 import { pickupParaFormulario } from "@/lib/admin/hospedaje";
 import CobroModal from "@/components/admin/CobroModal";
+import { avisoDeCobro } from "@/lib/admin/metodosCobro";
 import { origenValido } from "@/lib/origenReserva";
 import { MOTIVOS_CANCELACION, motivoParaGuardar, type MotivoCancelacion } from "@/lib/admin/cancelacion";
 import { escapeHtml as esc } from "@/lib/escapeHtml";
@@ -173,7 +174,9 @@ export default function ReservasClient(
       setBookings(b => b.map(x => x.id === id
         ? { ...x, status: final, depositoPagado: d?.updated?.depositoPagado ?? x.depositoPagado, motivoCancelacion: newStatus === "cancelled" ? (motivoCancelacion ?? null) : null }
         : x));
-      flash(final !== newStatus ? `✅ Estado actualizado: queda «${final === "paid" ? "pagada" : "pendiente"}» por lo que ya se cobró` : "✅ Estado actualizado");
+      // Al cancelar, sus ligas sin pagar se apagan solas (lote 3, 5 nov 2026): que se note.
+      const ligas = d?.ligasApagadas > 0 ? ` · ${d.ligasApagadas === 1 ? "su liga de pago ya no se puede pagar" : `sus ${d.ligasApagadas} ligas de pago ya no se pueden pagar`}` : "";
+      flash((final !== newStatus ? `✅ Estado actualizado: queda «${final === "paid" ? "pagada" : "pendiente"}» por lo que ya se cobró` : "✅ Estado actualizado") + ligas);
       router.refresh(); // su lead pudo cambiar de etapa (cancelar / reactivar)
     } else {
       const d = await r?.json().catch(() => null);
@@ -1046,7 +1049,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             <input value={motivoDetalle} onChange={e => setMotivoDetalle(e.target.value)} maxLength={200}
               placeholder="Por ejemplo: avisó por WhatsApp el martes"
               className="w-full border border-[#1B4332]/20 rounded-sm px-3 py-2.5 text-[16px] font-dm mb-4 panel-foco" />
-            <p className="text-[11px] font-dm text-[#1B4332]/55 mb-4">La reserva no se borra: queda como cancelada con este motivo y en la bitácora. Si tiene cobros, regístralos o anúlalos desde Cobros.</p>
+            <p className="text-[11px] font-dm text-[#1B4332]/55 mb-4">La reserva no se borra: queda como cancelada con este motivo y en la bitácora. Sus ligas de pago sin pagar se apagan solas. Si tiene cobros, regístralos o anúlalos desde Cobros.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setCancelando(null)} className="px-4 py-2.5 text-xs font-dm text-[#1B4332]/70 hover:text-[#1B4332] panel-foco">Dejarla como está</button>
               <button onClick={() => { playClick(); confirmarCancelacion(); }} disabled={!motivo}
@@ -1064,11 +1067,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           reserva={cobrando}
           quien={quien}
           onClose={() => setCobrando(null)}
-          onGuardado={cobrado => {
+          onGuardado={(cobrado, que) => {
             // Sin recargar la lista entera: se actualiza la fila que cambió.
             setBookings(bs => bs.map(b => (b.id === cobrando.id ? { ...b, depositoPagado: cobrado } : b)));
             setCobrando(c => (c ? { ...c, depositoPagado: cobrado } : c));
-            flash("✅ Cobro registrado");
+            flash(avisoDeCobro(que));
             // La ficha del lead lee lo cobrado: que no se quede con lo de antes.
             router.refresh();
           }}

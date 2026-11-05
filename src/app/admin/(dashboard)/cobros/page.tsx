@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { reservasParaLigaDeSaldo } from "@/lib/admin/linksPago";
 import CobrosClient from "./CobrosClient";
 
 export const dynamic = "force-dynamic";
@@ -19,23 +20,13 @@ function personasDe(r: { adults: number; children: number; lineItems: unknown })
 
 export default async function CobrosPage() {
   // Las reservas con saldo, para poder cobrar justo lo que falta sin teclear
-  // el monto a mano (que es donde se cuelan los errores de un cero).
-  const reservas = await prisma.tourBooking.findMany({
-    where:   { status: { not: "cancelled" } },
-    orderBy: { createdAt: "desc" },
-    take: 60,
-    select: {
-      id: true, confirmationNumber: true, customerName: true,
-      totalAmount: true, depositoPagado: true, stripePaymentIntentId: true,
-      tourName: true, tourSlug: true, tourDate: true, adults: true, children: true, lineItems: true,
-    },
-  });
+  // el monto a mano (que es donde se cuelan los errores de un cero). TODAS las
+  // que deben y con la regla de «cobrado» de Reservas (lote 3, 5 nov 2026):
+  // antes eran las 60 más recientes y una vieja con saldo no aparecía.
+  const reservas = await reservasParaLigaDeSaldo();
 
   const conSaldo = reservas
     .map(r => {
-      const cobrado = (r.depositoPagado ?? 0) > 0
-        ? r.depositoPagado
-        : (r.stripePaymentIntentId ? r.totalAmount : 0);
       return {
         id: r.id,
         folio: r.confirmationNumber,
@@ -51,11 +42,10 @@ export default async function CobrosPage() {
         // mismo: sin ellos habría que teclear el monto a mano, que es donde se
         // cuela un cero de más.
         total: r.totalAmount,
-        cobrado,
-        saldo: Math.max(0, r.totalAmount - cobrado),
+        cobrado: r.cobrado,
+        saldo: r.saldo,
       };
-    })
-    .filter(r => r.saldo > 0);
+    });
 
   // Cotizaciones vivas: son las que pueden convertirse en venta con un
   // anticipo. Las aceptadas ya se cobraron y las expiradas no van a ningún lado.

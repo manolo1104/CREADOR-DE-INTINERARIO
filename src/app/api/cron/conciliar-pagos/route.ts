@@ -4,6 +4,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { actividad, logger } from "@/lib/logger";
 import { esPagoDeTours, recuperarPago } from "@/lib/recuperarPago";
+import { conciliarLigas, type ResultadoConciliacionLigas } from "@/lib/admin/conciliarLigas";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -34,6 +35,21 @@ export async function POST(req: NextRequest) {
   }
   const dry = req.nextUrl.searchParams.get("dry") === "1";
 
+  // ── Las ligas de pago (lote 3 de la auditoría, 5 nov 2026) ───────────────
+  // Va primero y aparte: si leer los pagos de abajo falla, las ligas pagadas
+  // sin aviso igual se registran, y las que ya no tienen qué cobrar se apagan.
+  let ligas: ResultadoConciliacionLigas | { error: string };
+  try {
+    ligas = await conciliarLigas(new Date(), { dry });
+    if (ligas.registradas || ligas.apagadas || ligas.otraCuenta) {
+      actividad("🔗  CONCILIACIÓN DE LIGAS", `${ligas.revisadas} revisadas`, `${ligas.registradas} pagada(s) sin aviso`, `${ligas.apagadas} apagada(s)`,
+        ligas.otraCuenta ? `${ligas.otraCuenta} de otra cuenta` : undefined, dry ? "solo conteo" : undefined);
+    }
+  } catch (e) {
+    logger.error("conciliar_ligas_failed", { reason: e instanceof Error ? e.message : "unknown" });
+    ligas = { error: "No se pudieron revisar las ligas" };
+  }
+
   const ahora = Math.floor(Date.now() / 1000);
   const desde = ahora - HORAS_ATRAS * 3600;
   const hasta = ahora - MINUTOS_DE_GRACIA * 60;
@@ -51,7 +67,7 @@ export async function POST(req: NextRequest) {
     }
   } catch (e) {
     logger.error("conciliar_pagos_stripe_failed", { reason: e instanceof Error ? e.message : "unknown" });
-    return NextResponse.json({ error: "No se pudo leer Stripe" }, { status: 502 });
+    return NextResponse.json({ error: "No se pudo leer Stripe", ligas }, { status: 502 });
   }
 
   const conReserva = new Set(
@@ -89,6 +105,7 @@ export async function POST(req: NextRequest) {
     sinReserva: faltan.map((p) => ({ id: p.id, monto: Math.round((p.amount_received || p.amount) / 100) })),
     creadas,
     errores,
+    ligas,
     dry,
   });
 }

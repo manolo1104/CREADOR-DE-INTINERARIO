@@ -1650,6 +1650,10 @@ async function reemplazarUna(
       };
     }
 
+    // Reemplazada (vencida), su liga de anticipo ya no se puede pagar (lote 3, 5 nov 2026). No lanza.
+    await import("@/lib/admin/linksPago")
+      .then(async m => { const q = await prisma.tourQuote.findUnique({ where: { quoteNumber: folio }, select: { id: true } }); if (q) await m.apagarLigasDe({ cotizacionIds: [q.id] }, `la reemplazó la ${nueva.quoteNumber}`); })
+      .catch(() => {});
     await registrarEnBitacora({
       accion:     "modificó",
       entidad:    "cotización",

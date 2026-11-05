@@ -40,6 +40,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Opcional: el cobro al que pertenece el comprobante. Sin esto, el archivo
     // queda colgando de la reserva (comprobante de pago al proveedor).
     const movimientoId = (form.get("movimientoId") as string | null)?.trim() || null;
+    // Solo un cobro de ESTA reserva (lote 3, 5 nov 2026): no se le cuelga un archivo al cobro de otra.
+    if (movimientoId) {
+      const cobro = await prisma.movimiento.findUnique({ where: { id: movimientoId }, select: { reservaId: true } });
+      if (!cobro || cobro.reservaId !== params.id) return NextResponse.json({ error: "Ese cobro no es de esta reserva" }, { status: 400 });
+    }
     // 🔴 NO usar `instanceof File`: Railway corre Node 18, donde `File` no es
     // global, y la comparación lanzaba "File is not defined" → TODA subida de
     // comprobante daba 500 en producción (en la Mac, con Node 20+, pasaba).

@@ -1,9 +1,17 @@
 import Stripe from "stripe";
+import type { LinkPago, TourQuote } from "@prisma/client";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
+import { hoyMX } from "@/lib/dates";
 import { registrarCobro } from "@/lib/admin/cobros";
-import { SISTEMA } from "@/lib/admin/bitacora";
+import { montoCobrado } from "@/lib/admin/dinero";
+import { SISTEMA, pesos, registrarEnBitacora } from "@/lib/admin/bitacora";
+import { RESPONSABLE_COBROS } from "@/lib/admin/automatizaciones";
 import { tituloTareaLigaPagada } from "@/lib/cotizaciones/reglasConversion";
+import {
+  avisoTrasAbonarLiga, motivoParaApagarLiga, reservasParaPagoRestante, tituloLigaDeOtraCuenta, tituloLigaSinDestino,
+  type HechosLiga, type SesionPagadaLiga,
+} from "@/lib/admin/ligasReglas";
 
 /**
  * Cobros sueltos: título, monto y una liga que se manda por WhatsApp.
@@ -15,6 +23,12 @@ import { tituloTareaLigaPagada } from "@/lib/cotizaciones/reglasConversion";
  * Cada liga se limita a **un solo pago** (`completed_sessions: 1`). Sin ese
  * tope, un cliente que abre dos veces la conversación puede pagar dos veces el
  * mismo tour, y devolver dinero es mucho más caro que ponerle el límite.
+ *
+ * 🔴 Desde el 5 nov 2026 (lote 3 de la auditoría) una liga se APAGA sola cuando
+ * lo que cobra deja de existir: se borra, vence o archiva su cotización, se
+ * cancela su reserva (o el lugar, o la salida del viaje CDMX), o la reserva
+ * queda pagada por otro medio. Si aun así se paga, el dinero se registra donde
+ * se pueda y Manolo recibe un seguimiento: nunca se pierde en silencio.
  */
 
 /** Stripe trabaja en centavos; el panel, en pesos enteros. La conversión vive aquí. */
@@ -23,6 +37,88 @@ export const aPesos = (centavos: number) => Math.round(centavos / 100);
 
 export const MONTO_MINIMO = 10;      // Stripe rechaza cobros por debajo de $10 MXN
 export const MONTO_MAXIMO = 500_000; // freno a un dedazo con un cero de más
+
+// ── Lo que se le pide a Stripe de una liga ya creada ────────────────────────
+
+/**
+ * Apagar una liga y preguntar si se pagó. Va detrás de esta interfaz para que
+ * las pruebas usen un doble: ninguna prueba debe llamar a Stripe de verdad.
+ */
+export interface PuertoStripeLigas {
+  /** «no-existe»: Stripe no la tiene en esta cuenta (p. ej. es de la cuenta anterior). */
+  apagar(stripeLinkId: string): Promise<"apagada" | "no-existe">;
+  /** Las sesiones de pago completas y pagadas de la liga, o «no-existe». */
+  sesionesPagadas(stripeLinkId: string): Promise<SesionPagadaLiga[] | "no-existe">;
+}
+
+const puertoReal: PuertoStripeLigas = {
+  async apagar(stripeLinkId) {
+    try {
+      await stripe.paymentLinks.update(stripeLinkId, { active: false });
+      return "apagada";
+    } catch (e) {
+      // Si Stripe no la tiene, en el panel igual deja de ofrecerse; quien la
+      // apagó recibe el aviso de que puede seguir viva en la otra cuenta.
+      if (e instanceof Stripe.errors.StripeInvalidRequestError) return "no-existe";
+      throw e;
+    }
+  },
+  async sesionesPagadas(stripeLinkId) {
+    try {
+      const r = await stripe.checkout.sessions.list({ payment_link: stripeLinkId, status: "complete", limit: 5 });
+      return r.data
+        .filter((s) => s.payment_status === "paid")
+        .map((s) => ({
+          id: s.id,
+          montoCentavos: s.amount_total ?? 0,
+          correo: s.customer_details?.email || s.customer_email || null,
+          paymentIntentId: typeof s.payment_intent === "string" ? s.payment_intent : s.payment_intent?.id ?? null,
+        }));
+    } catch (e) {
+      // Solo «no existe» de verdad: cualquier otro error se cuenta como error y se reintenta.
+      if (e instanceof Stripe.errors.StripeInvalidRequestError && e.code === "resource_missing") return "no-existe";
+      throw e;
+    }
+  },
+};
+
+let puertoDePrueba: PuertoStripeLigas | null = null;
+
+/** SOLO para pruebas: un doble en lugar de Stripe (`null` lo quita). */
+export function usarStripeDePrueba(p: PuertoStripeLigas | null): void {
+  puertoDePrueba = p;
+}
+
+/** Stripe, o null si no hay llave (en local y en pruebas no se toca Stripe). */
+export function puertoStripe(): PuertoStripeLigas | null {
+  if (puertoDePrueba) return puertoDePrueba;
+  return process.env.STRIPE_SECRET_KEY ? puertoReal : null;
+}
+
+// ── Seguimientos que deja el dinero ─────────────────────────────────────────
+
+/**
+ * Un seguimiento con su clave única: si Stripe repite el aviso, no nace dos
+ * veces. Lanza si la base falla: quien llama decide (el webhook contesta 500
+ * y Stripe reintenta, así el aviso no se pierde).
+ */
+export async function crearSeguimientoUnico(d: {
+  titulo: string; clave: string; regla: string; responsable?: string; oportunidadId?: string | null; creadaPor?: string;
+}): Promise<void> {
+  try {
+    await prisma.tarea.create({
+      data: {
+        titulo: d.titulo.slice(0, 200), responsable: d.responsable ?? RESPONSABLE_COBROS, vence: hoyMX(),
+        oportunidadId: d.oportunidadId ?? null, origen: "regla", regla: d.regla, claveRegla: d.clave,
+        creadaPor: d.creadaPor ?? "Liga de pago",
+      },
+    });
+  } catch (e) {
+    if ((e as { code?: string })?.code !== "P2002") throw e;
+    return;
+  }
+  if (d.oportunidadId) await import("./crmDatos").then(m => m.sincronizarProximoPaso(d.oportunidadId!)).catch(() => {});
+}
 
 export interface DatosLink {
   titulo: string;
@@ -84,6 +180,14 @@ export async function crearLinkDePago(datos: DatosLink, creadoPor: string): Prom
     });
     if (!cot) throw new Error("Esa cotización no existe");
     folio = cot.quoteNumber;
+  }
+  // Ni se manda una liga que se apagaría sola (lote 3, 5 nov 2026): una
+  // pestaña vieja de Cobros todavía ofrecía la cotización que venció en la
+  // noche o la reserva que alguien canceló.
+  if (datos.reservaId || datos.cotizacionId) {
+    const objetivo = { id: "nueva", reservaId: datos.reservaId ?? null, cotizacionId: datos.cotizacionId ?? null };
+    const motivo = motivoParaApagarLiga(objetivo, (await hechosDeLigas([objetivo])).get("nueva"));
+    if (motivo) throw new Error(`No se puede mandar esa liga: ${motivo}.`);
   }
 
   const detalle = datos.detalle?.trim().slice(0, 200);
@@ -169,38 +273,193 @@ export async function crearLinkDePago(datos: DatosLink, creadoPor: string): Prom
 }
 
 /**
- * Apaga un cobro que ya no debe pagarse.
+ * Apaga un cobro que ya no debe pagarse (el botón de Cobros, o el cron del
+ * viaje cuando cambia el saldo).
  *
  * En Stripe la liga se desactiva (no se borra): si alguien la abre después, ve
  * un aviso de que ya no está disponible en vez de un error.
+ *
+ * Devuelve «no-existe» si Stripe no la tiene en la cuenta actual (5 nov 2026):
+ * antes se marcaba cancelada en silencio, aunque siguiera cobrable en la
+ * cuenta anterior de Stripe.
  */
-export async function cancelarLinkDePago(id: string): Promise<void> {
+export async function cancelarLinkDePago(id: string, motivo?: string): Promise<{ enStripe: "apagada" | "no-existe" }> {
   const link = await prisma.linkPago.findUnique({ where: { id } });
   if (!link) throw new Error("Ese cobro no existe");
   if (link.estado === "pagado") throw new Error("Ese cobro ya se pagó: no se puede cancelar");
 
-  try {
-    await stripe.paymentLinks.update(link.stripeLinkId, { active: false });
-  } catch (e) {
-    // Si Stripe ya no lo tiene, igual se marca aquí: lo que importa es que el
-    // panel deje de ofrecerlo.
-    if (!(e instanceof Stripe.errors.StripeInvalidRequestError)) throw e;
-  }
+  const puerto = puertoStripe();
+  if (!puerto) throw new Error("Los pagos no están configurados: falta la llave de Stripe.");
+  const enStripe = await puerto.apagar(link.stripeLinkId);
 
-  await prisma.linkPago.update({ where: { id }, data: { estado: "cancelado" } });
+  // Solo si no se pagó en este mismo instante: el aviso de Stripe pudo ganar.
+  await prisma.linkPago.updateMany({
+    where: { id, estado: { not: "pagado" } },
+    data:  { estado: "cancelado", ...(motivo ? { motivoCancelacion: motivo.slice(0, 200) } : {}) },
+  });
+  return { enStripe };
 }
 
 /**
- * Registra que una liga se pagó. La llama el webhook de Stripe.
+ * Apaga las ligas ACTIVAS de esas reservas y cotizaciones porque ya no tienen
+ * qué cobrar (5 nov 2026). Nunca lanza: si Stripe o la base fallan, la liga se
+ * queda activa y la conciliación de cada hora la vuelve a intentar.
+ */
+export async function apagarLigasDe(
+  objetivo: { reservaIds?: (string | null | undefined)[]; cotizacionIds?: (string | null | undefined)[] },
+  motivo: string,
+): Promise<{ apagadas: number; fallidas: number }> {
+  const reservaIds = Array.from(new Set((objetivo.reservaIds ?? []).filter((x): x is string => !!x)));
+  const cotizacionIds = Array.from(new Set((objetivo.cotizacionIds ?? []).filter((x): x is string => !!x)));
+  if (!reservaIds.length && !cotizacionIds.length) return { apagadas: 0, fallidas: 0 };
+  try {
+    const ligas = await prisma.linkPago.findMany({
+      where: {
+        estado: "activo",
+        OR: [
+          ...(reservaIds.length ? [{ reservaId: { in: reservaIds } }] : []),
+          ...(cotizacionIds.length ? [{ cotizacionId: { in: cotizacionIds } }] : []),
+        ],
+      },
+    });
+    let apagadas = 0, fallidas = 0;
+    for (const l of ligas) {
+      const r = await apagarLiga(l, motivo);
+      if (r === "apagada") apagadas++;
+      if (r === "fallo") fallidas++;
+    }
+    return { apagadas, fallidas };
+  } catch (e) {
+    console.error("apagarLigasDe:", (e as Error)?.message);
+    return { apagadas: 0, fallidas: 1 };
+  }
+}
+
+/** Apaga UNA liga: primero en Stripe, después aquí, y lo deja en la bitácora. No lanza. */
+export async function apagarLiga(l: LinkPago, motivo: string): Promise<"apagada" | "ya-no-estaba-activa" | "fallo"> {
+  try {
+    const puerto = puertoStripe();
+    if (!puerto) {
+      console.error(`liga ${l.id} sin apagar (${motivo}): falta la llave de Stripe`);
+      return "fallo";
+    }
+    const enStripe = await puerto.apagar(l.stripeLinkId);
+    const r = await prisma.linkPago.updateMany({
+      where: { id: l.id, estado: "activo" },
+      data:  { estado: "cancelado", motivoCancelacion: motivo.slice(0, 200) },
+    });
+    if (!r.count) return "ya-no-estaba-activa";
+    await registrarEnBitacora({
+      accion: "modificó", entidad: "cobro", actor: SISTEMA,
+      resumen: `Liga de pago «${l.titulo}» de ${pesos(l.monto)} apagada sola: ${motivo}`,
+    });
+    if (enStripe === "no-existe") {
+      await crearSeguimientoUnico({
+        titulo: tituloLigaDeOtraCuenta({ titulo: l.titulo, cliente: l.cliente, monto: l.monto }),
+        clave: `liga-otra-cuenta:${l.id}`, regla: "liga-otra-cuenta",
+      }).catch(() => {});
+    }
+    return "apagada";
+  } catch (e) {
+    console.error(`apagar la liga ${l.id}:`, (e as Error)?.message);
+    return "fallo";
+  }
+}
+
+/** El `_meta` de la cotización (en `packageItems`): ahí queda el folio de su reserva. */
+function folioDeReservaDeCotizacion(packageItems: unknown): string | null {
+  if (!Array.isArray(packageItems)) return null;
+  const m = (packageItems as unknown[]).find((p) => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta === true) as { reservaFolio?: unknown } | undefined;
+  return typeof m?.reservaFolio === "string" && m.reservaFolio ? m.reservaFolio : null;
+}
+
+/**
+ * Lo que hoy se sabe de aquello que cobra cada liga (para `motivoParaApagarLiga`):
+ * su cotización, la reserva que paga (la suya o la que salió de su cotización,
+ * prefiriendo la viva) y si la salida del viaje se canceló.
+ */
+export async function hechosDeLigas(ligas: Pick<LinkPago, "id" | "reservaId" | "cotizacionId">[]): Promise<Map<string, HechosLiga>> {
+  const unicos = (xs: (string | null)[]) => Array.from(new Set(xs.filter((x): x is string => !!x)));
+  const resIds = unicos(ligas.map(l => l.reservaId));
+  const cotIds = unicos(ligas.map(l => (l.reservaId ? null : l.cotizacionId)));
+  const cots = cotIds.length
+    ? await prisma.tourQuote.findMany({ where: { id: { in: cotIds } }, select: { id: true, status: true, packageItems: true } })
+    : [];
+  const folios = unicos(cots.map(c => folioDeReservaDeCotizacion(c.packageItems)));
+  const campos = {
+    id: true, confirmationNumber: true, status: true, totalAmount: true, depositoPagado: true,
+    stripePaymentIntentId: true, createdAt: true, salidaId: true, cotizacionId: true,
+  } as const;
+  const [propias, deCots] = await Promise.all([
+    resIds.length ? prisma.tourBooking.findMany({ where: { id: { in: resIds } }, select: campos }) : Promise.resolve([]),
+    cotIds.length
+      ? prisma.tourBooking.findMany({ where: { OR: [{ cotizacionId: { in: cotIds } }, ...(folios.length ? [{ confirmationNumber: { in: folios } }] : [])] }, select: campos })
+      : Promise.resolve([]),
+  ]);
+  const salidaIds = unicos([...propias, ...deCots].map(r => r.salidaId));
+  const salidas = salidaIds.length ? await prisma.salidaGrupal.findMany({ where: { id: { in: salidaIds } }, select: { id: true, estado: true } }) : [];
+  const salidaCancelada = new Set(salidas.filter(s => s.estado === "cancelada").map(s => s.id));
+  const hecho = (r: (typeof propias)[number]) => ({
+    folio: r.confirmationNumber, status: r.status, total: r.totalAmount, cobrado: montoCobrado(r),
+    salidaCancelada: !!r.salidaId && salidaCancelada.has(r.salidaId),
+  });
+
+  const mapa = new Map<string, HechosLiga>();
+  for (const l of ligas) {
+    if (l.reservaId) {
+      const r = propias.find(x => x.id === l.reservaId);
+      mapa.set(l.id, { reserva: r ? hecho(r) : null });
+    } else if (l.cotizacionId) {
+      const c = cots.find(x => x.id === l.cotizacionId);
+      if (!c) { mapa.set(l.id, { cotizacion: null }); continue; }
+      const folio = folioDeReservaDeCotizacion(c.packageItems);
+      const suyas = deCots.filter(r => r.cotizacionId === c.id || (!!folio && r.confirmationNumber === folio));
+      const r = suyas.find(x => x.status !== "cancelled") ?? suyas[0] ?? null;
+      mapa.set(l.id, { cotizacion: { status: c.status }, reserva: r ? hecho(r) : null });
+    } else {
+      mapa.set(l.id, {});
+    }
+  }
+  return mapa;
+}
+
+/**
+ * Las reservas a las que se les puede mandar la liga de lo que falta (Cobros →
+ * «Lo que falta de una reserva»). 🔴 Antes eran las 60 más recientes y DESPUÉS
+ * se filtraban las que debían, con su propia regla de «cobrado»: una reserva
+ * de diciembre pagada en parte en septiembre no salía y su saldo se mandaba
+ * como «cobro suelto», sin abonarse a nadie (lote 3, 5 nov 2026). Ahora la
+ * base filtra primero las que deben y se usa la regla de Reservas.
+ */
+export async function reservasParaLigaDeSaldo() {
+  const filas = await prisma.tourBooking.findMany({
+    where:   { status: { not: "cancelled" }, depositoPagado: { lt: prisma.tourBooking.fields.totalAmount } },
+    orderBy: { createdAt: "desc" },
+    take:    500,
+    select: {
+      id: true, confirmationNumber: true, customerName: true, status: true, createdAt: true,
+      totalAmount: true, depositoPagado: true, stripePaymentIntentId: true,
+      tourName: true, tourSlug: true, tourDate: true, adults: true, children: true, lineItems: true,
+    },
+  });
+  return reservasParaPagoRestante(filas);
+}
+
+/**
+ * Registra que una liga se pagó. La llaman el webhook de Stripe y la
+ * conciliación de ligas del cron.
  *
  * Es idempotente: Stripe reintenta el webhook si algo falla, y sin esta guarda
- * un mismo pago podría abonarse dos veces al saldo de la reserva.
+ * un mismo pago podría abonarse dos veces al saldo de la reserva. Además el
+ * cobro lleva la referencia del pago en Stripe (`stripeRef`): si la primera
+ * vez falló a la mitad, el reintento termina lo que faltó sin abonar otra vez.
  */
 export async function marcarLinkPagado(
   stripeLinkId: string,
   sessionId: string,
   montoPagado: number,
   correo: string | null,
+  paymentIntentId: string | null = null,
 ): Promise<void> {
   const link = await prisma.linkPago.findUnique({ where: { stripeLinkId } });
   if (!link) return;                    // no lo creó el panel: no es asunto nuestro
@@ -208,60 +467,107 @@ export async function marcarLinkPagado(
 
   // 🔴 Reclamo atómico (revisión del 4 nov 2026): dos entregas de Stripe al
   // mismo tiempo pasaban las dos la revisión de arriba y abonaban dos cobros.
+  // Una liga apagada también se reclama: si el cliente alcanzó a pagarla, ese
+  // dinero se registra (5 nov 2026).
   const reclamo = await prisma.linkPago.updateMany({
     where: { id: link.id, estado: { not: "pagado" } },
     data: {
       estado:           "pagado",
       pagadoAt:         new Date(),
       stripeSessionId:  sessionId,
+      stripePaymentIntentId: paymentIntentId,
       montoPagado,
       correoDelPagador: correo,
     },
   });
   if (reclamo.count !== 1) return;      // otra entrega ya lo está registrando
+  const pagada: LinkPago = { ...link, stripeSessionId: sessionId, stripePaymentIntentId: paymentIntentId, montoPagado, correoDelPagador: correo };
   try {
+    // Un anticipo pagado convierte la cotización en venta: deja de ser una
+    // propuesta en el aire y el panel tiene que decirlo sin que nadie la toque.
+    if (link.cotizacionId) await ligaDeCotizacionPagada(pagada, montoPagado);
 
-  // Un anticipo pagado convierte la cotización en venta: deja de ser una
-  // propuesta en el aire y el panel tiene que decirlo sin que nadie la toque.
+    // Si el cobro era de una reserva, el dinero se le abona: el panel tiene que
+    // reflejar que ya se cobró sin que nadie lo capture a mano.
+    if (link.reservaId && montoPagado > 0) await ligaDeReservaPagada(pagada, montoPagado, paymentIntentId || sessionId);
+  } catch (e) {
+    // Se suelta el reclamo: el webhook contesta 500 y Stripe vuelve a intentar.
+    await prisma.linkPago.update({ where: { id: link.id }, data: { estado: link.estado, pagadoAt: null, stripeSessionId: null, stripePaymentIntentId: null, montoPagado: null, correoDelPagador: null } }).catch(() => {});
+    throw e;
+  }
+}
+
+/** La liga de una COTIZACIÓN se pagó: pasa a reserva, o queda dicho por qué no. */
+async function ligaDeCotizacionPagada(link: LinkPago, montoPagado: number): Promise<void> {
+  const q = await prisma.tourQuote.findUnique({ where: { id: link.cotizacionId! } });
+  if (!q) {
+    // 🔴 La cotización se borró con su liga viva (5 nov 2026): antes salía con
+    // `return` y el dinero quedaba en Stripe sin reserva ni aviso.
+    await crearSeguimientoUnico({
+      titulo: tituloLigaSinDestino({ tipo: "cotizacion-borrada" }, { titulo: link.titulo, cliente: link.cliente, monto: montoPagado }),
+      clave: `liga-sin-destino:${link.id}`, regla: "liga-sin-destino",
+    });
+    return;
+  }
   // 🔴 Ya NO se marca «aceptada» aquí antes de convertir (5 nov 2026): la
   // conversión la marca en su propia transacción. Marcarla antes escondía que
   // estaba vencida (la conversión solo veía «aceptada») y le impedía nacer al
   // lead de una cotización que no tenía (el CRM no le crea lead a una aceptada).
-  if (link.cotizacionId) {
+  //
+  // Si su reserva ya se canceló (y no hay otra viva), el pago no revive al
+  // lead: lo decide una persona con el seguimiento de abajo (5 nov 2026).
+  const { reservaDeCotizacion } = await import("@/lib/cotizaciones/convertir");
+  const previa = await reservaDeCotizacion(q).catch(() => null);
+  if (previa?.status !== "cancelled") {
     // Su lead: anticipo pagado (no lanza).
     await import("./crmDatos").then(m => m.leadPorLigaDePago(link, "pagada", "Stripe")).catch(() => {});
-    // 🔴 Pedido de Erick (4 nov 2026): la liga pagada dejaba la cotización
-    // «aceptada» pero NO llegaba a Reservas ni al Calendario, y al estar aceptada
-    // ya no se podía convertir: había que rehacer la cotización. Ahora se
-    // convierte sola en reserva y el anticipo queda como cobro «liga de pago».
-    // Si algo lo impide (otra reserva del mismo cliente, cotización vencida…),
-    // queda un seguimiento para que una persona lo resuelva. Nunca tumba el pago.
-    await convertirPorLigaPagada(link.cotizacionId, montoPagado).catch(e => console.error("conversión por liga pagada:", (e as Error)?.message));
   }
+  // 🔴 Pedido de Erick (4 nov 2026): la liga pagada dejaba la cotización
+  // «aceptada» pero NO llegaba a Reservas ni al Calendario, y al estar aceptada
+  // ya no se podía convertir: había que rehacer la cotización. Ahora se
+  // convierte sola en reserva y el anticipo queda como cobro «liga de pago».
+  // Si algo lo impide (otra reserva del mismo cliente, cotización vencida…),
+  // queda un seguimiento para que una persona lo resuelva. Nunca tumba el pago.
+  await convertirPorLigaPagada(q, link, montoPagado).catch(e => console.error("conversión por liga pagada:", (e as Error)?.message));
+}
 
-  // Si el cobro era de una reserva, el dinero se le abona: el panel tiene que
-  // reflejar que ya se cobró sin que nadie lo capture a mano.
-  //
-  // Se abona registrando un COBRO, no sumando a mano sobre `depositoPagado`:
-  // así la liga pagada aparece en el desglose del corte como "liga de pago" y
-  // `depositoPagado` lo recalcula `sincronizarDeposito()` desde los renglones.
-  // 🔴 Con el cobro que SÍ avisa si falla: antes uno silencioso se tragaba el
-  // error y la liga quedaba «pagada» sin dinero en la reserva.
-  if (link.reservaId && montoPagado > 0) {
-    await registrarCobro({
-      reservaId: link.reservaId,
-      monto:     montoPagado,
-      metodo:    "stripe",
-      folio:     sessionId,
-      nota:      `Liga de pago: ${link.titulo ?? "sin título"}`,
-      actor:     SISTEMA,
-      creadoPor: SISTEMA.nombre,
+/**
+ * La liga del saldo de una RESERVA se pagó: se abona registrando un COBRO, no
+ * sumando a mano sobre `depositoPagado` (así sale en el desglose del corte
+ * como «liga de pago» y `depositoPagado` lo recalcula `sincronizarDeposito()`).
+ * 🔴 Con el cobro que SÍ avisa si falla: uno silencioso se tragaba el error y
+ * la liga quedaba «pagada» sin dinero en la reserva.
+ */
+async function ligaDeReservaPagada(link: LinkPago, montoPagado: number, stripeRef: string): Promise<void> {
+  const r = await prisma.tourBooking.findUnique({
+    where:  { id: link.reservaId! },
+    select: { id: true, confirmationNumber: true, customerName: true, status: true, totalAmount: true, oportunidadId: true },
+  });
+  if (!r) {
+    await crearSeguimientoUnico({
+      titulo: tituloLigaSinDestino({ tipo: "reserva-no-existe" }, { titulo: link.titulo, cliente: link.cliente, monto: montoPagado }),
+      clave: `liga-sin-destino:${link.id}`, regla: "liga-sin-destino",
     });
+    return;
   }
-  } catch (e) {
-    // Se suelta el reclamo: el webhook contesta 500 y Stripe vuelve a intentar.
-    await prisma.linkPago.update({ where: { id: link.id }, data: { estado: link.estado, pagadoAt: null, stripeSessionId: null, montoPagado: null, correoDelPagador: null } }).catch(() => {});
-    throw e;
+  const hecho = await registrarCobro({
+    reservaId: r.id,
+    monto:     montoPagado,
+    metodo:    "stripe",
+    folio:     link.stripeSessionId,
+    nota:      `Liga de pago: ${link.titulo ?? "sin título"}`,
+    actor:     SISTEMA,
+    creadoPor: SISTEMA.nombre,
+    stripeRef,
+  });
+  // Pagó una reserva cancelada (no revive: el dinero queda en ella) o una que
+  // ya estaba pagada: Manolo decide si se devuelve (5 nov 2026).
+  const aviso = avisoTrasAbonarLiga({ folio: r.confirmationNumber, status: r.status, total: r.totalAmount, cobradoDespues: hecho.cobrado });
+  if (aviso) {
+    await crearSeguimientoUnico({
+      titulo: tituloLigaSinDestino(aviso, { titulo: link.titulo, cliente: link.cliente || r.customerName, monto: montoPagado }),
+      clave: `liga-sin-destino:${link.id}`, regla: "liga-sin-destino", oportunidadId: r.oportunidadId,
+    });
   }
 }
 
@@ -280,7 +586,13 @@ export async function abonarLigasDeCotizacion(cotizacionId: string, reservaId: s
     const r = await prisma.linkPago.updateMany({ where: { id: l.id, reservaId: null }, data: { reservaId } });
     if (r.count !== 1 || monto <= 0) continue;
     try {
-      await registrarCobro({ reservaId, monto, metodo: "stripe", folio: l.stripeSessionId ?? undefined, nota: `Liga de pago de la cotización: ${l.titulo}`, actor: SISTEMA, creadoPor: SISTEMA.nombre, fecha: l.pagadoAt ? l.pagadoAt.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : undefined });
+      await registrarCobro({
+        reservaId, monto, metodo: "stripe", folio: l.stripeSessionId ?? undefined, nota: `Liga de pago de la cotización: ${l.titulo}`,
+        actor: SISTEMA, creadoPor: SISTEMA.nombre,
+        fecha: l.pagadoAt ? l.pagadoAt.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" }) : undefined,
+        // El mismo pago no se abona dos veces aunque este intento falle a la mitad (5 nov 2026).
+        stripeRef: l.stripePaymentIntentId ?? l.stripeSessionId,
+      });
     } catch (e) {
       // Se suelta para que el siguiente intento (otra conversión o el botón) la abone.
       await prisma.linkPago.update({ where: { id: l.id }, data: { reservaId: null } }).catch(() => {});
@@ -299,16 +611,16 @@ export async function abonarLigasDeCotizacion(cotizacionId: string, reservaId: s
  * revisiones que el panel —vencida, cupo y fechas cerradas, otra reserva del
  * mismo cliente, idioma— pero convierte con `forzar`, y lo que no cuadró va
  * en el seguimiento para Operación: el cliente pagó y una persona decide.
+ * Si su reserva ya estaba CANCELADA, el pago queda en ella y el seguimiento
+ * es para Manolo: devolver o reactivar (lote 3, 5 nov 2026).
  */
-async function convertirPorLigaPagada(cotizacionId: string, montoPagado: number) {
-  const q = await prisma.tourQuote.findUnique({ where: { id: cotizacionId } });
-  if (!q) return;
+async function convertirPorLigaPagada(q: TourQuote, link: LinkPago, montoPagado: number) {
   const lead = q.oportunidadId ? await prisma.oportunidad.findUnique({ where: { id: q.oportunidadId } }) : null;
   const responsable = lead?.responsable && ["Manolo", "Martín", "Erick"].includes(lead.responsable) ? lead.responsable : "Erick";
-  const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const hoy = hoyMX();
   let oportunidadId = q.oportunidadId;
-  const tarea = (titulo: string, clave: string) => prisma.tarea.create({
-    data: { titulo: titulo.slice(0, 200), responsable, vence: hoy, oportunidadId, origen: "regla", regla: "liga-pagada", claveRegla: clave, creadaPor: "Liga de pago" },
+  const tarea = (titulo: string, clave: string, quien = responsable) => prisma.tarea.create({
+    data: { titulo: titulo.slice(0, 200), responsable: quien, vence: hoy, oportunidadId, origen: "regla", regla: "liga-pagada", claveRegla: clave, creadaPor: "Liga de pago" },
   }).catch(e => { if ((e as { code?: string })?.code !== "P2002") throw e; });
   try {
     const { convertirCotizacionEnReserva } = await import("@/lib/cotizaciones/convertir");
@@ -317,7 +629,14 @@ async function convertirPorLigaPagada(cotizacionId: string, montoPagado: number)
     });
     // Si la cotización no tenía lead, la reserva nació con uno: el seguimiento va ahí.
     oportunidadId = conv.reserva.oportunidadId ?? oportunidadId;
-    await tarea(tituloTareaLigaPagada({ cliente: q.customerName, folio: conv.reserva.confirmationNumber, monto: montoPagado, revisar: conv.revisar }), `liga-pagada:${q.id}`);
+    if (conv.reserva.status === "cancelled") {
+      const titulo = conv.abonadoPorLiga > 0
+        ? tituloLigaSinDestino({ tipo: "reserva-cancelada", folio: conv.reserva.confirmationNumber }, { titulo: link.titulo, cliente: q.customerName, monto: montoPagado })
+        : tituloTareaLigaPagada({ cliente: q.customerName, folio: conv.reserva.confirmationNumber, monto: montoPagado, revisar: conv.revisar });
+      await tarea(titulo, `liga-sin-destino:${link.id}`, RESPONSABLE_COBROS);
+    } else {
+      await tarea(tituloTareaLigaPagada({ cliente: q.customerName, folio: conv.reserva.confirmationNumber, monto: montoPagado, revisar: conv.revisar }), `liga-pagada:${q.id}`);
+    }
   } catch (e) {
     // Ni así se pudo: la cotización queda «aceptada» (ya hay dinero: sale de la
     // secuencia de correos) y Cotizaciones la sigue ofreciendo para convertir.

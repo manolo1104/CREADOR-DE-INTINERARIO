@@ -150,7 +150,10 @@ export async function moverPasajero(reservaId: string, destinoId: string, actor:
   return movida;
 }
 
-/** Cancela un lugar. El reembolso, si toca, se hace a mano en Stripe. */
+/**
+ * Cancela un lugar. El reembolso, si toca, se hace en Stripe: desde el 5 nov
+ * 2026 el webhook lo refleja solo en el cobro (`reembolsosStripe.ts`).
+ */
 export async function cancelarPasajero(reservaId: string, actor: Actor): Promise<TourBooking> {
   const previa = await prisma.tourBooking.findUnique({ where: { id: reservaId } });
   if (!previa?.salidaId) throw new ErrorViaje(404, "sin-reserva", "Esa reserva no es del viaje.");
@@ -158,10 +161,33 @@ export async function cancelarPasajero(reservaId: string, actor: Actor): Promise
     tx.tourBooking.update({ where: { id: reservaId }, data: { status: "cancelled", motivoCancelacion: previa.motivoCancelacion ?? "otro: lugar del viaje CDMX cancelado desde el panel" } }));
   // Su lead: si era su única reserva viva, pasa a Perdido con este motivo. No lanza.
   await import("@/lib/admin/crmDatos").then(m => m.leadTrasCancelarReserva(reservaId, actor.nombre)).catch(() => {});
+  // 🔴 La liga del saldo que ya se le mandó por correo se apaga (lote 3, 5 nov
+  // 2026): antes el cliente podía pagar el lugar ya revendido y nadie se
+  // enteraba. No lanza; la conciliación de cada hora lo reintenta.
+  await import("@/lib/admin/linksPago")
+    .then(m => m.apagarLigasDe({ reservaIds: [reservaId], cotizacionIds: [r.cotizacionId] }, `se canceló el lugar del viaje ${r.confirmationNumber}`))
+    .catch(() => {});
   await registrarEnBitacora({
     accion: "modificó", entidad: "reserva", referencia: r.confirmationNumber, actor,
     resumen: `Viaje CDMX ${r.tourDate}: canceló el lugar de ${r.customerName} (${r.adults + r.children} persona${r.adults + r.children === 1 ? "" : "s"})`,
     detalle: [{ campo: "Estado", antes: previa.status, despues: "cancelled" }],
   });
   return r;
+}
+
+/**
+ * Se canceló una salida: las ligas sin pagar de sus pasajeros se apagan
+ * (lote 3, 5 nov 2026). Sus lugares no se cancelan aquí: eso lo decide el
+ * equipo (moverlos o devolver). No lanza.
+ */
+export async function apagarLigasDeSalida(salidaId: string, fecha: string): Promise<number> {
+  try {
+    const reservas = await prisma.tourBooking.findMany({ where: { salidaId }, select: { id: true } });
+    if (!reservas.length) return 0;
+    const { apagarLigasDe } = await import("@/lib/admin/linksPago");
+    return (await apagarLigasDe({ reservaIds: reservas.map((r) => r.id) }, `se canceló la salida del viaje del ${fecha}`)).apagadas;
+  } catch (e) {
+    console.error("apagarLigasDeSalida:", (e as Error)?.message);
+    return 0;
+  }
 }

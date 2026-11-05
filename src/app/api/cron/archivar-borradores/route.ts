@@ -37,7 +37,11 @@ export async function POST(req: NextRequest) {
     if (dry || candidatos === 0) {
       return NextResponse.json({ ok: true, dry, candidatos, archivadas: 0 });
     }
+    // Archivada, una liga suya sin pagar ya no se puede pagar (lote 3, 5 nov 2026).
+    const ids = (await prisma.tourQuote.findMany({ where, select: { id: true } })).map(q => q.id);
     const r = await prisma.tourQuote.updateMany({ where, data: { status: "archivada" } });
+    const { apagarLigasDe } = await import("@/lib/admin/linksPago");
+    await apagarLigasDe({ cotizacionIds: ids }, "la cotización se archivó");
     await registrarEnBitacora({
       accion:  "modificó",
       entidad: "cotización",

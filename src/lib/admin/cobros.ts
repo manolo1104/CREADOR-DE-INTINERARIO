@@ -27,6 +27,7 @@ import { metaDe, conMeta } from "@/lib/admin/reserva";
 import { registrarEnBitacora, pesos, SISTEMA, type Actor } from "@/lib/admin/bitacora";
 import { METODOS_COBRO, etiquetaMetodo, metodoValido, type MetodoCobro } from "@/lib/admin/metodosCobro";
 import { VENTANA_COBRO_REPETIDO_MIN, cobroIgualReciente } from "@/lib/admin/cobroRepetido";
+import { referenciaAlEditar, referenciaDeConcepto } from "@/lib/admin/candadosCobro";
 
 // Re-exportadas para que el resto del panel siga importando desde aquí.
 export { METODOS_COBRO, etiquetaMetodo, metodoValido, requiereComprobante } from "@/lib/admin/metodosCobro";
@@ -50,6 +51,12 @@ export interface DatosCobro {
   creadoPor?: string | null;
   /** Para los caminos automáticos: la bitácora no tiene sesión que leer. */
   actor?: Actor;
+  /**
+   * El PaymentIntent (o la sesión) de Stripe que pagó este cobro. Con él el
+   * cobro se registra UNA sola vez: si Stripe repite el aviso, aunque la
+   * primera vez haya fallado a la mitad, no se abona dos veces (5 nov 2026).
+   */
+  stripeRef?: string | null;
   /**
    * No crear el renglón de rescate. Dos casos, el mismo motivo: el dinero que
    * ya figura en `depositoPagado` es EXACTAMENTE el que se está registrando, y
@@ -118,7 +125,7 @@ export async function sincronizarDeposito(reservaId: string): Promise<number> {
  * Con esto el módulo se cura solo reserva por reserva, aunque nadie corra el
  * script de normalización.
  */
-async function asegurarHistorico(reservaId: string): Promise<void> {
+export async function asegurarHistorico(reservaId: string): Promise<void> {
   const [reserva, cuantos] = await Promise.all([
     prisma.tourBooking.findUnique({
       where:  { id: reservaId },
@@ -167,6 +174,8 @@ export interface ResultadoCobro {
   /** `depositoPagado` ya actualizado. */
   cobrado: number;
   saldo: number;
+  /** true = ese pago de Stripe ya estaba registrado: no se creó otro renglón. */
+  yaRegistrado?: boolean;
 }
 
 /**
@@ -183,34 +192,56 @@ export async function registrarCobro(d: DatosCobro): Promise<ResultadoCobro> {
 
   const reserva = await prisma.tourBooking.findUnique({
     where:  { id: d.reservaId },
-    select: { id: true, confirmationNumber: true, customerName: true, totalAmount: true, lineItems: true },
+    select: { id: true, confirmationNumber: true, customerName: true, totalAmount: true, lineItems: true, status: true, cotizacionId: true },
   });
   if (!reserva) throw new Error("Esa reserva no existe");
 
-  if (!d.sinRescate) await asegurarHistorico(d.reservaId);
-
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(String(d.fecha ?? "")) ? String(d.fecha) : hoyMX();
-  const folio = d.folio ? String(d.folio).trim().slice(0, 60) : null;
+  const folio = d.folio ? String(d.folio).trim().slice(0, 100) || null : null;
+  const stripeRef = d.stripeRef ? String(d.stripeRef).trim().slice(0, 120) || null : null;
 
-  const cobro = await prisma.movimiento.create({
-    data: {
-      fecha,
-      tipo:        "cobro",
-      categoria:   CATEGORIA_COBRO,
-      concepto:    `Cobro ${etiquetaMetodo(d.metodo).toLowerCase()}${folio ? ` · ${folio}` : ""}`,
-      monto,
-      reservaId:   d.reservaId,
-      metodoPago:  d.metodo,
-      proveedor:   reserva.customerName,
-      recibidoPor: (d.recibidoPor ?? d.creadoPor ?? null)?.slice(0, 80) ?? null,
-      nota:        d.nota ? String(d.nota).slice(0, 300) : null,
-      // Un cobro nunca es una deuda de la empresa: `pagado` en true lo mantiene
-      // fuera de las cuentas por pagar.
-      pagado:      true,
-      fechaPago:   fecha,
-      creadoPor:   d.creadoPor ?? null,
-    },
-  });
+  // 🔴 Idempotente con la referencia de Stripe (lote 3 de la auditoría, 5 nov
+  // 2026). Si el renglón se guardaba y lo siguiente fallaba (un corte de la
+  // base), la liga se soltaba, Stripe reintentaba y el mismo pago se abonaba
+  // otra vez: la reserva salía «Liquidada» con dinero de más. Ahora, si ese
+  // pago ya tiene renglón, no se crea otro: solo se termina lo que faltó.
+  let cobro = stripeRef ? await prisma.movimiento.findUnique({ where: { stripeRef } }) : null;
+  let yaRegistrado = !!cobro;
+  if (!cobro) {
+    if (!d.sinRescate) await asegurarHistorico(d.reservaId);
+    try {
+      cobro = await prisma.movimiento.create({
+        data: {
+          fecha,
+          tipo:        "cobro",
+          categoria:   CATEGORIA_COBRO,
+          concepto:    `Cobro ${etiquetaMetodo(d.metodo).toLowerCase()}${folio ? ` · ${folio}` : ""}`,
+          monto,
+          reservaId:   d.reservaId,
+          metodoPago:  d.metodo,
+          proveedor:   reserva.customerName,
+          recibidoPor: (d.recibidoPor ?? d.creadoPor ?? null)?.slice(0, 80) ?? null,
+          nota:        d.nota ? String(d.nota).slice(0, 300) : null,
+          // Un cobro nunca es una deuda de la empresa: `pagado` en true lo mantiene
+          // fuera de las cuentas por pagar.
+          pagado:      true,
+          fechaPago:   fecha,
+          creadoPor:   d.creadoPor ?? null,
+          referencia:  folio,
+          stripeRef,
+        },
+      });
+    } catch (e) {
+      // Otra entrega del mismo aviso lo guardó en ese mismo instante.
+      if (!stripeRef || (e as { code?: string })?.code !== "P2002") throw e;
+      cobro = await prisma.movimiento.findUnique({ where: { stripeRef } });
+      if (!cobro) throw e;
+      yaRegistrado = true;
+    }
+  }
+  if (yaRegistrado && cobro.reservaId !== d.reservaId) {
+    console.error(`registrarCobro: el pago ${stripeRef} ya estaba registrado en otra reserva (${cobro.reservaId}); no se repite en ${reserva.confirmationNumber}`);
+  }
 
   const cobrado = await sincronizarDeposito(d.reservaId);
 
@@ -221,24 +252,36 @@ export async function registrarCobro(d: DatosCobro): Promise<ResultadoCobro> {
     data:  { lineItems: conMeta(reserva.lineItems, { metodoPago: etiquetaMetodo(d.metodo), folioPago: folio ?? "" }) as any },
   });
 
-  await registrarEnBitacora({
-    accion:     "creó",
-    entidad:    "cobro",
-    referencia: reserva.confirmationNumber,
-    resumen:    `Cobro de ${pesos(monto)} en ${etiquetaMetodo(d.metodo).toLowerCase()} — reserva ${reserva.confirmationNumber} (${reserva.customerName})` +
-                (d.recibidoPor ? `, lo recibió ${d.recibidoPor}` : ""),
-    actor:      d.actor,
-  });
+  if (!yaRegistrado) {
+    await registrarEnBitacora({
+      accion:     "creó",
+      entidad:    "cobro",
+      referencia: reserva.confirmationNumber,
+      resumen:    `Cobro de ${pesos(monto)} en ${etiquetaMetodo(d.metodo).toLowerCase()} — reserva ${reserva.confirmationNumber} (${reserva.customerName})` +
+                  (d.recibidoPor ? `, lo recibió ${d.recibidoPor}` : ""),
+      actor:      d.actor,
+    });
+  }
 
   // Su lead (CRM) avanza según lo cobrado: Anticipo pagado o Confirmado. Aquí
   // y no en cada ruta: por este punto pasan el panel, las ligas de pago, el
   // webhook de Stripe y el /confirma (revisión del 4 nov 2026). No lanza.
   await import("./crmDatos").then(m => m.leadDesdeReserva(d.reservaId, `se registró un cobro de ${pesos(monto)}`, { revivir: true })).catch(() => {});
 
+  // 🔴 Quedó pagada por este medio (5 nov 2026): sus ligas sin pagar —la del
+  // saldo, o la del anticipo de su cotización— se apagan, o el cliente podría
+  // pagar dos veces. No lanza: la conciliación de cada hora lo reintenta.
+  if (reserva.status !== "cancelled" && reserva.totalAmount > 0 && cobrado >= reserva.totalAmount) {
+    await import("./linksPago")
+      .then(m => m.apagarLigasDe({ reservaIds: [reserva.id], cotizacionIds: reserva.cotizacionId ? [reserva.cotizacionId] : [] }, `la reserva ${reserva.confirmationNumber} ya está pagada`))
+      .catch(e => console.error("apagar ligas de una reserva pagada:", (e as Error)?.message));
+  }
+
   return {
-    cobro:   { id: cobro.id, monto, metodoPago: d.metodo, fecha },
+    cobro:   { id: cobro.id, monto: cobro.monto, metodoPago: cobro.metodoPago, fecha: cobro.fecha },
     cobrado,
     saldo:   Math.max(0, reserva.totalAmount - cobrado),
+    yaRegistrado,
   };
 }
 
@@ -297,7 +340,10 @@ export async function editarCobro(
 
   const metodo = cambios.metodo && metodoValido(cambios.metodo) ? cambios.metodo : (antes.metodoPago ?? "otro");
   const fecha  = /^\d{4}-\d{2}-\d{2}$/.test(String(cambios.fecha ?? "")) ? String(cambios.fecha) : antes.fecha;
-  const folio  = cambios.folio === undefined ? null : (cambios.folio ? String(cambios.folio).trim().slice(0, 60) : null);
+  // 🔴 La referencia se conserva si llega vacía (lote 3, 5 nov 2026): corregir
+  // quién lo recibió borraba el folio del SPEI o la sesión de Stripe.
+  const referenciaAntes = antes.referencia ?? referenciaDeConcepto(antes.concepto);
+  const folio  = referenciaAlEditar(referenciaAntes, cambios.folio);
   const recibidoPor = cambios.recibidoPor !== undefined
     ? (cambios.recibidoPor ? String(cambios.recibidoPor).slice(0, 80) : null)
     : antes.recibidoPor;
@@ -318,6 +364,7 @@ export async function editarCobro(
       // El concepto se rehace para que la bitácora y los listados digan la
       // verdad: si no, seguiría leyéndose "Cobro efectivo" en un SPEI.
       concepto:    `Cobro ${etiquetaMetodo(metodo).toLowerCase()}${folio ? ` · ${folio}` : ""}`,
+      referencia:  folio,
       recibidoPor,
       // Corregir el método de un efectivo que ya se entregó no lo "des-entrega",
       // pero si deja de ser efectivo, la entrega pierde sentido.
@@ -330,6 +377,7 @@ export async function editarCobro(
       ? { campo: "método", antes: etiquetaMetodo(antes.metodoPago), despues: etiquetaMetodo(metodo) }
       : null,
     antes.fecha !== fecha ? { campo: "fecha", antes: antes.fecha, despues: fecha } : null,
+    (referenciaAntes ?? null) !== (folio ?? null) ? { campo: "referencia", antes: referenciaAntes ?? "—", despues: folio ?? "—" } : null,
     // Quién tiene el efectivo es justo lo que el corte cuadra: el cambio se anota.
     (antes.recibidoPor ?? null) !== (recibidoPor ?? null)
       ? { campo: "lo recibió", antes: antes.recibidoPor ?? "—", despues: recibidoPor ?? "—" }
@@ -344,8 +392,11 @@ export async function editarCobro(
   });
 }
 
-/** Anular un cobro: no se borra, queda tachado con su motivo. */
-export async function anularCobro(id: string, motivo: string, quien: string): Promise<number> {
+/**
+ * Anular un cobro: no se borra, queda tachado con su motivo. `actor` es para
+ * los caminos automáticos (un reembolso que avisa Stripe), sin sesión.
+ */
+export async function anularCobro(id: string, motivo: string, quien: string, actor?: Actor): Promise<number> {
   const antes = await prisma.movimiento.findUnique({ where: { id } });
   if (!antes || antes.tipo !== "cobro") throw new Error("Ese cobro no existe");
   if (antes.anulado) throw new Error("Ese cobro ya estaba anulado");
@@ -365,6 +416,7 @@ export async function anularCobro(id: string, motivo: string, quien: string): Pr
     entidad: "cobro",
     resumen: `Anulado un cobro de ${pesos(antes.monto)} (${antes.fecha}). Motivo: ${motivo}`,
     detalle: [{ campo: "anulado", antes: false, despues: true }],
+    actor,
   });
   return cobrado;
 }
@@ -406,6 +458,8 @@ export interface CobroVisible {
   entregadoA: string | null;
   entregadoAt: string | null;
   nota: string | null;
+  /** Folio, últimos 4 dígitos o sesión de Stripe (para precargarla al corregir). */
+  referencia: string | null;
   anulado: boolean;
   motivoAnulacion: string | null;
   creadoPor: string | null;
@@ -432,6 +486,7 @@ export async function cobrosDeReserva(reservaId: string): Promise<CobroVisible[]
     entregadoA: m.entregadoA,
     entregadoAt: m.entregadoAt ? m.entregadoAt.toISOString() : null,
     nota: m.nota,
+    referencia: m.referencia ?? referenciaDeConcepto(m.concepto),
     anulado: m.anulado,
     motivoAnulacion: m.motivoAnulacion,
     creadoPor: m.creadoPor,
