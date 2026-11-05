@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   avisoSoloLectura, cobraComoLaWeb, esReservaDeCotizacion, lineItemsAlEditar, lineItemsTrasBaja, mensajeTrasEnviarCorreo,
-  mensajeTrasRegresar, modoDeEnvio, puedeRegresarAEnviada, reservaPosterior, type ReservaCandidata,
+  mensajeTrasRegresar, modoDeEnvio, precioWebDelBot, puedeRegresarAEnviada, reservaPosterior, type ReservaCandidata,
 } from "@/lib/cotizaciones/reglasEnvio";
 import { ajusteDeTotal, avisoCambioDeTotal, textoAjuste, totalConAjuste } from "@/lib/admin/precioPactado";
 import { anticipoDe, desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
@@ -299,8 +299,12 @@ describe("correos de seguimiento: anticipo real y el botón correcto", () => {
   it("«vence mañana» también con el anticipo real; y en inglés", () => {
     const v = buildQuoteVenceEmail({ ...seg, packageItems: [{ _meta: true, anticipo: 2500, anticipoTipo: "percent" }], venceEl: "2026-11-07", cuando: "mañana" });
     expect(v.html).toContain("apártala con el 50 %");
-    expect(v.html).toContain("Apartar con el 50 %");
+    // Revisión del lote 4: con el 50 % el botón ya no es el carrito (aparta con
+    // el 30 %): es su liga, si tiene, o WhatsApp.
+    expect(v.html).not.toContain("/reservar/carrito");
     expect(v.html).not.toContain("30 %");
+    const conLiga = buildQuoteVenceEmail({ ...seg, packageItems: [{ _meta: true, anticipo: 2500, anticipoTipo: "percent" }], venceEl: "2026-11-07", cuando: "mañana", ligaPago: { url: "https://buy.stripe.com/test_v", monto: 2500 } });
+    expect(conLiga.html).toContain("Pagar $2,500 MXN en línea");
     const en = buildQuoteSequenceEmail({ ...seg, locale: "en", paso: 3, packageItems: [{ _meta: true, anticipo: 2500, anticipoTipo: "percent" }] });
     expect(en.subject).toBe("Hold your Expedición Tamul with 50 %");
     expect(en.html).toContain("You pay 50 % today");
@@ -376,5 +380,87 @@ describe("precio pactado de la reserva como ajuste (precioPactado)", () => {
   it("si el total baja también se pregunta; nunca queda negativo", () => {
     expect(avisoCambioDeTotal(5000, 4000)).toContain("−$1,000");
     expect(totalConAjuste(300, -1000)).toBe(0);
+  });
+});
+
+// ── Revisión del lote 4 (5 nov 2026): lo que se le escapó al arreglo ─────────
+
+describe("revisión: el anticipo también decide el botón a la web", () => {
+  const l1 = { tourSlug: "expedicion-tamul", tourName: "Tamul", tourDate: "2026-11-20", adults: 4, subtotal: 6000 };
+  const conAnticipo = (m: Record<string, unknown>) => ({ lineItems: [l1], packageItems: [{ _meta: true, ...m }], totalAmount: 6000 });
+
+  it("🔴 con el 50 %, $4,000 o el pago completo: no (el carrito aparta con el 30 %)", () => {
+    expect(cobraComoLaWeb(conAnticipo({ anticipo: 3000, anticipoTipo: "percent", anticipoValor: 50 }))).toBe(false);
+    expect(cobraComoLaWeb(conAnticipo({ anticipo: 4000, anticipoTipo: "fixed" }))).toBe(false);
+    expect(cobraComoLaWeb(conAnticipo({ anticipo: 6000, anticipoTipo: "percent", anticipoValor: 100 }))).toBe(false);
+  });
+
+  it("el 30 % (por omisión, en % o el mismo importe) sigue yendo a la web", () => {
+    expect(cobraComoLaWeb(conAnticipo({}))).toBe(true);
+    expect(cobraComoLaWeb(conAnticipo({ anticipo: 1800, anticipoTipo: "percent", anticipoValor: 30 }))).toBe(true);
+    expect(cobraComoLaWeb(conAnticipo({ anticipo: 1800, anticipoTipo: "fixed" }))).toBe(true);
+  });
+
+  it("🔴 el seguimiento que pide el 50 % ya no manda a pagar el 30 % al carrito", () => {
+    const seg = {
+      paso: 3 as const, locale: "es" as const, customerName: "Ana", quoteNumber: "COT-7", tourName: "Expedición Tamul",
+      tourDate: "2026-12-20", totalAmount: 6000, lineItems: [l1],
+    };
+    const cincuenta = buildQuoteSequenceEmail({ ...seg, packageItems: [{ _meta: true, anticipo: 3000, anticipoTipo: "percent" }] });
+    expect(cincuenta.html).toContain("Apartas hoy con el 50 %");
+    expect(cincuenta.html).not.toContain("/reservar/carrito");
+    expect(cincuenta.html).toContain("wa.me/524891090388");
+    // Con el 30 %, el carrito como siempre.
+    expect(buildQuoteSequenceEmail({ ...seg, packageItems: [{ _meta: true, anticipo: 1800 }] }).html).toContain("/reservar/carrito?agregar=expedicion-tamul");
+  });
+});
+
+describe("revisión: la cotización del bot con el precio de la web conserva su botón", () => {
+  // Como la arma el bot: renglones a precio de lista (9,000 de recorridos +
+  // 4,800 de hotel = 13,800) y el precio del paquete en la web (12,290); la
+  // diferencia viaja como descuento fijo.
+  const lineas = [
+    { tourSlug: "expedicion-tamul", tourName: "Expedición Tamul", tourDate: "2026-12-10", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 5000 },
+    { tourSlug: "cascadas-del-meco", tourName: "Cascadas del Meco", tourDate: "2026-12-11", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 4000 },
+  ];
+  const hotel = { habitacion: "Estándar", checkin: "2026-12-10", checkout: "2026-12-12", noches: 2, habitaciones: 1, precioPorNoche: 2400, subtotal: 4800 };
+  const metaBot = (m: Record<string, unknown> = {}) => ({
+    _meta: true, anticipo: Math.round(12290 * 0.3), anticipoTipo: "percent", anticipoValor: 30, vigencia: "48h",
+    discountType: "fixed", discountValue: 1510, paqueteSlug: "gran-huasteca", origen: "bot", precioWeb: 12290, ...m,
+  });
+  const paquete = (m: Record<string, unknown> = {}, total = 12290) => ({
+    lineItems: lineas, packageItems: [metaBot(m), hotel], extraItems: [], totalAmount: total,
+  });
+
+  it("precioWebDelBot: solo cuando una página la cobra entera", () => {
+    expect(precioWebDelBot(12290, { paquete: true, recorridosAparte: 0, hospedaje: false })).toBe(12290);
+    expect(precioWebDelBot(15390, { paquete: true, recorridosAparte: 1, hospedaje: false })).toBeNull();
+    expect(precioWebDelBot(15000, { paquete: true, recorridosAparte: 0, hospedaje: true })).toBeNull();
+    expect(precioWebDelBot(3100, { paquete: false, recorridosAparte: 1, hospedaje: false })).toBe(3100);
+    expect(precioWebDelBot(0, { paquete: false, recorridosAparte: 0, hospedaje: false })).toBeNull();
+  });
+
+  it("🔴 paquete del bot: cobra como la web aunque lleve «descuento»; si Erick le mueve el total, ya no", () => {
+    expect(cobraComoLaWeb(paquete())).toBe(true);
+    expect(cobraComoLaWeb(paquete({}, 11000))).toBe(false);
+    // Sin la marca (las de antes de esta revisión), como cualquier descuento: no.
+    expect(cobraComoLaWeb(paquete({ precioWeb: undefined }))).toBe(false);
+    // Una comida cobrada aparte o el 50 % tampoco los cobra la página del paquete.
+    expect(cobraComoLaWeb({ ...paquete(), extraItems: [{ concepto: "Comida", cantidad: 2, precioUnitario: 300 }] })).toBe(false);
+    expect(cobraComoLaWeb(paquete({ anticipo: 6145 }))).toBe(false);
+  });
+
+  it("🔴 el correo y el seguimiento del paquete vuelven a llevar a /reservar-paquete", () => {
+    const p = paquete();
+    const html = buildTourQuoteEmailHtml({
+      customerName: "Ana", quoteNumber: "COT-P", tourName: "Paquete · Gran Huasteca", tourDate: "2026-12-10", tourSlug: "gran-huasteca",
+      adults: 2, children: 0, totalAmount: p.totalAmount, lineItems: p.lineItems, packageItems: p.packageItems as any, extraItems: [], venceEl: "2026-11-07",
+    });
+    expect(html).toContain("/reservar-paquete/gran-huasteca");
+    const seg = buildQuoteSequenceEmail({
+      paso: 2, locale: "es", customerName: "Ana", quoteNumber: "COT-P", tourName: "Paquete · Gran Huasteca", tourDate: "2026-12-10",
+      totalAmount: p.totalAmount, lineItems: p.lineItems, packageItems: p.packageItems, extraItems: [], tourSlug: "gran-huasteca",
+    });
+    expect(seg.html).toContain("/reservar-paquete/gran-huasteca");
   });
 });

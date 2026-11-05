@@ -46,6 +46,7 @@ import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { fechaLimite } from "@/lib/vencimientoCotizacion";
 import { conMeta as conMetaSeguimiento, metaCotizacion as metaSeguimiento } from "@/lib/quoteFollowUp";
+import { precioWebDelBot } from "./reglasEnvio";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
 import type {
   CotizacionBotInput, CotizacionCalculada, ErrorPrecio, HospedajeCotizacionBot, HospedajePrecio,
@@ -1028,6 +1029,10 @@ export function calcularCotizacionBot(input: PrecioBotInput, opciones: OpcionesC
   const sumaPanel = guardadas.reduce((s, l) => s + l.subtotal, 0) + filas.reduce((s, f) => s + f.subtotal, 0);
   const priceOverride = total > sumaPanel ? total : null;
   const descuentoFijo = total < sumaPanel ? sumaPanel - total : null;
+  // Y lo que cobra la web por ESTA cotización tal cual (revisión del lote 4,
+  // 5 nov 2026): con esa marca el correo sabe que su botón al sitio cobra lo
+  // cotizado aunque haya descuento o precio editado. Ver `precioWebDelBot`.
+  const precioWeb = precioWebDelBot(total, { paquete: !!paquete, recorridosAparte: sueltas.length, hospedaje: !!hospedaje });
 
   // El MISMO redondeo que el panel con «30 %» y que `desgloseCotizacion`
   // (`Math.round(total × 0.3)`), guardado como importe: el PDF, el correo, el
@@ -1054,6 +1059,7 @@ export function calcularCotizacionBot(input: PrecioBotInput, opciones: OpcionesC
     priceOverride,
     discountType:  descuentoFijo !== null ? "fixed" : null,
     discountValue: descuentoFijo,
+    precioWeb,
     notasInternas,
     origen:        "bot",
     waChatId:      texto(cliente?.waChatId, 120) || null,

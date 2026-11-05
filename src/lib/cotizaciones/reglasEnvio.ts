@@ -9,7 +9,7 @@
 // servidor: el panel también las usa.
 
 import { conMeta, metaCotizacion } from "@/lib/quoteFollowUp";
-import { desgloseCotizacion, type MetaCotizacion as MetaPrecio } from "@/lib/admin/totalesCotizacion";
+import { anticipoDe, desgloseCotizacion, type MetaCotizacion as MetaPrecio } from "@/lib/admin/totalesCotizacion";
 import { extrasCobrados, extrasDe, totalExtras } from "@/lib/admin/extras";
 
 type Obj = Record<string, unknown>;
@@ -198,20 +198,48 @@ export interface DatosPrecioWeb {
  * cliente pagaba de más; con la comida aparte, de menos; y la reserva web
  * nacía sin la comida, sin el descuento y sin la cotización. Si no vale lo
  * mismo, el correo ofrece la liga de anticipo de ESA cotización o WhatsApp.
+ *
+ * Revisión del lote 4 (5 nov 2026), dos cosas que se le escaparon:
+ *  · 🔴 el anticipo también es precio: la web aparta siempre con el 30 % (o
+ *    el viaje completo). Con el 50 %, $4,000 o el pago completo, el correo
+ *    pedía eso y el botón llevaba a pagar el 30 %;
+ *  · 🔴 la cotización del BOT con el precio de la web (`precioWeb`, ver
+ *    `precioWebDelBot`) sí cobra lo cotizado aunque sus renglones a precio de
+ *    lista sumen otra cosa: un paquete perdía su botón a /reservar-paquete.
  */
 export function cobraComoLaWeb(d: DatosPrecioWeb): boolean {
+  const meta = metaDeLista(d.packageItems);
+  const extras = extrasDe(d.extraItems);
+  if (extrasCobrados(extras).length > 0) return false;
+  if (anticipoDe(d.totalAmount, meta as MetaPrecio).anticipo !== anticipoDe(d.totalAmount, {}).anticipo) return false;
+  // La armó el bot con el precio de la web y nadie le movió el total.
+  if (typeof meta.precioWeb === "number" && meta.precioWeb > 0 && meta.precioWeb === d.totalAmount) return true;
   const lineas = (Array.isArray(d.lineItems) ? d.lineItems : [])
     .filter((l): l is Obj => !!l && typeof l === "object" && !(l as Obj)._meta);
   if (lineas.some((l) => l.tourSlug === SLUG_PERSONALIZADO)) return false;
-  const extras = extrasDe(d.extraItems);
-  if (extrasCobrados(extras).length > 0) return false;
   const hoteles = (Array.isArray(d.packageItems) ? d.packageItems : [])
     .filter((p): p is Obj => !!p && typeof p === "object" && !(p as Obj)._meta);
   const suma = lineas.reduce((s, l) => s + (Number(l.subtotal) || 0), 0)
     + hoteles.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
     + totalExtras(extras);
-  const desglose = desgloseCotizacion(suma, d.totalAmount, metaDeLista(d.packageItems) as MetaPrecio);
+  const desglose = desgloseCotizacion(suma, d.totalAmount, meta as MetaPrecio);
   return desglose.descuento === 0 && desglose.ajuste === 0;
+}
+
+/**
+ * Lo que cobra la web por una cotización del BOT tal como la armó, o null si
+ * ninguna página la cobra entera (revisión del lote 4, 5 nov 2026). El bot
+ * saca el total con el mismo motor de la web (paquete, promo, Edén) pero
+ * guarda los renglones a precio de lista y la diferencia como descuento o
+ * precio editado; sin esta marca el correo la tomaba por un descuento a mano.
+ * Un paquete con recorridos u hotel aparte no: su página cobra solo el paquete.
+ */
+export function precioWebDelBot(
+  total: number,
+  c: { paquete: boolean; recorridosAparte: number; hospedaje: boolean },
+): number | null {
+  if (c.paquete && (c.recorridosAparte > 0 || c.hospedaje)) return null;
+  return total > 0 ? total : null;
 }
 
 // ── La baja de los correos ──────────────────────────────────────────────────

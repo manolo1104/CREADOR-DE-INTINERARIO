@@ -287,6 +287,12 @@ export interface MetaCotizacionBot {
   /** Cuando la web cobra MENOS que la suma de lista (promo, Edén, paquete): la diferencia, fija. */
   discountType:   "fixed" | null;
   discountValue:  number | null;
+  /**
+   * Lo que cobra la web por esta cotización tal cual, o null si ninguna página
+   * la cobra entera (revisión del lote 4, 5 nov 2026): el correo solo manda a
+   * pagar al sitio si el total sigue siendo este. Ver `precioWebDelBot`.
+   */
+  precioWeb?:     number | null;
   notasInternas:  string;
   origen:         "bot";
   waChatId:       string | null;
