@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   avisoSobrecupo, etiquetasSinLugar, fechaCorta, idiomaTourDeConversion, pasoTrasConvertir,
-  pedidosDeCupo, tituloTareaLigaPagada,
+  pedidosDeCupo, tituloTareaLigaPagada, trasAbonarLigas,
 } from "@/lib/cotizaciones/reglasConversion";
 import { pickupConDato, pickupParaFormulario, PICKUP_POR_DEFECTO } from "@/lib/admin/hospedaje";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
+import { avisoCobroRepetido, cobroIgualReciente, VENTANA_COBRO_REPETIDO_MIN } from "@/lib/admin/cobroRepetido";
 
 // Lote 1 de la auditoría (5 nov 2026): «Convertir a reserva» del panel, la
 // liga pagada y el punto de recogida. Lo que toca la base se prueba aparte
@@ -151,5 +152,61 @@ describe("lugar de recogida: el «Lobby de tu hotel en Xilitla» no es un dato",
     expect(conLobby).toBe(buildTourEmailHtml(base));
     // Lo que sí se anotó se sigue imprimiendo.
     expect(buildTourEmailHtml({ ...base, pickupLugar: "Hotel Taninul, Cd. Valles" })).toContain("Hotel Taninul, Cd. Valles");
+  });
+});
+
+// Revisión del lote 1 (5 nov 2026): lo que se le escapó al arreglo.
+
+describe("el pago de la liga ya en la reserva (trasAbonarLigas)", () => {
+  it("sin nada raro: no dice nada y el lead se mueve con lo cobrado", () => {
+    expect(trasAbonarLigas({ folio: "HP-M-A", cobradoAntes: 0, abonado: 1500 })).toEqual({ avisos: [], revisar: [], moverLead: true });
+    expect(trasAbonarLigas({ folio: "HP-M-A", cobradoAntes: 1500, abonado: 0 })).toEqual({ avisos: [], revisar: [], moverLead: true });
+  });
+  it("dinero de la liga sobre dinero ya capturado: pregunta si es el mismo pago", () => {
+    const t = trasAbonarLigas({ folio: "HP-M-A", cobradoAntes: 1500, abonado: 1500 });
+    expect(t.moverLead).toBe(true);
+    expect(t.revisar).toEqual(["ya tenía $1,500 antes de la liga: ¿pago repetido?"]);
+    expect(t.avisos[0]).toContain("si son el mismo pago");
+  });
+  it("🔴 el abono falló: se dice en el seguimiento y en el panel, y el lead NO baja a En seguimiento", () => {
+    const t = trasAbonarLigas({ folio: "HP-M-A", cobradoAntes: 0, abonado: 0, error: "Invalid `prisma.movimiento.create()` invocation" });
+    expect(t.moverLead).toBe(false);
+    expect(t.revisar[0]).toContain("no entró a la reserva");
+    expect(t.avisos[0]).toContain("HP-M-A");
+    expect(t.avisos[0]).toContain("dale «Convertir» otra vez");
+    // El error técnico se queda en el log: el equipo no lee jerga de la base.
+    expect(t.avisos.join(" ") + t.revisar.join(" ")).not.toContain("prisma");
+    // Y cabe en el título del seguimiento de la liga.
+    const titulo = tituloTareaLigaPagada({ cliente: "Ana López", folio: "HP-M-MUU6NNN9AB", monto: 1500, revisar: t.revisar });
+    expect(titulo.length).toBeLessThanOrEqual(200);
+    expect(titulo).toContain("dale «Convertir» otra vez.");
+  });
+});
+
+describe("el mismo pago dos veces en «Registrar cobro» (cobroIgualReciente)", () => {
+  const ahora = new Date("2026-11-05T18:00:00Z");
+  const hace = (min: number) => new Date(ahora.getTime() - min * 60_000);
+  const liga = { monto: 1500, createdAt: hace(3), creadoPor: "Sitio web", metodoPago: "stripe", anulado: false };
+
+  it("🔴 la liga se pagó mientras el cuadro estaba abierto: lo encuentra", () => {
+    expect(cobroIgualReciente([liga], 1500, ahora)).toBe(liga);
+  });
+  it("🔴 dos personas convirtieron a la vez y la otra ya registró el anticipo: lo encuentra (el más reciente)", () => {
+    const erick = { monto: 1500, createdAt: hace(1), creadoPor: "Erick", metodoPago: "transferencia", anulado: false };
+    expect(cobroIgualReciente([liga, erick], 1500, ahora)).toBe(erick);
+  });
+  it("otro monto, anulado o de hace más de una hora: no pregunta nada", () => {
+    expect(cobroIgualReciente([liga], 2000, ahora)).toBeNull();
+    expect(cobroIgualReciente([{ ...liga, anulado: true }], 1500, ahora)).toBeNull();
+    expect(cobroIgualReciente([{ ...liga, createdAt: hace(VENTANA_COBRO_REPETIDO_MIN + 1) }], 1500, ahora)).toBeNull();
+    expect(cobroIgualReciente([{ ...liga, createdAt: hace(VENTANA_COBRO_REPETIDO_MIN - 1) }], 1500, ahora)).not.toBeNull();
+    expect(cobroIgualReciente([liga], 0, ahora)).toBeNull();
+  });
+  it("el aviso dice de dónde vino y qué hacer, en español claro", () => {
+    expect(avisoCobroRepetido(liga, ahora)).toBe(
+      "Hace 3 min entró solo un pago de $1,500 por la liga de pago en esta reserva. Si es el mismo pago, no lo registres otra vez; si de verdad es otro, regístralo de todos modos.",
+    );
+    expect(avisoCobroRepetido({ monto: 1500, createdAt: hace(0.2), creadoPor: "Erick", metodoPago: "transferencia" }, ahora))
+      .toBe("Hace un momento se registró un cobro de $1,500 en esta reserva (transferencia, lo capturó Erick). Si es el mismo pago, no lo registres otra vez; si de verdad es otro, regístralo de todos modos.");
   });
 });

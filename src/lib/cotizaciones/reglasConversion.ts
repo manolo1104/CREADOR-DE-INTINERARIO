@@ -77,6 +77,42 @@ export function idiomaTourDeConversion(p: { elegido?: unknown; idiomaContacto?: 
   return p.idiomaContacto === "en" || p.locale === "en" ? "en" : "es";
 }
 
+// ── El dinero de la liga, ya en la reserva ──────────────────────────────────
+
+/**
+ * Qué se dice, y si el lead se mueve, después de abonarle a la reserva lo que
+ * entró por las ligas de su cotización.
+ *  · entró dinero de la liga sobre dinero ya registrado: ¿el mismo pago dos
+ *    veces? (alguien lo capturó a mano antes de que Stripe avisara);
+ *  · 🔴 el abono FALLÓ (revisión del lote 1, 5 nov 2026): el dinero está en
+ *    Stripe pero no en la reserva. Antes solo quedaba en el log y el lead,
+ *    movido con la reserva en $0, bajaba de Anticipo a En seguimiento. Ahora
+ *    se dice (en el seguimiento de la liga y en el panel) y el lead no se mueve
+ *    hasta que el cobro entre: la liga queda libre y «Convertir» la vuelve a
+ *    abonar.
+ */
+export function trasAbonarLigas(p: {
+  folio: string; cobradoAntes: number; abonado: number; error?: string | null;
+}): { avisos: string[]; revisar: string[]; moverLead: boolean } {
+  if (p.error) {
+    // El error técnico va al log, no aquí: esto lo lee el equipo.
+    return {
+      avisos: [`El pago de la liga de esta cotización no se pudo registrar en la reserva ${p.folio}. En Cotizaciones dale «Convertir» otra vez para que entre; no lo captures a mano.`],
+      revisar: ["el pago de la liga no entró a la reserva: dale «Convertir» otra vez"],
+      moverLead: false,
+    };
+  }
+  if (p.abonado > 0 && p.cobradoAntes > 0) {
+    // El dinero de la liga entra igual (es real) y una persona decide si es doble.
+    return {
+      avisos: [`La reserva ${p.folio} ya tenía ${pesos(p.cobradoAntes)} registrados y se le sumaron ${pesos(p.abonado)} de la liga de pago: si son el mismo pago, anula el que se capturó a mano.`],
+      revisar: [`ya tenía ${pesos(p.cobradoAntes)} antes de la liga: ¿pago repetido?`],
+      moverLead: true,
+    };
+  }
+  return { avisos: [], revisar: [], moverLead: true };
+}
+
 // ── Lo que se le dice al equipo ─────────────────────────────────────────────
 
 const MAX_TITULO_TAREA = 200;

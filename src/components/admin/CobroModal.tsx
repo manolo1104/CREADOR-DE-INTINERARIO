@@ -81,6 +81,12 @@ export default function CobroModal({
   const [msg, setMsg] = useState("");
   /** El servidor dijo que se pasa del saldo, pero deja confirmarlo. */
   const [puedeForzar, setPuedeForzar] = useState(false);
+  /**
+   * El servidor vio un cobro igual de hace poco en esta reserva (5 nov 2026):
+   * la liga que se pagó mientras este cuadro estaba abierto, u otra persona que
+   * registró el mismo pago. El aviso se queda a la vista hasta decidir.
+   */
+  const [repetido, setRepetido] = useState("");
 
   /**
    * 🔴 Dinero que ya figura cobrado pero sin un solo renglón que diga cómo
@@ -156,10 +162,18 @@ export default function CobroModal({
     if (!r?.ok) {
       playError();
       setPuedeForzar(!!d?.sePuedeForzar);
-      flash(`❌ ${d?.error || "No se pudo registrar el cobro"}`);
+      if (d?.repetido) {
+        // Sin borrarse a los 4 s, y con la lista al día: ahí se ve el cobro que ya estaba.
+        setRepetido(String(d.error || "Ya se registró un cobro igual hace poco en esta reserva."));
+        if (Array.isArray(d.cobros)) setCobros(d.cobros);
+      } else {
+        setRepetido("");
+        flash(`❌ ${d?.error || "No se pudo registrar el cobro"}`);
+      }
       return;
     }
     setPuedeForzar(false);
+    setRepetido("");
 
     playSuccess();
     setCobros(d.cobros ?? []);
@@ -364,13 +378,16 @@ export default function CobroModal({
           </div>
 
           {msg && <p className="text-xs font-dm text-[#1B4332]">{msg}</p>}
+          {repetido && (
+            <p role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-3 text-xs font-dm text-amber-900">{repetido}</p>
+          )}
           {puedeForzar && (
             <button
               type="button"
               onClick={() => guardar(true)}
               className="panel-foco panel-pulsable w-full min-h-[44px] border border-amber-400 text-amber-800 bg-amber-50 rounded-sm text-xs font-dm hover:bg-amber-100"
             >
-              Registrarlo de todos modos (cobré de más)
+              {repetido ? "Es otro pago: registrarlo de todos modos" : "Registrarlo de todos modos (cobré de más)"}
             </button>
           )}
         </div>

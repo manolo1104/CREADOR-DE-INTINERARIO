@@ -26,6 +26,7 @@ import { hoyMX } from "@/lib/dates";
 import { metaDe, conMeta } from "@/lib/admin/reserva";
 import { registrarEnBitacora, pesos, SISTEMA, type Actor } from "@/lib/admin/bitacora";
 import { METODOS_COBRO, etiquetaMetodo, metodoValido, type MetodoCobro } from "@/lib/admin/metodosCobro";
+import { VENTANA_COBRO_REPETIDO_MIN, cobroIgualReciente } from "@/lib/admin/cobroRepetido";
 
 // Re-exportadas para que el resto del panel siga importando desde aquí.
 export { METODOS_COBRO, etiquetaMetodo, metodoValido, requiereComprobante } from "@/lib/admin/metodosCobro";
@@ -239,6 +240,27 @@ export async function registrarCobro(d: DatosCobro): Promise<ResultadoCobro> {
     cobrado,
     saldo:   Math.max(0, reserva.totalAmount - cobrado),
   };
+}
+
+/**
+ * ¿Ya se registró este mismo pago hace poco en esta reserva? (revisión del
+ * lote 1, 5 nov 2026). El cobro vivo del mismo monto de la última hora, o
+ * null. Lo usa «Registrar cobro» para preguntar antes de contar dos veces el
+ * mismo dinero (la regla y el porqué, en `cobroRepetido.ts`).
+ */
+export async function cobroRepetidoReciente(reservaId: string, monto: number, ahora: Date = new Date()) {
+  const n = Math.round(Number(monto) || 0);
+  if (n <= 0) return null;
+  const recientes = await prisma.movimiento.findMany({
+    where:   {
+      reservaId, tipo: "cobro", anulado: false, monto: n,
+      createdAt: { gte: new Date(ahora.getTime() - VENTANA_COBRO_REPETIDO_MIN * 60_000) },
+    },
+    select:  { monto: true, createdAt: true, creadoPor: true, metodoPago: true, anulado: true },
+    orderBy: { createdAt: "desc" },
+    take:    5,
+  });
+  return cobroIgualReciente(recientes, n, ahora);
 }
 
 /**

@@ -6,8 +6,9 @@ import { hoyMX } from "@/lib/dates";
 import { montoCobrado } from "@/lib/admin/kpis";
 import {
   cobrosDeReserva, registrarCobro, anularCobro, marcarEntregado, editarCobro,
-  metodoValido, requiereComprobante,
+  metodoValido, requiereComprobante, cobroRepetidoReciente,
 } from "@/lib/admin/cobros";
+import { avisoCobroRepetido } from "@/lib/admin/cobroRepetido";
 import { RECEPTORES } from "@/lib/admin/corteSemanal";
 
 /**
@@ -103,6 +104,21 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         },
         { status: 400 },
       );
+    }
+
+    // 🔴 ¿El mismo pago dos veces? (revisión del lote 1, 5 nov 2026). Dos
+    // personas que convierten la misma cotización a la vez, o la liga que se
+    // paga mientras alguien tiene abierto este cuadro, dejaban el anticipo
+    // registrado dos veces. Si en la última hora entró en esta reserva un
+    // cobro igual, se pregunta; si de verdad es otro pago, `forzar` lo registra.
+    if (!desglosar && !b?.forzar) {
+      const igual = await cobroRepetidoReciente(params.id, monto);
+      if (igual) {
+        return NextResponse.json(
+          { error: avisoCobroRepetido(igual, new Date()), sePuedeForzar: true, repetido: true, cobros: await cobrosDeReserva(params.id) },
+          { status: 409 },
+        );
+      }
     }
 
     const r = await registrarCobro({

@@ -41,7 +41,7 @@ import { canjearCodigoCumple, codigoDeLineas, validarCodigoCumple } from "@/lib/
 import { sellarEnLineItems, resumenEvento, type EventoDescuento } from "@/lib/admin/descuento";
 import { HOTEL_PARAISO, metaDeCotizacion } from "./armar";
 import {
-  avisoSobrecupo, etiquetasSinLugar, fechaCorta, idiomaTourDeConversion, pedidosDeCupo,
+  avisoSobrecupo, etiquetasSinLugar, fechaCorta, idiomaTourDeConversion, pedidosDeCupo, trasAbonarLigas,
 } from "./reglasConversion";
 import type {
   ComprobanteBot, ConfirmacionResultado, ConfirmarPagoInput, LocaleBot, RecorridoConfirmado,
@@ -635,14 +635,14 @@ export async function convertirCotizacionEnReserva(
   // una sola vez) ANTES de mover el lead: al revés, la reserva en $0 lo bajaba
   // de Anticipo a En seguimiento y el abono lo volvía a subir.
   const cobradoAntes = montoCobrado(r.reserva);
+  // Si el abono falla, ya no queda solo en el log (revisión del 5 nov 2026):
+  // se dice y el lead no se mueve con la reserva en $0 (ver `trasAbonarLigas`).
+  let errorAbono = null as string | null;
   const abonadoPorLiga = await import("@/lib/admin/linksPago").then(m => m.abonarLigasDeCotizacion(r.cotizacion.id, r.reserva.id))
-    .catch(e => { console.error("abonarLigasDeCotizacion:", (e as Error)?.message); return 0; });
-  if (abonadoPorLiga > 0 && cobradoAntes > 0) {
-    // Alguien registró el anticipo a mano antes de que Stripe avisara: el
-    // dinero de la liga entra igual (es real) y una persona decide si es doble.
-    avisos.push(`La reserva ${r.reserva.confirmationNumber} ya tenía ${pesos(cobradoAntes)} registrados y se le sumaron ${pesos(abonadoPorLiga)} de la liga de pago: si son el mismo pago, anula el que se capturó a mano.`);
-    revisar.push(`ya tenía ${pesos(cobradoAntes)} antes de la liga: ¿pago repetido?`);
-  }
+    .catch(e => { errorAbono = (e as Error)?.message || "error desconocido"; console.error("abonarLigasDeCotizacion:", errorAbono); return 0; });
+  const trasAbono = trasAbonarLigas({ folio: r.reserva.confirmationNumber, cobradoAntes, abonado: abonadoPorLiga, error: errorAbono });
+  avisos.push(...trasAbono.avisos);
+  revisar.push(...trasAbono.revisar);
 
   if (r.nueva) {
     const crm = await import("@/lib/admin/crmDatos");
@@ -655,8 +655,11 @@ export async function convertirCotizacionEnReserva(
     }
     // Su lead pasa a la etapa que dice lo cobrado. Con el cuadro del panel,
     // el nombre, correo y teléfono que se corrigieron pasan a su contacto. No lanza.
-    await crm.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true, conContacto: !!opciones.contacto })
-      .catch(() => {});
+    // Si el pago de la liga no entró, no: lo bajaría a En seguimiento estando pagado.
+    if (trasAbono.moverLead) {
+      await crm.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true, conContacto: !!opciones.contacto })
+        .catch(() => {});
+    }
   }
 
   // La reserva como quedó: con lo abonado y su lead.
