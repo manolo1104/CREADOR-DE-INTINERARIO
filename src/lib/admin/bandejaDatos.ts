@@ -1,6 +1,8 @@
 // Solo servidor: lo que guarda y lee la Bandeja de WhatsApp (Fase 2.3, 4 nov
 // 2026). El puente (`whatsapp-bandeja/`) manda cada mensaje aquí; lo que se
 // contesta desde el panel queda en cola y el puente lo envía.
+import { refDelTexto } from "@/lib/refWhatsapp";
+import { origenWebDeClic } from "./origenWeb";
 import { prisma } from "@/lib/prisma";
 import { TOURS_LISTA } from "@/lib/tours";
 import { registrarEnBitacora } from "./bitacora";
@@ -101,8 +103,20 @@ async function asegurarLead(conversacionId: string, texto: string | null): Promi
   const abierta = await prisma.oportunidad.findFirst({ where: { contactoId, etapa: { in: ABIERTAS } }, select: { id: true } });
   if (abierta) return false;
   const origen = origenDelPrimerMensaje(texto, TOURS_LISTA.map(t => ({ slug: t.slug, nombre: t.nombre })));
+  // El código de referencia del botón del sitio (4 nov 2026): une este lead con
+  // el clic — la página donde tocó WhatsApp y de dónde llegó la visita.
+  const ref = refDelTexto(texto);
+  const clic = ref ? await prisma.trackEvent.findFirst({
+    where: { event: "WHATSAPP_CLICK", createdAt: { gte: new Date(Date.now() - 14 * 86_400_000) }, data: { path: ["ref"], equals: ref } },
+    orderBy: { createdAt: "desc" }, select: { path: true, tourSlug: true, createdAt: true, data: true },
+  }).catch(() => null) : null;
+  const origenWeb = ref ? origenWebDeClic(ref, clic) : null;
+  const toursDelClic = origenWeb?.tour && TOURS_LISTA.some(t => t.slug === origenWeb.tour) ? [origenWeb.tour] : [];
   const op = await prisma.oportunidad.create({
-    data: { contactoId, etapa: "nuevo", canal: origen.canal, tours: origen.tours, responsable: RESPONSABLE_OPERACION, creadoPor: "WhatsApp" },
+    data: {
+      contactoId, etapa: "nuevo", canal: ref ? "whatsapp_sitio" : origen.canal, tours: origen.tours.length ? origen.tours : toursDelClic,
+      responsable: RESPONSABLE_OPERACION, creadoPor: "WhatsApp", ...(origenWeb ? { origenWeb: origenWeb as object } : {}),
+    },
     include: { contacto: { select: { nombre: true } } },
   });
   await registrarEtapa(op.id, null, "nuevo", "Regla: primer mensaje de WhatsApp", "regla");

@@ -64,6 +64,20 @@ export default async function EmbudoPage({ searchParams }: { searchParams: { p?:
         </Bloque>
       </div>
 
+      <Bloque titulo="De la web a la reserva" descripcion={`Leads del periodo que escribieron desde un botón del sitio: el código del mensaje dice en qué página tocaron WhatsApp y de dónde llegó su visita. ${d.web.conOrigen} de ${d.leadsCrm} leads con origen web.`}>
+        <div className="grid gap-4 px-4 pb-4 lg:grid-cols-2">
+          {[["Por canal de la visita", d.web.porCanal], ["Por sección donde tocaron WhatsApp", d.web.porSeccion]].map(([titulo, filas]) => (
+            <table key={titulo as string} className="panel-tabla w-full text-[13px] font-dm">
+              <thead><tr><th className={th}>{titulo as string}</th><th className={thR}>Leads</th><th className={thR}>Cotizados</th><th className={thR}>Reservaron</th></tr></thead>
+              <tbody>
+                {(filas as typeof d.web.porCanal).map(f => <tr key={f.clave}><td className={td}>{f.etiqueta}</td><td className={tdR}>{f.leads}</td><td className={tdR}>{f.cotizados}</td><td className={`${tdR} font-semibold`}>{f.reservaron}</td></tr>)}
+                {!(filas as typeof d.web.porCanal).length && <tr><td className={td} colSpan={4}>Todavía sin leads con código en el periodo.</td></tr>}
+              </tbody>
+            </table>
+          ))}
+        </div>
+      </Bloque>
+
       <div className="grid gap-5 lg:grid-cols-2">
         <Bloque titulo="Por qué se pierden" descripcion={`${d.perdidos} lead${d.perdidos === 1 ? "" : "s"} marcado${d.perdidos === 1 ? "" : "s"} como perdido${d.perdidos === 1 ? "" : "s"} en el periodo.`}>
           <table className="panel-tabla w-full text-[13px] font-dm">

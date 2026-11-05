@@ -1,3 +1,4 @@
+import { origenVisita, refReciente } from "@/lib/refWhatsapp";
 // Client-only — call only from "use client" components
 
 /**
@@ -185,11 +186,24 @@ export function marcarPasoClarity(event: string, data?: Record<string, unknown>)
   etiquetarClarity(event, getSessionId(), data ?? {});
 }
 
+/** El código del clic y el origen de la visita, para `WHATSAPP_CLICK`. Solo lo que existe. */
+function conOrigen(): Record<string, unknown> {
+  const o = origenVisita();
+  const ref = refReciente();
+  return {
+    ...(ref ? { ref } : {}),
+    ...(o ? { landing: o.landing, ...(o.fuente ? { fuente: o.fuente } : {}), ...(o.medio ? { medio: o.medio } : {}), ...(o.campana ? { campana: o.campana } : {}), ...(o.referrer ? { referrerVisita: o.referrer } : {}) } : {}),
+  };
+}
+
 export function trackTourEvent(
   event: string,
-  data?: Record<string, unknown>
+  datos?: Record<string, unknown>
 ): void {
   if (typeof window === "undefined") return;
+  // Todo clic a WhatsApp lleva su código de referencia y de dónde llegó la
+  // visita (4 nov 2026): así la Bandeja une el lead con su página y su canal.
+  const data = event === "WHATSAPP_CLICK" ? { ...conOrigen(), ...(datos ?? {}) } : datos;
   try {
     etiquetarClarity(event, getSessionId(), data ?? {});
     mandarAGa4(event, data ?? {});

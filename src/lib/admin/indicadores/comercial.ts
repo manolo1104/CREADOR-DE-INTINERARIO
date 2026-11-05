@@ -14,6 +14,9 @@ import { mensajesParaKpi } from "@/lib/admin/bandejaDatos";
 import { saldoPendiente } from "@/lib/admin/dinero";
 import { diasDeTourDe } from "@/lib/admin/salidas";
 import { contarMotivos } from "@/lib/admin/crm";
+import { leerOrigenWeb } from "@/lib/admin/origenWeb";
+import { ETIQUETA_CANAL } from "@/lib/admin/analisisComun";
+import { SECCIONES, seccionDePagina } from "./secciones";
 import { cohorteMadura, finMX, inicioMX } from "./periodo";
 import { NO_CUENTAN, cuenta, enPeriodo, r1, serie, sinDato, tasa } from "./util";
 import type { Periodo, PuntoSerie, ValorKpi } from "./tipos";
@@ -32,6 +35,8 @@ export interface LeadCohorte {
   /** Reservas ligadas al lead que cuentan (sin canceladas ni borradores). */
   reservas: number;
   cotizacionesEnviadas: number;
+  /** Si llegó por un botón del sitio con código de referencia: el canal de su visita y la página del clic. */
+  origen?: { canal: string; pagina: string | null } | null;
 }
 export interface CasoSeguimiento {
   leadId: string;
@@ -68,6 +73,12 @@ export interface DetalleComercial {
   leadsCrm: number;
   leadsRevision: number | null;
   preliminar: boolean;
+  /** De la web a la reserva (código de referencia, 4 nov 2026): leads del periodo con origen web, por canal y por sección. */
+  web: {
+    conOrigen: number;
+    porCanal: { clave: string; etiqueta: string; leads: number; cotizados: number; reservaron: number }[];
+    porSeccion: { clave: string; etiqueta: string; leads: number; cotizados: number; reservaron: number }[];
+  };
 }
 
 export interface MedicionComercial { valores: ValorKpi[]; series: Record<string, PuntoSerie[]>; detalle: DetalleComercial }
@@ -197,6 +208,18 @@ export function calcularComercial(d: DatosComercial, p: Periodo, periodos: Perio
     resp.set(k, f);
   }
   const perdidos = d.perdidos.filter(x => enPeriodo(x.ymd, p));
+  // De la web a la reserva: solo los leads con código de referencia (el clic se encontró).
+  const conWeb = ls.filter(l => l.origen);
+  const agrupar = (clave: (l: LeadCohorte) => string, etiqueta: (k: string) => string) => {
+    const m = new Map<string, { clave: string; etiqueta: string; leads: number; cotizados: number; reservaron: number }>();
+    for (const l of conWeb) {
+      const k = clave(l);
+      const f = m.get(k) ?? { clave: k, etiqueta: etiqueta(k), leads: 0, cotizados: 0, reservaron: 0 };
+      f.leads++; if (cotizo(l)) f.cotizados++; if (reservo(l)) f.reservaron++;
+      m.set(k, f);
+    }
+    return Array.from(m.values()).sort((a, b) => b.leads - a.leads);
+  };
   return {
     valores, series,
     detalle: {
@@ -213,6 +236,11 @@ export function calcularComercial(d: DatosComercial, p: Periodo, periodos: Perio
       leadsCrm: ls.length,
       leadsRevision: leadsRevision(d, p),
       preliminar: !cohorteMadura(p, d.hoy),
+      web: {
+        conOrigen: conWeb.length,
+        porCanal: agrupar(l => l.origen!.canal, k => ETIQUETA_CANAL[k as keyof typeof ETIQUETA_CANAL] ?? k),
+        porSeccion: agrupar(l => (l.origen!.pagina ? seccionDePagina(l.origen!.pagina) : "otras"), k => SECCIONES.find(s => s.clave === k)?.etiqueta ?? k),
+      },
     },
   };
 }
@@ -225,7 +253,7 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   const [ops, cotTrans, quotes, revisiones, chats, reservas, vivas, perdidos] = await Promise.all([
     prisma.oportunidad.findMany({
       where: { createdAt: rango },
-      select: { id: true, createdAt: true, canal: true, responsable: true, etapa: true, historial: { select: { nueva: true, createdAt: true } } },
+      select: { id: true, createdAt: true, canal: true, responsable: true, etapa: true, origenWeb: true, historial: { select: { nueva: true, createdAt: true } } },
     }).catch(() => []),
     // Las veces que un lead pasó a «cotizado» en la serie (para el seguimiento).
     prisma.etapaOportunidad.findMany({ where: { nueva: "cotizado", createdAt: rango }, select: { oportunidadId: true } }).catch(() => []),
@@ -309,6 +337,7 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
       id: o.id, ymd: ymdMX(o.createdAt), canal: o.canal, responsable: o.responsable, etapa: o.etapa,
       historial: o.historial.map(h => ({ nueva: h.nueva, en: h.createdAt.getTime() })),
       reservas: resPor.get(o.id) ?? 0, cotizacionesEnviadas: cotPor.get(o.id) ?? 0,
+      origen: (() => { const w = leerOrigenWeb(o.origenWeb); return w?.conClic ? { canal: w.canal, pagina: w.pagina } : null; })(),
     })),
     seguimiento, cotizaciones, revisiones, chats,
     reservas: reservas.map(b => ({ ymd: ymdMX(b.createdAt), total: b.totalAmount })),

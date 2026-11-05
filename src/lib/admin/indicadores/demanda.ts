@@ -25,6 +25,9 @@ export interface DatosDemanda {
   leads: { ymd: string; canal: string }[];
   /** Clics a WhatsApp que guardó el propio sitio en el periodo (sin /admin). */
   clicsPanel: number;
+  /** De esos, los que llevaban código de referencia, y los leads del periodo que llegaron con código (4 nov 2026). */
+  clicsConRef?: number;
+  leadsConRef?: number;
   busquedas: { buscadoEl: string; fechaViaje: string | null; personas: number | null }[];
   sinLugar: number;
   gsc: ResultadoGA4<Busqueda> | null;
@@ -41,7 +44,7 @@ export interface DetalleDemanda {
   secciones: FilaSeccion[];
   paginas: { path: string; vistas: number; whatsapp: number; formularios: number }[];
   embudo: { venTour: number; inicianPago: number; compras: number } | null;
-  cruce: { comprasGa4: number | null; reservasWeb: number; whatsappGa4: number | null; clicsPanel: number; diferenciaPct: number | null };
+  cruce: { comprasGa4: number | null; reservasWeb: number; whatsappGa4: number | null; clicsPanel: number; diferenciaPct: number | null; clicsConRef: number; leadsConRef: number };
   busquedas: { total: number; porMes: { mes: string; n: number }[]; personasProm: number | null; anticipacionMediana: number | null; sinLugar: number };
   gsc: { ok: true; actual: Busqueda; anterior: Busqueda | null } | { ok: false; motivo: string } | null;
 }
@@ -142,6 +145,7 @@ export function calcularDemanda(d: DatosDemanda, p: Periodo, periodos: Periodo[]
       cruce: {
         comprasGa4: g ? n(g.eventos, "purchase") : null, reservasWeb: webEn(p), whatsappGa4, clicsPanel: d.clicsPanel,
         diferenciaPct: whatsappGa4 ? Math.round(((d.clicsPanel - whatsappGa4) / whatsappGa4) * 100) : null,
+        clicsConRef: d.clicsConRef ?? 0, leadsConRef: d.leadsConRef ?? 0,
       },
       busquedas: {
         total: d.busquedas.length,
@@ -172,18 +176,21 @@ export async function medirDemanda(p: Periodo, periodos: Periodo[], hoy: string)
       where: { createdAt: { gte: inicioMX(span.desde), lte: finMX(span.hasta) }, status: { notIn: NO_CUENTAN } },
       select: { confirmationNumber: true, createdAt: true },
     }),
-    prisma.oportunidad.findMany({ where: { createdAt: { gte: inicioMX(span.desde), lte: finMX(span.hasta) } }, select: { createdAt: true, canal: true } }).catch(() => []),
+    prisma.oportunidad.findMany({ where: { createdAt: { gte: inicioMX(span.desde), lte: finMX(span.hasta) } }, select: { createdAt: true, canal: true, origenWeb: true } }).catch(() => []),
     prisma.trackEvent.findMany({ where: { event: "WHATSAPP_CLICK", createdAt: { gte: inicioMX(p.desde), lte: finMX(p.hasta) } }, select: { path: true, data: true }, take: 20000 }),
     prisma.trackEvent.findMany({ where: { event: { in: ["BUSCADOR_HERO", "VER_DISPONIBILIDAD"] }, createdAt: { gte: inicioMX(p.desde), lte: finMX(p.hasta) } }, select: { createdAt: true, data: true }, take: 20000 }),
     prisma.trackEvent.count({ where: { event: { in: ["APARTADO_SIN_LUGAR", "VIAJE_CDMX_SIN_LUGAR"] }, createdAt: { gte: inicioMX(p.desde), lte: finMX(p.hasta) } } }),
     dias > 0 ? busquedaGoogle(p.desde, hastaGsc) : Promise.resolve(null),
     dias > 0 ? busquedaGoogle(addDaysYMD(p.desde, -dias), addDaysYMD(p.desde, -1)) : Promise.resolve(null),
   ]);
+  const clicsSitio = clics.filter(e => !esDelPanel(e.path || String((e.data as Record<string, unknown> | null)?.pagina ?? "")));
   const datos: DatosDemanda = {
     ga4, serieGa4,
+    clicsConRef: clicsSitio.filter(e => typeof (e.data as Record<string, unknown> | null)?.ref === "string").length,
+    leadsConRef: leads.filter(l => enPeriodo(ymdMX(l.createdAt), p) && !!l.origenWeb).length,
     reservasWeb: reservas.filter(b => tipoFolio(b.confirmationNumber) === "web").map(b => ymdMX(b.createdAt)),
     leads: leads.map(l => ({ ymd: ymdMX(l.createdAt), canal: l.canal })),
-    clicsPanel: clics.filter(e => !esDelPanel(e.path || String((e.data as Record<string, unknown> | null)?.pagina ?? ""))).length,
+    clicsPanel: clicsSitio.length,
     busquedas: busq.map(e => {
       const data = (e.data ?? {}) as Record<string, unknown>;
       return { buscadoEl: ymdMX(e.createdAt), fechaViaje: ymdDato(data.fecha), personas: Number(data.personas) || null };

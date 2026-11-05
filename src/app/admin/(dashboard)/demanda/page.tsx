@@ -113,9 +113,14 @@ export default async function DemandaPage({ searchParams }: { searchParams: { p?
                 <td className={td}>Contactos por WhatsApp</td><td className={tdR}>{n(d.cruce.whatsappGa4)}</td><td className={tdR}>{n(d.cruce.clicsPanel)}</td>
                 <td className={td}>{d.cruce.diferenciaPct === null ? <ChipEstado tono="neutro">Sin GA4</ChipEstado> : Math.abs(d.cruce.diferenciaPct) < 20 ? <ChipEstado tono="bien">{`Difiere ${d.cruce.diferenciaPct} %`}</ChipEstado> : <ChipEstado tono="atencion">{`Difiere ${d.cruce.diferenciaPct} %`}</ChipEstado>}</td>
               </tr>
+              <tr>
+                <td className={td}>Clics a WhatsApp que sí escribieron</td><td className={tdR}>—</td>
+                <td className={tdR}>{d.cruce.clicsConRef ? `${n(d.cruce.leadsConRef)} de ${n(d.cruce.clicsConRef)}` : "—"}</td>
+                <td className={td}>{d.cruce.clicsConRef ? <ChipEstado tono="neutro">{`${Math.round((d.cruce.leadsConRef / d.cruce.clicsConRef) * 100)} % llegaron`}</ChipEstado> : <ChipEstado tono="neutro">Desde el código</ChipEstado>}</td>
+              </tr>
             </tbody>
           </table>
-          <p className="px-4 pb-3 pt-1 text-[11.5px] font-dm text-[var(--panel-tinta-suave)]">El panel cuenta un poco más: GA4 no ve a quien bloquea el rastreo o rechaza las cookies.</p>
+          <p className="px-4 pb-3 pt-1 text-[11.5px] font-dm text-[var(--panel-tinta-suave)]">El panel cuenta un poco más: GA4 no ve a quien bloquea el rastreo o rechaza las cookies. «Sí escribieron»: el clic lleva un código en el mensaje y la Bandeja lo reconoce al llegar (desde el 4 nov).</p>
         </Bloque>
 
         <Bloque titulo="Qué buscan en el sitio" descripcion="Del buscador del inicio y de «ver disponibilidad»: para qué mes de viaje buscan, con cuánta anticipación y cuántos se quedaron sin lugar.">

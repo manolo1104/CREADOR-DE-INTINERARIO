@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { TOURS_DB } from "@/lib/tours";
+import { agregarRef, guardarOrigenVisita, marcarRef, nuevaRef } from "@/lib/refWhatsapp";
 
 /**
  * Cuenta TODOS los clics a WhatsApp del sitio, desde un solo lugar.
@@ -40,12 +41,24 @@ function etiquetaDe(el: HTMLElement): string {
 
 export default function WhatsAppClickTracker() {
   useEffect(() => {
+    // De dónde llegó la visita (UTM o el sitio de origen), una vez por sesión:
+    // viaja con el clic a WhatsApp y de ahí al lead (`lib/refWhatsapp.ts`).
+    guardarOrigenVisita();
+
     function alHacerClic(e: MouseEvent) {
       const destino = e.target as HTMLElement | null;
       const enlace = destino?.closest?.(
         'a[href*="wa.me"], a[href*="api.whatsapp.com"], a[href^="whatsapp:"]',
       ) as HTMLAnchorElement | null;
       if (!enlace) return;
+
+      // El código de referencia (4 nov 2026) va en TODOS los botones, también en
+      // los que se miden solos: se cambia la liga antes de que el navegador la
+      // abra (esto corre en captura, antes del onClick del botón) y el evento
+      // del clic lo recoge con `refReciente()`.
+      const ref = nuevaRef();
+      const conRef = agregarRef(enlace.href, ref);
+      if (conRef !== enlace.href) { enlace.href = conRef; marcarRef(ref); }
 
       // Ya lo cuenta su propio onClick, con más contexto del que hay aquí.
       if (enlace.dataset.waManual === "1") return;

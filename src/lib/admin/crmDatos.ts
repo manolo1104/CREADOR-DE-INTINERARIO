@@ -1,6 +1,7 @@
 // Solo servidor: lo que lee y escribe el CRM (Fase 2, 3 nov 2026). Cada
 // cambio de etapa queda en `EtapaOportunidad` con quién lo hizo, y lo que
 // mueve dinero o clientes también en la bitácora.
+import { leerOrigenWeb } from "./origenWeb";
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { origenValido } from "@/lib/origenReserva";
@@ -309,6 +310,8 @@ export async function fichaOportunidad(id: string) {
     id: op.id, etapa: op.etapa, canal: op.canal, tours: op.tours, fechaViaje: op.fechaViaje, pax: op.pax, perfil: op.perfil,
     quiereHospedaje: op.quiereHospedaje, monto: op.monto, responsable: op.responsable, proximoPaso: op.proximoPaso,
     proximoPasoEn: op.proximoPasoEn, motivoPerdida: op.motivoPerdida, creadoPor: op.creadoPor, createdAt: op.createdAt.toISOString(),
+    // De qué página y canal llegó (código de referencia del WhatsApp, 4 nov 2026).
+    origenWeb: leerOrigenWeb(op.origenWeb),
     contacto: { id: op.contacto.id, nombre: op.contacto.nombre, telefono: op.contacto.telefono, correo: op.contacto.correo, idioma: op.contacto.idioma },
     otras: op.contacto.oportunidades.filter(o => o.id !== id).map(o => ({ id: o.id, etapa: o.etapa, createdAt: o.createdAt.toISOString(), tours: o.tours })),
     historial: op.historial.map(h => ({ id: h.id, anterior: h.anterior, nueva: h.nueva, por: h.por, origen: h.origen, en: h.createdAt.toISOString() })),

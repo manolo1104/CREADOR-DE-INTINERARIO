@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { MapPin, Users, CalendarDays, Wallet, Hotel, UtensilsCrossed, Tag, Languages, EyeOff, Phone, Mail, Check, Clock, FileText, BookOpen, StickyNote, Pencil, ChevronDown, ArrowRight, Plus, Banknote, Eye, Repeat2, type LucideIcon } from "lucide-react";
 import type { FichaLead } from "@/lib/admin/crmDatos";
+import { ETIQUETA_CANAL } from "@/lib/admin/analisisComun";
 import { ETAPAS, PERFILES, estadoFecha, etapaSiguiente, etiquetaEtapa, etiquetaMotivoPerdida, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
 import { ORIGENES_ELEGIBLES } from "@/lib/origenReserva";
 import { colorDeTour } from "@/lib/admin/coloresTour";
@@ -123,6 +124,14 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
             {f.contacto.correo && <a href={`mailto:${f.contacto.correo}`} className="panel-foco inline-flex items-center gap-1 hover:underline"><Mail className="h-3.5 w-3.5" aria-hidden="true" />{f.contacto.correo}</a>}
             <span>Capturado por {f.creadoPor ?? "—"} · {fHora(f.createdAt)}</span>
           </p>
+          {/* De qué página y canal llegó (código de referencia del WhatsApp, 4 nov 2026). */}
+          {f.origenWeb && (
+            <p className="mt-1 text-[12.5px] font-dm text-[var(--panel-tinta-media)]">
+              Llegó desde la web{f.origenWeb.pagina ? <> · tocó WhatsApp en <span className="font-medium text-[var(--panel-tinta)]">{f.origenWeb.pagina}</span></> : null}
+              {f.origenWeb.conClic ? <> · visita por <span className="font-medium text-[var(--panel-tinta)]">{ETIQUETA_CANAL[f.origenWeb.canal] ?? f.origenWeb.canal}</span>{f.origenWeb.campana ? ` (${f.origenWeb.campana})` : ""}</> : " · sin el clic (bloqueador o código viejo)"}
+              <span className="text-[var(--panel-tinta-suave)]"> · ref. {f.origenWeb.ref}</span>
+            </p>
+          )}
         </div>
 
         {/* Etapa actual y los botones para moverla */}

@@ -1073,6 +1073,9 @@ model Oportunidad {
   /// `lib/admin/crm.ts` MOTIVOS_PERDIDA: clave y detalle. Obligatorio al pasar a perdido.
   motivoPerdida String?
   creadoPor     String?
+  /// De qué página y de qué canal llegó (4 nov 2026): lo pone la Bandeja con el
+  /// código de referencia del mensaje de WhatsApp. Ver `lib/admin/origenWeb.ts`.
+  origenWeb     Json?
   historial     EtapaOportunidad[]
   notasLista    NotaOportunidad[]
   tareas        Tarea[]
