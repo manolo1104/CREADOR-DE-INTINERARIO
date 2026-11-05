@@ -290,21 +290,8 @@ export function cobrosDelPagoWeb<T extends CobroConReferencia>(cobros: T[]): T[]
   return cobros.filter((c) => !sesionDeCobro(c));
 }
 
-// ── La baja de correos no apaga una venta en curso ──────────────────────────
-
-/**
- * De las cotizaciones enviadas de quien se da de baja de los correos, las que
- * pasan a «vencida»: solo las que NO tienen una liga de pago viva. 🔴 Revisión
- * del lote 3 (5 nov 2026): vencida, la conciliación de cada hora le apagaba la
- * liga que el cliente tenía en su WhatsApp y el panel ya no dejaba mandarle
- * otra («la cotización venció»), aunque solo pidió no recibir correos. Sus
- * correos igual se detienen (el cron consulta `estaDeBaja`) y vence sola en su
- * fecha límite, que es cuando su liga sí debe apagarse.
- */
-export function cotizacionesQueVencePorBaja(enviadas: string[], conLigaViva: (string | null)[]): string[] {
-  const vivas = new Set(conLigaViva.filter((x): x is string => !!x));
-  return enviadas.filter((id) => !vivas.has(id));
-}
+// (La baja de correos ya no vence cotizaciones —lote 4, 5 nov 2026—: solo
+// pausa sus correos, así que tampoco apaga su liga. Ver `lineItemsTrasBaja`.)
 
 // ── Cobros → «Lo que falta de una reserva» ──────────────────────────────────
 

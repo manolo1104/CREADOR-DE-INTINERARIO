@@ -243,7 +243,8 @@ export default function FichaLeadClient({ ficha: f, tours, responsables, hoy }: 
                           <span>Editada {fHora(c.editadaEn)}</span>
                         </p>
                         <div className="mt-2.5 flex flex-wrap gap-2">
-                          <Link href={conLead(`/admin/cotizaciones?editar=${c.id}`)} className={botonSecundario}><Pencil className="h-4 w-4" aria-hidden="true" />Editar cotización</Link>
+                          {/* Una aceptada se abre para ver: lo que se cambia es su reserva (lote 4, 5 nov 2026). */}
+                          <Link href={conLead(`/admin/cotizaciones?editar=${c.id}`)} className={botonSecundario}><Pencil className="h-4 w-4" aria-hidden="true" />{c.status === "aceptada" ? "Ver cotización" : "Editar cotización"}</Link>
                           {convertible && <Link href={conLead(`/admin/cotizaciones?convertir=${c.id}`)} className={botonPrimario}><BookOpen className="h-4 w-4" aria-hidden="true" />Convertir a reserva</Link>}
                         </div>
                       </li>

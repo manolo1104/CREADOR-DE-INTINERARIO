@@ -9,6 +9,7 @@ import DescuentoEditor from "@/components/admin/DescuentoEditor";
 import { montoDescuento, type Descuento, type EventoDescuento, type TipoDescuento } from "@/lib/admin/descuento";
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
+import { ajusteDeTotal, textoAjuste, totalConAjuste } from "@/lib/admin/precioPactado";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
 import { ORIGENES_ELEGIBLES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import {
@@ -175,7 +176,13 @@ export interface ReservaFormState {
   packages:       PackageItem[];
   /** Comida, transporte, guía privado… lo que va aparte del recorrido y del hotel. */
   extras:         ExtraItem[];
-  totalOverride:  string;
+  /**
+   * El precio pactado, como AJUSTE en pesos sobre lo que da la lista (ya con
+   * el descuento): 0 = el precio de lista. 🔴 Era un «total editado» que se
+   * borraba al tocar cualquier renglón, aunque fuera solo la fecha (lote 4, 5
+   * nov 2026). Ver `lib/admin/precioPactado.ts`.
+   */
+  ajustePrecio:   number;
   /**
    * El descuento, aparte del total (Manolo, 20 oct 2026): así no se pierde al
    * cambiar un tour, un cuarto o un extra. `descuentoGuardado` e `historial` son
@@ -275,7 +282,7 @@ export function AvisoFechaPasada({ fecha }: { fecha: string }) {
 export const EMPTY_LINE: LineItem = { tourSlug: "", tourName: "", tourDate: "", adults: 2, childrenMid: 0, childrenSmall: 0, subtotal: 0 };
 export const EMPTY_RESERVA_FORM: ReservaFormState = {
   customerName: "", customerEmail: "", customerPhone: "", notes: "",
-  lines: [{ ...EMPTY_LINE }], packages: [], extras: [], totalOverride: "", depositoPagado: "",
+  lines: [{ ...EMPTY_LINE }], packages: [], extras: [], ajustePrecio: 0, depositoPagado: "",
   descuentoTipo: "percent", descuentoValor: "", descuentoGuardado: null, descuentoHistorial: [],
   codigoCumple: "",
   metodoPago: "Transferencia", folioPago: "", pickupLugar: "Lobby de tu hotel en Xilitla",
@@ -641,6 +648,8 @@ interface Props {
 export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [], soloLecturaCobro = false, folio }: Props) {
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
+  // Lo que se va tecleando en «Editar» el total; el ajuste se saca de ahí.
+  const [totalTexto,   setTotalTexto]   = useState("");
 
   const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
@@ -658,7 +667,8 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
   );
   // El total automático ya trae el descuento: editar un tour no lo borra.
   const calcTotal     = sinDescuento - descuentoMonto;
-  const finalTotal    = form.totalOverride !== "" ? Number(form.totalOverride) || 0 : calcTotal;
+  // Y el precio pactado va encima como ajuste: tampoco se borra al editar.
+  const finalTotal    = totalConAjuste(calcTotal, form.ajustePrecio);
   const deposito      = Number(form.depositoPagado) || 0;
   const pendiente     = Math.max(0, finalTotal - deposito);
 
@@ -711,7 +721,8 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
         if (field === "tourSlug") return conTrasladoValles(conTrasladoValles(up, false), f.zona === "valles");
         return up;
       }),
-      totalOverride: "",
+      // El precio pactado (`ajustePrecio`) se queda: cambiar la fecha no
+      // mueve el total, y si otro cambio lo mueve se pregunta al guardar.
     }));
   }
 
@@ -725,10 +736,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
   function elegirZona(z: Exclude<ZonaReserva, "">) {
     setForm(f => {
       const lines   = f.lines.map(l => conTrasladoValles(l, z === "valles"));
-      const cambio  = lines.some((l, i) => l !== f.lines[i]);
       const lugar   = f.pickupLugar.trim();
       const pickupLugar = z === "valles" && lugar === PICKUP_POR_OMISION ? "" : f.pickupLugar;
-      return { ...f, zona: z, lines, pickupLugar, totalOverride: cambio ? "" : f.totalOverride };
+      // El precio pactado se queda; el traslado de Valles se suma encima.
+      return { ...f, zona: z, lines, pickupLugar };
     });
   }
 
@@ -747,7 +758,6 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
         up.subtotal = calcPackageLine(up);
         return up;
       }),
-      totalOverride: "",
     }));
   }
 
@@ -985,7 +995,6 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                             onChange={nueva => setForm(f => ({
                               ...f,
                               lines: f.lines.map((x, idx) => idx === i ? { ...nueva, subtotal: calcTourLine(nueva) } : x),
-                              totalOverride: "",
                             }))}
                           />
                         )}
@@ -995,7 +1004,6 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                             onChange={nueva => setForm(f => ({
                               ...f,
                               lines: f.lines.map((x, idx) => idx === i ? nueva : x),
-                              totalOverride: "",
                             }))}
                           />
                         )}
@@ -1014,7 +1022,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm flex items-center gap-1.5">
                     <BedDouble className="w-3 h-3" />Hospedaje (opcional)
                   </p>
-                  <button onClick={() => setForm(f => ({ ...f, packages: [...f.packages, { ...EMPTY_PACKAGE }], totalOverride: "" }))}
+                  <button onClick={() => setForm(f => ({ ...f, packages: [...f.packages, { ...EMPTY_PACKAGE }] }))}
                     className="flex items-center gap-1 text-xs font-dm text-[#40916C] border border-[#40916C]/30 px-2 py-1 hover:bg-[#40916C]/8 transition-colors rounded-sm">
                     <Plus className="w-3 h-3" />Agregar habitación
                   </button>
@@ -1031,7 +1039,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                         <span className="text-[9px] tracking-[2px] uppercase text-[#40916C]/70 font-dm flex items-center gap-1">
                           <BedDouble className="w-3 h-3" /> Habitación {i + 1}
                         </span>
-                        <button onClick={() => setForm(f => ({ ...f, packages: f.packages.filter((_, idx) => idx !== i), totalOverride: "" }))}
+                        <button onClick={() => setForm(f => ({ ...f, packages: f.packages.filter((_, idx) => idx !== i) }))}
                           className="text-[#1B4332]/30 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                       </div>
                       <div className="space-y-2">
@@ -1089,7 +1097,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                 extras={form.extras ?? []}
                 personas={personasGrupo}
                 presets={presetsExtras}
-                onChange={extras => setForm(f => ({ ...f, extras, totalOverride: "" }))}
+                onChange={extras => setForm(f => ({ ...f, extras }))}
               />
 
               {/* Resumen running */}
@@ -1112,9 +1120,15 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                       )}
                     </div>
                   )}
+                  {/* El precio pactado se ve aquí también: el total no brinca al de lista. */}
+                  {form.ajustePrecio !== 0 && (
+                    <div className="mb-1 flex justify-between text-xs font-dm text-[#1B4332]/60">
+                      <span>Precio pactado (ajuste sobre la lista)</span><span>{textoAjuste(form.ajustePrecio)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Total estimado</span>
-                    <span className="font-cormorant text-[#52B788] text-xl">{fmx(calcTotal)}</span>
+                    <span className="font-cormorant text-[#52B788] text-xl">{fmx(finalTotal)}</span>
                   </div>
                 </div>
               )}
@@ -1130,7 +1144,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
               <DescuentoEditor
                 tipo={form.descuentoTipo}
                 valor={form.descuentoValor}
-                onCambio={(tipo, valor) => setForm(f => ({ ...f, descuentoTipo: tipo, descuentoValor: valor, totalOverride: "" }))}
+                onCambio={(tipo, valor) => { setEditingTotal(false); setForm(f => ({ ...f, descuentoTipo: tipo, descuentoValor: valor })); }}
                 base={sinDescuento}
                 guardado={form.descuentoGuardado}
                 historial={form.descuentoHistorial}
@@ -1140,10 +1154,10 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   lineas: form.lines,
                   cuando: "al guardar la reserva",
                   folio,
-                  onAplicar: (codigo, monto) => setForm(f => ({ ...f, codigoCumple: codigo, descuentoTipo: "fixed", descuentoValor: String(monto), totalOverride: "" })),
+                  onAplicar: (codigo, monto) => { setEditingTotal(false); setForm(f => ({ ...f, codigoCumple: codigo, descuentoTipo: "fixed", descuentoValor: String(monto) })); },
                   // Quitar el código quita también el descuento que puso: si no,
                   // la reserva se quedaba con el 10 % y el código libre para otra.
-                  onQuitar: () => setForm(f => ({ ...f, codigoCumple: "", descuentoTipo: "percent", descuentoValor: "", totalOverride: "" })),
+                  onQuitar: () => { setEditingTotal(false); setForm(f => ({ ...f, codigoCumple: "", descuentoTipo: "percent", descuentoValor: "" })); },
                 }}
               />
 
@@ -1173,13 +1187,19 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex-1">
                     <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">
-                      Total {form.totalOverride !== "" && <span className="text-[#52B788]">(editado)</span>}
+                      Total {form.ajustePrecio !== 0 && <span className="text-[#52B788]">(precio pactado: {textoAjuste(form.ajustePrecio)} sobre la lista)</span>}
                     </p>
                     {editingTotal ? (
                       <div className="flex items-center gap-2">
                         <span className="text-[#1B4332]/40 font-dm text-sm">$</span>
-                        <input type="number" min={0} value={form.totalOverride}
-                          onChange={e => setForm(f => ({ ...f, totalOverride: e.target.value }))}
+                        {/* Lo tecleado se guarda como ajuste sobre la lista: así se
+                            respeta aunque luego se cambie la fecha o un renglón. */}
+                        <input type="number" min={0} value={totalTexto}
+                          onChange={e => {
+                            const v = e.target.value;
+                            setTotalTexto(v);
+                            if (v !== "" && Number.isFinite(Number(v))) setForm(f => ({ ...f, ajustePrecio: ajusteDeTotal(Number(v), calcTotal) }));
+                          }}
                           placeholder={String(calcTotal)}
                           className="flex-1 border border-[#52B788]/50 bg-white text-[#52B788] font-cormorant text-xl px-2 py-1 focus:outline-none rounded-sm"
                           autoFocus />
@@ -1188,15 +1208,15 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                     ) : (
                       <p className="font-cormorant text-[#52B788] text-2xl">{fmx(finalTotal)}</p>
                     )}
-                    {form.totalOverride !== "" && (
-                      <button onClick={() => { setForm(f => ({ ...f, totalOverride: "" })); setEditingTotal(false); }}
+                    {form.ajustePrecio !== 0 && (
+                      <button onClick={() => { setForm(f => ({ ...f, ajustePrecio: 0 })); setEditingTotal(false); }}
                         className="text-[10px] font-dm text-[#1B4332]/40 hover:text-[#1B4332] mt-1 underline">
-                        Restaurar automático ({fmx(calcTotal)})
+                        Quitar el precio pactado (precio de lista: {fmx(calcTotal)})
                       </button>
                     )}
                   </div>
                   <button
-                    onClick={() => { if (editingTotal) setEditingTotal(false); else { setEditingTotal(true); if (form.totalOverride === "") setForm(f => ({ ...f, totalOverride: String(calcTotal) })); } }}
+                    onClick={() => { if (editingTotal) setEditingTotal(false); else { setTotalTexto(String(finalTotal)); setEditingTotal(true); } }}
                     className="flex items-center gap-1 border border-[#52B788]/40 text-[#52B788] px-2.5 py-1.5 text-xs font-dm hover:bg-[#52B788]/10 transition-colors rounded-sm">
                     {editingTotal ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                     {editingTotal ? "OK" : "Editar"}

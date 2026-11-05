@@ -366,6 +366,14 @@ export interface ResultadoEnvio {
   status?:       string;
   /** Los `lineItems` ya guardados (la ruta del panel los devuelve). */
   lineItems?:    unknown;
+  /**
+   * Correo: salió una COPIA y la cotización no cambió (ya es reserva, ya la
+   * aceptó o la reemplazó otra; lote 4, 5 nov 2026). `folio`: su reserva o la
+   * cotización que la reemplazó.
+   */
+  copia?:        { motivo: "reserva" | "aceptada" | "reemplazada"; folio: string | null };
+  /** Correo: no tiene correo del cliente; le llegó solo al equipo y nada cambió. */
+  soloEquipo?:   boolean;
   error?:        string;
 }
 

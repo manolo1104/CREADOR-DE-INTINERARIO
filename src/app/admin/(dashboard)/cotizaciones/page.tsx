@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 import { sesionActual } from "@/lib/admin/sesion";
+import { ESTADOS_RESERVA_MUERTA } from "@/lib/cotizaciones/reglasEnvio";
+import { metaDe } from "@/lib/admin/reserva";
 import CotizacionesClient, { type InicioCotizaciones, type LeadsDeCotizaciones } from "./CotizacionesClient";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +32,31 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
   const ligasPagadas = await prisma.linkPago.findMany({ where: { estado: "pagado", reservaId: null, cotizacionId: { not: null } }, select: { cotizacionId: true, montoPagado: true, monto: true } }).catch(() => []);
   const pagadasSinReserva: Record<string, number> = {};
   for (const l of ligasPagadas) pagadasSinReserva[l.cotizacionId!] = (pagadasSinReserva[l.cotizacionId!] ?? 0) + (l.montoPagado ?? l.monto);
+  // La reserva viva de cada aceptada (lote 4, 5 nov 2026): «Editar» la abre
+  // para ver y dice qué reserva cambiar; sin reserva se ofrece «Regresar a Enviada».
+  const aceptadas = quotes.filter(q => q.status === "aceptada");
+  const reservasVivas = aceptadas.length
+    ? await prisma.tourBooking.findMany({
+        where:  { cotizacionId: { in: aceptadas.map(q => q.id) }, status: { notIn: [...ESTADOS_RESERVA_MUERTA] } },
+        select: { cotizacionId: true, confirmationNumber: true },
+      }).catch(() => [])
+    : [];
+  const reservasDeCotizaciones: Record<string, string> = {};
+  for (const r of reservasVivas) if (r.cotizacionId) reservasDeCotizaciones[r.cotizacionId] = r.confirmationNumber;
+  // Las convertidas antes del 4 nov 2026 no guardan `cotizacionId`: su reserva
+  // dice de qué cotización viene en el `_meta` (`cotizacionOrigen`).
+  const sinFolio = aceptadas.filter(q => !reservasDeCotizaciones[q.id]);
+  if (sinFolio.length) {
+    const porFolio = new Map(sinFolio.map(q => [q.quoteNumber, q.id]));
+    const viejas = await prisma.tourBooking.findMany({
+      where:  { status: { notIn: [...ESTADOS_RESERVA_MUERTA] }, OR: sinFolio.map(q => ({ lineItems: { array_contains: [{ cotizacionOrigen: q.quoteNumber }] } })) },
+      select: { confirmationNumber: true, lineItems: true },
+    }).catch(() => []);
+    for (const b of viejas) {
+      const id = porFolio.get(String(metaDe(b).cotizacionOrigen ?? ""));
+      if (id && !reservasDeCotizaciones[id]) reservasDeCotizaciones[id] = b.confirmationNumber;
+    }
+  }
   const inicio: InicioCotizaciones = {
     editar: param(searchParams.editar), convertir: param(searchParams.convertir), nueva: searchParams.nueva === "1",
     lead: lead ? { id: lead.id, nombre: lead.contacto.nombre, telefono: lead.contacto.telefono, correo: lead.contacto.correo } : null,
@@ -38,6 +65,7 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
     <CotizacionesClient
       initialQuotes={quotes} presetsExtras={presetsExtras} quien={sesion?.nombre ?? "Admin"}
       guiasConocidos={guias.map(g => (g.guia ?? "").trim()).filter(Boolean)} leads={leads} inicio={inicio} pagadasSinReserva={pagadasSinReserva}
+      reservasDeCotizaciones={reservasDeCotizaciones}
     />
   );
 }

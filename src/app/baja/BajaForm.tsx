@@ -33,8 +33,10 @@ export function BajaForm({ token, email }: { token: string; email: string }) {
         <h1 className="font-cormorant font-light text-crema text-4xl mb-4">Listo, te sacamos de la lista</h1>
         <p className="font-dm text-sm text-crema/55 leading-relaxed mb-8">
           No volverás a recibir correos nuestros en <strong className="text-crema">{email}</strong>.
-          Si tienes una reserva o una cotización en curso, esos correos sí te siguen llegando —
-          son de tu compra, no publicidad.
+          {/* Lote 4 (5 nov 2026): la baja pausa los recordatorios de la cotización y
+              ya no la vence; decía que esos correos seguían llegando. */}
+          Si tienes una cotización, sigue valiendo hasta su fecha: para apartarla, escríbenos por WhatsApp.
+          Lo de una reserva ya hecha sí te sigue llegando — es de tu compra, no publicidad.
         </p>
         <a href="/" className="font-dm text-[11px] tracking-[2px] uppercase text-dorado hover:text-lima transition-colors">
           Volver al inicio →

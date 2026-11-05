@@ -8,6 +8,8 @@ import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import { leadDesdeCotizacion, leadTrasBorrarCotizacion } from "@/lib/admin/crmDatos";
 import { apagarLigasDe, crearSeguimientoUnico } from "@/lib/admin/linksPago";
 import { tituloLigaSinDestino } from "@/lib/admin/ligasReglas";
+import { avisoSoloLectura, lineItemsAlEditar, puedeRegresarAEnviada } from "@/lib/cotizaciones/reglasEnvio";
+import { reservaVivaDeCotizacion } from "@/lib/cotizaciones/estadoCotizacion";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +28,37 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (body[k] !== undefined) data[k] = body[k];
     }
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
+    if (!antes) return NextResponse.json({ error: "Esa cotización ya no existe." }, { status: 404 });
+
+    // 🔴 Una ACEPTADA ya no se edita (lote 4, 5 nov 2026, regla de Manolo): lo
+    // que se opera es su reserva, y editarla le pasaba al lead fecha, tours y
+    // monto que la reserva no tenía. Lo único que se le puede hacer es
+    // «Regresar a Enviada», y solo si no es reserva ni tiene un pago por liga
+    // (la que el cron de antes marcó aceptada por la reserva de OTRA cotización).
+    let regresada = false;
+    if (antes.status === "aceptada") {
+      const soloEstado = Object.keys(data).every(k => k === "status") && body.venceEl === undefined;
+      if (soloEstado && data.status === "enviada") {
+        const reserva = await reservaVivaDeCotizacion(antes);
+        const ligaPagada = (await prisma.linkPago.count({ where: { cotizacionId: antes.id, estado: "pagado" } })) > 0;
+        const puede = puedeRegresarAEnviada(antes, { reservaFolio: reserva?.confirmationNumber ?? null, ligaPagada });
+        if (!puede.ok) return NextResponse.json({ error: puede.motivo }, { status: 409 });
+        // Deja de contar en el KPI «Cotización → reserva».
+        data.aceptadaEn = null;
+        regresada = true;
+      } else if (!(soloEstado && (data.status === undefined || data.status === "aceptada"))) {
+        const reserva = await reservaVivaDeCotizacion(antes);
+        return NextResponse.json({ error: avisoSoloLectura(antes, reserva?.confirmationNumber ?? null) }, { status: 409 });
+      }
+    }
+
+    // 🔴 El `_meta` de seguimiento lo manda el SERVIDOR (lote 4, 5 nov 2026):
+    // del navegador solo se toman los renglones; la fecha límite cambia solo
+    // si se movió a propósito (`venceEl`). Ver `lineItemsAlEditar`.
+    const venceElNuevo = typeof body.venceEl === "string" ? body.venceEl : null;
+    if (data.lineItems !== undefined || venceElNuevo) {
+      data.lineItems = lineItemsAlEditar(data.lineItems ?? antes.lineItems, antes.lineItems, venceElNuevo);
+    }
     // Cuándo se aceptó (KPI «Cotización → reserva a 14 días», 4 nov 2026): solo
     // la primera vez que pasa a «aceptada»; volver a guardarla no la mueve.
     if (data.status === "aceptada" && antes?.status !== "aceptada") data.aceptadaEn = new Date();
@@ -68,8 +101,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // pasa al lead: total, fecha, personas, tours y contacto.
     const editoDatos = ["totalAmount", "tourDate", "lineItems", "adults", "children", "customerName", "customerEmail", "customerPhone", "tourName"].some(k => data[k] !== undefined);
     await leadDesdeCotizacion(quote.id, quote.status === "enviada" ? "cotizado" : "calificado",
-      (await sesionActual())?.nombre ?? "Desconocido", quote.status === "enviada" ? `cotización ${quote.quoteNumber} enviada` : `cotización ${quote.quoteNumber} editada`, editoDatos);
-    return NextResponse.json({ ok: true });
+      (await sesionActual())?.nombre ?? "Desconocido",
+      regresada ? `cotización ${quote.quoteNumber} regresó a Enviada` : quote.status === "enviada" ? `cotización ${quote.quoteNumber} enviada` : `cotización ${quote.quoteNumber} editada`, editoDatos);
+    // El estado y los `lineItems` como quedaron: el panel los pone en su lista (lote 4).
+    return NextResponse.json({ ok: true, status: quote.status, lineItems: quote.lineItems });
   } catch (e: any) {
     console.error("admin/cotizaciones PATCH:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
@@ -103,6 +138,12 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
         }).catch(e => console.error("seguimiento de liga pagada sin reserva:", (e as Error)?.message));
       }
     } else {
+      // Una aceptada no se marca vencida (lote 4, 5 nov 2026): ya es venta.
+      // El panel ya no ofrece el botón; esto frena una pestaña vieja.
+      if (antes?.status === "aceptada") {
+        const reserva = await reservaVivaDeCotizacion(antes);
+        return NextResponse.json({ error: avisoSoloLectura(antes, reserva?.confirmationNumber ?? null) }, { status: 409 });
+      }
       await prisma.tourQuote.update({ where: { id: params.id }, data: { status: "expirada" } });
       ligas = await apagarLigasDe({ cotizacionIds: [params.id] }, "la cotización venció");
     }

@@ -18,6 +18,8 @@ import { calcularVencimiento, vigenciaDe } from "@/lib/vencimientoCotizacion";
 import { hoyMX } from "@/lib/dates";
 import { registrarEnBitacora, pesos, type Actor } from "@/lib/admin/bitacora";
 import type { ResultadoEnvio } from "./tipos";
+import { modoDeEnvio } from "./reglasEnvio";
+import { ligaVivaDeCotizacion, reservaVivaDeCotizacion } from "./estadoCotizacion";
 
 const esYMD = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
@@ -29,6 +31,16 @@ const mensajeDe = (e: unknown) => (e instanceof Error ? e.message : String(e));
  * Sin correo del cliente va al buzón del equipo (`ADMIN_EMAIL_TOURS`), igual
  * que desde el panel: por eso `emailEnviado` dice si salió AL CLIENTE, que es
  * lo que el bot necesita saber para no prometer un correo que nadie recibió.
+ *
+ * 🔴 Lote 4 de la auditoría (5 nov 2026, regla de Manolo), ver `modoDeEnvio`:
+ *  · ya es reserva, ya la aceptó o la reemplazó otra → sale una COPIA (sin
+ *    botón de pago ni vigencia) y NO cambia nada: antes la regresaba a
+ *    Enviada y le volvía a arrancar los correos de cobro a quien ya pagó;
+ *  · sin correo del cliente → solo le llega al equipo y NO cambia nada
+ *    (`soloEquipo`): antes quedaba Enviada, con seguimiento y fecha límite,
+ *    aunque el cliente nunca la recibió.
+ * En los dos casos devuelve el estado y los `lineItems` como están, para que
+ * el panel no se quede con una copia vieja.
  */
 export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor): Promise<ResultadoEnvio> {
   let salioAlCliente = false;
@@ -39,8 +51,13 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
     const rawPkgs = Array.isArray((q as any).packageItems) ? (q as any).packageItems : [];
     const meta    = rawPkgs.find((p: any) => p && p._meta) || {};
 
+    const reserva = await reservaVivaDeCotizacion(q);
+    const modo    = modoDeEnvio(q, reserva?.confirmationNumber ?? null);
+    const copia   = modo.tipo === "copia" ? { motivo: modo.motivo, folio: modo.folio } : null;
+
     // La fecha límite nace al enviar. Si se REENVÍA y la que tenía sigue en
     // pie, se respeta (el cliente ya la leyó); si ya pasó, cuenta de nuevo.
+    // Una copia no lleva vigencia: ya no está abierta.
     const previa = metaCotizacion(q.lineItems).venceEl;
     const venceEl = previa && previa >= hoyMX()
       ? previa
@@ -62,21 +79,45 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
       extraItems:   (q as any).extraItems ?? undefined,
       // Idioma del cliente, guardado en el `_meta` de la cotización.
       locale:       meta.locale,
-      venceEl,
+      venceEl:      copia ? undefined : venceEl,
+      // Si el carrito no cobraría lo cotizado, el botón es su liga de pago (si tiene).
+      ligaPago:     copia ? null : await ligaVivaDeCotizacion(q.id),
+      copia,
     });
 
     const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
     const to      = q.customerEmail || adminTo;
+    const en      = meta.locale === "en";
 
     await sendBrevoEmail({
       to:      [{ email: to, name: q.customerName }],
       bcc:     to !== adminTo ? [{ email: adminTo }] : [],
-      subject: meta.locale === "en"
-        ? `Your tour quote is ready — ${q.quoteNumber}`
-        : `Tu cotización de tour está lista — ${q.quoteNumber}`,
+      subject: copia
+        ? (en ? `Copy of your quote — ${q.quoteNumber}` : `Copia de tu cotización — ${q.quoteNumber}`)
+        : en
+          ? `Your tour quote is ready — ${q.quoteNumber}`
+          : `Tu cotización de tour está lista — ${q.quoteNumber}`,
       htmlContent: html,
     });
     salioAlCliente = !!q.customerEmail;
+
+    // Copia, o sin correo del cliente: se manda y NADA más cambia.
+    if (modo.tipo !== "envio") {
+      await registrarEnBitacora({
+        accion:     "envió",
+        entidad:    "cotización",
+        referencia: q.quoteNumber,
+        resumen:    copia
+          ? `Copia de la cotización ${q.quoteNumber} a ${to} (${q.customerName}); no cambió su estado`
+          : `Cotización ${q.quoteNumber} (${q.customerName}) sin correo del cliente: llegó solo al equipo y no cambió a Enviada`,
+        actor,
+      });
+      return {
+        ok: true, emailEnviado: salioAlCliente, venceEl: previa ?? null, destinatario: to,
+        status: q.status, lineItems: q.lineItems,
+        ...(copia ? { copia } : { soloEquipo: true }),
+      };
+    }
 
     // Mandarla a mano ARRANCA el seguimiento. Antes, la cotización que Manolo
     // atendía en persona —la que cierra al 25 %— se quedaba sin un solo correo
@@ -86,16 +127,14 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
     // no caben los tres pasos antes de la fecha, nace en "sin-tiempo" y queda
     // dicho por qué esa cotización no va a recibir seguimiento.
     const seq = metaAlEnviar(q.tourDate, meta.locale === "en" ? "en" : "es");
+    // Fecha nueva = recordatorios nuevos: se borran las marcas de la anterior.
+    const lineItems = conMeta(q.lineItems, {
+      ...seq, venceEl,
+      ...(venceEl !== previa ? { recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
+    });
     await prisma.tourQuote.update({
       where: { id: quoteId },
-      data:  {
-        status:    "enviada",
-        // Fecha nueva = recordatorios nuevos: se borran las marcas de la anterior.
-        lineItems: conMeta(q.lineItems, {
-          ...seq, venceEl,
-          ...(venceEl !== previa ? { recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
-        }) as never,
-      },
+      data:  { status: "enviada", lineItems: lineItems as never },
     });
     await registrarEnBitacora({
       accion:     "envió",
@@ -105,7 +144,8 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
       actor,
     });
 
-    return { ok: true, emailEnviado: salioAlCliente, venceEl, destinatario: to, seguimiento: seq.seqEstado };
+    // El estado y los `lineItems` guardados: el panel los pone en su lista (lote 4).
+    return { ok: true, emailEnviado: salioAlCliente, venceEl, destinatario: to, seguimiento: seq.seqEstado, status: "enviada", lineItems };
   } catch (e: unknown) {
     // Si el correo ya salió y lo que falló fue guardar, se dice: el cliente sí
     // lo tiene y el bot no debe volver a prometérselo.

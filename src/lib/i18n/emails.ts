@@ -155,10 +155,19 @@ export interface EmailMessages {
     preview: (nombre: string) => string;
     hola: string;
     intro1: string;
-    validez: string;
-    intro2: string;
+    /**
+     * La vigencia REAL de la cotización (lote 4, 5 nov 2026): decía «48 horas»
+     * fijo aunque se hubiera dado 15 días. Con fecha límite, «hasta el…»; sin
+     * ella, la vigencia elegida (`duracion`). La fecha ya viene escrita.
+     */
+    validezHasta: (fecha: string) => string;
+    validezPor: (duracion: string) => string;
+    duracion: (dias: number) => string;
+    /** Cómo confirmar: con el botón de la web, con la liga de la cotización o solo por WhatsApp. */
+    intro2: (via: "web" | "liga" | "wa") => string;
     numeroCotizacion: string;
-    validaHoy: string;
+    validaHasta: (fecha: string) => string;
+    validaPor: (duracion: string) => string;
     toursCotizados: string;
     grupoDe: (n: number) => string;
     totalCotizado: string;
@@ -170,9 +179,21 @@ export interface EmailMessages {
     escribenosFolio: string;
     reservarEnLinea: string;
     pagaConTarjeta: string;
+    /** La liga de pago de ESTA cotización, cuando la web no cobraría lo cotizado. */
+    pagarEnLinea: string;
+    pagaLigaSub: string;
+    btnLiga: (monto: string) => string;
     btnWhatsapp: string;
     btnReservar: string;
-    vence: string;
+    venceHasta: (fecha: string) => string;
+    vencePor: (duracion: string) => string;
+    /**
+     * Copia de una cotización que ya no está abierta (lote 4): ya es reserva,
+     * ya la aceptó o la reemplazó otra. El folio ya viene escapado.
+     */
+    copiaReserva: (folio: string) => string;
+    copiaAceptada: string;
+    copiaReemplazada: (folio: string) => string;
     hospedajeIncluido: string;
     nochesHotel: string;
     ninos: (n: number) => string;
@@ -363,11 +384,18 @@ const ES: EmailMessages = {
     h1b: "propuesta de viaje",
     preview: (nombre) => `Hola ${nombre}, preparamos esta cotización con todos los detalles para que puedas planear tu aventura en la Huasteca Potosina.`,
     hola: "Hola,",
-    intro1: "Con gusto te compartimos los detalles y el precio de tu recorrido. Esta cotización es válida por",
-    validez: "48 horas",
-    intro2: ". Para confirmar tu lugar, contáctanos por WhatsApp o reserva directamente desde el sitio.",
+    intro1: "Con gusto te compartimos los detalles y el precio de tu recorrido.",
+    validezHasta: (f) => `Esta cotización es válida hasta el <strong>${f}</strong>.`,
+    validezPor: (d) => `Esta cotización es válida por <strong>${d}</strong>.`,
+    duracion: (dias) => (dias === 2 ? "48 horas" : `${dias} días`),
+    intro2: (via) => (via === "web"
+      ? " Para confirmar tu lugar, contáctanos por WhatsApp o reserva directamente desde el sitio."
+      : via === "liga"
+        ? " Para confirmar tu lugar, contáctanos por WhatsApp o paga en línea con el botón de abajo."
+        : " Para confirmar tu lugar, contáctanos por WhatsApp."),
     numeroCotizacion: "Número de Cotización",
-    validaHoy: "⏳ Válida por 48 horas a partir de hoy",
+    validaHasta: (f) => `⏳ Válida hasta el ${f}`,
+    validaPor: (d) => `⏳ Válida por ${d}`,
     toursCotizados: "Tours cotizados",
     grupoDe: (n) => `Grupo de ${n} persona${n !== 1 ? "s" : ""}`,
     totalCotizado: "Total Cotizado",
@@ -379,9 +407,16 @@ const ES: EmailMessages = {
     escribenosFolio: "Escríbenos tu número de cotización:",
     reservarEnLinea: "🌐 Reservar en línea",
     pagaConTarjeta: "Paga con tarjeta de forma rápida y segura",
+    pagarEnLinea: "💳 Pagar en línea",
+    pagaLigaSub: "Con tarjeta, en la página de pago segura de tu cotización",
+    btnLiga: (monto) => `Pagar ${monto} en línea`,
     btnWhatsapp: "WhatsApp +52 489 109 0388",
     btnReservar: "Reservar y pagar en línea",
-    vence: "Esta cotización vence en 48 horas · Sujeta a disponibilidad",
+    venceHasta: (f) => `Esta cotización vence el ${f} · Sujeta a disponibilidad`,
+    vencePor: (d) => `Esta cotización vence en ${d} · Sujeta a disponibilidad`,
+    copiaReserva: (folio) => `Esta es una copia de tu cotización. Ya está confirmada como tu reserva <strong>${folio}</strong>: no hace falta volver a pagar.`,
+    copiaAceptada: "Esta es una copia de tu cotización. Ya la aceptaste: no hace falta volver a pagar.",
+    copiaReemplazada: (folio) => `Esta es una copia de una cotización anterior: la que vale ahora es la <strong>${folio}</strong>.`,
     hospedajeIncluido: "Hospedaje incluido",
     nochesHotel: "🏨 Noches de hotel",
     ninos: (n) => `${n} niño${n !== 1 ? "s" : ""}`,
@@ -574,11 +609,18 @@ const EN: EmailMessages = {
     h1b: "trip proposal",
     preview: (nombre) => `Hi ${nombre}, we've put together this quote with all the details so you can plan your adventure in the Huasteca Potosina.`,
     hola: "Hi,",
-    intro1: "We're glad to share the details and the price of your tour. This quote is valid for",
-    validez: "48 hours",
-    intro2: ". To confirm your place, message us on WhatsApp or book directly on the site.",
+    intro1: "We're glad to share the details and the price of your tour.",
+    validezHasta: (f) => `This quote is valid until <strong>${f}</strong>.`,
+    validezPor: (d) => `This quote is valid for <strong>${d}</strong>.`,
+    duracion: (dias) => (dias === 2 ? "48 hours" : `${dias} days`),
+    intro2: (via) => (via === "web"
+      ? " To confirm your place, message us on WhatsApp or book directly on the site."
+      : via === "liga"
+        ? " To confirm your place, message us on WhatsApp or pay online with the button below."
+        : " To confirm your place, message us on WhatsApp."),
     numeroCotizacion: "Quote Number",
-    validaHoy: "⏳ Valid for 48 hours from today",
+    validaHasta: (f) => `⏳ Valid until ${f}`,
+    validaPor: (d) => `⏳ Valid for ${d}`,
     toursCotizados: "Tours quoted",
     grupoDe: (n) => `A group of ${n} ${n !== 1 ? "people" : "person"}`,
     totalCotizado: "Quoted Total",
@@ -590,9 +632,16 @@ const EN: EmailMessages = {
     escribenosFolio: "Send us your quote number:",
     reservarEnLinea: "🌐 Book online",
     pagaConTarjeta: "Pay by card, quick and secure",
+    pagarEnLinea: "💳 Pay online",
+    pagaLigaSub: "By card, on your quote's secure payment page",
+    btnLiga: (monto) => `Pay ${monto} online`,
     btnWhatsapp: "WhatsApp +52 489 109 0388",
     btnReservar: "Book and pay online",
-    vence: "This quote expires in 48 hours · Subject to availability",
+    venceHasta: (f) => `This quote expires on ${f} · Subject to availability`,
+    vencePor: (d) => `This quote expires in ${d} · Subject to availability`,
+    copiaReserva: (folio) => `This is a copy of your quote. It's already confirmed as your booking <strong>${folio}</strong>: there's no need to pay again.`,
+    copiaAceptada: "This is a copy of your quote. You've already accepted it: there's no need to pay again.",
+    copiaReemplazada: (folio) => `This is a copy of an earlier quote: the one that stands now is <strong>${folio}</strong>.`,
     hospedajeIncluido: "Lodging included",
     nochesHotel: "🏨 Hotel nights",
     ninos: (n) => `${n} child${n !== 1 ? "ren" : ""}`,

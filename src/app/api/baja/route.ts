@@ -4,7 +4,7 @@ import { emailDeToken } from "@/lib/baja";
 import { mismoCorreo, FUENTE_BAJA } from "@/lib/estaDeBaja";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
 import { actividad, logger } from "@/lib/logger";
-import { cotizacionesQueVencePorBaja } from "@/lib/admin/ligasReglas";
+import { lineItemsTrasBaja } from "@/lib/cotizaciones/reglasEnvio";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -17,8 +17,8 @@ export const runtime = "nodejs";
  * recomendador y el blog, y volver a escribirle desde otra fuente es
  * exactamente lo que hace que marquen spam.
  *
- * No toca las reservas ni las cotizaciones: una confirmación de compra no es
- * marketing y se sigue mandando.
+ * No toca las reservas: una confirmación de compra no es marketing y se sigue
+ * mandando. A las cotizaciones solo les pausa los correos: siguen vivas.
  */
 export async function POST(req: NextRequest) {
   let token = "";
@@ -46,19 +46,20 @@ export async function POST(req: NextRequest) {
      * Lo que NO se toca: las reservas. Una confirmación de compra no es
      * publicidad y se sigue mandando.
      *
-     * 🔴 Ni la cotización con su liga de pago viva (revisión del lote 3, 5 nov
-     * 2026): vencida, la conciliación de cada hora le apagaba al cliente la
-     * liga de su WhatsApp. Sus correos igual se detienen (`estaDeBaja`) y
-     * vence sola en su fecha límite. Ver `cotizacionesQueVencePorBaja`.
+     * 🔴 Las cotizaciones vivas solo PAUSAN sus correos (lote 4, 5 nov 2026,
+     * regla de Manolo). Antes pasaban a Vencida: el panel las enseñaba
+     * vencidas, la ficha del lead proponía «darle otra fecha», el KPI las
+     * contaba perdidas y su liga de pago se apagaba, aunque el cliente solo
+     * pidió no recibir correos. Siguen Enviadas, se pueden convertir o cobrar
+     * y vencen solas en su fecha. El cron, además, no le escribe a nadie de
+     * baja (`estaDeBaja`). Ver `lineItemsTrasBaja`.
      */
-    const enviadas = (await prisma.tourQuote.findMany({
-      where: { customerEmail: mismoCorreo(email), status: "enviada" }, select: { id: true },
-    })).map((q) => q.id);
-    const conLigaViva = enviadas.length
-      ? (await prisma.linkPago.findMany({ where: { estado: "activo", cotizacionId: { in: enviadas } }, select: { cotizacionId: true } })).map((l) => l.cotizacionId)
-      : [];
-    const aVencer = cotizacionesQueVencePorBaja(enviadas, conLigaViva);
-    const [leads, carritos, cotizaciones, curso, , cumple] = await prisma.$transaction([
+    const aPausar = (await prisma.tourQuote.findMany({
+      where: { customerEmail: mismoCorreo(email), status: "enviada" }, select: { id: true, lineItems: true },
+    }))
+      .map((q) => ({ id: q.id, lineItems: lineItemsTrasBaja(q.lineItems) }))
+      .filter((q): q is { id: string; lineItems: unknown[] } => q.lineItems !== null);
+    const [leads, carritos, curso, , cumple] = await prisma.$transaction([
       prisma.lead.updateMany({
         // Sin distinguir mayúsculas: el token lleva el correo en minúsculas y
         // los formularios lo guardan como se escribió («Ana.Lopez@Gmail.com»).
@@ -71,10 +72,6 @@ export async function POST(req: NextRequest) {
       prisma.abandonedCart.updateMany({
         where: { customerEmail: mismoCorreo(email), status: { in: [...ESTADOS_VIVOS] } },
         data:  { status: "baja" },
-      }),
-      prisma.tourQuote.updateMany({
-        where: { id: { in: aVencer }, status: "enviada" },
-        data:  { status: "expirada" },
       }),
       // Curso "Turismo con IA": solo prospectos. A un ALUMNO no se le apagan
       // sus recordatorios de sesión por un enlace viejo de marketing — sus
@@ -100,12 +97,19 @@ export async function POST(req: NextRequest) {
         data:  { aceptaPromos: false },
       }),
     ]);
+    // Aparte: cada una lleva su `_meta`. Si fallara, la baja igual quedó y el
+    // cron no le escribe a nadie de baja: no se le dice «error» a la persona.
+    if (aPausar.length) {
+      await prisma.$transaction(aPausar.map((q) => prisma.tourQuote.update({
+        where: { id: q.id }, data: { lineItems: q.lineItems as never },
+      }))).catch((e) => logger.error("baja_pausar_cotizaciones_failed", { reason: e instanceof Error ? e.message : "desconocido" }));
+    }
 
     actividad(
       "🚪  BAJA", email,
       `${leads.count} lista`,
       `${carritos.count} carrito(s)`,
-      `${cotizaciones.count} cotización(es)`,
+      `${aPausar.length} cotización(es) pausada(s)`,
       `${curso.count} curso`,
       `${cumple.count} cumpleaños`,
     );

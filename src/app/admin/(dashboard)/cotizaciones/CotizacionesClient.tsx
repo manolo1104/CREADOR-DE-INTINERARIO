@@ -28,6 +28,7 @@ import {
   fechaLimite, recordadoPorWhatsapp, urlRecordatorio, vigenciaDe,
 } from "@/lib/vencimientoCotizacion";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
+import { avisoSoloLectura, mensajeTrasRegresar } from "@/lib/cotizaciones/reglasEnvio";
 import { PAQUETES_PANEL, cargarPaquete } from "@/lib/admin/paquetesPanel";
 import { Package } from "lucide-react";
 import { grupoDe, grupoParaGuardar, grupoLargo } from "@/lib/admin/reserva";
@@ -54,12 +55,6 @@ function claseVence(dias: number): string {
   if (dias < 0)  return "text-red-600";
   if (dias <= 1) return "text-amber-600 font-semibold";
   return "text-[#40916C]";
-}
-
-/** El `_meta` de `lineItems` (seguimiento y fecha límite), aparte de las líneas de tour. */
-function metaLineas(q: TourQuote | null): Record<string, unknown> | null {
-  const ls = (q as any)?.lineItems;
-  return Array.isArray(ls) ? ls.find((l: any) => l && l._meta) ?? null : null;
 }
 
 const fmx    = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
@@ -137,11 +132,28 @@ export interface InicioCotizaciones {
 export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
 
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {} }:
-  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number> },
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, reservasDeCotizaciones = {} }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
 ) {
   const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
+  // El folio de la reserva viva de cada aceptada (lote 4, 5 nov 2026): el
+  // aviso de «solo lectura» lo nombra y sin él se ofrece «Regresar a Enviada».
+  const [reservasDe,     setReservasDe]     = useState(reservasDeCotizaciones);
+  const folioReserva = (q: TourQuote): string | null => {
+    const m = getMeta((q as any).packageItems ?? []) as any;
+    return reservasDe[q.id] ?? (typeof m.reservaFolio === "string" && m.reservaFolio ? m.reservaFolio : null);
+  };
+  // «Regresar a Enviada»: solo la aceptada que no es reserva ni tiene un pago
+  // por liga (la que el cron de antes marcó por la reserva de otra cotización).
+  const regresable = (q: TourQuote) => q.status === "aceptada" && !folioReserva(q) && !((pagadasSinReserva[q.id] ?? 0) > 0);
+  /** Lo que hace el sobre, dicho antes de pulsarlo (lote 4, 5 nov 2026). */
+  const tituloCorreo = (q: TourQuote) =>
+    q.status === "aceptada" ? "Reenviar una copia por correo (no cambia nada)"
+    : !q.customerEmail ? "Sin correo del cliente: la copia te llega a ti y no cuenta como enviada"
+    : "Enviar por correo";
+  // Abierta en «solo lectura»: una aceptada ya no se edita (su reserva sí).
+  const [avisoLectura,   setAvisoLectura]   = useState<string | null>(null);
   // Se puede convertir: borrador o enviada, o cualquiera con una liga pagada
   // que aún no tiene reserva (5 nov 2026: ya hay dinero, aunque haya vencido).
   // Si la lista está vieja y ya era reserva, el servidor lo dice sin crear otra.
@@ -293,7 +305,9 @@ export default function CotizacionesClient(
       }
       return next;
     });
-    soltarPrecioEditado();
+    // Cambiar solo la fecha no mueve el precio (lote 4, 5 nov 2026): el precio
+    // pactado se queda. Antes el total brincaba a la suma de lista.
+    if (field !== "tourDate") soltarPrecioEditado();
   }
 
   /** Editar una habitación. Entrada, noches y salida quedan siempre cuadradas. */
@@ -309,7 +323,8 @@ export default function CotizacionesClient(
       up.subtotal = calcPackageLine(up);
       return up;
     }));
-    soltarPrecioEditado();
+    // Mover la entrada conserva las noches: el precio no cambia (lote 4).
+    if (campo !== "checkin") soltarPrecioEditado();
   }
 
   /**
@@ -369,6 +384,7 @@ export default function CotizacionesClient(
 
   function openNew(lead?: InicioCotizaciones["lead"]) {
     setEditTarget(null);
+    setAvisoLectura(null);
     setParaLead(lead?.id ?? null);
     setForm(lead ? { ...EMPTY_FORM, customerName: lead.nombre, customerPhone: lead.telefono ?? "", customerEmail: lead.correo ?? "" } : EMPTY_FORM);
     setLines([{ ...EMPTY_LINE }]);
@@ -384,6 +400,8 @@ export default function CotizacionesClient(
 
   function openEdit(q: TourQuote) {
     setEditTarget(q);
+    // Una aceptada se abre para VER, con el aviso de dónde se cambia (lote 4).
+    setAvisoLectura(avisoSoloLectura(q, folioReserva(q)));
     const metaNotas = getMeta((q as any).packageItems ?? []) as any;
     setForm({
       customerName:  q.customerName,
@@ -467,24 +485,21 @@ export default function CotizacionesClient(
   }, []);
 
   async function saveQuote() {
+    if (avisoLectura) return; // Solo lectura: una aceptada se cambia en su reserva.
     if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
     if (!lines.every(lineaCompleta)) { flash("❌ Completa el concepto y la fecha en cada línea"); return; }
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const lineas       = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
-    // Se conserva el `_meta` de seguimiento (cuándo se envió, qué paso va, la
-    // fecha límite). Si la fecha límite cambió a mano, los recordatorios de la
+    // 🔴 El `_meta` de seguimiento (cuándo se envió, qué paso va, la fecha
+    // límite) ya NO viaja desde aquí: lo conserva el servidor (lote 4, 5 nov
+    // 2026). Esta copia podía ser vieja —la cotización se mandó por correo sin
+    // recargar— y al guardar borraba la fecha límite y el seguimiento. Solo se
+    // dice la fecha límite nueva si se movió a mano: los recordatorios de la
     // anterior ya no cuentan, y una Vencida con fecha nueva vuelve a Enviada.
-    const metaPrevio   = modal === "edit" ? metaLineas(editTarget) : null;
     const venceAntes   = editTarget ? fechaLimite(editTarget) ?? "" : "";
     const venceCambio  = modal === "edit" && /^\d{4}-\d{2}-\d{2}$/.test(venceEdit) && venceEdit !== venceAntes;
-    const metaNuevo    = metaPrevio || venceCambio
-      ? {
-          ...(metaPrevio ?? {}), _meta: true,
-          ...(venceCambio ? { venceEl: venceEdit, recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
-        }
-      : null;
-    const lineItems    = metaNuevo ? [metaNuevo, ...lineas] : lineas;
+    const lineItems    = lineas;
     const reactivar    = venceCambio && editTarget?.status === "expirada" && venceEdit >= hoyMX();
     const extraItems   = extras.filter(e => e.concepto.trim()).map(normalizarExtra);
     const packageItems = [
@@ -531,6 +546,7 @@ export default function CotizacionesClient(
       totalAmount: finalTotal, lineItems, packageItems, extraItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
+      ...(venceCambio ? { venceEl: venceEdit } : {}),
       ...(reactivar ? { status: "enviada" } : {}),
       ...(modal === "new" && paraLead ? { oportunidadId: paraLead } : {}),
     };
@@ -568,11 +584,43 @@ export default function CotizacionesClient(
 
   async function sendEmail(id: string) {
     setSending(id);
-    const r = await fetch(`/api/admin/cotizaciones/${id}/send-email`, { method: "POST" });
-    const d = await r.json();
-    flash(r.ok ? "✅ Email enviado al cliente" : `❌ ${d.error || "Error al enviar"}`);
-    if (r.ok) { setQuotes(q => q.map(x => x.id === id ? { ...x, status: "enviada" } : x)); router.refresh(); }
+    const r = await fetch(`/api/admin/cotizaciones/${id}/send-email`, { method: "POST" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (r?.ok) {
+      // 🔴 Lo que pasó DE VERDAD (lote 4, 5 nov 2026): una aceptada recibe una
+      // copia y no cambia; sin correo del cliente solo le llega al equipo. Y la
+      // cotización como quedó en el servidor, con su fecha límite y su
+      // seguimiento: con la copia de antes, editarla después los borraba.
+      setQuotes(q => q.map(x => x.id === id ? { ...x, status: d.status ?? x.status, lineItems: d.lineItems ?? (x as any).lineItems } : x));
+      flash(typeof d.mensaje === "string" ? d.mensaje : "✅ Correo enviado");
+      router.refresh();
+    } else {
+      flash(`❌ ${d.error || "No se pudo enviar el correo"}`);
+    }
     setSending(null);
+  }
+
+  /**
+   * «Regresar a Enviada» (lote 4, 5 nov 2026): la aceptada que no es reserva
+   * ni tiene un pago por liga —la que el cron de antes marcó por la reserva de
+   * otra cotización del mismo correo— vuelve a poder convertirse o cobrarse.
+   * El servidor revisa otra vez que no sea reserva.
+   */
+  async function regresarAEnviada(q: TourQuote) {
+    if (!confirm(`¿Regresar ${q.quoteNumber} a Enviada?\n\nÚsalo solo si se marcó Aceptada por error (el cliente no reservó esta cotización). Deja de contar como aceptada y se podrá convertir o cobrar.`)) return;
+    const r = await fetch(`/api/admin/cotizaciones/${q.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "enviada" }),
+    }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (r?.ok) {
+      const nueva = { ...q, status: "enviada", aceptadaEn: null, lineItems: d.lineItems ?? (q as any).lineItems } as TourQuote;
+      setQuotes(qs => qs.map(x => x.id === q.id ? nueva : x));
+      flash(mensajeTrasRegresar(fechaLimite(nueva), hoy));
+      router.refresh();
+    } else {
+      flash(`❌ ${d.error || "No se pudo regresar a Enviada"}`);
+    }
   }
 
   /** Un borrador archivado por el cron vuelve a ser borrador. */
@@ -624,6 +672,8 @@ export default function CotizacionesClient(
     }
     // El servidor ya la dejó «aceptada» (o ya lo estaba): la lista lo refleja.
     setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.cotizacion?.status || "aceptada" } : x));
+    // Y su reserva: «Editar» la abre para ver y dice dónde se cambia (lote 4).
+    if (typeof d.reserva?.confirmationNumber === "string") setReservasDe(m => ({ ...m, [q.id]: d.reserva.confirmationNumber }));
     setConvirtiendo(null);
     router.refresh();
     const avisos: string[] = Array.isArray(d.avisos) ? d.avisos.map(String) : [];
@@ -1282,11 +1332,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                 {q.status === "archivada" && (
                   <button onClick={() => { playClick(); desarchivar(q.id); }} className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                 )}
+                {regresable(q) && (
+                  <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
+                    className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Regresar a Enviada</button>
+                )}
                 {convertible(q) && (
                   <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
                 )}
-                <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                <button onClick={() => { playClick(); openEdit(q); }} title={q.status === "aceptada" ? "Ver (ya aceptada: se cambia en su reserva)" : "Editar"} className="text-[#1B4332]/50 hover:text-[#1B4332]">{q.status === "aceptada" ? <Eye className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
+                <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                 <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} className="text-[#1B4332]/50 hover:text-[#25D366]"><MessageCircle className="w-4 h-4" /></a>
                 {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && waRecordatorio(q) && (
                   <button onClick={() => recordar(q)} title="Recordar que vence" className="text-amber-600/70 hover:text-amber-600"><BellRing className="w-4 h-4" /></button>
@@ -1347,13 +1401,17 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           <button onClick={() => { playClick(); desarchivar(q.id); }} title="Volver a borrador"
                             className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                         )}
+                        {regresable(q) && (
+                          <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
+                            className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline whitespace-nowrap">Regresar a Enviada</button>
+                        )}
                         {convertible(q) && (
                           <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva"
                             className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
                         )}
-                        <button onClick={() => { playClick(); openEdit(q); }} title="Editar"
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title="Enviar email"
+                        <button onClick={() => { playClick(); openEdit(q); }} title={q.status === "aceptada" ? "Ver (ya aceptada: se cambia en su reserva)" : "Editar"}
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors">{q.status === "aceptada" ? <Eye className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
+                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)}
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                         <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} title="Enviar por WhatsApp"
                           className="text-[#1B4332]/40 hover:text-[#25D366] transition-colors"><MessageCircle className="w-4 h-4" /></a>
@@ -1363,8 +1421,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         )}
                         <button onClick={() => { playClick(); downloadPDF(q); }} title="PDF"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar vencida"
-                          className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
+                        {/* Una aceptada ya es venta: no se marca vencida (lote 4, 5 nov 2026). */}
+                        {q.status !== "aceptada" && (
+                          <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar vencida"
+                            className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
+                        )}
                         <button onClick={() => { playClick(); hardDeleteQ(q.id); }} title="Eliminar"
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -1428,7 +1489,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-0">
               <h2 className="font-cormorant text-[#1B4332] text-xl font-light">
-                {isEditMode ? "Editar Cotización" : "Nueva Cotización"}
+                {avisoLectura ? "Ver Cotización" : isEditMode ? "Editar Cotización" : "Nueva Cotización"}
                 {isEditMode && editTarget && <span className="text-[#1B4332] text-sm font-dm ml-2">{editTarget.quoteNumber}</span>}
                 {isEditMode && editTarget && esDelBot(editTarget) && <span className="ml-2 align-middle"><ChipBot /></span>}
               </h2>
@@ -1458,6 +1519,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
             {/* Scrollable content */}
             <div className="overflow-y-auto flex-1 px-6 py-5">
+
+            {/* Aceptada: solo se ve (lote 4, 5 nov 2026). Lo que se opera es su
+                reserva; editar aquí le cambiaba al lead lo que la reserva no tenía. */}
+            {avisoLectura && (
+              <p role="status" className="mb-4 rounded-sm border border-amber-300/70 bg-amber-50/70 px-3 py-2.5 font-dm text-[12.5px] leading-snug text-amber-900">
+                {avisoLectura}
+              </p>
+            )}
+            <fieldset disabled={!!avisoLectura} className="m-0 min-w-0 border-0 p-0">
 
             {/* ── Step 1: Cliente ── */}
             {step === 1 && (
@@ -1934,6 +2004,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               </div>
             )}
 
+            </fieldset>
             </div>{/* end scrollable */}
 
             {/* Footer navigation */}
@@ -1950,6 +2021,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   disabled={step === 1 ? !step1Valid : !step2Valid}
                   className="flex items-center gap-1.5 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-5 py-2 text-[11px] font-dm uppercase tracking-[1.5px] transition-colors disabled:opacity-40 rounded-sm">
                   Siguiente <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ) : avisoLectura ? (
+                <button onClick={closeModal}
+                  className="bg-[#1B4332] hover:bg-[#2D5A45] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors rounded-sm">
+                  Cerrar
                 </button>
               ) : (
                 <button onClick={saveQuote}

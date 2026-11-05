@@ -9,6 +9,7 @@ import { Search, RefreshCw, Mail, Plus, Download, Pencil, Sun, SlidersHorizontal
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { descuentoDeMeta, historialDeMeta, montoDescuento } from "@/lib/admin/descuento";
+import { ajusteDeTotal, avisoCambioDeTotal, totalConAjuste } from "@/lib/admin/precioPactado";
 import { ReservaModal, EMPTY_RESERVA_FORM, ZONA_TEXTO, zonaDeTexto, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
@@ -216,9 +217,11 @@ export default function ReservasClient(
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
     const storedPkgs = (b as any).packageItems as PackageItem[] | null;
 
-    // Preservar el total editado a mano: si el total guardado difiere del
-    // calculado (precio ajustado, descuento de una cotización convertida, etc.)
-    // lo cargamos como total editado para no perderlo al reabrir/guardar.
+    // Preservar el precio pactado: si el total guardado difiere del calculado
+    // (precio fijado en la cotización, lo que cobró la web, un trato), la
+    // diferencia se carga como AJUSTE sobre la lista (lote 4, 5 nov 2026). 🔴
+    // Antes iba como «total editado» y se borraba al tocar cualquier renglón,
+    // aunque fuera solo la fecha: el total brincaba al de lista y el saldo con él.
     // El descuento guardado (o el de la cotización de origen) se vuelve a poner
     // como descuento, con su candado: ya no se esconde dentro del total.
     const descuento = descuentoDeMeta(meta);
@@ -235,7 +238,7 @@ export default function ReservasClient(
       lines,
       packages:       storedPkgs ?? [],
       extras:         extrasDe((b as any).extraItems),
-      totalOverride:  b.totalAmount !== conDescuento ? String(b.totalAmount) : "",
+      ajustePrecio:   ajusteDeTotal(b.totalAmount, conDescuento),
       descuentoTipo:      descuento?.tipo ?? "percent",
       descuentoValor:     descuento ? String(descuento.valor) : "",
       descuentoGuardado:  descuento,
@@ -293,6 +296,9 @@ export default function ReservasClient(
         // el correo y en el comprobante del cliente, y esto no puede salir de
         // aquí. Ver `notasInternas` en ReservaModal.
         notasInternas: form.notasInternas.trim(),
+        // El precio pactado, guardado como ajuste sobre la lista (lote 4, 5 nov
+        // 2026): dice POR QUÉ el total no es la suma de los renglones.
+        ajustePrecio: form.ajustePrecio !== 0 ? form.ajustePrecio : null,
       },
       ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
     ];
@@ -306,7 +312,8 @@ export default function ReservasClient(
       Number(form.descuentoValor) > 0 ? { tipo: form.descuentoTipo, valor: Math.round(Number(form.descuentoValor)) } : null,
       sinDescuento,
     );
-    const totalAmount  = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
+    // El precio pactado va encima de la lista como ajuste: no se pierde al editar.
+    const totalAmount  = totalConAjuste(calcTotal, form.ajustePrecio);
     const primaryLine  = form.lines[0];
     const tourNames    = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
     return {
@@ -366,11 +373,15 @@ export default function ReservasClient(
 
   async function saveEdit() {
     if (!editTarget) return;
-    setSaving(true);
     // 🔴 Al editar NO se manda `depositoPagado`: ese número es el espejo de los
     // cobros registrados. Mandarlo desde un formulario abierto hace un rato
     // pisaría un cobro que se capturó mientras tanto.
     const { depositoPagado: _ignorado, ...payload } = buildPayload(form, metaDe(editTarget));
+    // Si el total se mueve, se pregunta antes, diciendo de cuánto a cuánto
+    // (lote 4, 5 nov 2026): el saldo que cobra el guía sale de aquí.
+    const aviso = avisoCambioDeTotal(editTarget.totalAmount, payload.totalAmount);
+    if (aviso && !window.confirm(aviso)) return;
+    setSaving(true);
     const r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

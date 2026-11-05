@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  accionDeConciliacion, avisoTrasAbonarLiga, cobrosDeLaSesion, cobrosDelPagoWeb, cotizacionesQueVencePorBaja, decidirLigaSaldoViaje,
+  accionDeConciliacion, avisoTrasAbonarLiga, cobrosDeLaSesion, cobrosDelPagoWeb, decidirLigaSaldoViaje,
   decidirReembolso, motivoParaApagarLiga, reservasParaPagoRestante, tituloContracargo, tituloLigaDeOtraCuenta, tituloLigaSinDestino,
   tituloReembolso, tituloViajeSinAnticipo, unicoCobroVivoDe, type HechosLiga,
 } from "@/lib/admin/ligasReglas";
@@ -265,13 +265,8 @@ describe("hechos de ejemplo: el tipo acepta lo que arma la base", () => {
 
 // ── Revisión del lote 3 (5 nov 2026): lo que se le escapó al arreglo ─────────
 
-describe("revisión: la baja de correos no apaga una venta en curso", () => {
-  it("🔴 una cotización con su liga viva no se vence por la baja; las demás sí", () => {
-    expect(cotizacionesQueVencePorBaja(["q1", "q2", "q3"], ["q2", null])).toEqual(["q1", "q3"]);
-    expect(cotizacionesQueVencePorBaja(["q1"], [])).toEqual(["q1"]);
-    expect(cotizacionesQueVencePorBaja([], ["q1"])).toEqual([]);
-  });
-});
+// (La baja de correos ya no vence ninguna cotización —lote 4, 5 nov 2026—:
+// solo pausa sus correos. Su prueba vive en `cotizacionesEnvio.test.ts`.)
 
 describe("revisión: de qué pago de Stripe es cada cobro (reembolsos)", () => {
   // Así mide una sesión de Stripe (~66): el código de antes guardaba solo 60 en el concepto.

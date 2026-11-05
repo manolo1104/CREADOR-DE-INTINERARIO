@@ -893,9 +893,10 @@ export type ResultadoRuta =
  *     correo como si fuera lo que pidió.
  *  2. La guarda como «borrador» (`guardarCotizacionBot`, folio COT-).
  *  3. La manda por correo como el botón del panel: al cliente con copia al
- *     equipo o, sin correo del cliente, al equipo. Ahí nacen la fecha límite
- *     (48 h) y el seguimiento. Si el correo falla, se anota como enviada por
- *     WhatsApp —que es por donde la recibe—, para que no se quede en «Sin enviar».
+ *     equipo. Ahí nacen la fecha límite (48 h) y el seguimiento. Si el correo
+ *     falla, o el cliente no dejó correo (solo le llega al equipo y ya no
+ *     cuenta como enviada, lote 4), se anota como enviada por WhatsApp —que es
+ *     por donde la recibe—, para que no se quede en «Sin enviar».
  *  4. Si el bot mandó `reemplazaA` (y no `aparte`), da por reemplazada la
  *     anterior (`reemplazarCotizacion`). Va DESPUÉS de guardar y mandar la
  *     nueva: si algo falla antes, la vieja sigue valiendo y el cliente nunca
@@ -945,8 +946,11 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
   }
 
   let envio: ResultadoEnvio = await enviarCotizacionPorCorreo(quote.id, BOT);
-  if (!envio.ok && !envio.emailEnviado) {
-    console.error(`❌ ${etiqueta} correo ${quote.quoteNumber}:`, envio.error);
+  // Si el correo no le llegó al cliente —falló, o no dejó correo y solo le
+  // llegó al equipo (lote 4, 5 nov 2026: eso ya no la deja Enviada)—, la
+  // cotización salió por WhatsApp: se anota así, con su fecha límite.
+  if (!envio.emailEnviado && !envio.copia) {
+    if (!envio.ok) console.error(`❌ ${etiqueta} correo ${quote.quoteNumber}:`, envio.error);
     const porWhatsapp = await marcarEnviadaPorWhatsapp(quote.id, undefined, BOT);
     if (porWhatsapp.ok) envio = porWhatsapp;
     else console.error(`❌ ${etiqueta} anotar envío ${quote.quoteNumber}:`, porWhatsapp.error);
