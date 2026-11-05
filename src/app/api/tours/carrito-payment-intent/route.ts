@@ -11,6 +11,7 @@ import { trackServerEvent } from "@/lib/serverTrack";
 import { MAX_ITEMS, ANTICIPO_PCT, pctACobrar } from "@/lib/carrito";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { getTraslado, tarifaTraslado } from "@/lib/traslados";
+import { metadataDeRenglones } from "@/lib/webhookRecuperacion";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -258,6 +259,11 @@ export async function POST(req: NextRequest) {
         // `send-confirmation` como el webhook.
         zonaHospedaje: zona ? nombreZona(zona) : "",
         cargoValles:   String(lineItems.reduce((s, l) => s + (l.cargoValles ?? 0), 0)),
+        // 🔴 Lo que el compacto no lleva de cada recorrido (elección, actividades,
+        // menores por tramo, Valles, RZR), en `linea1`…`linea8` (lote 5, 5 nov
+        // 2026). La pantalla y el webhook arman la reserva con ESTO, no con lo
+        // que mande el navegador (`lib/reservaWeb.ts`).
+        ...metadataDeRenglones(lineItems),
       },
     };
 

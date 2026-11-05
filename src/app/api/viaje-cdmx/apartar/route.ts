@@ -42,7 +42,9 @@ export async function POST(req: NextRequest) {
       liderCodigo = l && l.estado !== "descartado" ? l.codigo : null;
     }
 
-    await soltarAnteriores(huella, salidaId);
+    // Solo los apartados anteriores de esta misma persona (conexión + correo):
+    // otra persona en el mismo Wi-Fi conserva el suyo (lote 5, 5 nov 2026).
+    await soltarAnteriores(huella, salidaId, email);
     const creado = await apartarLugares({
       salidaId,
       personas: Number(b.personas),

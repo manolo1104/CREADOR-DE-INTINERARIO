@@ -387,8 +387,11 @@ export interface ResultadoCorreoReserva {
   ok:            boolean;
   emailEnviado:  boolean;
   destinatario:  string | null;
-  /** "sin-correo": la reserva no tiene un correo válido (la ruta del panel responde 400). */
-  motivo?:       "sin-correo" | "error";
+  /**
+   * "sin-correo": la reserva no tiene un correo válido (la ruta del panel responde 400).
+   * "cancelada": está cancelada o es un borrador; no se le manda nada (409, lote 5).
+   */
+  motivo?:       "sin-correo" | "cancelada" | "error";
   error?:        string;
 }
 

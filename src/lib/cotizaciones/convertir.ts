@@ -38,6 +38,7 @@ import { pedidosSinCupo, type SinCupo } from "@/lib/cupoTour";
 import { fechaLimite } from "@/lib/vencimientoCotizacion";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { canjearCodigoCumple, codigoDeLineas, validarCodigoCumple } from "@/lib/encuestas/cumple";
+import { motivoSinEnvio } from "@/lib/encuestas/encuesta";
 import { sellarEnLineItems, resumenEvento, type EventoDescuento } from "@/lib/admin/descuento";
 import { HOTEL_PARAISO, metaDeCotizacion } from "./armar";
 import {
@@ -690,6 +691,11 @@ export async function convertirCotizacionEnReserva(
 export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor): Promise<ResultadoCorreoReserva> {
   try {
     const b = await prisma.tourBooking.findUniqueOrThrow({ where: { id: bookingId } });
+
+    // 🔴 Una cancelada (o un borrador) no recibe «Tu tour está confirmado» con
+    // su itinerario y su saldo: se presentaba al tour (lote 5, 5 nov 2026).
+    const sinEnvio = motivoSinEnvio(b.status, "confirmacion");
+    if (sinEnvio) return { ok: false, emailEnviado: false, destinatario: null, motivo: "cancelada", error: sinEnvio };
 
     // No enviar a direcciones inválidas (p. ej. reservas recuperadas por webhook).
     if (!b.customerEmail || !b.customerEmail.includes("@") || b.customerEmail.endsWith("@desconocido")) {

@@ -23,6 +23,20 @@ import type { EncuestaReserva } from "@prisma/client";
 export const ESTADOS_EXCLUIDOS = NO_CUENTAN;
 
 /**
+ * Por qué a esta reserva ya no se le manda nada al cliente, o null si sí (lote
+ * 5, 5 nov 2026). 🔴 Desde el panel se le podía mandar «Tu tour está
+ * confirmado», con itinerario y saldo, y el check-in a una reserva cancelada:
+ * el cliente se presentaba al tour. El cron del check-in ya las saltaba.
+ */
+export function motivoSinEnvio(status: string | null | undefined, que: "confirmacion" | "checkin"): string | null {
+  if (!status || !ESTADOS_EXCLUIDOS.includes(status)) return null;
+  const cual = status === "cancelled" ? "está cancelada" : "es un borrador que nunca se pagó";
+  return que === "checkin"
+    ? `Esta reserva ${cual}: no se le manda el check-in.`
+    : `Esta reserva ${cual}: no se le manda la confirmación.`;
+}
+
+/**
  * El primer día del viaje (YYYY-MM-DD). Una reserva de varios recorridos guarda
  * cada fecha en su línea; la columna `tourDate` es solo la del primer renglón
  * capturado, que no siempre es el más temprano.

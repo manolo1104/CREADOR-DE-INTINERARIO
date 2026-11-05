@@ -11,6 +11,8 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (r.motivo === "sin-correo") {
     return NextResponse.json({ error: "Esta reserva no tiene un email válido del cliente." }, { status: 400 });
   }
+  // Cancelada (o borrador): no se le confirma nada al cliente (lote 5, 5 nov 2026).
+  if (r.motivo === "cancelada") return NextResponse.json({ error: r.error }, { status: 409 });
   if (!r.ok) {
     console.error("admin/reservas send-email:", r.error);
     return NextResponse.json({ error: "No se pudo enviar el email" }, { status: 500 });

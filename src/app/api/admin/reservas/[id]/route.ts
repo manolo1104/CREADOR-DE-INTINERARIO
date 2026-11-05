@@ -17,7 +17,10 @@ import { asegurarHistorico, sincronizarDeposito } from "@/lib/admin/cobros";
 import { cobradoAFijarAntesDeEditar, montoCobrado } from "@/lib/admin/dinero";
 import { apagarLigasDe } from "@/lib/admin/linksPago";
 import { lineasDe } from "@/lib/admin/reserva";
-import { pedidosSinCupo } from "@/lib/cupoTour";
+import { NO_CUENTAN, explicarSinLugar, pedidosQueCrecen, pedidosSinCupo } from "@/lib/cupoTour";
+import { avisoSobrecupo } from "@/lib/cotizaciones/reglasConversion";
+import { identidadDePaqueteAlEditar, notasConAviso, totalParaGuardar } from "@/lib/admin/reservaEdicion";
+import { getPaquete } from "@/lib/paquetes";
 
 export const dynamic = "force-dynamic";
 
@@ -42,6 +45,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // desglose de ingresos y una cadena libre lo convertiría en otra columna
     // sin agrupar.
     if (body.origen !== undefined) data.origen = origenValido(body.origen);
+    // 🔴 El total es un entero ≥ 0 (lote 5, 5 nov 2026): un NaN del cuadro
+    // viajaba como null y salía «Error interno» sin decir qué pasaba.
+    if (data.totalAmount !== undefined) {
+      const total = totalParaGuardar(data.totalAmount);
+      if (total === null) {
+        return NextResponse.json({ error: "El total de la reserva no es válido. Revisa los renglones y el precio antes de guardar." }, { status: 400 });
+      }
+      data.totalAmount = total;
+    }
     // 🔴 Lo cobrado sale de los renglones de cobro (`cobros.ts`), con método y
     // comprobante. La pantalla ya no lo manda, pero la API lo aceptaba de
     // cualquier rol: se podía «cobrar» o «des-cobrar» sin dejar renglón. Solo
@@ -74,6 +86,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
           { ...(viejas.find((l) => l && l._meta) ?? { _meta: true }), ...(nuevoMeta ?? {}), salidaId: antes.salidaId },
           ...viejas.filter((l) => l && !l._meta),
         ];
+      }
+    }
+    // 🔴 Una reserva de paquete sigue siendo ese paquete (lote 5, 5 nov 2026):
+    // el cuadro mandaba el slug, el id y el nombre del primer tour, y el
+    // paquete dejaba de contar en su cupo y su correo enlazaba a /tours/….
+    if (antes && !antes.salidaId && getPaquete(antes.tourSlug)) {
+      Object.assign(data, identidadDePaqueteAlEditar(antes, data));
+    }
+    // 🔴 Mover de fecha o sumar personas revisa el cupo, como al reactivar
+    // (lote 5, 5 nov 2026): antes se guardaba sin preguntar y quedaban 14 en
+    // una salida de 12, o dos grupos en el Edén el mismo día. Pregunta y, si se
+    // guarda de todos modos (a veces se suma una unidad), queda la nota.
+    // Antes del código de cumpleaños: un 409 aquí no deja nada canjeado.
+    if (antes && !antes.salidaId && !NO_CUENTAN.includes(antes.status) && data.status !== "cancelled") {
+      const crecen = pedidosQueCrecen(antes, {
+        tourSlug:  String(data.tourSlug ?? antes.tourSlug),
+        tourDate:  String(data.tourDate ?? antes.tourDate),
+        adults:    Number(data.adults ?? antes.adults),
+        children:  Number(data.children ?? antes.children),
+        lineItems: data.lineItems !== undefined ? data.lineItems : antes.lineItems,
+      });
+      const sinLugar = crecen.length ? await pedidosSinCupo(crecen, { excluirReserva: antes.id }).catch(() => []) : [];
+      if (sinLugar.length && body.forzarCupo !== true) {
+        return NextResponse.json({
+          error: `Ya no cabe: ${sinLugar.map(explicarSinLugar).join("; ")}. ¿Guardar de todos modos?`,
+          sePuedeForzar: true,
+        }, { status: 409 });
+      }
+      if (sinLugar.length) {
+        data.notes = notasConAviso(data.notes !== undefined ? String(data.notes ?? "") : antes.notes, avisoSobrecupo(sinLugar, "editada en el panel"));
       }
     }
     // El descuento: si cambió, queda sellado con quién y cuándo, y en su

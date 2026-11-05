@@ -6,7 +6,7 @@ import { buildCheckinEmailHtml, mensajeCheckinWhatsapp } from "@/lib/checkinEmai
 import { localeDeReserva, telefonoWhatsapp } from "@/lib/reviewRequest";
 import { nombreTour } from "@/lib/reviewEmail";
 import {
-  asegurarEncuesta, correoUtil, estadoDeEncuesta, fechaDelTour, linkCheckin,
+  asegurarEncuesta, correoUtil, estadoDeEncuesta, fechaDelTour, linkCheckin, motivoSinEnvio,
 } from "@/lib/encuestas/encuesta";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +14,7 @@ export const dynamic = "force-dynamic";
 const SELECT = {
   id: true, confirmationNumber: true, customerName: true, customerEmail: true, customerPhone: true,
   tourName: true, tourSlug: true, tourDate: true, lineItems: true, adults: true, children: true, totalAmount: true,
+  status: true,
 } as const;
 
 /** El estado del check-in de esta reserva (para la ficha). */
@@ -39,6 +40,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   try {
     const b = await prisma.tourBooking.findUnique({ where: { id: params.id }, select: SELECT });
     if (!b) return NextResponse.json({ error: "No encontré la reserva." }, { status: 404 });
+    // Cancelada: ni por correo, ni por WhatsApp, ni la liga (lote 5, 5 nov 2026).
+    const sinEnvio = motivoSinEnvio(b.status, "checkin");
+    if (sinEnvio) return NextResponse.json({ error: sinEnvio }, { status: 409 });
 
     const enc = await asegurarEncuesta(b.id);
     const link = linkCheckin(enc.token);

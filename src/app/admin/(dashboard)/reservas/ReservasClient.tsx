@@ -10,6 +10,7 @@ import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { descuentoDeMeta, historialDeMeta, montoDescuento } from "@/lib/admin/descuento";
 import { ajusteDeTotal, avisoCambioDeTotal, totalConAjuste } from "@/lib/admin/precioPactado";
+import { habitacionesParaEditar, lineaParaGuardar } from "@/lib/admin/reservaEdicion";
 import { ReservaModal, EMPTY_RESERVA_FORM, ZONA_TEXTO, zonaDeTexto, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
@@ -215,7 +216,9 @@ export default function ReservasClient(
           childrenSmall: l.childrenSmall ?? 0,
         }))
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
-    const storedPkgs = (b as any).packageItems as PackageItem[] | null;
+    // Con su precio por noche aunque la web no lo guarde (sale de su importe):
+    // antes el hotel valía NaN y se guardaba sin importe (lote 5, 5 nov 2026).
+    const storedPkgs = habitacionesParaEditar((b as any).packageItems as PackageItem[] | null);
 
     // Preservar el precio pactado: si el total guardado difiere del calculado
     // (precio fijado en la cotización, lo que cobró la web, un trato), la
@@ -300,7 +303,9 @@ export default function ReservasClient(
         // 2026): dice POR QUÉ el total no es la suma de los renglones.
         ajustePrecio: form.ajustePrecio !== 0 ? form.ajustePrecio : null,
       },
-      ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
+      // `children` al día con los dos tramos (lote 5): quitar a los niños ya
+      // no los deja ocupando cupo ni lugar en la salida.
+      ...form.lines.map(l => lineaParaGuardar({ ...l, subtotal: calcLine(l) })),
     ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
     const extraItems   = (form.extras ?? []).filter(e => e.concepto.trim()).map(normalizarExtra);
@@ -382,10 +387,26 @@ export default function ReservasClient(
     const aviso = avisoCambioDeTotal(editTarget.totalAmount, payload.totalAmount);
     if (aviso && !window.confirm(aviso)) return;
     setSaving(true);
-    const r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
+    let r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    // Cambió la fecha o la gente y ya no cabe (lote 5, 5 nov 2026): se pregunta
+    // antes de sobrevender; a veces se suma una unidad y se guarda igual.
+    if (r.status === 409) {
+      const d = await r.clone().json().catch(() => null);
+      if (d?.sePuedeForzar) {
+        if (!window.confirm(d.error)) {
+          setSaving(false);
+          flash("Sin cambios: la reserva se quedó como estaba.");
+          return;
+        }
+        r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, forzarCupo: true }),
+        });
+      }
+    }
     if (r.ok) {
       await refresh();
       setModal(null); setEditTarget(null); flash("✅ Reserva actualizada");
@@ -397,6 +418,8 @@ export default function ReservasClient(
   }
 
   function downloadPDF(b: TourBooking) {
+    // El comprobante dice «✓ Reserva confirmada»: una cancelada no lo lleva (lote 5).
+    if (b.status === "cancelled") { flash("❌ Esta reserva está cancelada: no lleva comprobante."); return; }
     const win = window.open("", "_blank");
     if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
 
@@ -930,12 +953,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               </div>
               {pendiente > 0 && <p className="text-orange-600 text-[10px] mt-1">Saldo pendiente: {fmx(pendiente)}</p>}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
-                <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
+                {/* Cancelada: ni «Tu tour está confirmado», ni comprobante, ni check-in (lote 5). */}
+                {b.status !== "cancelled" && <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>}
+                {b.status !== "cancelled" && <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>}
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                   className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
-                <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
+                {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
               </div>
             </div>
           );
@@ -1024,15 +1048,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                       <div className="flex items-center gap-2">
                         <button onClick={() => { playClick(); setDetalle(b); }} title="Ver detalles"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} title="Enviar email"
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); downloadPDF(b); }} title="Descargar PDF"
-                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
+                        {/* Cancelada: ni «Tu tour está confirmado», ni comprobante, ni check-in (lote 5). */}
+                        {b.status !== "cancelled" && <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} title="Enviar email"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>}
+                        {b.status !== "cancelled" && <button onClick={() => { playClick(); downloadPDF(b); }} title="Descargar PDF"
+                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>}
                         <button onClick={() => { playClick(); openEdit(b); }} title="Editar"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
-                        <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
+                        {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
                       </div>
                     </td>
                   </tr>

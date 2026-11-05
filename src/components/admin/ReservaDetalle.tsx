@@ -87,6 +87,10 @@ export default function ReservaDetalle({
   const sumaLineas  = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
                     + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
                     + totalExtras(extras);
+  // Un paquete de la web trae sus recorridos SIN precio (el paquete no es la
+  // suma de sus partes) y, desde el lote 5, el hotel con el suyo: ahí que «no
+  // cuadre» no es un precio ajustado a mano.
+  const lineasConPrecio = lineas.every(l => l.subtotal != null);
 
 
   const nombreTour = (l: LineaTour) =>
@@ -269,7 +273,7 @@ export default function ReservaDetalle({
                 {descuentoDeMeta(meta)?.por ? <span className="text-[#1B4332]/45"> · lo puso {descuentoDeMeta(meta)?.por}</span> : null}
               </p>
             )}
-            {sumaLineas > 0 && sumaLineas - montoDescuento(descuentoDeMeta(meta), sumaLineas) !== b.totalAmount && (
+            {sumaLineas > 0 && lineasConPrecio && sumaLineas - montoDescuento(descuentoDeMeta(meta), sumaLineas) !== b.totalAmount && (
               <p className="text-[#1B4332]/45 font-dm text-xs mt-1">
                 Las líneas suman {fmx(sumaLineas)} y el total es {fmx(b.totalAmount)}: hay un precio ajustado a mano
                 {meta.cotizacionOrigen ? ` (viene de la cotización ${meta.cotizacionOrigen})` : ""}.

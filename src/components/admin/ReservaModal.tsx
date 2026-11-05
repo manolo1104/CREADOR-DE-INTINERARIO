@@ -10,6 +10,7 @@ import { montoDescuento, type Descuento, type EventoDescuento, type TipoDescuent
 import { type ExtraItem, type PresetExtra, EXTRAS_PRESET, totalExtras } from "@/lib/admin/extras";
 import { grupoParaGuardar } from "@/lib/admin/reserva";
 import { ajusteDeTotal, textoAjuste, totalConAjuste } from "@/lib/admin/precioPactado";
+import { esConceptoSinTour, importeDeConcepto, importeHabitacion } from "@/lib/admin/reservaEdicion";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
 import { ORIGENES_ELEGIBLES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import {
@@ -68,7 +69,11 @@ export function esLineaPersonalizada(slug?: string): boolean {
  * del cliente y nadie sabe qué se le está cobrando.
  */
 export function lineaCompleta(l: LineItem): boolean {
-  if (!l.tourSlug || !l.tourDate) return false;
+  if (!l.tourDate) return false;
+  // El traslado desde otra ciudad que trae la web no tiene recorrido: vale con
+  // su nombre y su fecha (lote 5, 5 nov 2026). Antes no dejaba guardar la
+  // reserva si no se borraba ese renglón, y con él se iba lo cobrado.
+  if (!l.tourSlug) return esConceptoSinTour(l);
   return !esLineaPersonalizada(l.tourSlug) || !!(l.tourName || "").trim();
 }
 
@@ -298,6 +303,9 @@ export const EMPTY_RESERVA_FORM: ReservaFormState = {
 };
 
 export function calcTourLine(l: LineItem): number {
+  // Concepto de la web sin recorrido (el traslado desde otra ciudad): no hay
+  // lista que lo recalcule, vale lo que se cobró (lote 5, 5 nov 2026).
+  if (!l.tourSlug) return esConceptoSinTour(l) ? importeDeConcepto(l) : 0;
   // Concepto escrito a mano: manda el precio por persona que se tecleó, con el
   // MISMO descuento de menores que cualquier recorrido del catálogo (6-10 años
   // pagan el 70 %, menores de 6 el 50 %). Una regla distinta aquí obligaría a
@@ -345,7 +353,9 @@ export function vehiculoLineName(l: LineItem): string {
 }
 
 export function calcPackageLine(p: PackageItem): number {
-  return p.precioPorNoche * p.noches * p.habitaciones;
+  // Nunca NaN (lote 5, 5 nov 2026): la habitación de la web llega sin precio
+  // por noche y el total viajaba como null («Error interno» al guardar).
+  return importeHabitacion(p);
 }
 
 /**
@@ -916,6 +926,11 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                         {esLineaPersonalizada(line.tourSlug) && (
                           <ConceptoPersonalizado line={line} inputCls={inputCls}
                             onField={(campo, valor) => updateLine(i, campo, valor)} />
+                        )}
+                        {esConceptoSinTour(line) && (
+                          <p className="text-[11px] font-dm text-[#1B4332]/70 leading-snug">
+                            Concepto de la web: <strong>{line.tourName}</strong> · {fmx(importeDeConcepto(line))}. Se guarda tal cual; si ya no va, quita el renglón.
+                          </p>
                         )}
                         {esTourVehiculo(line.tourSlug) ? (
                           (() => {

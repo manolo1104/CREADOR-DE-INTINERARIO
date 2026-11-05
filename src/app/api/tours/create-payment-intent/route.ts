@@ -166,6 +166,10 @@ export async function POST(req: NextRequest) {
         pctPagado:     String(charge.pct),
         saldo:         String(charge.saldo),
         addOns:        charge.addOns.map((a) => `${a.nombre} x${a.cantidad}`).join(", ").slice(0, 480),
+        // El código que de verdad descontó (ya validado aquí): la reserva lo toma
+        // de la metadata, no del navegador (lote 5, 5 nov 2026).
+        promoCode:     charge.promoDiscount > 0 ? String(tourDetails?.promoCode ?? "").trim().toUpperCase().slice(0, 40) : "",
+        promoDiscount: String(charge.promoDiscount || 0),
         // Identidad de Google Analytics y del embudo propio: el webhook es el
         // único que se entera de todas las compras y no tiene cookies.
         gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",

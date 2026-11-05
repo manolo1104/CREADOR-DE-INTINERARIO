@@ -9,6 +9,7 @@ import { TOURS_LISTA } from "@/lib/tours";
 import { registrarEnBitacora, SISTEMA } from "./bitacora";
 import { montoCobrado } from "./dinero";
 import { lineasDe } from "./reserva";
+import { correoParaContacto } from "@/lib/reservaWeb";
 import { resumenLead, cotizacionVigente, cotizacionViva } from "./resumenLead";
 import { fechaLimite, etapaDe } from "../vencimientoCotizacion";
 import { etiquetaMotivo as etiquetaCancelacion } from "./cancelacion";
@@ -700,7 +701,10 @@ export async function leadParaReservaSinLead(bookingId: string, quien: string, {
     const r = await prisma.tourBooking.findUnique({ where: { id: bookingId } });
     if (!r || r.oportunidadId || r.status === "cancelled") return r?.oportunidadId ?? null;
     const telefono = normalizarTelefono(r.customerPhone);
-    const correo = r.customerEmail?.trim() || null;
+    // 🔴 Sin el correo de relleno de las reservas pagadas sin correo
+    // («pendiente@desconocido», lote 5, 5 nov 2026): con él, todas esas reservas
+    // de clientes distintos caían en el MISMO contacto y en un solo lead.
+    const correo = correoParaContacto(r.customerEmail);
     // Sin teléfono ni correo no hay a quién darle seguimiento: no se inventa un contacto.
     if (!telefono && !correo) return null;
     const contacto = await contactoPara({ nombre: r.customerName || "Sin nombre", telefono, correo, idioma: r.idiomaTour });

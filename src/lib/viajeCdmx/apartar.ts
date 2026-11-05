@@ -22,8 +22,28 @@ import {
   type CompartirCon, type Cuarto,
 } from "./config";
 
-/** Cuántos apartados vivos puede tener una misma conexión, entre todas las salidas. */
-const MAX_APARTADOS_POR_HUELLA = 2;
+/** Cuántos apartados vivos puede tener una misma PERSONA (conexión + correo), entre todas las salidas. */
+export const MAX_APARTADOS_POR_PERSONA = 2;
+/**
+ * Y una misma conexión, entre todas las personas que la comparten (un Wi-Fi,
+ * la IP de la compañía de celular): el freno contra un programa que aparte
+ * en bucle, sin dejar fuera a un grupo de amigas que paga cada una lo suyo.
+ */
+export const MAX_APARTADOS_POR_CONEXION = 6;
+
+/**
+ * ¿Puede apartar otro? `correosVivos`: los correos de los apartados vivos de
+ * esta conexión. 🔴 Antes el tope era 2 por IP: la tercera persona del mismo
+ * Wi-Fi recibía «Ya tienes un apartado en proceso» sin tener ninguno (lote 5,
+ * 5 nov 2026). Devuelve el mensaje si no, o null si sí.
+ */
+export function topeDeApartados(correosVivos: string[], correo: string): string | null {
+  const mio = correo.trim().toLowerCase();
+  const mios = correosVivos.filter((c) => (c ?? "").trim().toLowerCase() === mio).length;
+  if (mios >= MAX_APARTADOS_POR_PERSONA) return "Ya tienes un apartado en proceso. Termina ese pago o espera unos minutos.";
+  if (correosVivos.length >= MAX_APARTADOS_POR_CONEXION) return "Hay muchos apartados en proceso desde esta conexión. Espera unos minutos o escríbenos por WhatsApp.";
+  return null;
+}
 
 export interface DatosApartado {
   salidaId: string;
@@ -77,12 +97,12 @@ export async function apartarLugares(d: DatosApartado, ahora: Date = new Date())
   }
 
   if (d.huella) {
-    const vivos = await prisma.apartadoSalida.count({
+    const vivos = await prisma.apartadoSalida.findMany({
       where: { huella: d.huella, estado: "activo", expiraEl: { gt: ahora } },
+      select: { email: true },
     });
-    if (vivos >= MAX_APARTADOS_POR_HUELLA) {
-      throw new ErrorViaje(429, "demasiados", "Ya tienes un apartado en proceso. Termina ese pago o espera unos minutos.");
-    }
+    const tope = topeDeApartados(vivos.map((v) => v.email), d.email);
+    if (tope) throw new ErrorViaje(429, "demasiados", tope);
   }
 
   return conSalidaBloqueada(d.salidaId, async (tx, salida) => {
@@ -402,10 +422,18 @@ export async function revisarApartado(holdId: string, ahora: Date = new Date()):
  * Quien vuelve a apartar la misma fecha (cambió el número de personas, recargó
  * la página) no se queda con dos apartados: el anterior sin pagar se cancela.
  * Las fichas OXXO no se tocan: esa persona puede estar camino a la tienda.
+ *
+ * 🔴 Solo los de la MISMA persona: misma conexión Y mismo correo (lote 5, 5
+ * nov 2026). Con la IP sola, dos amigas en el mismo Wi-Fi se cancelaban una a
+ * otra el pago en curso («Tu apartado venció»), justo en un viaje que se vende
+ * a grupos.
  */
-export async function soltarAnteriores(huella: string, salidaId: string): Promise<number> {
+export async function soltarAnteriores(huella: string, salidaId: string, email: string): Promise<number> {
   const previos = await prisma.apartadoSalida.findMany({
-    where: { huella, salidaId, estado: "activo", OR: [{ metodo: null }, { metodo: "card" }] },
+    where: {
+      huella, salidaId, estado: "activo", OR: [{ metodo: null }, { metodo: "card" }],
+      email: { equals: email.trim(), mode: "insensitive" },
+    },
     select: { id: true, paymentIntentId: true },
   });
   let n = 0;

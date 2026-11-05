@@ -187,7 +187,12 @@ export function buildTourEmailHtml(data: {
   );
   const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p: any) => p && !p._meta) : [];
   const isMultiTour = tours.length > 1;
-  const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
+  // 🔴 La misma cuenta que el cupo (`personasDeRenglon`, lote 5, 5 nov 2026):
+  // el carrito guarda `children` (los dos tramos juntos) ADEMÁS de
+  // `childrenMid` y `childrenSmall`, y sumarlo todo decía «Grupo de 6
+  // personas» a una familia de 4.
+  const tourParts = (t: any) => (Number(t.adults) || 0)
+    + Math.max(Number(t.children) || 0, (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0));
   // La hora de salida de ESE renglón (" · 7:00 PM"). Con varios recorridos no
   // hay línea bajo la fecha, y cada uno puede salir a una hora distinta.
   const horaDeLinea = (t: any): string => {
