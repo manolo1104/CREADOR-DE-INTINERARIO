@@ -15,6 +15,12 @@ import { playClick, playError } from "@/lib/admin/sfx";
  * - El pago: si ya pagó, al crear la reserva se abre «Registrar cobro» con el
  *   anticipo acordado (ahí se elige cómo entró, quién lo recibió y el comprobante).
  * - Correo y teléfono: sin correo no le llega la confirmación.
+ *
+ * La reserva la crea el SERVIDOR (lote 1 de la auditoría, 5 nov 2026): con
+ * candado sobre la cotización, así que dos clics, dos personas o una pestaña
+ * vieja ya no hacen dos reservas. Si algo no cuadra (vencida, el mismo cliente
+ * ya tiene otra reserva…), el servidor lo dice y aquí se decide: corregir o
+ * «Crear de todos modos».
  */
 export interface DatosConversion {
   customerName: string;
@@ -25,7 +31,12 @@ export interface DatosConversion {
   guia: string;
   pickupLugar: string;
   yaPago: boolean;
+  /** Ya se vio el aviso del servidor y se decidió crearla igual. */
+  forzar?: boolean;
 }
+
+/** Lo que contesta quien convierte: listo, o por qué no (y si se puede crear igual). */
+export type ResultadoConversion = { ok: true } | { ok: false; error: string; puedeForzar?: boolean };
 
 export interface CotizacionAConvertir {
   quoteNumber: string;
@@ -39,7 +50,6 @@ export interface CotizacionAConvertir {
   anticipo: number;
   /** "Xilitla" | "Ciudad Valles" | "" (lo que se dijo al cotizar). */
   zona: string;
-  pickupSugerido: string;
 }
 
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
@@ -53,15 +63,19 @@ export default function ConvertirReservaModal({ q, canalSugerido, idiomaSugerido
   idiomaSugerido?: string | null;
   guiasConocidos?: string[];
   onCancelar: () => void;
-  onConvertir: (d: DatosConversion) => Promise<boolean>;
+  onConvertir: (d: DatosConversion) => Promise<ResultadoConversion>;
 }) {
   const [d, setD] = useState({
     customerName: q.customerName, customerEmail: q.customerEmail ?? "", customerPhone: q.customerPhone ?? "",
     origen: "" as OrigenReserva | "", idiomaTour: (idiomaSugerido === "en" ? "en" : "es") as "es" | "en",
-    guia: "", pickupLugar: q.pickupSugerido, yaPago: null as boolean | null,
+    // Vacío (5 nov 2026): el «Lobby de tu hotel en Xilitla» que venía escrito
+    // llegaba al correo como punto de salida aunque nadie lo hubiera dicho.
+    guia: "", pickupLugar: "", yaPago: null as boolean | null,
   });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState("");
+  /** Lo que frenó el servidor (vencida, otra reserva del mismo cliente…): se puede crear igual. */
+  const [frenado, setFrenado] = useState("");
   const correoMalo = !!d.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.customerEmail);
   const falta = [!d.customerName.trim() && "el nombre", !d.origen && "por dónde entró", d.yaPago === null && "si ya pagó", correoMalo && "un correo válido"].filter(Boolean) as string[];
 
@@ -73,12 +87,15 @@ export default function ConvertirReservaModal({ q, canalSugerido, idiomaSugerido
     return () => { window.removeEventListener("keydown", onKey); document.body.style.overflow = prev; };
   }, [onCancelar, guardando]);
 
-  async function crear() {
+  async function crear(forzar = false) {
     if (falta.length) { playError(); setError(`Falta: ${falta.join(", ")}.`); return; }
-    setGuardando(true); setError("");
-    const ok = await onConvertir({ ...d, origen: d.origen as OrigenReserva, yaPago: !!d.yaPago, customerName: d.customerName.trim(), customerEmail: d.customerEmail.trim(), customerPhone: d.customerPhone.trim(), guia: d.guia.trim(), pickupLugar: d.pickupLugar.trim() });
+    setGuardando(true); setError(""); setFrenado("");
+    const r = await onConvertir({ ...d, origen: d.origen as OrigenReserva, yaPago: !!d.yaPago, customerName: d.customerName.trim(), customerEmail: d.customerEmail.trim(), customerPhone: d.customerPhone.trim(), guia: d.guia.trim(), pickupLugar: d.pickupLugar.trim(), forzar });
     setGuardando(false);
-    if (!ok) setError("No se pudo crear la reserva. Revisa el mensaje de arriba e intenta de nuevo.");
+    if (r.ok) return;
+    playError();
+    if (r.puedeForzar && !forzar) setFrenado(r.error);
+    else setError(r.error || "No se pudo crear la reserva. Intenta de nuevo.");
   }
 
   const chip = (activo: boolean) => `panel-foco panel-pulsable min-h-[44px] rounded-sm border px-3 text-left text-sm font-dm transition-colors ${activo ? "border-[#1B4332] bg-[#1B4332] text-white" : "border-[#1B4332]/15 text-[#1B4332]/80 hover:border-[#1B4332]/45"}`;
@@ -159,15 +176,26 @@ export default function ConvertirReservaModal({ q, canalSugerido, idiomaSugerido
             </div>
             <label className="block text-[11px] font-dm text-[#1B4332]/60">Lugar de recogida
               <input value={d.pickupLugar} onChange={e => setD(x => ({ ...x, pickupLugar: e.target.value }))} placeholder={q.zona === "Ciudad Valles" ? "Su hotel en Ciudad Valles" : "Lobby de tu hotel en Xilitla"} className={`${input} mt-1`} />
+              <span className="mt-1 block text-[11px] text-[#1B4332]/50">Escríbelo solo si ya lo sabes. Vacío, su correo le dice el punto de encuentro de cada tour.</span>
             </label>
           </fieldset>
 
           {error && <p role="alert" className="text-sm font-dm text-red-700">{error}</p>}
+          {frenado && (
+            <div role="alert" className="rounded-sm border border-amber-300 bg-amber-50 p-3 text-[13px] font-dm text-amber-900">
+              <p className="font-semibold">Antes de crearla, revisa esto:</p>
+              <p className="mt-1">{frenado}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={() => setFrenado("")} disabled={guardando} className="panel-foco panel-pulsable min-h-[44px] rounded-sm border border-amber-400 px-3 text-sm text-amber-900 hover:bg-amber-100">Volver</button>
+                <button type="button" onClick={() => crear(true)} disabled={guardando} className="panel-foco panel-pulsable min-h-[44px] rounded-sm bg-amber-700 px-3 text-sm text-white hover:bg-amber-800 disabled:opacity-50">Crear de todos modos</button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="sticky bottom-0 flex items-center gap-2 rounded-b-sm border-t border-[#1B4332]/10 bg-white p-4">
           <button onClick={onCancelar} disabled={guardando} className="panel-foco panel-pulsable min-h-[44px] px-4 text-sm font-dm text-[#1B4332]/60 hover:text-[#1B4332]">Cancelar</button>
-          <button onClick={crear} disabled={guardando}
+          <button onClick={() => crear()} disabled={guardando || !!frenado}
             className="panel-foco panel-pulsable flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-sm bg-[#1B4332] text-sm font-dm text-white hover:bg-[#143728] disabled:opacity-50">
             {guardando ? <><Loader2 className="h-4 w-4 animate-spin" />Creando…</> : <><Check className="h-4 w-4" />{d.yaPago ? "Crear reserva y registrar el pago" : "Crear reserva"}</>}
           </button>

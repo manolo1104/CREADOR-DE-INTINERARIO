@@ -15,7 +15,7 @@ import {
   SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta, TrasladoVallesLinea, conTrasladoValles,
 } from "@/components/admin/ReservaModal";
 import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
-import ConvertirReservaModal, { type DatosConversion } from "@/components/admin/ConvertirReservaModal";
+import ConvertirReservaModal, { type DatosConversion, type ResultadoConversion } from "@/components/admin/ConvertirReservaModal";
 import CobroModal, { type ReservaCobrable } from "@/components/admin/CobroModal";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -142,11 +142,16 @@ export default function CotizacionesClient(
 ) {
   const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
-  // Se puede convertir: borrador o enviada, o «aceptada» por una liga pagada que aún no tiene reserva.
-  const convertible = (q: TourQuote) => q.status === "borrador" || q.status === "enviada" || (q.status === "aceptada" && (pagadasSinReserva[q.id] ?? 0) > 0);
+  // Se puede convertir: borrador o enviada, o cualquiera con una liga pagada
+  // que aún no tiene reserva (5 nov 2026: ya hay dinero, aunque haya vencido).
+  // Si la lista está vieja y ya era reserva, el servidor lo dice sin crear otra.
+  const convertible = (q: TourQuote) => q.status === "borrador" || q.status === "enviada" || (pagadasSinReserva[q.id] ?? 0) > 0;
   // Convertir a reserva pide lo que falta (3 nov 2026) y, si ya pagó, abre el cobro.
   const [convirtiendo,   setConvirtiendo]   = useState<TourQuote | null>(null);
   const [cobrando,       setCobrando]       = useState<ReservaCobrable | null>(null);
+  // Lo que el servidor dijo al convertir y alguien tiene que leer (ya era
+  // reserva, sobrecupo, el mismo cliente…): se queda hasta «Entendido».
+  const [avisosConv,     setAvisosConv]     = useState<string[]>([]);
   // La cotización nueva que se abrió desde la ficha de un lead queda enlazada a él.
   const [paraLead,       setParaLead]       = useState<string | null>(null);
   const leadVuelta = inicio.lead ?? null;
@@ -593,133 +598,41 @@ export default function CotizacionesClient(
     }
   }
 
-  async function convertToReserva(q: TourQuote, datos: DatosConversion): Promise<boolean> {
-    const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
-    const rawPkgs      = (q as any).packageItems ?? [];
-    const meta         = getMeta(rawPkgs);
-    const anticipo     = meta.anticipo != null ? Number(meta.anticipo) : 0;
-    const packageItems = cleanPackages(rawPkgs);
-    // Conservar el _meta de la reserva (método de pago / pickup) en lineItems.
-    // Las líneas de tour de la cotización pasan tal cual: ahí viven las fechas,
-    // el grupo por tour y los subtotales.
-    const tourLines    = Array.isArray((q as any).lineItems)
-      ? (q as any).lineItems.filter((l: any) => l && !l._meta)
-      : [];
-    // El grupo real: si la cotización no traía `numPersonas` capturado, se
-    // deduce de las líneas en vez de guardar 0 y perder el dato.
-    const grupo        = grupoDe(q as any);
-    const personas     = Number(meta.numPersonas) || grupo.total || 0;
-    const lineItems    = [
-      {
-        _meta: true,
-        // Se deja vacío a propósito: el método de verdad lo pone el cobro que
-        // se registre. Antes se escribía "Transferencia" fijo aunque el cliente
-        // hubiera pagado con liga, y esa mentira viajaba al correo.
-        metodoPago: "",
-        folioPago: "",
-        // Lo que se ACORDÓ cobrar de entrada. No es dinero recibido (por eso la
-        // reserva nace pendiente), pero es la cantidad que el modal de cobro
-        // propone: casi siempre lo primero que entra es justo el anticipo.
-        anticipoAcordado: anticipo,
-        // A quien sale de Valles no se le escribe el lobby de Xilitla: el correo
-        // imprime este texto en vez de la recogida del catálogo. Se deja vacío
-        // para anotar ahí su hotel, como hace la conversión del bot.
-        // Lo escribió quien convirtió (ver `ConvertirReservaModal`).
-        pickupLugar: datos.pickupLugar,
-        // La zona viaja a la reserva: con ella el Corte marca la tarjeta.
-        ...((meta as any).zonaHospedaje ? { zonaHospedaje: (meta as any).zonaHospedaje } : {}),
-        numPersonas: personas,
-        // Rastro de la cotización de origen y del descuento que se le aplicó:
-        // sin esto se perdía POR QUÉ el total no cuadra con la suma de líneas.
-        cotizacionOrigen: q.quoteNumber,
-        // Lo que se anotó al cotizar sigue haciendo falta al operar el viaje.
-        notasInternas:    (meta as any).notasInternas || "",
-        priceOverride:    meta.priceOverride ?? null,
-        discountType:     meta.discountType ?? null,
-        discountValue:    meta.discountValue ?? null,
-        // El descuento pasa a la reserva con su candado: el mismo, con quién lo
-        // puso y su historial (ver `descuento.ts`), para que no se pierda al editarla.
-        ...((meta as any).descuento !== undefined ? { descuento: (meta as any).descuento } : {}),
-        ...(Array.isArray((meta as any).descuentoHistorial) ? { descuentoHistorial: (meta as any).descuentoHistorial } : {}),
-        // El código de cumpleaños pasa a la reserva y ahí se canjea (el
-        // servidor lo rechaza si ya se usó en otra).
-        ...((meta as any).codigoCumple ? { codigoCumple: (meta as any).codigoCumple } : {}),
-      },
-      ...tourLines,
-    ];
-
-    // Los extras viajan tal cual a la reserva: la comida que se cotizó es la
-    // misma que hay que operar y cobrar el día del tour.
-    const extraItems   = extrasDe((q as any).extraItems);
-
-    const r = await fetch("/api/admin/reservas", {
+  /**
+   * Convertir a reserva (lote 1 de la auditoría, 5 nov 2026): la crea el
+   * SERVIDOR, con candado sobre la cotización. Antes este navegador creaba la
+   * reserva y luego marcaba la cotización: con la lista vieja, dos personas a
+   * la vez o la liga ya pagada, nacía una segunda reserva y el anticipo se
+   * capturaba otra vez. Si ya tenía reserva, el servidor contesta esa y lo
+   * dice; «Registrar cobro» solo se abre si de verdad falta registrar el pago.
+   */
+  async function convertToReserva(q: TourQuote, datos: DatosConversion): Promise<ResultadoConversion> {
+    const r = await fetch(`/api/admin/cotizaciones/${q.id}/convertir`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        confirmationNumber,
-        // 🔴 Nace PENDIENTE, no pagada. El anticipo de la cotización es lo que
-        // se ACORDÓ cobrar, no dinero que alguien haya visto. Darlo por cobrado
-        // aquí hacía dos cosas malas: el corte contaba dinero que no existía, y
-        // como la reserva ya no debía nada, el panel contestaba "esta reserva
-        // solo debe $0" al intentar registrar el cobro de verdad.
-        // En cuanto se registra el cobro, `sincronizarDeposito` la pasa a pagada.
-        status:         "pending",
-        // El lead de la cotización: la reserva queda enlazada y lo hace avanzar.
-        // `cotizacionId` también: el servidor lee el lead VIGENTE de la
-        // cotización (si nació al mandarla, esta pantalla no lo sabe todavía).
-        oportunidadId:  q.oportunidadId ?? null,
-        cotizacionId:   q.id,
-        tourId:         q.tourSlug,
-        tourName:       q.tourName,
-        tourSlug:       q.tourSlug,
-        tourDate:       q.tourDate,
-        // El grupo, no la suma por tour: la cotización pudo guardarse con el
-        // formato viejo que sumaba, y ese error no debe heredarse a la reserva.
-        adults:         grupo.adultos || 1,
-        children:       grupo.ninos,
-        totalAmount:    q.totalAmount,
-        depositoPagado: 0, // se llena al registrar el cobro, con su método y comprobante
-        lineItems,
-        packageItems,
-        extraItems,
-        customerName:   datos.customerName,
-        customerEmail:  datos.customerEmail,
-        customerPhone:  datos.customerPhone || null,
-        notes:          q.notes,
-        // Lo que la cotización no traía: por dónde entró, idioma y guía.
-        origen:         datos.origen,
-        idiomaTour:     datos.idiomaTour,
-        guia:           datos.guia || null,
-      }),
-    });
-
-    if (r.ok) {
-      const creada = await r.json().catch(() => ({}));
-      await fetch(`/api/admin/cotizaciones/${q.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "aceptada" }),
-      });
-      setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "aceptada" } : x));
-      setConvirtiendo(null);
-      router.refresh();
-      const porLiga = Number(creada?.abonadoPorLiga) || 0;
-      if (creada?.avisoCupo) window.setTimeout(() => flash(`⚠️ ${String(creada.avisoCupo).replace(/^⚠️ /, "")}`), 3500);
-      if (datos.yaPago && creada?.id) {
-        // Lo que ya entró por la liga de pago de la cotización ya está abonado: el cobro abre con lo que falta.
-        flash(porLiga ? `✅ Reserva creada · ${confirmationNumber}. Ya entraron $${porLiga.toLocaleString("es-MX")} por la liga de pago; registra solo lo demás.` : `✅ Reserva creada · ${confirmationNumber}. Registra el pago para terminar.`);
-        setCobrando({ id: creada.id, confirmationNumber, customerName: datos.customerName, totalAmount: q.totalAmount, depositoPagado: porLiga, stripePaymentIntentId: null, lineItems: porLiga ? (lineItems as any[]).filter((l: any) => !l?._meta) : lineItems });
-      } else if (porLiga) {
-        flash(`✅ Reserva creada · ${confirmationNumber} con $${porLiga.toLocaleString("es-MX")} ya cobrados por la liga de pago`);
-      } else {
-        flash(`✅ Reserva creada · ${confirmationNumber} — queda pendiente de pago; el cobro se registra en Reservas 💵`);
-      }
-      return true;
-    } else {
-      const d = await r.json().catch(() => ({}));
-      flash(`❌ Error: ${d.error || "No se pudo crear la reserva"}`);
-      return false;
+      body: JSON.stringify(datos),
+    }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r?.ok || !d?.reserva) {
+      return { ok: false, error: d?.error || "No se pudo crear la reserva. Revisa la conexión e intenta de nuevo.", puedeForzar: d?.puedeForzar === true };
     }
+    // El servidor ya la dejó «aceptada» (o ya lo estaba): la lista lo refleja.
+    setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.cotizacion?.status || "aceptada" } : x));
+    setConvirtiendo(null);
+    router.refresh();
+    const avisos: string[] = Array.isArray(d.avisos) ? d.avisos.map(String) : [];
+    if (d.nueva) {
+      flash(`✅ ${d.mensaje}`);
+      setAvisosConv(avisos);
+    } else {
+      // Ya era reserva: no se creó otra. Se queda a la vista hasta que alguien lo lea.
+      setAvisosConv([String(d.mensaje), ...avisos]);
+    }
+    if (d.abrirCobro) {
+      const b = d.reserva;
+      setCobrando({ id: b.id, confirmationNumber: b.confirmationNumber, customerName: b.customerName, totalAmount: b.totalAmount, depositoPagado: b.depositoPagado, stripePaymentIntentId: b.stripePaymentIntentId, lineItems: b.lineItems });
+    }
+    return { ok: true };
   }
 
   async function hardDeleteQ(id: string) {
@@ -1234,6 +1147,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       {msg && (
         <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
       )}
+      {avisosConv.length > 0 && (
+        <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-sm border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm font-dm text-amber-900">
+          <div className="min-w-0">
+            <p className="font-semibold">Revisa esta reserva</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-5">{avisosConv.map((a, i) => <li key={i}>{a}</li>)}</ul>
+          </div>
+          <button onClick={() => setAvisosConv([])} className="panel-foco min-h-[44px] shrink-0 px-2 text-[12px] font-semibold underline-offset-2 hover:underline">Entendido</button>
+        </div>
+      )}
 
       {/* Toca recordar: las que vencen hoy o mañana */}
       {porVencer.length > 0 && (
@@ -1462,7 +1384,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               quoteNumber: q.quoteNumber, customerName: q.customerName, customerEmail: q.customerEmail, customerPhone: q.customerPhone,
               tourName: q.tourName, tourDate: q.tourDate, personas: Number(meta.numPersonas) || grupoDe(q).total || 0,
               total: q.totalAmount, anticipo: meta.anticipo != null ? Number(meta.anticipo) : 0,
-              zona: zona ? ZONA_TEXTO[zona] : "", pickupSugerido: zona === "valles" ? "" : "Lobby de tu hotel en Xilitla",
+              zona: zona ? ZONA_TEXTO[zona] : "",
             }}
             canalSugerido={lead?.canal === "whatsapp_sitio" ? "whatsapp" : lead?.canal ?? null} idiomaSugerido={lead?.idioma ?? null} guiasConocidos={guiasConocidos}
             onCancelar={() => setConvirtiendo(null)}

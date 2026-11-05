@@ -14,7 +14,7 @@ import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
-import { zonaDeReserva } from "@/lib/admin/hospedaje";
+import { pickupParaFormulario } from "@/lib/admin/hospedaje";
 import CobroModal from "@/components/admin/CobroModal";
 import { origenValido } from "@/lib/origenReserva";
 import { MOTIVOS_CANCELACION, motivoParaGuardar, type MotivoCancelacion } from "@/lib/admin/cancelacion";
@@ -241,9 +241,12 @@ export default function ReservasClient(
       depositoPagado: String((b as any).depositoPagado ?? 0),
       metodoPago:     meta.metodoPago  || "Transferencia",
       folioPago:      meta.folioPago   || "",
-      // A quien sale de Valles no se le propone el lobby de Xilitla: guardar la
-      // reserva lo escribiría y el correo le diría que pasan por él a Xilitla.
-      pickupLugar:    meta.pickupLugar || (zonaDeReserva(b) === "valles" ? "" : "Lobby de tu hotel en Xilitla"),
+      // 🔴 Vacío salvo que alguien lo haya anotado (5 nov 2026): proponer el
+      // «Lobby de tu hotel en Xilitla» hacía que editar la reserva solo para
+      // asignar el guía lo dejara escrito, y el correo lo imprimía como punto de
+      // salida (al del RZR, al del buceo, al que duerme en Valles). Vacío, el
+      // correo usa el punto de encuentro de cada recorrido.
+      pickupLugar:    pickupParaFormulario(meta.pickupLugar),
       // Solo lo que se ELIGIÓ (botones, web o bot): adivinarla del hotel la
       // escribiría al guardar como si alguien la hubiera elegido.
       zona:           zonaDeTexto(meta.zonaHospedaje),

@@ -14,7 +14,7 @@
 //  · el bot nunca confirma solo: esto lo dispara el `/confirma` de una persona.
 
 import { randomInt } from "crypto";
-import type { TourBooking, TourQuote } from "@prisma/client";
+import type { Prisma, TourBooking, TourQuote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
@@ -34,10 +34,15 @@ import { montoCobrado } from "@/lib/admin/kpis";
 import { registrarEnBitacora, pesos, BOT, type Actor } from "@/lib/admin/bitacora";
 import { lugaresDePaquete, type LugaresPaquete } from "@/lib/cupoPaquete";
 import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
+import { pedidosSinCupo, type SinCupo } from "@/lib/cupoTour";
 import { fechaLimite } from "@/lib/vencimientoCotizacion";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
-import { canjearCodigoCumple, codigoDeLineas } from "@/lib/encuestas/cumple";
+import { canjearCodigoCumple, codigoDeLineas, validarCodigoCumple } from "@/lib/encuestas/cumple";
+import { sellarEnLineItems, resumenEvento, type EventoDescuento } from "@/lib/admin/descuento";
 import { HOTEL_PARAISO, metaDeCotizacion } from "./armar";
+import {
+  avisoSobrecupo, etiquetasSinLugar, fechaCorta, idiomaTourDeConversion, pedidosDeCupo,
+} from "./reglasConversion";
 import type {
   ComprobanteBot, ConfirmacionResultado, ConfirmarPagoInput, LocaleBot, RecorridoConfirmado,
   ResultadoCorreoReserva,
@@ -141,22 +146,109 @@ function habitacionesParaReserva(packageItems: unknown): Record<string, unknown>
 // ── Convertir ───────────────────────────────────────────────────────────────
 
 export interface ConversionResultado {
+  /** La reserva como quedó al final (con lo abonado por ligas y su lead). */
   reserva:    TourBooking;
   cotizacion: TourQuote;
   /** false = ya estaba convertida: se devolvió la reserva de antes, sin crear otra. */
   nueva:      boolean;
   avisos:     string[];
+  /**
+   * Lo mismo que `avisos`, en corto («estaba vencida», «TAM 20 nov sin
+   * lugar»…), para el título del seguimiento que deja la liga pagada (5 nov 2026).
+   */
+  revisar:    string[];
+  /** Lo que entró por ligas de pago de la cotización y se abonó en esta llamada. */
+  abonadoPorLiga: number;
+}
+
+/** Lo que se le pasa a la conversión. Lo del panel, desde el 5 nov 2026. */
+export interface OpcionesConversion {
+  origen?:      string;
+  pickupLugar?: string | null;
+  actor?:       Actor;
+  forzar?:      boolean;
+  /** En qué idioma sale el guía. Sin elegir: el del contacto o el de la cotización. */
+  idiomaTour?:  "es" | "en" | null;
+  guia?:        string | null;
+  /** Nombre, correo y teléfono como quedaron en el cuadro de «Convertir». */
+  contacto?:    { nombre?: string; correo?: string; telefono?: string } | null;
+  /**
+   * Quién convierte. Cambia cómo se explica un freno (el panel tiene «Crear de
+   * todos modos»; el bot, el /confirma con «forzar») y qué se revisa: solo el
+   * panel frena por un código de cumpleaños que ya no sirve.
+   */
+  desde?:       "panel" | "bot" | "liga";
 }
 
 /**
- * La versión de servidor de «Convertir a reserva» del panel: reserva HP-M-
- * PENDIENTE con depósito 0 (el dinero lo pone el cobro que se registre), el
- * anticipo acordado y la cotización de origen en su `_meta`, el origen de
- * verdad (el panel la dejaba «web») y la cotización «aceptada».
+ * La reserva que ya salió de esta cotización, si hay: la de su folio en el
+ * `_meta` (convertida aquí) o la que guarda de qué cotización viene
+ * (`cotizacionId` desde el 4 nov 2026, `cotizacionOrigen` en las de antes).
+ * `soloVivas`: sin las canceladas (el POST de Reservas sí deja rehacerla).
+ */
+async function reservaPreviaDeCotizacion(
+  tx: Prisma.TransactionClient,
+  q: Pick<TourQuote, "id" | "quoteNumber" | "packageItems">,
+  { soloVivas = false } = {},
+): Promise<{ reserva: TourBooking; porFolio: boolean } | null> {
+  const meta = metaDeCotizacion(q.packageItems);
+  const vivas = soloVivas ? { status: { not: "cancelled" } } : {};
+  if (typeof meta.reservaFolio === "string" && meta.reservaFolio) {
+    const b = await tx.tourBooking.findFirst({ where: { confirmationNumber: meta.reservaFolio, ...vivas } });
+    if (b) return { reserva: b, porFolio: true };
+  }
+  const b = await tx.tourBooking.findFirst({
+    where:   { ...vivas, OR: [{ cotizacionId: q.id }, { lineItems: { array_contains: [{ cotizacionOrigen: q.quoteNumber }] } }] },
+    orderBy: { createdAt: "asc" },
+  });
+  return b ? { reserva: b, porFolio: false } : null;
+}
+
+/**
+ * El POST de Reservas cuando trae `cotizacionId` (lote 1 de la auditoría, 5
+ * nov 2026). El cuadro de Convertir ya no pasa por ahí, pero si algo lo sigue
+ * llamando no puede hacer una segunda reserva de la misma cotización: candado
+ * sobre la cotización, 409 con el folio si ya tiene una reserva viva, y la
+ * cotización queda «aceptada» con su folio en la MISMA transacción.
+ */
+export async function crearReservaDeCotizacion(data: Prisma.TourBookingUncheckedCreateInput): Promise<TourBooking> {
+  const cotizacionId = typeof data.cotizacionId === "string" && data.cotizacionId ? data.cotizacionId : null;
+  if (!cotizacionId) return prisma.tourBooking.create({ data });
+  return prisma.$transaction(async (tx) => {
+    await tx.$queryRaw`SELECT id FROM "TourQuote" WHERE id = ${cotizacionId} FOR UPDATE`;
+    const q = await tx.tourQuote.findUnique({ where: { id: cotizacionId } });
+    if (q) {
+      const previa = await reservaPreviaDeCotizacion(tx, q, { soloVivas: true });
+      if (previa) {
+        throw new ErrorCotizacion(409, `La cotización ${q.quoteNumber} ya es la reserva ${previa.reserva.confirmationNumber}: no se creó otra.`);
+      }
+    }
+    const b = await tx.tourBooking.create({ data });
+    if (q) {
+      await tx.tourQuote.update({
+        where: { id: q.id },
+        data:  {
+          status: "aceptada",
+          ...(q.status !== "aceptada" ? { aceptadaEn: new Date() } : {}),
+          packageItems: conMetaCotizacion(q.packageItems, { reservaFolio: b.confirmationNumber, reservaId: b.id }) as never,
+        },
+      });
+    }
+    return b;
+  }, { maxWait: 10_000, timeout: 20_000 });
+}
+
+/**
+ * La versión de servidor de «Convertir a reserva»: reserva HP-M- PENDIENTE
+ * con depósito 0 (el dinero lo pone el cobro que se registre), el anticipo
+ * acordado y la cotización de origen en su `_meta`, el origen de verdad (el
+ * panel la dejaba «web») y la cotización «aceptada». Desde el 5 nov 2026 es
+ * la ÚNICA puerta: la usan el botón del panel (`/api/admin/cotizaciones/[id]/
+ * convertir`), la liga de pago pagada y el /confirma del bot.
  *
  * Idempotente: si la cotización ya tiene reserva —convertida aquí (su folio
- * vive en el `_meta`) o desde el panel (la reserva guarda `cotizacionOrigen`)—
- * devuelve esa.
+ * vive en el `_meta`) o desde el panel (la reserva guarda `cotizacionId` o
+ * `cotizacionOrigen`)— devuelve esa.
  *
  * Antes de crear una reserva NUEVA frena (ErrorCotizacion 409) lo que haría
  * dos reservas o vendería de más, salvo con `forzar` (el dueño ya lo revisó):
@@ -169,7 +261,13 @@ export interface ConversionResultado {
  *    fecha, hecha después de la cotización: pagó en la web con el link, o la
  *    convirtieron desde el panel y una edición le borró `cotizacionOrigen`;
  *  · un paquete de evento (Xantolo) ya no tiene lugar: entre la cotización y
- *    el pago la web pudo vender el último cuarto.
+ *    el pago la web pudo vender el último cuarto;
+ *  · (solo el panel) el código de cumpleaños que trae ya no sirve.
+ * Lo que no frena pero se dice (`avisos` y, en corto, `revisar`): el cupo y
+ * las fechas cerradas de cada recorrido (nota «⚠️ SOBRECUPO» en la reserva),
+ * el tour en inglés y un pago de liga que cae sobre dinero ya registrado. La
+ * liga pagada convierte con `forzar`: ya hay dinero, así que nada la frena y
+ * todo esto va a su seguimiento.
  *
  * `pickupLugar` solo si se sabe el lugar CONCRETO. Si no, va vacío a
  * propósito: el correo de confirmación imprime este texto EN VEZ de la
@@ -179,20 +277,38 @@ export interface ConversionResultado {
  */
 export async function convertirCotizacionEnReserva(
   quoteId: string,
-  opciones: { origen?: string; pickupLugar?: string | null; actor?: Actor; forzar?: boolean } = {},
+  opciones: OpcionesConversion = {},
 ): Promise<ConversionResultado> {
   const actor = opciones.actor ?? BOT;
   const forzar = opciones.forzar === true;
+  const desdePanel = opciones.desde === "panel";
   const avisos: string[] = [];
+  const revisar: string[] = [];
+  /** Cómo seguir tras un freno, con las palabras de quien convierte. */
+  const comoSeguir = (bot: string, panel: string) => (desdePanel ? panel : bot);
+  const porForzar = desdePanel
+    ? "porque pediste crearla de todos modos"
+    : opciones.desde === "liga" ? "porque el cliente ya pagó con la liga" : "porque pediste forzar";
 
-  // El cupo de un paquete de evento se cuenta ANTES de la transacción (lee
-  // otras tablas) y solo se usa si de verdad va a nacer una reserva nueva.
-  // Con la cuenta estricta, como el pago en línea: si la base no contesta, se
-  // dice en vez de suponer que hay lugar.
+  // Lo que se lee de OTRAS tablas va ANTES de la transacción y solo se usa si
+  // de verdad va a nacer una reserva nueva:
+  //  · el cupo de un paquete de evento, con la cuenta estricta, como el pago en
+  //    línea: si la base no contesta, se dice en vez de suponer que hay lugar;
+  //  · el cupo y las fechas cerradas de cada recorrido (5 nov 2026: antes solo
+  //    se revisaban los eventos), con la cuenta del panel: avisa, no frena;
+  //  · el idioma del contacto de su lead, para el guía;
+  //  · (panel) si el código de cumpleaños de la cotización todavía sirve.
   let cupoEvento: { nombre: string; lugares: LugaresPaquete | null; error?: string } | null = null;
+  let sinLugar: SinCupo[] = [];
+  let idiomaContacto: string | null = null;
+  let cumpleMalo: string | null = null;
   {
-    const q0 = await prisma.tourQuote.findUnique({ where: { id: quoteId }, select: { packageItems: true } });
-    const slug0 = q0 ? metaDeCotizacion(q0.packageItems).paqueteSlug : undefined;
+    const q0 = await prisma.tourQuote.findUnique({
+      where:  { id: quoteId },
+      select: { packageItems: true, lineItems: true, tourSlug: true, tourDate: true, adults: true, children: true, oportunidadId: true },
+    });
+    const meta0 = q0 ? metaDeCotizacion(q0.packageItems) : {};
+    const slug0 = meta0.paqueteSlug;
     const p0 = typeof slug0 === "string" ? getPaquete(slug0) : undefined;
     if (p0?.evento) {
       try {
@@ -201,27 +317,36 @@ export async function convertirCotizacionEnReserva(
         cupoEvento = { nombre: p0.nombre, lugares: null, error: e instanceof Error ? e.message : String(e) };
       }
     }
+    if (q0) {
+      sinLugar = await pedidosSinCupo(pedidosDeCupo(q0.lineItems, q0)).catch(() => []);
+      if (q0.oportunidadId) {
+        const op = await prisma.oportunidad.findUnique({ where: { id: q0.oportunidadId }, select: { contacto: { select: { idioma: true } } } }).catch(() => null);
+        idiomaContacto = op?.contacto.idioma ?? null;
+      }
+      if (desdePanel && !forzar && typeof meta0.codigoCumple === "string" && meta0.codigoCumple) {
+        const v = await validarCodigoCumple(meta0.codigoCumple, hoyMX()).catch(() => null);
+        if (v && !v.ok) cumpleMalo = v.error;
+      }
+    }
   }
 
   const intentar = () => prisma.$transaction(async (tx) => {
     avisos.length = 0; // un segundo intento no repite los avisos del primero
+    revisar.length = 0;
     // 🔴 El candado: dos /confirma del mismo folio a la vez (un reintento, un
-    // doble envío) hacen fila aquí. El segundo ya ve la reserva del primero.
+    // doble envío), dos clics en «Convertir», dos personas o la liga pagada
+    // mientras alguien convierte hacen fila aquí. El segundo ya ve la reserva
+    // del primero.
     await tx.$queryRaw`SELECT id FROM "TourQuote" WHERE id = ${quoteId} FOR UPDATE`;
     const q = await tx.tourQuote.findUnique({ where: { id: quoteId } });
     if (!q) throw new ErrorCotizacion(404, "No existe esa cotización.");
     const meta = metaDeCotizacion(q.packageItems);
 
-    // 1) Ya convertida aquí: su folio quedó en el `_meta`.
-    if (typeof meta.reservaFolio === "string" && meta.reservaFolio) {
-      const b = await tx.tourBooking.findUnique({ where: { confirmationNumber: meta.reservaFolio } });
-      if (b) return { reserva: b, cotizacion: q, nueva: false, antes: q.status };
-    }
-    // 2) Ya convertida desde el panel: la reserva guarda de qué cotización salió.
-    const previa = await tx.tourBooking.findFirst({
-      where:   { lineItems: { array_contains: [{ cotizacionOrigen: q.quoteNumber }] } },
-      orderBy: { createdAt: "asc" },
-    });
+    // ¿Ya tiene reserva? Convertida aquí (su folio quedó en el `_meta`): se
+    // devuelve tal cual. Convertida por otro camino (la reserva guarda de qué
+    // cotización salió): se le anota el folio a la cotización.
+    const previa = await reservaPreviaDeCotizacion(tx, q);
+    if (previa?.porFolio) return { reserva: previa.reserva, cotizacion: q, nueva: false, antes: q.status, eventoDescuento: null };
     if (previa) {
       const cotizacion = await tx.tourQuote.update({
         where: { id: q.id },
@@ -229,11 +354,18 @@ export async function convertirCotizacionEnReserva(
           status: "aceptada",
           // KPI «Cotización → reserva a 14 días» (4 nov 2026): la primera vez.
           ...(q.status !== "aceptada" ? { aceptadaEn: new Date() } : {}),
-          packageItems: conMetaCotizacion(q.packageItems, { reservaFolio: previa.confirmationNumber, reservaId: previa.id }) as never,
+          packageItems: conMetaCotizacion(q.packageItems, { reservaFolio: previa.reserva.confirmationNumber, reservaId: previa.reserva.id }) as never,
         },
       });
-      return { reserva: previa, cotizacion, nueva: false, antes: q.status };
+      return { reserva: previa.reserva, cotizacion, nueva: false, antes: q.status, eventoDescuento: null };
     }
+
+    // Los datos del cliente como quedaron en el cuadro del panel (el correo
+    // pudo corregirse ahí); sin cuadro, los de la cotización.
+    const c = opciones.contacto ?? null;
+    const nombreCliente = texto(c?.nombre, 120) || q.customerName;
+    const correoCliente = c ? texto(c.correo, 160) : (q.customerEmail || "");
+    const telCliente    = c ? (texto(c.telefono, 40) || null) : (q.customerPhone || null);
 
     // 🔴 Reemplazada: el cliente cambió algo y el bot le mandó otra (la de
     // `reemplazadaPor`). Convertir ésta crearía la reserva con el viaje VIEJO
@@ -243,9 +375,12 @@ export async function convertirCotizacionEnReserva(
     const reemplazadaPor = typeof meta.reemplazadaPor === "string" && meta.reemplazadaPor ? meta.reemplazadaPor : null;
     if (reemplazadaPor) {
       if (!forzar) {
-        throw new ErrorCotizacion(409, `La cotización ${q.quoteNumber} fue reemplazada por la ${reemplazadaPor} (el cliente cambió algo): confirma la ${reemplazadaPor}. Si de verdad pagó la vieja, repite el /confirma con «forzar» al final.`);
+        throw new ErrorCotizacion(409, `La cotización ${q.quoteNumber} fue reemplazada por la ${reemplazadaPor} (el cliente cambió algo): ` + comoSeguir(
+          `confirma la ${reemplazadaPor}. Si de verdad pagó la vieja, repite el /confirma con «forzar» al final.`,
+          `convierte la ${reemplazadaPor}. Si de verdad va esta, créala de todos modos.`));
       }
-      avisos.push(`La cotización ${q.quoteNumber} había sido reemplazada por la ${reemplazadaPor}: se convirtió porque pediste forzar. Da de baja la ${reemplazadaPor} en el panel si ya no va.`);
+      avisos.push(`La cotización ${q.quoteNumber} había sido reemplazada por la ${reemplazadaPor}: se convirtió ${porForzar}. Da de baja la ${reemplazadaPor} en el panel si ya no va.`);
+      revisar.push(`era la vieja (la reemplazó la ${reemplazadaPor})`);
     }
 
     const hoy = hoyMX();
@@ -256,9 +391,12 @@ export async function convertirCotizacionEnReserva(
       // a medianoche) y Manolo confirma a las 7:30 am. Se acepta con aviso.
       const reciente = esYMD(venceEl) && venceEl >= addDaysYMD(hoy, -1) && esYMD(q.tourDate) && q.tourDate >= hoy;
       if (!forzar && !reciente) {
-        throw new ErrorCotizacion(409, `La cotización ${q.quoteNumber} está vencida${venceEl ? ` (venció el ${venceEl})` : ""}. Si el pago llegó a tiempo y todavía hay lugar, repite el /confirma con «forzar» al final; si no, reactívala en el panel con una fecha límite nueva.`);
+        throw new ErrorCotizacion(409, `La cotización ${q.quoteNumber} está vencida${venceEl ? ` (venció el ${venceEl})` : ""}. ` + comoSeguir(
+          "Si el pago llegó a tiempo y todavía hay lugar, repite el /confirma con «forzar» al final; si no, reactívala en el panel con una fecha límite nueva.",
+          "Si el cliente pagó a tiempo y todavía hay lugar, créala de todos modos; si no, reactívala con una fecha límite nueva (Editar)."));
       }
       avisos.push(`La cotización ${q.quoteNumber} estaba vencida${venceEl ? ` (el ${venceEl})` : ""}: se convirtió igual. Revisa que el precio y el lugar sigan en pie.`);
+      revisar.push(`estaba vencida${esYMD(venceEl) ? ` desde el ${fechaCorta(venceEl)}` : ""}`);
     }
     if (q.status === "aceptada") {
       // La pasó a «aceptada» una liga pagada o el cron (mismo correo en una
@@ -277,8 +415,8 @@ export async function convertirCotizacionEnReserva(
     // `cotizacionOrigen`. Convertir aquí haría dos reservas y contaría dos
     // veces el mismo dinero en Finanzas.
     const fechas = Array.from(new Set([q.tourDate, ...tourLines.map((l) => String(l.tourDate ?? ""))].filter(esYMD)));
-    const correo = norm(q.customerEmail);
-    const tel = diezDigitos(q.customerPhone) || diezDigitos(meta.waTelefono);
+    const correo = norm(correoCliente);
+    const tel = diezDigitos(telCliente) || diezDigitos(meta.waTelefono);
     if (fechas.length && (correo.includes("@") || tel)) {
       const candidatas = await tx.tourBooking.findMany({
         where:   { tourDate: { in: fechas }, status: { notIn: ["cancelled", "borrador"] }, createdAt: { gte: q.createdAt } },
@@ -296,11 +434,14 @@ export async function convertirCotizacionEnReserva(
         const cual = `${otra.confirmationNumber} (${otra.tourName || "sin tour"}, ${otra.tourDate}, hecha el ${fechaCortaMX(otra.createdAt)}${pagado > 0 ? `, ya registra ${pesos(pagado)} pagados` : ""})`;
         if (!forzar) {
           throw new ErrorCotizacion(409,
-            `El mismo cliente ya tiene la reserva ${cual}. ` +
-            (otra.stripePaymentIntentId ? "La pagó en la web: ese pago YA está registrado, no confirmes nada. " : "") +
-            `Si es OTRO pago de esa reserva (el saldo), confírmalo con /confirma ${otra.confirmationNumber} <monto>; si de verdad es otra reserva distinta, repite con «forzar» al final.`);
+            `El mismo cliente ya tiene la reserva ${cual}. ` + comoSeguir(
+              (otra.stripePaymentIntentId ? "La pagó en la web: ese pago YA está registrado, no confirmes nada. " : "") +
+              `Si es OTRO pago de esa reserva (el saldo), confírmalo con /confirma ${otra.confirmationNumber} <monto>; si de verdad es otra reserva distinta, repite con «forzar» al final.`,
+              (otra.stripePaymentIntentId ? "La pagó en la web: ese pago YA está registrado. " : "") +
+              `Si es la misma venta, no crees otra: el pago se registra en esa reserva (Reservas → Registrar cobro). Si de verdad es otra reserva distinta, créala de todos modos.`));
         }
-        avisos.push(`Ojo: el mismo cliente ya tenía la reserva ${cual}; se creó otra porque pediste forzar.`);
+        avisos.push(`Ojo: el mismo cliente ya tenía la reserva ${cual}; se creó otra ${porForzar}.`);
+        revisar.push(`el mismo cliente ya tenía la ${otra.confirmationNumber}`);
       }
     }
 
@@ -314,14 +455,40 @@ export async function convertirCotizacionEnReserva(
     if (cupoEvento) {
       if (!cupoEvento.lugares) {
         avisos.push(`No pude contar el cupo de ${cupoEvento.nombre}${cupoEvento.error ? ` (${cupoEvento.error})` : ""}: revísalo en el tablero antes de confirmarle al cliente.`);
+        revisar.push(`no se pudo contar el cupo de ${cupoEvento.nombre}`);
       } else if (personas > 0 && !cabeEnCupo(cupoEvento.lugares, personas)) {
         const quedan = textoLugares(cupoEvento.lugares);
         if (!forzar) {
-          throw new ErrorCotizacion(409, `Ya no hay lugar en ${cupoEvento.nombre} para ${personas} persona(s) (${quedan}). El pago entró: decide con el cliente (otra fecha o devolución). Para meterlo de todos modos, repite con «forzar» al final.`);
+          throw new ErrorCotizacion(409, `Ya no hay lugar en ${cupoEvento.nombre} para ${personas} persona(s) (${quedan}). ` + comoSeguir(
+            "El pago entró: decide con el cliente (otra fecha o devolución). Para meterlo de todos modos, repite con «forzar» al final.",
+            "Decide con el cliente (otra fecha o devolución) o, si ya lo arreglaste con el hotel, créala de todos modos."));
         }
-        avisos.push(`${cupoEvento.nombre} ya estaba lleno (${quedan}): se apartó porque pediste forzar. Ajusta el cupo con el hotel.`);
+        avisos.push(`${cupoEvento.nombre} ya estaba lleno (${quedan}): se apartó ${porForzar}. Ajusta el cupo con el hotel.`);
+        revisar.push(`${cupoEvento.nombre} ya estaba lleno`);
       }
     }
+
+    // (Solo el panel, antes de cobrar.) El descuento de cumpleaños de la
+    // cotización con un código que ya se usó o venció: lo frenaba el POST de
+    // Reservas que usaba el cuadro de Convertir, y se sigue frenando.
+    if (cumpleMalo && !forzar) {
+      throw new ErrorCotizacion(409, `${cumpleMalo} La cotización trae ese descuento de cumpleaños: quítalo (Editar) o, si ya lo revisaste, créala de todos modos.`);
+    }
+
+    // El cupo y las fechas cerradas de cada recorrido (5 nov 2026: la liga
+    // pagada creaba la reserva en una fecha llena sin decir nada). No frena
+    // —a veces se suma una unidad—, pero queda en las notas, como en el panel.
+    const avisoCupo = avisoSobrecupo(sinLugar, `al convertir la cotización ${q.quoteNumber}`);
+    if (avisoCupo) {
+      avisos.push(avisoCupo.replace(/^⚠️ /, ""));
+      revisar.push(...etiquetasSinLugar(sinLugar));
+    }
+
+    // En qué idioma sale el guía: lo elegido en el panel o, si nadie lo
+    // eligió (la liga pagada), lo que dicen su contacto o la cotización. Antes
+    // nacía siempre «es» y Salidas no avisaba que el grupo hablaba inglés.
+    const idiomaTour = idiomaTourDeConversion({ elegido: opciones.idiomaTour, idiomaContacto, locale: meta.locale });
+    if (idiomaTour === "en") revisar.push("guía en inglés");
 
     // Lo ACORDADO, no lo cobrado. Sin `_meta` (cotizaciones viejas del bot) es
     // el 30 %: lo que les prometieron el correo y el WhatsApp de su folio.
@@ -358,6 +525,9 @@ export async function convertirCotizacionEnReserva(
       },
       ...tourLines,
     ];
+    // El descuento conserva su sello; uno viejo sin sello se sella con quién
+    // convirtió, como hacía el POST de Reservas que usaba el panel.
+    const sellado = sellarEnLineItems(lineItems, null, actor.nombre);
     // Un paquete del catálogo o de evento se guarda con SU slug, como la
     // reserva del sitio: el cupo del Xantolo se cuenta por ese slug.
     const slugPaquete = typeof meta.paqueteSlug === "string" && getPaquete(meta.paqueteSlug) ? meta.paqueteSlug : null;
@@ -377,14 +547,17 @@ export async function convertirCotizacionEnReserva(
         children:       grupo.ninos,
         totalAmount:    q.totalAmount,
         depositoPagado: 0,
-        lineItems:      lineItems as never,
+        lineItems:      sellado.lineItems as never,
         packageItems:   habitacionesParaReserva(q.packageItems) as never,
         extraItems:     extrasDe(q.extraItems) as never,
-        customerName:   q.customerName,
-        customerEmail:  q.customerEmail || "",
-        customerPhone:  q.customerPhone || null,
-        notes:          q.notes || null,
+        customerName:   nombreCliente,
+        customerEmail:  correoCliente,
+        customerPhone:  telCliente,
+        notes:          [avisoCupo, q.notes].filter(Boolean).join("\n") || null,
         origen:         origenValido(opciones.origen ?? "whatsapp"),
+        // Lo que la cotización no trae y el panel pide al convertir.
+        idiomaTour,
+        guia:           texto(opciones.guia, 80) || null,
         // El lead del CRM de la cotización sigue en su reserva (4 nov 2026).
         oportunidadId:  q.oportunidadId ?? null,
         // Qué cotización la originó (KPI «Cotización → reserva», 4 nov 2026).
@@ -399,7 +572,7 @@ export async function convertirCotizacionEnReserva(
         packageItems: conMetaCotizacion(q.packageItems, { reservaFolio: reserva.confirmationNumber, reservaId: reserva.id }) as never,
       },
     });
-    return { reserva, cotizacion, nueva: true, antes: q.status };
+    return { reserva, cotizacion, nueva: true, antes: q.status, eventoDescuento: sellado.evento as EventoDescuento | null };
   }, { maxWait: 10_000, timeout: 20_000 });
 
   let r: Awaited<ReturnType<typeof intentar>>;
@@ -418,6 +591,10 @@ export async function convertirCotizacionEnReserva(
     const codigo = codigoDeLineas(r.reserva.lineItems);
     if (codigo) {
       const c = await canjearCodigoCumple(codigo, r.reserva.confirmationNumber, hoyMX());
+      if (!c.ok) {
+        avisos.push(`La reserva ${r.reserva.confirmationNumber} trae el descuento del código de cumpleaños ${codigo}, pero no se pudo usar (${c.error}): revisa el precio.`);
+        revisar.push(`el código ${codigo} ya no servía`);
+      }
       await registrarEnBitacora({
         accion:     "modificó",
         entidad:    "reserva",
@@ -435,7 +612,9 @@ export async function convertirCotizacionEnReserva(
       accion:     "creó",
       entidad:    "reserva",
       referencia: r.reserva.confirmationNumber,
-      resumen:    `Reserva ${r.reserva.confirmationNumber} — ${r.reserva.customerName}, ${r.reserva.tourName || "sin tour"} el ${r.reserva.tourDate || "sin fecha"}, ${pesos(r.reserva.totalAmount)} (de la cotización ${r.cotizacion.quoteNumber}${cerrados ? `; ${cerrados} carrito(s) cerrados` : ""})`,
+      resumen:    `Reserva ${r.reserva.confirmationNumber} — ${r.reserva.customerName}, ${r.reserva.tourName || "sin tour"} el ${r.reserva.tourDate || "sin fecha"}, ${pesos(r.reserva.totalAmount)} (de la cotización ${r.cotizacion.quoteNumber}${cerrados ? `; ${cerrados} carrito(s) cerrados` : ""})`
+        + (r.eventoDescuento ? ` · ${resumenEvento(r.eventoDescuento)}` : "")
+        + (avisos.length ? ` · ⚠️ ${avisos.join(" ")}` : ""),
       actor,
     });
     await registrarEnBitacora({
@@ -446,17 +625,43 @@ export async function convertirCotizacionEnReserva(
       detalle:    [{ campo: "estado", antes: r.antes, despues: "aceptada" }],
       actor,
     });
-    // Su lead pasa a la etapa de una reserva (sin pago: En seguimiento). No lanza.
-    await import("@/lib/admin/crmDatos")
-      .then(m => m.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true }))
+  } else if (r.reserva.status === "cancelled") {
+    avisos.push(`La cotización ${r.cotizacion.quoteNumber} ya era la reserva ${r.reserva.confirmationNumber}, que está CANCELADA.`);
+    revisar.push(`su reserva ${r.reserva.confirmationNumber} está cancelada`);
+  }
+
+  // 🔴 Primero el dinero, después el lead (5 nov 2026). Lo pagado con la liga
+  // de la cotización se abona a su reserva (nueva o ya existente; cada liga
+  // una sola vez) ANTES de mover el lead: al revés, la reserva en $0 lo bajaba
+  // de Anticipo a En seguimiento y el abono lo volvía a subir.
+  const cobradoAntes = montoCobrado(r.reserva);
+  const abonadoPorLiga = await import("@/lib/admin/linksPago").then(m => m.abonarLigasDeCotizacion(r.cotizacion.id, r.reserva.id))
+    .catch(e => { console.error("abonarLigasDeCotizacion:", (e as Error)?.message); return 0; });
+  if (abonadoPorLiga > 0 && cobradoAntes > 0) {
+    // Alguien registró el anticipo a mano antes de que Stripe avisara: el
+    // dinero de la liga entra igual (es real) y una persona decide si es doble.
+    avisos.push(`La reserva ${r.reserva.confirmationNumber} ya tenía ${pesos(cobradoAntes)} registrados y se le sumaron ${pesos(abonadoPorLiga)} de la liga de pago: si son el mismo pago, anula el que se capturó a mano.`);
+    revisar.push(`ya tenía ${pesos(cobradoAntes)} antes de la liga: ¿pago repetido?`);
+  }
+
+  if (r.nueva) {
+    const crm = await import("@/lib/admin/crmDatos");
+    // Sin lead (cotizaciones de antes del CRM, o una vencida que pagó su
+    // liga): la reserva entra al CRM con el lead de esa persona o uno nuevo, y
+    // la cotización queda enlazada a él. Antes solo lo hacía el panel.
+    if (!r.reserva.oportunidadId) {
+      const opId = await crm.leadParaReservaSinLead(r.reserva.id, actor.nombre).catch(() => null);
+      if (opId) await prisma.tourQuote.updateMany({ where: { id: r.cotizacion.id, oportunidadId: null }, data: { oportunidadId: opId } }).catch(() => {});
+    }
+    // Su lead pasa a la etapa que dice lo cobrado. Con el cuadro del panel,
+    // el nombre, correo y teléfono que se corrigieron pasan a su contacto. No lanza.
+    await crm.leadDesdeReserva(r.reserva.id, `cotización ${r.cotizacion.quoteNumber} convertida en la reserva ${r.reserva.confirmationNumber}`, { revivir: true, conContacto: !!opciones.contacto })
       .catch(() => {});
   }
-  // Lo pagado con la liga de pago de la cotización se abona a su reserva (nueva
-  // o ya existente): idempotente, cada liga se abona una sola vez.
-  await import("@/lib/admin/linksPago").then(m => m.abonarLigasDeCotizacion(r.cotizacion.id, r.reserva.id))
-    .catch(e => console.error("abonarLigasDeCotizacion:", (e as Error)?.message));
 
-  return { reserva: r.reserva, cotizacion: r.cotizacion, nueva: r.nueva, avisos };
+  // La reserva como quedó: con lo abonado y su lead.
+  const reserva = (await prisma.tourBooking.findUnique({ where: { id: r.reserva.id } }).catch(() => null)) ?? r.reserva;
+  return { reserva, cotizacion: r.cotizacion, nueva: r.nueva, avisos, revisar, abonadoPorLiga };
 }
 
 // ── Correo de confirmación ──────────────────────────────────────────────────

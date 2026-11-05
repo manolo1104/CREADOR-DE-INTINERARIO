@@ -9,7 +9,7 @@ import { localizePaquete } from "./i18n/paquetes.en";
 import type { Locale } from "./i18n/config";
 import { extrasDe, calcExtraLine, totalExtras } from "./admin/extras";
 import { desgloseCotizacion } from "./admin/totalesCotizacion";
-import { hospedajeDeReserva, SIN_HOSPEDAJE } from "./admin/hospedaje";
+import { hospedajeDeReserva, pickupConDato, SIN_HOSPEDAJE } from "./admin/hospedaje";
 import { CONTACTO } from "./contacto";
 import { HOTEL_PROPIO, horarioRestaurante } from "./hotelPropio";
 // 🔴 El nombre, las notas, el hotel o los conceptos a mano los escribe el
@@ -162,7 +162,11 @@ export function buildTourEmailHtml(data: {
     : T.pickupDefault;
   // Lo que capturó el equipo (el hotel del cliente) manda sobre lo genérico.
   // Escapado: en las reservas del sitio sale de lo que el cliente escribió.
-  const pickupText = data.pickupLugar ? esc(data.pickupLugar) : pickupCatalogo;
+  // 🔴 Solo si dice algo (5 nov 2026): el «Lobby de tu hotel en Xilitla» que el
+  // panel escribía solo, o un «por definir», tapaban el punto de encuentro real
+  // (la base del RZR, la Gruta de Xilo a las 7 PM, el hotel en Valles).
+  const pickupDato = pickupConDato(data.pickupLugar);
+  const pickupText = pickupDato ? esc(pickupDato) : pickupCatalogo;
 
   /** La línea bajo la fecha, para el bloque de un solo recorrido. Vacía si no se sabe cuál es. */
   const tourUnico = toursCatalogo.length === 1 ? toursCatalogo[0] : undefined;
@@ -411,7 +415,7 @@ export function buildTourEmailHtml(data: {
    * un cuarto a más de dos horas de su recorrido: recibe el del siguiente tour.
    */
   const dondeDuerme = hospedajeDeReserva({ notes: null, packageItems: data.packageItems })
-    ?? (data.pickupLugar?.trim() || null);
+    ?? pickupDato;
   const paqueteReservado = slugReal ? getPaquete(slugReal) : undefined;
   const tieneHospedaje = (!!dondeDuerme && !SIN_HOSPEDAJE.test(dondeDuerme))
     || (!!paqueteReservado && !paqueteReservado.evento?.sinHotel);

@@ -3,6 +3,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { registrarCobro } from "@/lib/admin/cobros";
 import { SISTEMA } from "@/lib/admin/bitacora";
+import { tituloTareaLigaPagada } from "@/lib/cotizaciones/reglasConversion";
 
 /**
  * Cobros sueltos: título, monto y una liga que se manda por WhatsApp.
@@ -222,15 +223,11 @@ export async function marcarLinkPagado(
 
   // Un anticipo pagado convierte la cotización en venta: deja de ser una
   // propuesta en el aire y el panel tiene que decirlo sin que nadie la toque.
+  // 🔴 Ya NO se marca «aceptada» aquí antes de convertir (5 nov 2026): la
+  // conversión la marca en su propia transacción. Marcarla antes escondía que
+  // estaba vencida (la conversión solo veía «aceptada») y le impedía nacer al
+  // lead de una cotización que no tenía (el CRM no le crea lead a una aceptada).
   if (link.cotizacionId) {
-    const cot = await prisma.tourQuote.findUnique({ where: { id: link.cotizacionId } });
-    if (cot && cot.status !== "aceptada") {
-      await prisma.tourQuote.update({
-        where: { id: cot.id },
-        // aceptadaEn: KPI «Cotización → reserva a 14 días» (4 nov 2026).
-        data:  { status: "aceptada", aceptadaEn: new Date() },
-      });
-    }
     // Su lead: anticipo pagado (no lanza).
     await import("./crmDatos").then(m => m.leadPorLigaDePago(link, "pagada", "Stripe")).catch(() => {});
     // 🔴 Pedido de Erick (4 nov 2026): la liga pagada dejaba la cotización
@@ -295,22 +292,41 @@ export async function abonarLigasDeCotizacion(cotizacionId: string, reservaId: s
 }
 
 
-/** La cotización cuya liga se pagó pasa a reserva (o deja un seguimiento si no se puede). */
+/**
+ * La cotización cuya liga se pagó pasa a reserva (o deja un seguimiento si no se puede).
+ *
+ * 🔴 Ya hay dinero, así que nada la frena (5 nov 2026): pasa por las mismas
+ * revisiones que el panel —vencida, cupo y fechas cerradas, otra reserva del
+ * mismo cliente, idioma— pero convierte con `forzar`, y lo que no cuadró va
+ * en el seguimiento para Operación: el cliente pagó y una persona decide.
+ */
 async function convertirPorLigaPagada(cotizacionId: string, montoPagado: number) {
   const q = await prisma.tourQuote.findUnique({ where: { id: cotizacionId } });
   if (!q) return;
   const lead = q.oportunidadId ? await prisma.oportunidad.findUnique({ where: { id: q.oportunidadId } }) : null;
   const responsable = lead?.responsable && ["Manolo", "Martín", "Erick"].includes(lead.responsable) ? lead.responsable : "Erick";
   const hoy = new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  let oportunidadId = q.oportunidadId;
   const tarea = (titulo: string, clave: string) => prisma.tarea.create({
-    data: { titulo: titulo.slice(0, 200), responsable, vence: hoy, oportunidadId: q.oportunidadId, origen: "regla", regla: "liga-pagada", claveRegla: clave, creadaPor: "Liga de pago" },
+    data: { titulo: titulo.slice(0, 200), responsable, vence: hoy, oportunidadId, origen: "regla", regla: "liga-pagada", claveRegla: clave, creadaPor: "Liga de pago" },
   }).catch(e => { if ((e as { code?: string })?.code !== "P2002") throw e; });
   try {
     const { convertirCotizacionEnReserva } = await import("@/lib/cotizaciones/convertir");
-    const conv = await convertirCotizacionEnReserva(q.id, { origen: lead?.canal && lead.canal !== "por_confirmar" ? lead.canal : "whatsapp", actor: SISTEMA });
-    await tarea(`Pagó la liga: ${q.customerName} ya tiene la reserva ${conv.reserva.confirmationNumber} ($${montoPagado.toLocaleString("es-MX")}). Mándale la confirmación y revisa guía y recogida.`, `liga-pagada:${q.id}`);
+    const conv = await convertirCotizacionEnReserva(q.id, {
+      origen: lead?.canal && lead.canal !== "por_confirmar" ? lead.canal : "whatsapp", actor: SISTEMA, forzar: true, desde: "liga",
+    });
+    // Si la cotización no tenía lead, la reserva nació con uno: el seguimiento va ahí.
+    oportunidadId = conv.reserva.oportunidadId ?? oportunidadId;
+    await tarea(tituloTareaLigaPagada({ cliente: q.customerName, folio: conv.reserva.confirmationNumber, monto: montoPagado, revisar: conv.revisar }), `liga-pagada:${q.id}`);
   } catch (e) {
+    // Ni así se pudo: la cotización queda «aceptada» (ya hay dinero: sale de la
+    // secuencia de correos) y Cotizaciones la sigue ofreciendo para convertir.
+    await prisma.tourQuote.updateMany({
+      where: { id: q.id, status: { not: "aceptada" } },
+      // aceptadaEn: KPI «Cotización → reserva a 14 días» (4 nov 2026).
+      data:  { status: "aceptada", aceptadaEn: new Date() },
+    }).catch(() => {});
     await tarea(`Pagó la liga de ${q.quoteNumber} (${q.customerName}, $${montoPagado.toLocaleString("es-MX")}) pero no se pudo pasar a reserva sola: ${(e as Error)?.message ?? "revisar"}. Conviértela desde Cotizaciones.`, `liga-pagada-revisar:${q.id}`);
   }
-  if (q.oportunidadId) await import("./crmDatos").then(m => m.sincronizarProximoPaso(q.oportunidadId!)).catch(() => {});
+  if (oportunidadId) await import("./crmDatos").then(m => m.sincronizarProximoPaso(oportunidadId!)).catch(() => {});
 }

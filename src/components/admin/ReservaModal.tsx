@@ -718,16 +718,16 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
   /**
    * Los botones Xilitla / Ciudad Valles: guardan la zona, ponen o quitan el
    * traslado de Valles en las líneas que lo cobran y no dejan el «Lobby de tu
-   * hotel en Xilitla» a quien sale de Valles.
+   * hotel en Xilitla» a quien sale de Valles. Elegir Xilitla ya no lo escribe
+   * en un campo vacío (5 nov 2026): vacío, el correo da el punto de encuentro
+   * de cada tour; el lobby se imprimía aunque nadie lo hubiera dicho.
    */
   function elegirZona(z: Exclude<ZonaReserva, "">) {
     setForm(f => {
       const lines   = f.lines.map(l => conTrasladoValles(l, z === "valles"));
       const cambio  = lines.some((l, i) => l !== f.lines[i]);
       const lugar   = f.pickupLugar.trim();
-      const pickupLugar = z === "valles" && lugar === PICKUP_POR_OMISION ? ""
-        : z === "xilitla" && !lugar ? PICKUP_POR_OMISION
-        : f.pickupLugar;
+      const pickupLugar = z === "valles" && lugar === PICKUP_POR_OMISION ? "" : f.pickupLugar;
       return { ...f, zona: z, lines, pickupLugar, totalOverride: cambio ? "" : f.totalOverride };
     });
   }

@@ -10,6 +10,8 @@ import { hoyMX } from "@/lib/dates";
 import { leadDesdeReserva, leadParaReservaSinLead } from "@/lib/admin/crmDatos";
 import { abonarLigasDeCotizacion } from "@/lib/admin/linksPago";
 import { pedidosSinCupo } from "@/lib/cupoTour";
+import { crearReservaDeCotizacion, esErrorCotizacion } from "@/lib/cotizaciones/convertir";
+import { avisoSobrecupo, pedidosDeCupo } from "@/lib/cotizaciones/reglasConversion";
 
 /** El lead que manda el panel, solo si existe (un id roto no se guarda). */
 async function leadExistente(v: unknown): Promise<string | null> {
@@ -57,46 +59,48 @@ export async function POST(req: NextRequest) {
     // Whitelist de campos permitidos (evita asignación masiva de columnas inesperadas).
     // ¿Cabe? (revisión del 4 nov 2026): el panel no revisaba el cupo al capturar.
     // No se bloquea —a veces se suma una unidad—, pero queda en la nota y se avisa.
-    const lineasCupo = (Array.isArray(sellado.lineItems) ? (sellado.lineItems as Record<string, unknown>[]) : []).filter(l => l && !l._meta && l.tourSlug && l.tourDate);
-    const pedidosCupo = (lineasCupo.length ? lineasCupo : [{ tourSlug: body.tourSlug, tourDate: body.tourDate, adults: body.adults, childrenMid: body.children } as Record<string, unknown>])
-      .filter(l => l.tourSlug && l.tourDate)
-      .map(l => ({ slug: String(l.tourSlug), fecha: String(l.tourDate), personas: Number(l.adults || 0) + Number(l.childrenMid ?? l.children ?? 0) + Number(l.childrenSmall || 0) }));
+    // (La regla vive en `reglasConversion.ts`: la usa también la conversión de cotizaciones.)
+    const pedidosCupo = pedidosDeCupo(sellado.lineItems, body);
     const sinLugar = pedidosCupo.length ? await pedidosSinCupo(pedidosCupo).catch(() => []) : [];
-    const avisoCupo = sinLugar.length ? `⚠️ SOBRECUPO (capturada en el panel): ${sinLugar.map(s => `${s.slug} el ${s.fecha} (${s.personas} pers., ${s.estado === "cerrada" ? "fecha cerrada" : "sin lugar"})`).join("; ")}. Mover de fecha o sumar unidad.` : null;
-    const booking = await prisma.tourBooking.create({
-      data: {
-        confirmationNumber:    String(body.confirmationNumber),
-        tourId:                body.tourId    ?? "",
-        tourName:              body.tourName  ?? "",
-        tourSlug:              body.tourSlug  ?? "",
-        tourDate:              body.tourDate  ?? "",
-        adults:                Number(body.adults)   || 1,
-        children:              Number(body.children) || 0,
-        totalAmount:           Math.round(Number(body.totalAmount) || 0),
-        depositoPagado:        Math.round(Number(body.depositoPagado) || 0),
-        promoCode:             body.promoCode || null,
-        promoDiscount:         Number(body.promoDiscount) || 0,
-        stripePaymentIntentId: body.stripePaymentIntentId || null,
-        customerName:          String(body.customerName),
-        customerEmail:         body.customerEmail || "",
-        customerPhone:         body.customerPhone || null,
-        notes:                 [avisoCupo, body.notes].filter(Boolean).join("\n") || null,
-        lineItems:             (sellado.lineItems as any) ?? undefined,
-        packageItems:          body.packageItems ?? undefined,
-        extraItems:            body.extraItems   ?? undefined,
-        // Sin estado explícito, lo dice el dinero (antes nacía «pagada» con $0).
-        status:                body.status || (Math.round(Number(body.depositoPagado) || 0) >= Math.round(Number(body.totalAmount) || 0) && Number(body.totalAmount) > 0 ? "paid" : "pending"),
-        guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
-        idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
-        // Una reserva capturada a mano casi nunca entró por la web: el
-        // formulario obliga a elegirlo; si una llamada vieja no lo manda, queda
-        // «por confirmar» y NO «web» (línea base 3 nov 2026: Web 90 de 97).
-        origen:                origenValido(body.origen, "por_confirmar"),
-        // El lead del que viene (al convertir una cotización): se mide la conversión real.
-        oportunidadId:         (await leadExistente(body.oportunidadId)) ?? (await leadDeCotizacion(body.cotizacionId)),
-        // La cotización que se convirtió (KPI «Cotización → reserva», 4 nov 2026).
-        cotizacionId:          typeof body.cotizacionId === "string" && body.cotizacionId ? body.cotizacionId.slice(0, 40) : null,
-      },
+    const avisoCupo = avisoSobrecupo(sinLugar, "capturada en el panel");
+    const cotizacionId = typeof body.cotizacionId === "string" && body.cotizacionId ? body.cotizacionId.slice(0, 40) : null;
+    // 🔴 Con `cotizacionId` (5 nov 2026): candado sobre la cotización y 409 si
+    // ya tiene una reserva viva (la liga pagada la convirtió sola, otra persona
+    // la convirtió o fue un doble clic). La cotización queda «aceptada» con su
+    // folio en la misma transacción. El cuadro de Convertir ya no llega aquí
+    // (usa /api/admin/cotizaciones/[id]/convertir): esto es por si algo más lo llama.
+    const booking = await crearReservaDeCotizacion({
+      confirmationNumber:    String(body.confirmationNumber),
+      tourId:                body.tourId    ?? "",
+      tourName:              body.tourName  ?? "",
+      tourSlug:              body.tourSlug  ?? "",
+      tourDate:              body.tourDate  ?? "",
+      adults:                Number(body.adults)   || 1,
+      children:              Number(body.children) || 0,
+      totalAmount:           Math.round(Number(body.totalAmount) || 0),
+      depositoPagado:        Math.round(Number(body.depositoPagado) || 0),
+      promoCode:             body.promoCode || null,
+      promoDiscount:         Number(body.promoDiscount) || 0,
+      stripePaymentIntentId: body.stripePaymentIntentId || null,
+      customerName:          String(body.customerName),
+      customerEmail:         body.customerEmail || "",
+      customerPhone:         body.customerPhone || null,
+      notes:                 [avisoCupo, body.notes].filter(Boolean).join("\n") || null,
+      lineItems:             (sellado.lineItems as any) ?? undefined,
+      packageItems:          body.packageItems ?? undefined,
+      extraItems:            body.extraItems   ?? undefined,
+      // Sin estado explícito, lo dice el dinero (antes nacía «pagada» con $0).
+      status:                body.status || (Math.round(Number(body.depositoPagado) || 0) >= Math.round(Number(body.totalAmount) || 0) && Number(body.totalAmount) > 0 ? "paid" : "pending"),
+      guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
+      idiomaTour:            body.idiomaTour === "en" ? "en" : "es",
+      // Una reserva capturada a mano casi nunca entró por la web: el
+      // formulario obliga a elegirlo; si una llamada vieja no lo manda, queda
+      // «por confirmar» y NO «web» (línea base 3 nov 2026: Web 90 de 97).
+      origen:                origenValido(body.origen, "por_confirmar"),
+      // El lead del que viene (al convertir una cotización): se mide la conversión real.
+      oportunidadId:         (await leadExistente(body.oportunidadId)) ?? (await leadDeCotizacion(body.cotizacionId)),
+      // La cotización que se convirtió (KPI «Cotización → reserva», 4 nov 2026).
+      cotizacionId,
     }).catch(async (e) => {
       // No se creó: el código vuelve a quedar libre.
       if (cumple.canjeado) await liberarCodigoCumple(cumple.canjeado, folio);
@@ -123,10 +127,14 @@ export async function POST(req: NextRequest) {
     // Sin lead (capturada directo en Reservas): entra al CRM con el de esa persona o uno nuevo.
     if (!booking.oportunidadId) await leadParaReservaSinLead(booking.id, sesion?.nombre ?? "Desconocido");
     // Lo que ya se pagó con la liga de pago de su cotización se abona aquí (antes la reserva nacía en $0).
-    const abonadoPorLiga = typeof body.cotizacionId === "string" && body.cotizacionId
-      ? await abonarLigasDeCotizacion(body.cotizacionId, booking.id).catch(e => { console.error("abonarLigasDeCotizacion:", (e as Error)?.message); return 0; })
+    const abonadoPorLiga = cotizacionId
+      ? await abonarLigasDeCotizacion(cotizacionId, booking.id).catch(e => { console.error("abonarLigasDeCotizacion:", (e as Error)?.message); return 0; })
       : 0;
     await leadDesdeReserva(booking.id, `reserva ${booking.confirmationNumber} creada`, { conContacto: true, revivir: true });
     return NextResponse.json({ ok: true, id: booking.id, carritosCerrados: cerrados, abonadoPorLiga, avisoCupo });
-  } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
+  } catch (e: any) {
+    // La cotización ya tenía reserva: se dice cuál, sin crear otra.
+    if (esErrorCotizacion(e)) return NextResponse.json({ error: e.message }, { status: e.status });
+    console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 });
+  }
 }
