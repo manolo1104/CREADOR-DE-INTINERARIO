@@ -203,7 +203,10 @@ export function cerradoHaceMenosDe(cerradoEn: Date | string | null | undefined, 
  * Confirmado ya no lo deja operar antes de tiempo, 5 nov 2026). Sin ninguna, la del lead.
  */
 export function fechasDelViaje(reservas: (string | null | undefined)[], cotizacionesVivas: (string | null | undefined)[], fechaLead: string | null): (string | null | undefined)[] {
-  return reservas.length || cotizacionesVivas.length ? [...reservas, ...cotizacionesVivas] : [fechaLead];
+  // Solo cuentan las cotizaciones con fecha (revisión del 5 nov 2026): una sin
+  // fecha dejaba al lead sin ninguna y ya nunca pasaba a Operado.
+  const deCotizaciones = cotizacionesVivas.filter(f => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f));
+  return reservas.length || deCotizaciones.length ? [...reservas, ...deCotizaciones] : [fechaLead];
 }
 
 /** Lo que trae una captura de «Nuevo lead». */
@@ -246,12 +249,15 @@ export function avisoLeadExistente(nombre: string, etapa: string, agregado: stri
 /**
  * Qué puede poner una cotización en su lead (5 nov 2026): lo vivo manda.
  *  - Con reservas vivas, el monto, la fecha, los tours y las personas salen de ellas: la cotización no toca nada.
- *  - Con OTRA cotización viva, el monto es el de la vigente y solo se llena lo vacío.
+ *  - Con OTRA cotización viva, el monto es el de la vigente (la más reciente).
+ *    Al EDITAR la vigente, sus datos pasan al lead (regla de Manolo del 3 nov);
+ *    al editar una opción más vieja, solo se llena lo vacío (revisión del 5 nov
+ *    2026: antes ni la vigente los pasaba si quedaba un borrador viejo, que no vence).
  *  - Si es la única, como antes: su total y, al editarla, sus datos.
  */
-export function loQueMandaLaCotizacion(h: { reservasVivas: number; otrasCotizacionesVivas: number; sincronizar: boolean }): { monto: "ninguno" | "esta" | "vigente"; pisar: boolean; llenarVacios: boolean } {
+export function loQueMandaLaCotizacion(h: { reservasVivas: number; otrasCotizacionesVivas: number; sincronizar: boolean; esLaVigente?: boolean }): { monto: "ninguno" | "esta" | "vigente"; pisar: boolean; llenarVacios: boolean } {
   if (h.reservasVivas > 0) return { monto: "ninguno", pisar: false, llenarVacios: false };
-  if (h.otrasCotizacionesVivas > 0) return { monto: "vigente", pisar: false, llenarVacios: true };
+  if (h.otrasCotizacionesVivas > 0) return { monto: "vigente", pisar: h.sincronizar && h.esLaVigente === true, llenarVacios: true };
   return { monto: "esta", pisar: h.sincronizar, llenarVacios: true };
 }
 

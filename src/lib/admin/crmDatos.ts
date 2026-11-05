@@ -12,7 +12,7 @@ import { lineasDe } from "./reserva";
 import { resumenLead, cotizacionVigente, cotizacionViva } from "./resumenLead";
 import { fechaLimite, etapaDe } from "../vencimientoCotizacion";
 import { etiquetaMotivo as etiquetaCancelacion } from "./cancelacion";
-import { HECHA_POR_REGLA, RESPONSABLE_OPERACION } from "./automatizaciones";
+import { HECHA_POR_REGLA, RESPONSABLE_OPERACION, tituloConsultaNueva } from "./automatizaciones";
 import {
   esEtapa, estaAbierta, etapaPorCobro, etapaPorReglas, horaValida, viajeYaPaso, ETAPAS_QUE_SE_OPERAN, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
   etiquetaEtapa, etapaPorHechos, montoPorHechos, canalTrasReserva, cerradoHaceMenosDe, fechasDelViaje, completarLead, loQueMandaLaCotizacion, leadVacio,
@@ -541,7 +541,9 @@ export async function leadDesdeCotizacion(
       prisma.tourQuote.findMany({ where: { oportunidadId: op.id, status: { in: ["borrador", "enviada"] } } }),
     ]);
     const vivas = cotsDelLead.filter(c => cotizacionViva(c, hoy));
-    const manda = loQueMandaLaCotizacion({ reservasVivas, otrasCotizacionesVivas: vivas.filter(c => c.id !== q.id).length, sincronizar });
+    // ¿Es la que manda? Al editarla, sus datos pasan al lead aunque haya otra viva (revisión del 5 nov 2026).
+    const esLaVigente = cotizacionVigente(vivas)?.id === q.id;
+    const manda = loQueMandaLaCotizacion({ reservasVivas, otrasCotizacionesVivas: vivas.filter(c => c.id !== q.id).length, sincronizar, esLaVigente });
     if (manda.monto === "esta" && q.totalAmount) data.monto = q.totalAmount;
     if (manda.monto === "vigente") { const v = cotizacionVigente(vivas); if (v?.totalAmount) data.monto = v.totalAmount; }
     // Al EDITAR la cotización, lo que dice ella manda en el lead (pedido de
@@ -974,11 +976,39 @@ async function contactoDeLaWeb(d: { nombre: string | null; telefono: string | nu
 }
 
 /**
+ * «¿Consulta nueva?» para Operación cuando alguien con su lead Perdido hace poco
+ * vuelve al sitio y deja sus datos (revisión del 5 nov 2026). Como el de la
+ * Bandeja: uno a la vez y como mucho uno al día; se cierra solo en cuanto esa
+ * persona tiene un lead abierto (p. ej. porque pagó y el perdido revivió).
+ */
+async function consultaNuevaPorLaWeb(lead: { id: string; etapa: string; contacto: { nombre: string } }) {
+  const pendiente = await prisma.tarea.findFirst({ where: { oportunidadId: lead.id, regla: "consulta-nueva", estado: "pendiente" }, select: { id: true } });
+  if (pendiente) return;
+  const hoy = hoyMX();
+  try {
+    await prisma.tarea.create({
+      data: {
+        titulo: tituloConsultaNueva(lead.contacto.nombre, etiquetaEtapa(lead.etapa), "web"), responsable: RESPONSABLE_OPERACION, vence: hoy,
+        oportunidadId: lead.id, origen: "regla", regla: "consulta-nueva", claveRegla: `consulta-nueva:${lead.id}:${hoy}`, creadaPor: "Regla automática",
+      },
+    });
+  } catch (e) {
+    if ((e as { code?: string })?.code === "P2002") return; // ya se avisó hoy
+    throw e;
+  }
+  await sincronizarProximoPaso(lead.id);
+}
+
+/**
  * Un lead de la web que todavía no compra entra al CRM como Nuevo (Calificado
  * si ya trae tour, fecha y personas: la regla de siempre), con canal «web» y a
  * cargo de Operación. Si esa persona ya tiene un lead abierto no se duplica:
- * solo se le anota lo que hizo (la misma nota, una vez al día). Cuando pague,
- * su reserva encuentra este lead. No lanza: nunca frena al cliente.
+ * solo se le anota lo que hizo (la misma nota, una vez al día). Si su lead se
+ * perdió hace menos de 14 días tampoco: se anota ahí, Operación recibe el
+ * «¿Consulta nueva?» y, si paga en línea, su reserva revive ese lead
+ * (revisión del 5 nov 2026: el guardado del pago abría un lead nuevo y el
+ * perdido se quedaba perdido junto a un duplicado). Cuando pague, su reserva
+ * encuentra este lead. No lanza: nunca frena al cliente.
  */
 export async function leadDesdeWeb(d: LeadWeb): Promise<{ id: string; nuevo: boolean } | null> {
   try {
@@ -988,10 +1018,13 @@ export async function leadDesdeWeb(d: LeadWeb): Promise<{ id: string; nuevo: boo
     const contacto = await contactoDeLaWeb({ nombre: texto(d.nombre, 120), telefono, correo, idioma: d.idioma ?? null });
     const nota = d.que.trim().slice(0, 2000);
     const abierta = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } }, orderBy: { createdAt: "desc" } });
-    if (abierta) {
-      const yaAnotada = await prisma.notaOportunidad.findFirst({ where: { oportunidadId: abierta.id, texto: nota, createdAt: { gte: new Date(Date.now() - 86_400_000) } }, select: { id: true } });
-      if (!yaAnotada) await prisma.notaOportunidad.create({ data: { oportunidadId: abierta.id, autor: "Web", texto: nota } });
-      return { id: abierta.id, nuevo: false };
+    const perdido = abierta ? null : await leadCerradoReciente(contacto.id, ["perdido"]);
+    const suyo = abierta ?? perdido;
+    if (suyo) {
+      const yaAnotada = await prisma.notaOportunidad.findFirst({ where: { oportunidadId: suyo.id, texto: nota, createdAt: { gte: new Date(Date.now() - 86_400_000) } }, select: { id: true } });
+      if (!yaAnotada) await prisma.notaOportunidad.create({ data: { oportunidadId: suyo.id, autor: "Web", texto: nota } });
+      if (perdido) await consultaNuevaPorLaWeb(perdido);
+      return { id: suyo.id, nuevo: false };
     }
     const datos = { tours: tours(d.tours), fechaViaje: ymd(d.fechaViaje), pax: entero(d.pax, 200) };
     const etapa = etapaPorReglas("nuevo", datos);

@@ -73,8 +73,13 @@ export function yaNoAplica(regla: string | null, h: HechosSeguimiento, hoy: stri
   }
 }
 
-/** El seguimiento de «¿es consulta nueva?» (`consulta-nueva`). */
-export function tituloConsultaNueva(cliente: string, etapa: string): string {
+/**
+ * El seguimiento de «¿es consulta nueva?» (`consulta-nueva`). `por: "web"`: volvió
+ * al sitio y dejó sus datos (carrito, pago o recomendador) con su lead Perdido
+ * hace poco (revisión del 5 nov 2026): si paga en línea, ese lead vuelve solo.
+ */
+export function tituloConsultaNueva(cliente: string, etapa: string, por: "whatsapp" | "web" = "whatsapp"): string {
+  if (por === "web") return `¿Consulta nueva? ${cliente} volvió al sitio y dejó sus datos, y su lead está ${etapa}. Escríbele; si paga en línea, su lead vuelve solo.`.slice(0, 200);
   return `¿Consulta nueva? ${cliente} volvió a escribir por WhatsApp y su lead está ${etapa}. Si quiere otro viaje, «Nueva cotización» le abre un lead nuevo; si no, márcalo hecho.`.slice(0, 200);
 }
 

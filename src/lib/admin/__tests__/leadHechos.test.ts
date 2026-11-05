@@ -90,6 +90,11 @@ describe("¿ya pasó el viaje? con cotizaciones vivas (fechasDelViaje, crm#6)", 
   it("sin reservas ni cotizaciones, la fecha del lead", () => {
     expect(fechasDelViaje([], [], "2026-11-03")).toEqual(["2026-11-03"]);
   });
+  it("una cotización viva SIN fecha no le quita al lead su fecha (revisión: nunca pasaba a Operado)", () => {
+    expect(fechasDelViaje([], ["", null], "2026-11-03")).toEqual(["2026-11-03"]);
+    expect(viajeYaPaso(fechasDelViaje([], [""], "2026-11-03"), HOY).paso).toBe(true);
+    expect(fechasDelViaje(["2026-11-01"], ["", "2026-11-15"], "2026-11-03")).toEqual(["2026-11-01", "2026-11-15"]);
+  });
 });
 
 describe("«Nuevo lead» de alguien con lead abierto (completarLead, crm#5)", () => {
@@ -123,6 +128,14 @@ describe("lo que una cotización puede poner en su lead (loQueMandaLaCotizacion,
   });
   it("con otra cotización viva, el monto de la vigente y sin pisar fecha ni tours", () => {
     expect(loQueMandaLaCotizacion({ reservasVivas: 0, otrasCotizacionesVivas: 1, sincronizar: true })).toEqual({ monto: "vigente", pisar: false, llenarVacios: true });
+  });
+  it("al EDITAR la vigente, sus datos sí pasan al lead aunque quede otra viva (revisión: un borrador viejo no vence)", () => {
+    expect(loQueMandaLaCotizacion({ reservasVivas: 0, otrasCotizacionesVivas: 1, sincronizar: true, esLaVigente: true })).toEqual({ monto: "vigente", pisar: true, llenarVacios: true });
+    // Editar una opción más vieja no pisa; crear o mandar la vigente tampoco (solo llena lo vacío).
+    expect(loQueMandaLaCotizacion({ reservasVivas: 0, otrasCotizacionesVivas: 1, sincronizar: true, esLaVigente: false })).toEqual({ monto: "vigente", pisar: false, llenarVacios: true });
+    expect(loQueMandaLaCotizacion({ reservasVivas: 0, otrasCotizacionesVivas: 1, sincronizar: false, esLaVigente: true })).toEqual({ monto: "vigente", pisar: false, llenarVacios: true });
+    // Con reserva viva, ni la vigente toca nada.
+    expect(loQueMandaLaCotizacion({ reservasVivas: 1, otrasCotizacionesVivas: 1, sincronizar: true, esLaVigente: true })).toEqual({ monto: "ninguno", pisar: false, llenarVacios: false });
   });
   it("si es la única, como antes: su total y, al editarla, sus datos", () => {
     expect(loQueMandaLaCotizacion({ reservasVivas: 0, otrasCotizacionesVivas: 0, sincronizar: true })).toEqual({ monto: "esta", pisar: true, llenarVacios: true });
@@ -234,6 +247,13 @@ describe("seguimientos automáticos que ya no aplican (yaNoAplica, crm#7)", () =
     expect(HECHA_POR_REGLA).toBe("Regla (ya no aplica)");
     const t = tituloConsultaNueva("Luis Pérez", "Operado");
     expect(t).toContain("Luis Pérez volvió a escribir");
+    expect(t.length).toBeLessThanOrEqual(200);
+  });
+  it("el aviso cuando vuelve por el sitio con su lead Perdido (revisión: antes nacía un lead duplicado)", () => {
+    const t = tituloConsultaNueva("Ana López", "Perdido", "web");
+    expect(t).toContain("Ana López volvió al sitio");
+    expect(t).toContain("si paga en línea, su lead vuelve solo");
+    expect(t).not.toContain("WhatsApp");
     expect(t.length).toBeLessThanOrEqual(200);
   });
 });
