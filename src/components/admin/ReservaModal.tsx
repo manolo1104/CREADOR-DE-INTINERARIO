@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Check, BedDouble, ChevronRight, ChevronLeft, Pencil, EyeOff, MapPin } from "lucide-react";
-import { TOURS_LISTA, precioGrupo, precioPorCabeza, tourPorNombre, cargoVallesDe } from "@/lib/tours";
+import { TOURS_LISTA, precioGrupo, precioPorCabeza, tourPorNombre, cargoVallesDe, extraDeEleccion, opcionDeEleccion } from "@/lib/tours";
 import { ID_TRASLADO_VALLES } from "@/lib/tourPricing";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import DescuentoEditor from "@/components/admin/DescuentoEditor";
@@ -43,6 +43,13 @@ export interface LineItem {
    * no existe, porque su precio se lee del catálogo y no se guarda nunca.
    */
   precioPersona?: number;
+  /**
+   * La opción elegida en un recorrido con `eleccion` (Ruta Acuática: «Hacienda
+   * Los Gómez + Siete Cascadas» o «Cascadas de Tamasopo»). Se guarda el NOMBRE
+   * en español, igual que en las reservas web, porque así lo pintan el correo,
+   * el PDF y el detalle. Tamasopo suma $150 por persona (`extraDeEleccion`).
+   */
+  eleccion?:     string;
 }
 
 /**
@@ -326,7 +333,10 @@ export function calcTourLine(l: LineItem): number {
   if (delGrupo !== null) return delGrupo + calcAddOnsLinea(l);
   // Lo que paga cada cabeza: el precio de lista menos el escalón que le toque
   // al tamaño del grupo (`escalaPersona`). Sin escalera, el precio de siempre.
-  const porCabeza = precioPorCabeza(t, personas);
+  // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$150) va dentro
+  // del precio por cabeza, igual que en la web (`totalRecorrido`): los menores
+  // pagan su 70 % / 50 % también de él.
+  const porCabeza = precioPorCabeza(t, personas) + extraDeEleccion(t, l.eleccion);
   // Tours por vehículo (RZR): la matriz flota×ruta manda; los niños no cambian el precio.
   const base = (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
     ? (() => {
@@ -593,6 +603,55 @@ export function AddOnsLinea({ line, personas, onChange }: {
 }
 
 /**
+ * La opción por omisión de un recorrido que se bifurca (la primera del
+ * catálogo: en la Ruta Acuática, Siete Cascadas, «la de la mayoría» y sin
+ * extra). `undefined` si el tour no tiene elección.
+ */
+export function eleccionPorOmision(tourSlug: string): string | undefined {
+  return TOURS_LISTA.find(t => t.slug === tourSlug)?.eleccion?.opciones[0]?.nombre;
+}
+
+/**
+ * Selector de la parte del día que el cliente elige (Ruta Acuática: Siete
+ * Cascadas o Tamasopo; Manolo, 5 nov 2026). Dos botones, uno marcado siempre:
+ * la cotización tiene que decir a dónde va el grupo y cuánto cuesta. La opción
+ * con extra lo enseña en el botón.
+ */
+export function EleccionLinea({ line, onChange }: {
+  line:     LineItem;
+  onChange: (linea: LineItem) => void;
+}) {
+  const tour = TOURS_LISTA.find(t => t.slug === line.tourSlug);
+  if (!tour?.eleccion) return null;
+  const activa = opcionDeEleccion(tour, line.eleccion)?.id;
+  return (
+    <div className="border border-[#08569a]/25 bg-[#08569a]/5 rounded-sm p-2.5 space-y-2">
+      <p className="text-[9px] tracking-[2px] uppercase text-[#08569a] font-dm">¿Qué eligió el cliente?</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2" role="radiogroup" aria-label="Opción del recorrido">
+        {tour.eleccion.opciones.map(o => {
+          const on = activa === o.id;
+          return (
+            <button key={o.id} type="button" role="radio" aria-checked={on}
+              onClick={() => onChange({ ...line, eleccion: o.nombre })}
+              className={`text-left rounded-sm border px-3 py-2 transition-colors ${
+                on ? "border-[#08569a] bg-[#08569a] text-white" : "border-[#1B4332]/20 bg-white text-[#1B4332] hover:border-[#08569a]/60"
+              }`}>
+              <span className="block font-dm text-xs font-medium leading-snug">{o.nombre}</span>
+              <span className={`block font-dm text-[10px] leading-snug ${on ? "text-white/80" : "text-[#1B4332]/50"}`}>
+                {o.extraPorPersona ? `+${fmx(o.extraPorPersona)} por persona` : "Sin cargo extra"}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {!activa && (
+        <p className="text-[10px] font-dm text-[#9b2c2c]">Falta elegir: sin esto la cotización no dice a dónde va el grupo.</p>
+      )}
+    </div>
+  );
+}
+
+/**
  * El traslado desde Ciudad Valles en la línea de un recorrido que lo cobra
  * (hoy solo la Ruta Surrealista: $400 POR RESERVA, no por persona; Manolo,
  * 20 oct 2026). En los demás no se pinta: desde Valles no cuestan más.
@@ -699,12 +758,17 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
             up.tourName      = "";
             up.precioPersona = 0;
             up.adults        = Math.max(1, up.adults || 2);
-            delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns;
+            delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns; delete up.eleccion;
             up.subtotal = calcTourLine(up);
             return up;
           }
           delete up.precioPersona;
           up.tourName = t?.nombre || "";
+          // La elección es de ESE tour: al cambiar de recorrido se va, y si el
+          // nuevo se bifurca (Ruta Acuática) entra marcada la opción sin extra.
+          delete up.eleccion;
+          const omision = eleccionPorOmision(String(val));
+          if (omision) up.eleccion = omision;
           if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
             // Al elegir un tour por vehículo: defaults de ruta/vehículo y participantes fuera del precio.
             up.ruta          = t.rutas[0].nombre;
@@ -1002,6 +1066,15 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                               </div>
                             </div>
                           </>
+                        )}
+                        {line.tourSlug && (
+                          <EleccionLinea
+                            line={line}
+                            onChange={nueva => setForm(f => ({
+                              ...f,
+                              lines: f.lines.map((x, idx) => idx === i ? { ...nueva, subtotal: calcTourLine(nueva) } : x),
+                            }))}
+                          />
                         )}
                         {line.tourSlug && (
                           <AddOnsLinea

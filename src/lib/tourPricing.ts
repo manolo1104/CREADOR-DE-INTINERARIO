@@ -46,6 +46,11 @@ export interface TourChargeInput {
    * `carrito-payment-intent`, `guardar-carrito`) no la mandan nunca.
    */
   sinTopeDeCupo?: boolean;
+  /**
+   * La opción elegida en un tour con `eleccion` (id o nombre en español). Se
+   * valida contra el catálogo: un valor que no exista no suma nada.
+   */
+  eleccion?:      string | null;
 }
 
 export interface TourChargeResult {
@@ -160,7 +165,7 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   // Tarifa por GRUPO (ej. el Edén en el Jardín) o precio por cabeza: lo decide
   // `totalRecorrido`, que es exactamente lo que pinta el carrito y el módulo de
   // la ficha. Una sola cuenta para lo que se enseña y lo que se cobra.
-  const totalTour = totalRecorrido(tour, adults, childrenMid, childrenSmall, promoDiscount);
+  const totalTour = totalRecorrido(tour, adults, childrenMid, childrenSmall, promoDiscount, input.eleccion);
 
   // ── Add-ons ───────────────────────────────────────────────────────────────
   // El precio se lee SIEMPRE del catálogo del propio tour, nunca del cliente.
@@ -445,6 +450,9 @@ export function tarifarRecorridos(items: unknown[], { zona }: { zona?: ZonaHospe
       pct:           100,
       addOns:        raw.addOns as { id: string; cantidad: number }[],
       tourDate:      String(raw.tourDate),
+      // La Ruta Acuática con Tamasopo cuesta $150 más por cabeza: el cargo lo
+      // decide la opción, validada otra vez contra el catálogo.
+      eleccion:      typeof raw.eleccion === "string" ? raw.eleccion : undefined,
     });
     if (!charge) {
       return {

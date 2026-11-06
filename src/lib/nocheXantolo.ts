@@ -147,10 +147,10 @@ export const NOCHE_XANTOLO = {
     /**
      * Por adulto, el de LISTA (1 o 2 personas): sirve para anunciar «desde».
      * Lo que se COBRA lo calcula `paquetePricing` con el tour real y su
-     * escalera por grupo ($1,350 desde 3, $1,300 desde 6), igual que suelta.
+     * escalera por grupo ($1,450 desde 3, $1,400 desde 6), igual que suelta.
      * Los menores pagan con los mismos factores que la noche.
      */
-    precioPorPersona: 1400,
+    precioPorPersona: 1500,
     // La Ruta termina en Xilitla y empalma con la noche: no hay un «6:00 PM»
     // de fin del día (decía «de 8:00 AM a 6:00 PM» con la noche saliendo 5:30).
     horario: "desde las 8:00 AM",

@@ -512,19 +512,19 @@ export const TOURS_EN: Record<string, TourTranslation> = {
         { nombre: "Tamasopo Waterfalls", nota: "Wider, more open pools for a relaxed swim." },
       ],
     },
-    nombre: "Water Route — Puente de Dios & Tamasopo Waterfalls",
+    nombre: "Water Route — Puente de Dios + Seven Waterfalls or Tamasopo",
     nombreCorto: "Water Route",
     tagline: "The most refreshing and complete journey in the region",
     tipo: "Water Adventure",
     urgencia: "Our most complete tour — book ahead",
     descripcion:
-      "Pass through the natural cave of Puente de Dios with the river flowing at your feet. Then you choose: Los Gómez Hacienda with the Seven Waterfalls — they're in the same spot, so you see both — or the crystal-clear pools of the Tamasopo Waterfalls. One day is enough for one of the two, not for both.",
+      "Pass through the natural cave of Puente de Dios with the river flowing at your feet. Then you choose: Los Gómez Hacienda with the Seven Waterfalls — they're in the same spot, so you see both — or the crystal-clear pools of the Tamasopo Waterfalls (+$150 MXN per person). One day is enough for one of the two, not for both.",
     descripcionLarga:
-      "Puente de Dios (\"God's Bridge\") is a natural rock arch 15 meters high through which the river flows, and there's a moment each day — between 11 AM and 1 PM — when the sunlight enters perpendicular and turns the water into liquid crystal. We arrive at that hour. Always.\n\nEntering Puente de Dios is a full sensory experience: the sound of the water amplified by the cave, the chill of the interior, the light pouring through the arch like a natural beacon, the texture of the stone underfoot. It's not just a photo. It's a moment that etches itself into memory.\n\nYou choose the second half of the day, and we tell you plainly because there isn't time for both: either Los Gómez Hacienda with the Seven Waterfalls — they're on the same grounds, so you see both there — or the Tamasopo Waterfalls. If it's your first time in the Huasteca, most people go for the Seven Waterfalls; Tamasopo is the choice for those looking for more open pools to swim in at a relaxed pace.\n\nWhichever it is, you decide when you book and we plan the day around that choice, with the assurance that every step is led by someone who knows these rivers by heart.",
+      "Puente de Dios (\"God's Bridge\") is a natural rock arch 15 meters high through which the river flows, and there's a moment each day — between 11 AM and 1 PM — when the sunlight enters perpendicular and turns the water into liquid crystal. We arrive at that hour. Always.\n\nEntering Puente de Dios is a full sensory experience: the sound of the water amplified by the cave, the chill of the interior, the light pouring through the arch like a natural beacon, the texture of the stone underfoot. It's not just a photo. It's a moment that etches itself into memory.\n\nYou choose the second half of the day, and we tell you plainly because there isn't time for both: either Los Gómez Hacienda with the Seven Waterfalls — they're on the same grounds, so you see both there — or the Tamasopo Waterfalls, which add $150 MXN per person. If it's your first time in the Huasteca, most people go for the Seven Waterfalls; Tamasopo is the choice for those looking for more open pools to swim in at a relaxed pace.\n\nWhichever it is, you decide when you book and we plan the day around that choice, with the assurance that every step is led by someone who knows these rivers by heart.",
     destinos: [
       "Puente de Dios",
       "Your choice: Los Gómez Hacienda + Seven Waterfalls (same spot)",
-      "Your choice: Tamasopo Waterfalls",
+      "Your choice: Tamasopo Waterfalls (+$150 MXN per person)",
     ],
     incluye: [
       "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",

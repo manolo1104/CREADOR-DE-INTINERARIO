@@ -26,7 +26,7 @@ import type { TourQuote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   TOURS_DB, TOURS_LISTA, PROMO_TEMPORADA, PROMO_VENCE, fechaConPromo, precioDeFecha, promoVigente,
-  precioGrupo, precioPorCabeza, cargoVallesDe,
+  precioGrupo, precioPorCabeza, cargoVallesDe, extraDeEleccion,
   type Tour, type TourVehiculo,
 } from "@/lib/tours";
 import { computeTourCharge, computeVehiculoCharge, fechaTourValida, vehiculoBookingName, ID_TRASLADO_VALLES } from "@/lib/tourPricing";
@@ -212,8 +212,9 @@ export function subtotalPanel(l: LineItem): number {
   const delGrupo = precioGrupo(t, personas);
   // Lo que paga cada cabeza: lista menos el escalón del tamaño del grupo
   // (`escalaPersona`, desde 3 personas). TOURS_LISTA no lleva promo, así que
-  // aquí siempre aplica la escalera, como en el editor del panel.
-  const porCabeza = precioPorCabeza(t, personas);
+  // aquí siempre aplica la escalera, como en el editor del panel. Con el extra
+  // de la opción elegida (Ruta Acuática → Tamasopo, +$150), como `calcTourLine`.
+  const porCabeza = precioPorCabeza(t, personas) + extraDeEleccion(t, l.eleccion);
   const base = delGrupo !== null
     ? delGrupo
     : (t.precioUnidad === "vehiculo" && t.rutas && t.flota)

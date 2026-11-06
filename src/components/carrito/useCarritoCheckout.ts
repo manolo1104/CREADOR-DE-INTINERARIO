@@ -464,8 +464,9 @@ export function useCarritoCheckout() {
     setError("");
     let nuevos = actualizarItem(uid, cambios);
     // La fecha mueve el precio: un recorrido hasta el 29 oct lleva la promo de
-    // temporada baja y uno después no. Se vuelve a tarifar el renglón.
-    if (cambios.tourDate !== undefined) {
+    // temporada baja y uno después no. Se vuelve a tarifar el renglón. La
+    // elección también: la Ruta Acuática a Tamasopo suma $150 por cabeza.
+    if (cambios.tourDate !== undefined || cambios.eleccion !== undefined) {
       const it = nuevos.find((x) => x.uid === uid);
       const retarifado = it ? retarifarItem(it) : it;
       if (it && retarifado && retarifado.total !== it.total) nuevos = actualizarItem(uid, { total: retarifado.total });
@@ -490,7 +491,7 @@ export function useCarritoCheckout() {
     const nuevos  = cantidad > 0 ? [...otros, { id, cantidad }] : otros;
     // `totalRecorrido`, no `calcTourTotal` a pelo: con una sola persona aplica
     // la tarifa de viajero solo, y en el Edén la del grupo completo.
-    const base = totalRecorrido(tourEnFecha(tour, i.tourDate), i.adults, i.childrenMid, i.childrenSmall);
+    const base = totalRecorrido(tourEnFecha(tour, i.tourDate), i.adults, i.childrenMid, i.childrenSmall, 0, i.eleccion);
     const extras = nuevos.reduce((s, a) => {
       const c = tour.addOns?.find((x) => x.id === a.id);
       return s + (c ? c.precio * a.cantidad : 0);
@@ -569,7 +570,7 @@ export function useCarritoCheckout() {
 
     // Con el precio de la fecha del renglón: la promo de temporada baja solo
     // va en recorridos hasta el 29 oct.
-    const total = totalRecorrido(tourEnFecha(tour, i.tourDate), adultos, childrenMid, childrenSmall);
+    const total = totalRecorrido(tourEnFecha(tour, i.tourDate), adultos, childrenMid, childrenSmall, 0, i.eleccion);
     // Los add-ons se topan a la gente que va: si el grupo baja, la actividad
     // opcional no puede quedar contratada para más personas de las que quedan.
     const addOns = (i.addOns ?? [])

@@ -6,13 +6,14 @@ import { useState, useMemo, useEffect } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing, MapPin } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
-import { TOURS_LISTA, partesRecogida, cargoVallesDe, type Tour } from "@/lib/tours";
+import { TOURS_LISTA, partesRecogida, cargoVallesDe, opcionDeEleccion, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
   type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
   sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn, EMPTY_PACKAGE, HUESPEDES_POR_DEFECTO,
   aplicarHabitacion, SelectorHabitacion, ConceptoPersonalizado, NotasInternas,
   SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta, TrasladoVallesLinea, conTrasladoValles,
+  EleccionLinea, eleccionPorOmision,
 } from "@/components/admin/ReservaModal";
 import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
 import ConvertirReservaModal, { type DatosConversion, type ResultadoConversion } from "@/components/admin/ConvertirReservaModal";
@@ -270,12 +271,17 @@ export default function CotizacionesClient(
           up.tourName      = "";
           up.precioPersona = 0;
           up.adults        = Math.max(1, up.adults || 2);
-          delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns;
+          delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns; delete up.eleccion;
           up.subtotal = calcLine(up);
           return up;
         }
         delete up.precioPersona;
         up.tourName = t?.nombre || "";
+        // Ruta Acuática: entra marcada Siete Cascadas (sin extra) y Erick cambia
+        // a Tamasopo (+$150 por persona) si el cliente la pide. Otro tour, sin elección.
+        delete up.eleccion;
+        const omision = eleccionPorOmision(String(val));
+        if (omision) up.eleccion = omision;
         if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
           up.ruta = t.rutas[0].nombre; up.vehiculo = t.flota[0].nombre; up.unidades = 1;
           up.adults = 0; up.childrenMid = 0; up.childrenSmall = 0;
@@ -825,7 +831,13 @@ export default function CotizacionesClient(
         .filter(x => x.n > 0)
         .map(({ a, n }) => `+ ${esc(a.nombre)} · ${n} ${n === 1 ? "persona" : "personas"} · $${(a.precio * n).toLocaleString("es-MX")}`)
         .join("<br/>");
-      return `<div class="row"><div><div class="tour-name">${esc(l.tourName)}</div><div class="tour-sub">${sub}</div>${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
+      // Lo que eligió el cliente (Ruta Acuática): a dónde va el grupo y, si la
+      // opción suma, por qué el renglón cuesta más que el precio de lista.
+      const opcion   = opcionDeEleccion(TOURS_LISTA.find(t => t.slug === l.tourSlug) ?? {}, l.eleccion);
+      const eleccion = opcion
+        ? `Elección: ${esc(opcion.nombre)}${opcion.extraPorPersona ? ` (+$${opcion.extraPorPersona.toLocaleString("es-MX")} por persona, incluido)` : ""}`
+        : (l.eleccion ? `Elección: ${esc(l.eleccion)}` : "");
+      return `<div class="row"><div><div class="tour-name">${esc(l.tourName)}</div><div class="tour-sub">${sub}</div>${eleccion ? `<div class="tour-sub">${eleccion}</div>` : ""}${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const hospRows = pkgs.map(p => {
@@ -1719,6 +1731,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                                 </div>
                               </div>
                             </>
+                          )}
+                          {line.tourSlug && (
+                            <EleccionLinea
+                              line={line}
+                              onChange={nueva => {
+                                setLines(ls => ls.map((x, idx) => idx === i ? { ...nueva, subtotal: calcLine(nueva) } : x));
+                                soltarPrecioEditado();
+                              }}
+                            />
                           )}
                           {line.tourSlug && (
                             <AddOnsLinea

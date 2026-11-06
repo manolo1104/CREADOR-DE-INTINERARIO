@@ -223,12 +223,16 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                           <p className="font-dm text-[11px] text-negro/70 mb-2">{tour.eleccion.titulo}</p>
                           <div className="space-y-1.5">
                             {tour.eleccion.opciones.map((o) => {
-                              const activa = i.eleccion === o.nombre;
+                              // Se guarda el `id`, no el nombre: en inglés el nombre
+                              // viene traducido y el servidor no lo reconocía, así
+                              // que la elección se perdía al pagar (5 nov 2026). Un
+                              // carrito viejo trae el nombre en español: también vale.
+                              const activa = i.eleccion === o.id || i.eleccion === base?.eleccion?.opciones.find((x) => x.id === o.id)?.nombre;
                               return (
                                 <button
                                   key={o.id}
                                   type="button"
-                                  onClick={() => cambiar(i.uid, { eleccion: o.nombre })}
+                                  onClick={() => cambiar(i.uid, { eleccion: o.id })}
                                   aria-pressed={activa}
                                   className={`w-full text-left border p-2 transition-colors ${
                                     activa ? "border-verde-selva bg-verde-selva/8" : "border-negro/15 hover:border-verde-selva/50"
@@ -237,7 +241,16 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                                   <span className="flex items-start gap-2">
                                     <span className={`mt-0.5 w-3 h-3 flex-shrink-0 rounded-full border ${activa ? "border-verde-selva bg-verde-selva" : "border-negro/30"}`} aria-hidden="true" />
                                     <span className="min-w-0">
-                                      <span className="block font-dm text-[12px] text-negro/80 leading-snug">{o.nombre}</span>
+                                      <span className="block font-dm text-[12px] text-negro/80 leading-snug">
+                                        {o.nombre}
+                                        {/* Lo que suma la opción (Tamasopo, +$150 por persona): sale
+                                          del catálogo, no de un texto escrito a mano. */}
+                                        {o.extraPorPersona ? (
+                                          <span className="ml-1.5 font-medium text-terracota whitespace-nowrap">
+                                            +{formatMXN(o.extraPorPersona)}{locale === "en" ? " MXN per person" : " por persona"}
+                                          </span>
+                                        ) : null}
+                                      </span>
                                       {o.nota && <span className="block font-dm text-[11px] text-negro/45 leading-snug">{o.nota}</span>}
                                     </span>
                                   </span>

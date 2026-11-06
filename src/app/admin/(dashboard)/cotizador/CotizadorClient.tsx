@@ -52,6 +52,9 @@ function aLineItem(l: SimLinea): LineItem {
     tourSlug: l.tourSlug, tourName: "", tourDate: "",
     adults: l.adultos, childrenMid: l.ninosMid, childrenSmall: l.ninosSmall,
     subtotal: 0, ruta: l.ruta, vehiculo: l.vehiculo, unidades: l.unidades,
+    // La versión del proveedor ES la opción del catálogo (Ruta Acuática:
+    // «tamasopo» suma $150 por persona a la venta, igual que en la cotización).
+    ...(l.variante ? { eleccion: l.variante } : {}),
   };
 }
 

@@ -73,7 +73,7 @@ export function itemDesdeTour(
   // `totalRecorrido` bifurca sola entre tarifa de grupo y precio por cabeza:
   // es la misma cuenta que hace el servidor en `computeTourCharge`. Con la
   // fecha que traiga (la de la ficha), porque la promo depende de ella.
-  const total = totalRecorrido(tourEnFecha(t, base.tourDate), adults, ninosMid, ninosSmall);
+  const total = totalRecorrido(tourEnFecha(t, base.tourDate), adults, ninosMid, ninosSmall, 0, base.eleccion);
   return { ...comun, adults, total, ...base };
 }
 
@@ -90,7 +90,8 @@ export function retarifarItem<T extends Omit<CarritoItem, "uid">>(i: T): T {
   if (i.unidades) return i;
   const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
   if (!t) return i;
-  const base = totalRecorrido(tourEnFecha(t, i.tourDate), i.adults, i.childrenMid ?? 0, i.childrenSmall ?? 0);
+  // Con la opción elegida: la Ruta Acuática a Tamasopo suma $150 por cabeza.
+  const base = totalRecorrido(tourEnFecha(t, i.tourDate), i.adults, i.childrenMid ?? 0, i.childrenSmall ?? 0, 0, i.eleccion);
   const extras = (i.addOns ?? []).reduce((s, a) => {
     const cat = t.addOns?.find((x) => x.id === a.id);
     return s + (cat ? cat.precio * a.cantidad : 0);
