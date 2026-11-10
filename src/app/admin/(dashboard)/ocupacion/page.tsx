@@ -60,7 +60,7 @@ export default async function OcupacionPage({ searchParams }: { searchParams: { 
           </div>
         </Bloque>
 
-        <Bloque titulo="Próximas salidas bajo mínimo" descripcion="Salidas regulares de los próximos 14 días con 2 personas o menos: conviene llenarlas o juntarlas (Agente → Juntar salidas).">
+        <Bloque titulo="Próximas salidas bajo mínimo" descripcion="Salidas regulares de los próximos 14 días con 2 personas o menos, o por debajo del mínimo de su tour (rafting 5, rappel 4: así no corren): conviene llenarlas o juntarlas (Agente → Juntar salidas).">
           <table className="panel-tabla w-full min-w-[420px] text-[13px] font-dm">
             <thead><tr><th className={th}>Fecha</th><th className={th}>Tour</th><th className={thR}>Personas</th></tr></thead>
             <tbody>
@@ -68,7 +68,7 @@ export default async function OcupacionPage({ searchParams }: { searchParams: { 
                 <tr key={s.clave}>
                   <td className={td}><Link className="panel-foco underline decoration-[var(--panel-borde-fuerte)] underline-offset-2" href={`/admin/salidas-dia/${encodeURIComponent(s.clave)}`}>{s.fecha}</Link></td>
                   <td className={td}><CodigoTour slug={s.clave.split("|")[1] ?? ""} className="mr-1.5" />{s.tourNombre}</td>
-                  <td className={tdR}>{s.personas}</td>
+                  <td className={tdR}>{s.personas}{s.noLlega && s.minimo ? <span className="text-[var(--panel-problema)]"> de {s.minimo} mínimo</span> : null}</td>
                 </tr>
               ))}
               {!d.proximasBajoMinimo.length && <tr><td className={td} colSpan={3}>✅ Ninguna en los próximos 14 días.</td></tr>}

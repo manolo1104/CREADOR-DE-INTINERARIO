@@ -13,7 +13,7 @@ export const RESPONSABLE_OPERACION = "Erick";
 /** Quién registra el dinero: los saldos vencidos son suyos. */
 export const RESPONSABLE_COBROS = "Manolo";
 
-export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "lectura-google" | "corte-lunes" | "consulta-nueva";
+export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "minimo-7d" | "salida-cancelada" | "lectura-google" | "corte-lunes" | "consulta-nueva";
 
 /** Quién cierra el corte semanal (el socio que captura los costos). */
 export const RESPONSABLE_CORTE = "Martín";
@@ -23,7 +23,10 @@ export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] 
   { clave: "saldo-vencido", etiqueta: "Saldo vencido", detalle: "El tour ya pasó y la reserva tiene saldo sin registrar." },
   { clave: "liga-24h", etiqueta: "Liga de pago sin pagar 24 h", detalle: "Se mandó una liga de pago hace 24 h y no se ha pagado." },
   { clave: "salida-48h", etiqueta: "Confirmar salida (48 h)", detalle: "Pasado mañana sale un tour: confirmar a los clientes punto de encuentro, hora y qué llevar." },
-  { clave: "agrupar-salidas", etiqueta: "Juntar salidas", detalle: "El mismo tour a 3 días o menos, una salida bajo el mínimo y juntas caben: proponerle al grupo más chico cambiarse de fecha (un guía y una camioneta menos)." },
+  { clave: "agrupar-salidas", etiqueta: "Juntar salidas", detalle: "El mismo tour a 3 días o menos, una salida bajo el mínimo (el del tour si es mayor: rafting 5, rappel 4) y juntas caben: proponerle al grupo más chico cambiarse de fecha (un guía y una camioneta menos)." },
+  // Lote 6 (10 nov 2026): el mínimo del tour y las salidas canceladas.
+  { clave: "minimo-7d", etiqueta: "No llega al mínimo (7 días)", detalle: "Falta una semana o menos y la salida va por debajo del mínimo del tour (rafting 5, rappel 4): confirmar que corre, juntarla con otra fecha o reembolsar." },
+  { clave: "salida-cancelada", etiqueta: "Salida cancelada con reservas", detalle: "Se marcó «Cancelada» una salida que todavía tiene reservas activas: avisar a cada cliente y reprogramar o reembolsar desde Reservas." },
   // Indicadores (4 nov 2026): los datos que se capturan a mano y sin los que un KPI sale «Sin dato».
   { clave: "lectura-google", etiqueta: "Lectura semanal de Google", detalle: "Si la última lectura de reseñas de Google tiene más de 6 días: anotar la calificación y el número de reseñas (KPI «Reseñas»)." },
   { clave: "corte-lunes", etiqueta: "Corte del lunes", detalle: "La semana terminó y su corte no está cerrado: cerrarlo (KPIs «Margen de contribución» y «Cortes cerrados a tiempo»)." },
@@ -44,8 +47,12 @@ export interface HechosSeguimiento {
   ligaEstado?: string | null;
   /** saldo-vencido: lo que falta cobrar; null si la reserva ya no existe o se canceló. */
   saldo?: number | null;
-  /** salida-48h y agrupar-salidas: el día de la salida. */
+  /** salida-48h, agrupar-salidas y minimo-7d: el día de la salida. */
   fechaSalida?: string | null;
+  /** salida-48h, agrupar-salidas y minimo-7d: la salida se marcó «Cancelada». */
+  salidaCancelada?: boolean;
+  /** minimo-7d: ya llegó al mínimo, o Operación ya la confirmó (o la operó). */
+  minimoResuelto?: boolean;
   /** corte-lunes: ¿ya se cerró ese corte? */
   corteCerrado?: boolean;
   /** lectura-google: ¿ya hay una lectura de los últimos 6 días? */
@@ -66,7 +73,11 @@ export function yaNoAplica(regla: string | null, h: HechosSeguimiento, hoy: stri
     case "liga-24h": return h.ligaEstado !== undefined && h.ligaEstado !== "activo";
     case "saldo-vencido": return h.saldo !== undefined && !(h.saldo !== null && h.saldo > 0);
     case "salida-48h":
-    case "agrupar-salidas": return typeof h.fechaSalida === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.fechaSalida) && h.fechaSalida < hoy;
+    case "agrupar-salidas":
+    case "minimo-7d":
+      // Una salida cancelada ya no se confirma, ni se junta, ni se discute su mínimo (lote 6).
+      if (h.salidaCancelada === true || (regla === "minimo-7d" && h.minimoResuelto === true)) return true;
+      return typeof h.fechaSalida === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.fechaSalida) && h.fechaSalida < hoy;
     case "corte-lunes": return h.corteCerrado === true;
     case "lectura-google": return h.lecturaReciente === true;
     default: return false;
@@ -186,6 +197,45 @@ export function reglaSalida(salidas: SalidaProxima[], hoy: string): TareaPorRegl
       vence: addDaysYMD(s.fecha, -2) < hoy ? hoy : addDaysYMD(s.fecha, -2),
       salidaClave: s.clave,
     }));
+}
+
+export interface SalidaConMinimo { clave: string; fecha: string; tour: string; personas: number; minimo: number | null; estado?: string | null }
+
+/** Cuántos días antes se avisa que una salida no llega al mínimo de su tour. */
+export const DIAS_AVISO_MINIMO = 7;
+
+/**
+ * «No llega al mínimo» a 7 días (lote 6, 10 nov 2026): una salida por debajo
+ * del mínimo de su tour (rafting 5, rappel 4) a una semana o menos → tarea a
+ * Operación para decidir a tiempo: confirmar que corre, juntarla o reembolsar.
+ * Una que Operación ya marcó Confirmada, Operada o Cancelada no la pide.
+ */
+export function reglaMinimo(salidas: SalidaConMinimo[], hoy: string): TareaPorRegla[] {
+  return salidas
+    .filter(s => s.minimo !== null && s.personas > 0 && s.personas < s.minimo)
+    .filter(s => !["confirmada", "operada", "cancelada"].includes(s.estado ?? ""))
+    .filter(s => diffDiasYMD(hoy, s.fecha) >= 1 && diffDiasYMD(hoy, s.fecha) <= DIAS_AVISO_MINIMO)
+    .map(s => ({
+      claveRegla: `minimo-7d:${s.clave}`,
+      regla: "minimo-7d" as const,
+      titulo: `${s.tour} del ${s.fecha} va con ${s.personas} de ${s.minimo} mínimo: confirmar que corre, juntarla con otra fecha o reembolsar`,
+      responsable: RESPONSABLE_OPERACION,
+      vence: hoy,
+      salidaClave: s.clave,
+    }));
+}
+
+/** La tarea que deja una salida marcada «Cancelada» que todavía tiene reservas activas (no bloquea: avisa). */
+export function tareaSalidaCancelada(s: { clave: string; fecha: string; tour: string; folios: string[] }, hoy: string): TareaPorRegla | null {
+  if (!s.folios.length) return null;
+  return {
+    claveRegla: `salida-cancelada:${s.clave}`,
+    regla: "salida-cancelada",
+    titulo: `Se canceló la salida de ${s.tour} del ${s.fecha} y tiene ${s.folios.length === 1 ? "1 reserva activa" : `${s.folios.length} reservas activas`} (${s.folios.join(", ")}): avisar al cliente y reprogramar o reembolsar desde Reservas`,
+    responsable: RESPONSABLE_OPERACION,
+    vence: hoy,
+    salidaClave: s.clave,
+  };
 }
 
 /**

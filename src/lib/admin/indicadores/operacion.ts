@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { addDaysYMD, ymdMX } from "@/lib/dates";
 import { avanceChecklist } from "@/lib/admin/checklistSalida";
 import { grupoDe } from "@/lib/admin/reserva";
-import { diasDeTourDe } from "@/lib/admin/salidas";
+import { bajoMinimoRentable, diasDeTourDe, salidaYaOperada } from "@/lib/admin/salidas";
 import { salidasEntre } from "@/lib/admin/salidasDia";
 import { PRIMERA_SEMANA_CORTE } from "@/lib/admin/corteSemanal";
 import { limpiarIncidencias, type Incidencia } from "@/lib/admin/incidencias";
@@ -20,6 +20,8 @@ import type { Periodo, PuntoSerie, ValorKpi } from "./tipos";
 export interface SalidaK {
   clave: string; fecha: string; codigo: string; tourNombre: string; personas: number; aMedida: boolean;
   bajoMinimo: boolean; checklist: { hechos: number; total: number }; incidencias: Incidencia[];
+  /** Lote 6 (10 nov 2026): por debajo del mínimo del TOUR (no corre así), su mínimo y el estado del registro. */
+  noLlega?: boolean; minimo?: number | null; estado?: string;
 }
 export interface CorteK { semana: string; ventas: number; utilidad: number; estado: string }
 export interface DatosOperacion {
@@ -41,7 +43,8 @@ export interface DetalleOperacion {
 
 export interface MedicionOperacion { valores: ValorKpi[]; series: Record<string, PuntoSerie[]>; detalle: DetalleOperacion }
 
-const pasadas = (d: DatosOperacion, p: Periodo) => d.salidas.filter(s => enPeriodo(s.fecha, p) && s.fecha < d.hoy);
+// Pasada = la fecha ya pasó o Operación la marcó «Operada» (lote 6, 10 nov 2026).
+const pasadas = (d: DatosOperacion, p: Periodo) => d.salidas.filter(s => enPeriodo(s.fecha, p) && salidaYaOperada(s, d.hoy));
 
 function paxSalida(d: DatosOperacion, p: Periodo): ValorKpi {
   const ss = d.salidas.filter(s => enPeriodo(s.fecha, p));
@@ -130,7 +133,7 @@ export function calcularOperacion(d: DatosOperacion, p: Periodo, periodos: Perio
         const pax = ss.reduce((t, s) => t + s.personas, 0);
         return { corta: x.corta, salidas: ss.length, paxPorSalida: ss.length ? r1(pax / ss.length) : null, bajoMinimo: ss.filter(s => !s.aMedida && s.bajoMinimo).length };
       }),
-      proximasBajoMinimo: d.salidas.filter(s => s.fecha >= d.hoy && s.fecha <= addDaysYMD(d.hoy, 14) && s.bajoMinimo && !s.aMedida).sort((a, b) => a.fecha.localeCompare(b.fecha)),
+      proximasBajoMinimo: d.salidas.filter(s => s.fecha >= d.hoy && s.fecha <= addDaysYMD(d.hoy, 14) && (s.bajoMinimo || s.noLlega) && !s.aMedida && s.estado !== "operada").sort((a, b) => a.fecha.localeCompare(b.fecha)),
       cortes,
       incidencias: d.salidas.filter(s => enPeriodo(s.fecha, p)).flatMap(s => s.incidencias.map(i => ({ ...i, fecha: s.fecha, clave: s.clave, codigo: s.codigo, tourNombre: s.tourNombre })))
         .sort((a, b) => b.en.localeCompare(a.en)),
@@ -162,7 +165,9 @@ export async function cargarOperacion(periodos: Periodo[], hoy: string): Promise
   return {
     salidas: salidas.map(s => ({
       clave: s.clave, fecha: s.fecha, codigo: s.codigo, tourNombre: s.aMedida ? s.nombre || s.tourNombre : s.tourNombre, personas: s.personas, aMedida: s.aMedida,
-      bajoMinimo: s.estadoPax === "bajo-minimo", checklist: avanceChecklist(s.checklist), incidencias: incPor.get(s.clave) ?? [],
+      // Las canceladas ya no llegan aquí (`salidasEntre`); bajo mínimo = 2 o menos aunque tampoco llegue al del tour.
+      bajoMinimo: bajoMinimoRentable(s), noLlega: s.estadoPax === "no-llega", minimo: s.minimo, estado: s.registro.estado,
+      checklist: avanceChecklist(s.checklist), incidencias: incPor.get(s.clave) ?? [],
     })),
     cortes, primerCierre,
     reservas: reservas.map(b => ({

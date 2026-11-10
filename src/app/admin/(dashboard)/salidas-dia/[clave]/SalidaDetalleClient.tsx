@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Phone, MapPin, Send, Copy, Check } from "lucide-react";
 import type { SalidaOperativa, RegistroSalida } from "@/lib/admin/salidasDia";
-import { ETIQUETA_ESTADO_SALIDA, numerosDeSalida, simularMargen } from "@/lib/admin/salidas";
+import { ETIQUETA_ESTADO_SALIDA, numerosDeFicha } from "@/lib/admin/salidas";
 import { avanceChecklist, type ItemChecklist } from "@/lib/admin/checklistSalida";
 import { textoProveedor } from "@/lib/admin/agente/confirmaciones";
 import { colorDeTour } from "@/lib/admin/coloresTour";
@@ -18,13 +18,17 @@ const ESTADOS: { clave: RegistroSalida["estado"]; etiqueta: string }[] = [
   { clave: "programada", etiqueta: "Programada" }, { clave: "confirmada", etiqueta: "Confirmada" },
   { clave: "operada", etiqueta: "Operada" }, { clave: "cancelada", etiqueta: "Cancelada" },
 ];
-const PAGO = { pagado: { t: "Pagado", tono: "bien" }, ota: { t: "Pagado vía OTA", tono: "neutro" }, saldo: { t: "Saldo en sitio", tono: "atencion" } } as const;
+// El saldo se cobra solo el primer día del viaje (lote 6, 10 nov 2026): los demás días se avisa, no se cobra.
+const PAGO = { pagado: { t: "Pagado", tono: "bien" }, ota: { t: "Pagado vía OTA", tono: "neutro" }, saldo: { t: "Saldo en sitio", tono: "atencion" }, "saldo-otro-dia": { t: "Saldo: se cobra el", tono: "neutro" } } as const;
+const diaCorto = (ymd: string) => `${ymd.slice(8)}/${ymd.slice(5, 7)}`;
 const input = "w-full rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-3 py-2.5 text-[16px] font-dm text-[var(--panel-tinta)] panel-foco";
 
 export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verDinero }: { inicial: SalidaOperativa; quien: string; puedeAsignar: boolean; verDinero: boolean }) {
   const s = inicial;
   const [registro, setRegistro] = useState<RegistroSalida>(s.registro);
   const [guardado, setGuardado] = useState<RegistroSalida>(s.registro);
+  // De dónde sale el guía (lote 6): de la salida o, si no tiene, de sus reservas.
+  const [guiaInfo, setGuiaInfo] = useState<{ deReservas: boolean; aviso: string | null }>({ deReservas: s.guiaDeReservas, aviso: s.avisoGuia });
   const [checklist, setChecklist] = useState<ItemChecklist[]>(s.checklist);
   const [nuevoItem, setNuevoItem] = useState("");
   const [guardando, setGuardando] = useState(false);
@@ -53,7 +57,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
       // Marcar el checklist no toca lo que se está escribiendo en Operación.
       const deLista = "marcar" in cambios || "agregar" in cambios;
       if (!deLista) setRegistro(d.registro);
-      setGuardado(d.registro); setChecklist(d.checklist); playSuccess(); setMsj({ texto: "Guardado", lista: deLista });
+      setGuardado(d.registro); setChecklist(d.checklist); setGuiaInfo({ deReservas: !!d.guiaDeReservas, aviso: d.avisoGuia ?? null }); playSuccess(); setMsj({ texto: "Guardado", lista: deLista });
       return true;
     } catch { playError(); setMsj({ texto: "No se pudo guardar", error: true }); return false; }
     finally { setGuardando(false); }
@@ -86,23 +90,28 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
     `${s.tourNombre} · ${fechaLarga(s.fecha)}`,
     `${s.personas} persona${s.personas === 1 ? "" : "s"}${s.cupo !== null ? ` de ${s.cupo}` : ""}${registro.guia ? ` · Guía: ${registro.guia}` : ""}`,
     "",
-    ...s.pasajeros.map(p => `• ${p.cliente} · ${p.personas}p${p.idioma === "en" ? " · inglés" : ""}${p.hospedaje ? ` · ${p.hospedaje}` : ""}${p.telefono ? ` · ${p.telefono}` : ""}${p.pago === "saldo" ? ` · cobrar ${fmx(p.saldo)}` : ""}`),
+    ...s.pasajeros.map(p => `• ${p.cliente} · ${p.personas}p${p.idioma === "en" ? " · inglés" : ""}${p.hospedaje ? ` · ${p.hospedaje}` : ""}${p.telefono ? ` · ${p.telefono}` : ""}${p.pago === "saldo" ? ` · cobrar ${fmx(p.saldo)}` : p.pago === "saldo-otro-dia" ? ` · saldo: se cobra el ${diaCorto(p.primerDia)}, hoy no` : ""}`),
     ...(s.protocolo ? ["", `Punto de encuentro: ${s.protocolo.lugar}${s.protocolo.hora ? ` ${s.protocolo.hora}` : ""}`] : []),
   ].join("\n");
   async function copiar() {
     try { await navigator.clipboard.writeText(listaTexto); setCopiado(true); setTimeout(() => setCopiado(false), 2000); } catch { setMsj({ texto: "No se pudo copiar", error: true }); }
   }
-  const n = numerosDeSalida(s.monto, s.personas, s.conceptos);
-  const simulacion = s.precioPorPax > 0 ? simularMargen(s.precioPorPax, s.conceptos, 6) : [];
+  // Los números son los del servidor (con los costos reales del corte si los
+  // hay); el Cotizador solo para «¿Y si fueran…?» (lote 6, 10 nov 2026).
+  const { numeros: n, simulacion, simulacionConCostos } = numerosDeFicha(s);
 
   return (
     <div className="mt-3">
       <EncabezadoPagina
         titulo={s.tourNombre}
-        subtitulo={`${fechaLarga(s.fecha)} · ${s.personas}${s.cupo !== null ? ` / ${s.cupo}` : ""} personas · ${registro.tipo === "privada" ? "privada" : "compartida"}`}
+        subtitulo={`${fechaLarga(s.fecha)} · ${s.personas}${s.cupo !== null ? ` / ${s.cupo}` : ""} personas${s.minimo !== null ? ` · mínimo ${s.minimo}` : ""} · ${registro.tipo === "privada" ? "privada" : "compartida"}`}
         acciones={<ChipEstado tono={TONO_ESTADO_SALIDA[s.estadoPax]}>{ETIQUETA_ESTADO_SALIDA[s.estadoPax]}</ChipEstado>}
       />
 
+      {/* Lote 6 (10 nov 2026): la cancelada ya no cuenta en ningún lado; aquí se puede reabrir. */}
+      {guardado.estado === "cancelada" && (
+        <p role="status" className="panel-card mb-4 p-3 text-[13px] font-dm text-[var(--panel-problema)]">Salida cancelada: ya no sale en Salidas del día, Inicio, el correo de las 7:30 ni los indicadores, y no se le preparan confirmaciones. Para reabrirla, cambia el estado.</p>
+      )}
       <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-5">
           {confirmaciones && (
@@ -133,7 +142,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                       </td>
                       <td className="panel-cifra px-2 py-2.5 text-right align-top">{p.personas}</td>
                       <td className="px-2 py-2.5 align-top text-[12px] text-[var(--panel-tinta-media)]">{ORIGEN_ETIQUETA[p.canal].split(" (")[0]}</td>
-                      <td className="px-2 py-2.5 align-top"><ChipEstado tono={PAGO[p.pago].tono}>{PAGO[p.pago].t}{p.pago === "saldo" ? ` ${fmx(p.saldo)}` : ""}</ChipEstado></td>
+                      <td className="px-2 py-2.5 align-top"><ChipEstado tono={PAGO[p.pago].tono}>{PAGO[p.pago].t}{p.pago === "saldo" ? ` ${fmx(p.saldo)}` : p.pago === "saldo-otro-dia" ? ` ${diaCorto(p.primerDia)}` : ""}</ChipEstado></td>
                       <td className="px-4 py-2.5 align-top text-[12px] text-[var(--panel-tinta-media)]">{p.notas || "—"}</td>
                     </tr>
                   ))}
@@ -149,7 +158,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                 className="panel-foco panel-pulsable inline-flex min-h-[44px] items-center gap-2 rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-4 text-[13px] font-dm font-medium text-[var(--panel-tinta)]">
                 {copiado ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}{copiado ? "Copiada" : "Copiar lista"}
               </button>
-              {puedeAsignar && (
+              {puedeAsignar && guardado.estado !== "cancelada" && (
                 <button type="button" onClick={() => void prepararConfirmaciones()} disabled={preparando}
                   className="panel-foco panel-pulsable inline-flex min-h-[44px] items-center gap-2 rounded-[var(--panel-radio-sm)] border border-[#c9b8f0] bg-white px-4 text-[13px] font-dm font-medium text-[#5b3fa8] disabled:opacity-50">
                   {preparando ? "Preparando…" : "Preparar confirmaciones (48 h)"}
@@ -223,7 +232,8 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
             <form className="mt-3 space-y-3" onSubmit={e => { e.preventDefault(); const c = cambiosDeOperacion(); if (!Object.keys(c).length) { setMsj({ texto: "Sin cambios" }); return; } void guardar(c); }}>
               <div className="grid grid-cols-2 gap-3">
                 <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Guía
-                  <input value={registro.guia} disabled={!puedeAsignar} onChange={e => setRegistro(r => ({ ...r, guia: e.target.value }))} className={`${input} mt-1 normal-case tracking-normal`} placeholder="Quién sale" /></label>
+                  <input value={registro.guia} disabled={!puedeAsignar} onChange={e => setRegistro(r => ({ ...r, guia: e.target.value }))} className={`${input} mt-1 normal-case tracking-normal`} placeholder="Quién sale" />
+                  {guiaInfo.deReservas && registro.guia === guardado.guia && <span className="mt-1 block normal-case tracking-normal text-[11px] text-[var(--panel-tinta-media)]">Tomado de la reserva</span>}</label>
                 <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Vehículo
                   <input value={registro.vehiculo} disabled={!puedeAsignar} onChange={e => setRegistro(r => ({ ...r, vehiculo: e.target.value }))} className={`${input} mt-1 normal-case tracking-normal`} placeholder="Camioneta, RZR…" /></label>
                 <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Estado
@@ -235,6 +245,8 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                     <option value="fija">Compartida</option><option value="privada">Privada</option>
                   </select></label>
               </div>
+              {guiaInfo.aviso && <p role="status" className="text-[12px] font-dm text-[var(--panel-atencion)]">{guiaInfo.aviso}</p>}
+              {puedeAsignar && <p className="text-[11px] font-dm text-[var(--panel-tinta-suave)]">El guía que guardes aquí se escribe también en sus reservas.</p>}
               <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Notas de la salida
                 <textarea value={registro.notas} onChange={e => setRegistro(r => ({ ...r, notas: e.target.value }))} rows={3} className={`${input} mt-1 normal-case tracking-normal`} placeholder="Río, clima, pendientes…" /></label>
               <div className="flex items-center gap-3">
@@ -267,7 +279,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
           {verDinero && simulacion.length > 0 && (
             <section className="panel-card p-4">
               <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">¿Y si fueran…?</h2>
-              <p className="text-[12px] font-dm text-[var(--panel-tinta-media)]">A {fmx(s.precioPorPax)} por persona{n.conCostos ? "" : " (sin costos capturados: el margen es un techo)"}.</p>
+              <p className="text-[12px] font-dm text-[var(--panel-tinta-media)]">A {fmx(s.precioPorPax)} por persona, con los costos del Cotizador{simulacionConCostos ? "" : " (sin costos capturados: el margen es un techo)"}.</p>
               <table className="panel-tabla mt-2 w-full text-[12.5px] font-dm">
                 <thead><tr><th className="py-1 text-left">Personas</th><th className="py-1 text-right">Ingreso</th><th className="py-1 text-right">Margen</th><th className="py-1 text-right">%</th></tr></thead>
                 <tbody>

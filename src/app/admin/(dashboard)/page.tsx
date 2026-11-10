@@ -7,6 +7,7 @@ import { permisosDeTodos } from "@/lib/admin/permisos";
 import DashboardClient from "./DashboardClient";
 import { datosScorecard, type DatosScorecard } from "@/lib/admin/scorecardDatos";
 import { lunesDe } from "@/lib/admin/corteSemanal";
+import { NO_CUENTAN } from "@/lib/cupoTour";
 
 export const dynamic = "force-dynamic";
 
@@ -23,16 +24,19 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
   const { year, month } = partsMX(new Date());
   const monthStart = mxMonthStart(year, month);
 
+  // 🔴 Sin los «borrador» del bot viejo: eran cotizaciones sin pago y salían
+  // como reservas de hoy, ventas del mes y «pendiente de cobro». Mismo criterio
+  // que el corte (`NO_CUENTAN`, lote 6, 10 nov 2026).
   const [todayBookings, upcomingBookings, recentBookings, pendingQuotes, monthBookings, allPending, activeQuotesCount] = await Promise.all([
     prisma.tourBooking.findMany({
-      where: { tourDate: todayStr, status: { not: "cancelled" } },
+      where: { tourDate: todayStr, status: { notIn: NO_CUENTAN } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.tourBooking.findMany({
-      where: { tourDate: { gt: todayStr, lte: nextWeek }, status: { not: "cancelled" } },
+      where: { tourDate: { gt: todayStr, lte: nextWeek }, status: { notIn: NO_CUENTAN } },
       orderBy: { tourDate: "asc" },
     }),
-    prisma.tourBooking.findMany({ orderBy: { createdAt: "desc" }, take: 6 }),
+    prisma.tourBooking.findMany({ where: { status: { not: "borrador" } }, orderBy: { createdAt: "desc" }, take: 6 }),
     // Activas = enviadas (incluye las «por vencer»). Los borradores NO: 106
     // borradores, 101 de antes de octubre, inflaban el número (3 nov 2026).
     prisma.tourQuote.findMany({
@@ -42,10 +46,10 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
     }),
     // "Ingresos del mes": dinero realmente cobrado de reservas no canceladas creadas este mes
     prisma.tourBooking.findMany({
-      where: { status: { not: "cancelled" }, createdAt: { gte: monthStart } },
+      where: { status: { notIn: NO_CUENTAN }, createdAt: { gte: monthStart } },
     }),
     // "Pendiente de cobro": saldo que falta de TODAS las reservas no canceladas
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" } } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN } } }),
     // El total real de cotizaciones activas. La lista de arriba lleva `take: 5`
     // porque solo se pintan 5 en el panel; contar esa lista hacía que el KPI
     // dijera siempre "5" aunque hubiera decenas abiertas.

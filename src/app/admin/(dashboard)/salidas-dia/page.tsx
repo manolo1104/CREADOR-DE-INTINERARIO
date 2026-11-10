@@ -3,7 +3,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { salidasEntre } from "@/lib/admin/salidasDia";
 import { avanceChecklist } from "@/lib/admin/checklistSalida";
-import { ETIQUETA_ESTADO_SALIDA } from "@/lib/admin/salidas";
+import { ETIQUETA_ESTADO_SALIDA, salidaCancelada } from "@/lib/admin/salidas";
 import { colorDeTour } from "@/lib/admin/coloresTour";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { EstadoVacio } from "@/components/admin/ui/EstadoVacio";
@@ -21,7 +21,10 @@ export default async function SalidasDiaPage({ searchParams }: { searchParams: {
   const hoy = hoyMX();
   const pedida = searchParams.fecha ?? "";
   const fecha = /^\d{4}-\d{2}-\d{2}$/.test(pedida) && addDaysYMD(pedida, 0) === pedida ? pedida : hoy;
-  const salidas = await salidasEntre(fecha, fecha);
+  // Las canceladas no cuentan (lote 6, 10 nov 2026): van aparte, abajo, para poder reabrirlas.
+  const todas = await salidasEntre(fecha, fecha, { conCanceladas: true });
+  const salidas = todas.filter(s => !salidaCancelada(s.registro.estado));
+  const canceladas = todas.filter(s => salidaCancelada(s.registro.estado));
   const nav = (f: string, aria: string, Icono: typeof ChevronLeft) => (
     <Link href={`/admin/salidas-dia?fecha=${f}`} aria-label={aria}
       className="panel-foco inline-flex h-10 w-10 items-center justify-center rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white text-[var(--panel-tinta)]">
@@ -72,13 +75,30 @@ export default async function SalidasDiaPage({ searchParams }: { searchParams: {
                   <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11.5px] font-dm text-[var(--panel-tinta-media)]">
                     <span>Checklist {av.hechos} de {av.total}</span>
                     <span>{s.registro.guia ? `Guía: ${s.registro.guia}` : <span className="text-[var(--panel-atencion)]">Sin guía asignado</span>}</span>
+                    {/* Solo el primer día del viaje (lote 6): los demás días el saldo no se cobra. */}
                     {s.pasajeros.some(p => p.pago === "saldo") && <span className="text-[var(--panel-atencion)]">Saldo por cobrar en sitio</span>}
+                    {s.registro.estado === "operada" && <span className="text-[var(--panel-bien)]">Operada</span>}
                   </p>
+                  {s.avisoGuia && <p className="mt-1 text-[11.5px] font-dm text-[var(--panel-atencion)]">{s.avisoGuia}</p>}
                 </Link>
               </li>
             );
           })}
         </ul>
+      )}
+      {canceladas.length > 0 && (
+        <div className="mt-6">
+          <p className="panel-eyebrow mb-1.5">Canceladas · no cuentan</p>
+          <ul className="space-y-1 text-[13px] font-dm">
+            {canceladas.map(s => (
+              <li key={s.clave}>
+                <Link href={`/admin/salidas-dia/${encodeURIComponent(s.clave)}`} className="panel-foco text-[var(--panel-tinta-media)] underline-offset-2 hover:underline">
+                  {s.codigo} · {s.tourNombre} · {s.personas} personas · {s.clientes.join(", ")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       )}
     </div>
   );

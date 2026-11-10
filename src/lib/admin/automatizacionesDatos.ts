@@ -16,9 +16,11 @@ import { usuariosAdmin } from "./usuarios";
 import { ahoraMX, estaAbierta } from "./crm";
 import { correoDe } from "./recordatorios";
 import {
-  HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaSaldo, reglaSalida, yaNoAplica,
+  DIAS_AVISO_MINIMO, HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaMinimo, reglaSaldo, reglaSalida, yaNoAplica,
   type HechosSeguimiento, type LineaResumen, type TareaPorRegla,
 } from "./automatizaciones";
+import { NO_CUENTAN } from "@/lib/cupoTour";
+import { salidaCancelada } from "./salidas";
 import { historialGoogle } from "./satisfaccion";
 import { PRIMERA_SEMANA_CORTE, lunesDe } from "./corteSemanal";
 import { hechosDeLigas } from "./linksPago";
@@ -51,14 +53,17 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
         _count: { select: { tareas: { where: { estado: "pendiente" } } } },
       },
     }),
+    // Sin los «borrador» del bot viejo (lote 6, 10 nov 2026): eran cotizaciones
+    // sin pago y pedían cobrar un «saldo vencido» que nadie debía.
     prisma.tourBooking.findMany({
-      where: { status: { not: "cancelled" }, tourDate: { lt: hoy } },
+      where: { status: { notIn: NO_CUENTAN }, tourDate: { lt: hoy } },
       select: { id: true, confirmationNumber: true, customerName: true, tourDate: true, tourSlug: true, tourName: true, lineItems: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true, oportunidadId: true, adults: true, children: true },
     }),
     prisma.linkPago.findMany({
       where: { estado: "activo", createdAt: { gte: new Date(ahora.getTime() - DIAS_LIGA * 86400000) } },
     }),
-    salidasEntre(addDaysYMD(hoy, 1), addDaysYMD(hoy, 2)),
+    // Hasta 7 días: la de 48 h toma solo las de mañana y pasado; la del mínimo, toda la semana (lote 6).
+    salidasEntre(addDaysYMD(hoy, 1), addDaysYMD(hoy, DIAS_AVISO_MINIMO)),
   ]);
 
   // El folio de la cotización vigente de cada lead cotizado, para el título.
@@ -94,6 +99,7 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
       oportunidadId: (l.cotizacionId && cotsLiga.find(q => q.id === l.cotizacionId)?.oportunidadId) || (l.reservaId && resLiga.find(r => r.id === l.reservaId)?.oportunidadId) || null,
     })), ahora, hoy, responsables),
     ...reglaSalida(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, reservas: s.pasajeros.length })), hoy),
+    ...reglaMinimo(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, minimo: s.minimo, estado: s.registro.estado })), hoy),
     ...reglaLecturaGoogle(google.at(-1)?.fecha ?? null, hoy, lunes),
     ...reglaCorteLunes(cortePasado?.estado === "cerrado", semanaPasada, PRIMERA_SEMANA_CORTE),
     // Juntar salidas (4 nov 2026): una tarea por par, a Operación, para proponerlo al cliente.
@@ -117,7 +123,7 @@ const objetoDe = (claveRegla: string | null) => (claveRegla ?? "").split(":").sl
 export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date()): Promise<number> {
   const { hoy } = ahoraMX(ahora);
   const pendientes = await prisma.tarea.findMany({
-    where: { estado: "pendiente", origen: "regla", regla: { in: ["cotizado-24h", "consulta-nueva", "liga-24h", "saldo-vencido", "salida-48h", "agrupar-salidas", "corte-lunes", "lectura-google"] } },
+    where: { estado: "pendiente", origen: "regla", regla: { in: ["cotizado-24h", "consulta-nueva", "liga-24h", "saldo-vencido", "salida-48h", "agrupar-salidas", "minimo-7d", "corte-lunes", "lectura-google"] } },
     select: { id: true, titulo: true, regla: true, claveRegla: true, oportunidadId: true, salidaClave: true },
   });
   if (!pendientes.length) return 0;
@@ -133,6 +139,15 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
     semanas.length ? prisma.corteSemanal.findMany({ where: { semana: { in: semanas } }, select: { semana: true, estado: true } }) : [],
     de("lectura-google").length ? historialGoogle().then(h => h.at(-1)?.fecha ?? null).catch(() => undefined) : Promise.resolve(undefined),
   ]);
+  // Las salidas de los seguimientos de salida: ¿se cancelaron?, ¿ya llegó al mínimo? (lote 6).
+  const deSalida = pendientes.filter(t => (t.regla === "salida-48h" || t.regla === "agrupar-salidas" || t.regla === "minimo-7d") && t.salidaClave);
+  const registros = deSalida.length
+    ? await prisma.salida.findMany({ where: { clave: { in: deSalida.map(t => t.salidaClave!) } }, select: { clave: true, estado: true } }).catch(() => null)
+    : [];
+  const fechasMinimo = de("minimo-7d").map(t => (t.salidaClave ?? "").slice(0, 10)).filter(f => /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
+  const salidasMinimo = fechasMinimo.length
+    ? await salidasEntre(fechasMinimo[0], fechasMinimo[fechasMinimo.length - 1], { conCanceladas: true }).catch(() => null)
+    : [];
   const contactos = Array.from(new Set(leads.map(l => l.contactoId)));
   const conAbierto = new Set(contactos.length
     ? (await prisma.oportunidad.findMany({ where: { contactoId: { in: contactos } }, select: { contactoId: true, etapa: true } })).filter(o => estaAbierta(o.etapa)).map(o => o.contactoId)
@@ -149,7 +164,16 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
         const r = reservas.find(x => x.id === objetoDe(t.claveRegla));
         return { saldo: !r || r.status === "cancelled" ? null : saldoPendiente(r) };
       }
-      case "salida-48h": case "agrupar-salidas": return { fechaSalida: (t.salidaClave ?? "").slice(0, 10) };
+      case "salida-48h": case "agrupar-salidas": case "minimo-7d": {
+        const cancelada = registros === null ? undefined : salidaCancelada(registros.find(r => r.clave === t.salidaClave)?.estado);
+        let minimoResuelto: boolean | undefined;
+        if (t.regla === "minimo-7d" && salidasMinimo !== null) {
+          const s = salidasMinimo.find(x => x.clave === t.salidaClave);
+          // Ya no existe (se cancelaron o movieron sus reservas), llegó al mínimo, o Operación ya decidió.
+          minimoResuelto = !s || s.minimo === null || s.personas >= s.minimo || s.registro.estado === "confirmada" || s.registro.estado === "operada";
+        }
+        return { fechaSalida: (t.salidaClave ?? "").slice(0, 10), salidaCancelada: cancelada, minimoResuelto };
+      }
       case "corte-lunes": return { corteCerrado: cortes.find(c => c.semana === objetoDe(t.claveRegla))?.estado === "cerrado" };
       case "lectura-google": return { lecturaReciente: google === undefined ? undefined : !!google && diffDiasYMD(google, hoy) <= 6 };
       default: return {};

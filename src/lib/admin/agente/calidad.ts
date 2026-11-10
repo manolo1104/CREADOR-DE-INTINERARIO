@@ -88,12 +88,12 @@ async function datosDeLaSemana(lunes: string) {
   const [preguntas, bitacora, reservas, cotizadosSinSeg, salidas, perdidos, rechazadas, creadas] = await Promise.all([
     prisma.mensaje.findMany({ where: { direccion: "entra", importado: false, fecha: { gte: desde, lte: hasta }, texto: { not: null }, conversacion: { noEsCliente: false } }, select: { texto: true }, take: 150, orderBy: { fecha: "desc" } }),
     prisma.bitacora.findMany({ where: { createdAt: { gte: desde, lte: hasta } }, select: { accion: true, entidad: true, nombre: true, resumen: true }, orderBy: { createdAt: "desc" }, take: 400 }),
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, tourDate: { lt: hoy } }, select: { confirmationNumber: true, tourDate: true, tourSlug: true, lineItems: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: ["cancelled", "borrador"] }, tourDate: { lt: hoy } }, select: { confirmationNumber: true, tourDate: true, tourSlug: true, lineItems: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true } }),
     prisma.oportunidad.findMany({ where: { etapa: "cotizado", updatedAt: { lt: new Date(Date.now() - 3 * 86400_000) }, tareas: { none: { estado: "pendiente" } } }, select: { id: true } }),
     prisma.salida.findMany({ where: { fecha: { gte: lunes, lte: domingo } } }),
     prisma.oportunidad.findMany({ where: { etapa: "perdido", updatedAt: { gte: desde, lte: hasta } }, select: { motivoPerdida: true } }),
     prisma.propuestaAgente.findMany({ where: { estado: "rechazada", decididoEn: { gte: desde, lte: hasta } }, select: { motivo: true } }),
-    prisma.tourBooking.findMany({ where: { createdAt: { gte: desde, lte: hasta }, status: { not: "cancelled" } }, select: { confirmationNumber: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true } }),
+    prisma.tourBooking.findMany({ where: { createdAt: { gte: desde, lte: hasta }, status: { notIn: ["cancelled", "borrador"] } }, select: { confirmationNumber: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true } }),
   ]);
   const conteo = new Map<string, number>();
   for (const b of bitacora) conteo.set(`${b.nombre} ${b.accion} ${b.entidad}`, (conteo.get(`${b.nombre} ${b.accion} ${b.entidad}`) ?? 0) + 1);

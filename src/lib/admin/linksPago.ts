@@ -446,7 +446,8 @@ export async function hechosDeLigas(ligas: Pick<LinkPago, "id" | "reservaId" | "
  */
 export async function reservasParaLigaDeSaldo() {
   const filas = await prisma.tourBooking.findMany({
-    where:   { status: { not: "cancelled" }, depositoPagado: { lt: prisma.tourBooking.fields.totalAmount } },
+    // Sin los «borrador» del bot viejo: no hay saldo que cobrar de una cotización (lote 6, 10 nov 2026).
+    where:   { status: { notIn: ["cancelled", "borrador"] }, depositoPagado: { lt: prisma.tourBooking.fields.totalAmount } },
     orderBy: { createdAt: "desc" },
     take:    500,
     select: {

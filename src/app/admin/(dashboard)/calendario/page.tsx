@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sugerenciasAgrupar } from "@/lib/admin/agruparDatos";
-import { resumenCupoPanel, todasLasFechasCerradas } from "@/lib/cupoTour";
+import { NO_CUENTAN, resumenCupoPanel, todasLasFechasCerradas } from "@/lib/cupoTour";
 import { apartadosVigentes } from "@/lib/apartadosAlmacen";
 import { estadosDe } from "@/lib/encuestas/encuesta";
 import CalendarioClient, { type ApartadoDelDia } from "./CalendarioClient";
@@ -14,8 +14,9 @@ export default async function CalendarioPage({ searchParams }: { searchParams?: 
   // dinero y sus cobros (revisión del 4 nov 2026). Lo suyo es Salidas del día.
   if ((await sesionActual())?.rol === "guia") redirect("/admin/salidas-dia");
   const [bookings, cerradas, apartados] = await Promise.all([
+    // Sin los «borrador» del bot viejo (cotizaciones sin pago), como el corte (lote 6, 10 nov 2026).
     prisma.tourBooking.findMany({
-      where: { status: { not: "cancelled" } },
+      where: { status: { notIn: NO_CUENTAN } },
       orderBy: { tourDate: "asc" },
     }),
     todasLasFechasCerradas(),

@@ -2,7 +2,7 @@ import type { EstadoSalida } from "@/lib/admin/salidas";
 import type { TonoEstado } from "@/components/admin/ui/ChipEstado";
 
 export const TONO_ESTADO_SALIDA: Record<EstadoSalida, TonoEstado> = {
-  "en-meta": "bien", "bajo-minimo": "atencion", lleno: "neutro", "a-medida": "neutro",
+  "en-meta": "bien", "bajo-minimo": "atencion", "no-llega": "problema", lleno: "neutro", "a-medida": "neutro", privada: "neutro",
 };
 
 /** "jueves 5 de noviembre de 2026" */

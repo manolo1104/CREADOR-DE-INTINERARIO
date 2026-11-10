@@ -7,6 +7,8 @@
 // moverse a la fecha de otro del mismo tour para hacer una sola salida —
 // un guía, una camioneta, un costo fijo menos.
 
+import { esPrivadaDeCatalogo, minimoParaJuntar } from "./salidas";
+
 export interface SalidaParaAgrupar {
   clave: string;
   fecha: string;
@@ -38,7 +40,10 @@ export interface SugerenciaAgrupar {
 export const AGRUPAR = {
   /** Hasta cuántos días de diferencia se propone moverse. */
   maxDias: 3,
-  /** Por debajo de esto una salida es «bajo mínimo» (`MINIMO_RENTABLE`). */
+  /**
+   * Por debajo de esto una salida es «bajo mínimo» (`MINIMO_RENTABLE`). Un
+   * tour con mínimo propio más alto usa el suyo (`minimoParaJuntar`, lote 6).
+   */
   minimo: 3,
   /** Con menos anticipación ya no da tiempo de proponérselo al cliente. */
   anticipacionDias: 2,
@@ -53,9 +58,14 @@ const diasEntre = (a: string, b: string) => Math.round((Date.parse(`${b}T12:00:0
  */
 export function sugerenciasDeAgrupar(
   salidas: SalidaParaAgrupar[],
-  o: { hoy: string; cupoDe: (slug: string) => number | null; costoFijoDe: (slug: string) => number | null; foliosConOtrosDias?: Set<string> },
+  o: { hoy: string; cupoDe: (slug: string) => number | null; costoFijoDe: (slug: string) => number | null; foliosConOtrosDias?: Set<string>; minimoDe?: (slug: string) => number },
 ): SugerenciaAgrupar[] {
-  const elegibles = salidas.filter(s => !s.aMedida && s.tipo !== "privada" && s.personas > 0 && diasEntre(o.hoy, s.fecha) >= AGRUPAR.anticipacionDias);
+  // 🔴 El mínimo es el del TOUR cuando pasa del de rentabilidad (lote 6, 10 nov
+  // 2026): un rafting de 4 y otro de 3 no corren solos (mínimo 5) y antes no se
+  // proponía juntarlos porque los dos pasaban de 3. Y el Edén (privada de
+  // catálogo, una salida al día) nunca se junta con nadie.
+  const minimoDe = o.minimoDe ?? minimoParaJuntar;
+  const elegibles = salidas.filter(s => !s.aMedida && s.tipo !== "privada" && !esPrivadaDeCatalogo(s.slug) && s.personas > 0 && diasEntre(o.hoy, s.fecha) >= AGRUPAR.anticipacionDias);
   const pares: { a: SalidaParaAgrupar; b: SalidaParaAgrupar; dias: number; juntas: number }[] = [];
   for (let i = 0; i < elegibles.length; i++) {
     for (let j = i + 1; j < elegibles.length; j++) {
@@ -64,7 +74,7 @@ export function sugerenciasDeAgrupar(
       const dias = Math.abs(diasEntre(a.fecha, b.fecha));
       const juntas = a.personas + b.personas;
       const cupo = o.cupoDe(a.slug);
-      if (dias > AGRUPAR.maxDias || Math.min(a.personas, b.personas) >= AGRUPAR.minimo || (cupo !== null && juntas > cupo)) continue;
+      if (dias > AGRUPAR.maxDias || Math.min(a.personas, b.personas) >= minimoDe(a.slug) || (cupo !== null && juntas > cupo)) continue;
       pares.push({ a, b, dias, juntas });
     }
   }

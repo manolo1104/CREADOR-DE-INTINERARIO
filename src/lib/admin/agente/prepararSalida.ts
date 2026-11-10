@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { TOURS_LISTA } from "@/lib/tours";
 import { normalizarTelefono } from "../crm";
 import { salidaPorClave } from "../salidasDia";
+import { salidaCancelada } from "../salidas";
 import { registrarEnBitacora } from "../bitacora";
 import { ErrorAgente } from "./claude";
 import { textoConfirmacion } from "./confirmaciones";
@@ -12,6 +13,8 @@ import { textoConfirmacion } from "./confirmaciones";
 export async function prepararConfirmaciones(clave: string, quien: string) {
   const s = await salidaPorClave(clave);
   if (!s) throw new ErrorAgente("Esa salida no existe o ya no tiene reservas.");
+  // 🔴 A una salida cancelada no se le confirma nada al cliente (lote 6, 10 nov 2026).
+  if (salidaCancelada(s.registro.estado)) throw new ErrorAgente("Esta salida está cancelada: no se le preparan confirmaciones. Si sí sale, cambia su estado primero.");
   const queLlevar = (s.protocolo?.ruta?.queLlevar ?? "").split("\n");
   // El nombre corto («Rafting en el Tampaón»), no el de la ficha de venta.
   const tour = TOURS_LISTA.find(t => t.slug === s.slug)?.nombreCorto || s.tourNombre;

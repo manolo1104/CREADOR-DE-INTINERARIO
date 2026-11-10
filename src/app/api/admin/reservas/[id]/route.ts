@@ -21,6 +21,8 @@ import { NO_CUENTAN, explicarSinLugar, pedidosQueCrecen, pedidosSinCupo } from "
 import { avisoSobrecupo } from "@/lib/cotizaciones/reglasConversion";
 import { identidadDePaqueteAlEditar, notasConAviso, totalParaGuardar } from "@/lib/admin/reservaEdicion";
 import { getPaquete } from "@/lib/paquetes";
+import { claveDeSalida, diasDeTourDe } from "@/lib/admin/salidas";
+import { reflejarGuiaEnSalidas } from "@/lib/admin/registroSalidaDatos";
 
 export const dynamic = "force-dynamic";
 
@@ -218,6 +220,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         const debe = montoCobrado(updated) >= updated.totalAmount && updated.totalAmount > 0 ? "paid" : "pending";
         if (debe !== updated.status) await prisma.tourBooking.update({ where: { id: updated.id }, data: { status: debe } });
       }
+    }
+    // Un solo guía (lote 6, 10 nov 2026): el que se asigna aquí se refleja en
+    // sus salidas (Salidas del día, Inicio, correo de las 7:30). No lanza.
+    if (antes && (antes.guia ?? "").trim() !== (updated.guia ?? "").trim() && !NO_CUENTAN.includes(updated.status)) {
+      await reflejarGuiaEnSalidas(Array.from(new Set(diasDeTourDe(updated).map(claveDeSalida))), updated.guia);
     }
     // Reactivada: su lead se pone al día con TODAS sus reservas vivas, ya con el
     // dinero recalculado (si se perdió por ella, vuelve).

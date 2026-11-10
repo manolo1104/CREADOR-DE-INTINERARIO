@@ -3,6 +3,7 @@ import { hoyMX, ymdMX, partsMX, addDaysYMD, weekdayYMD } from "@/lib/dates";
 import type { TourBooking } from "@prisma/client";
 import { TOURS_LISTA } from "@/lib/tours";
 import { ORIGENES, origenValido, type OrigenReserva } from "@/lib/origenReserva";
+import { NO_CUENTAN } from "@/lib/cupoTour";
 
 // `montoCobrado` y `saldoPendiente` viven en `dinero.ts` (puro, con pruebas);
 // se reexportan para que Inicio, Cobros, el corte y los correos sigan igual.
@@ -39,7 +40,8 @@ function lineasDe(b: TourBooking): LineaTour[] {
 export async function calcKPIs() {
   const all = await prisma.tourBooking.findMany({ orderBy: { createdAt: "desc" } });
   // Ingresos = dinero REALMENTE cobrado (anticipos + pagos completos) de reservas no canceladas.
-  const paid = all.filter(b => b.status !== "cancelled");
+  // Sin los «borrador» del bot viejo (cotizaciones sin pago), como el corte (lote 6, 10 nov 2026).
+  const paid = all.filter(b => !NO_CUENTAN.includes(b.status));
 
   // Cortes calculados en horario de México (no UTC).
   const hoy        = hoyMX();

@@ -6,6 +6,7 @@ import { ymdMX } from "@/lib/dates";
 import { ORIGENES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import { montoCobrado } from "./dinero";
 import { salidasEntre } from "./salidasDia";
+import { bajoMinimoRentable } from "./salidas";
 import { sugerenciasAgrupar } from "./agruparDatos";
 
 /**
@@ -47,7 +48,7 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
 
   const [salidas, creadas] = await Promise.all([
     salidasEntre(ini, fin),
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: new Date(`${ini}T00:00:00-06:00`), lte: new Date(`${fin}T23:59:59.999-06:00`) } } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: ["cancelled", "borrador"] }, createdAt: { gte: new Date(`${ini}T00:00:00-06:00`), lte: new Date(`${fin}T23:59:59.999-06:00`) } } }),
   ]);
 
   const porSlug = new Map<string, FilaTour>();
@@ -63,7 +64,7 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
   })).sort((a, b) => b.ingreso - a.ingreso);
 
   const conCostos = salidas.filter(s => s.numeros.conCostos);
-  const regulares = salidas.filter(s => !s.aMedida);
+  const regulares = salidas.filter(s => !s.aMedida && s.estadoPax !== "privada");
   const personas = salidas.reduce((t, s) => t + s.personas, 0);
   const ingresoConCostos = conCostos.reduce((t, s) => t + s.numeros.ingreso, 0);
   const margen = conCostos.reduce((t, s) => t + s.numeros.margen, 0);
@@ -83,7 +84,8 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
   return {
     mes, etiqueta: `${MESES[m - 1]} de ${y}`, mesAnterior, mesSiguiente,
     salidas: salidas.length, personas, paxPorSalida: salidas.length ? Math.round((personas / salidas.length) * 10) / 10 : 0,
-    bajoMinimo: regulares.filter(s => s.estadoPax === "bajo-minimo").length, regulares: regulares.length,
+    // 2 o menos, aunque además no lleguen al mínimo del tour; sin el Edén (lote 6, 10 nov 2026).
+    bajoMinimo: regulares.filter(bajoMinimoRentable).length, regulares: regulares.length,
     ingreso: salidas.reduce((t, s) => t + s.numeros.ingreso, 0), margen, ingresoConCostos,
     margenPct: ingresoConCostos > 0 ? Math.round((margen / ingresoConCostos) * 100) : null,
     toursConCostos: porTour.filter(t => t.conCostos && !t.aMedida).length, toursTotal: porTour.filter(t => !t.aMedida).length,

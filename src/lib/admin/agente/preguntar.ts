@@ -6,6 +6,7 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { salidasEntre } from "../salidasDia";
+import { bajoMinimoRentable } from "../salidas";
 import { montoCobrado, saldoPendiente } from "../dinero";
 import { datosScorecard } from "../scorecardDatos";
 import { lunesDe } from "../corteSemanal";
@@ -36,7 +37,7 @@ const HERRAMIENTAS: Anthropic.Tool[] = [
 async function ejecutar(nombre: string, i: Record<string, unknown>): Promise<unknown> {
   if (nombre === "salidas") {
     const { desde, hasta } = rango(i);
-    return (await salidasEntre(desde, hasta)).map(s => ({ fecha: s.fecha, tour: s.tourNombre, personas: s.personas, reservas: s.pasajeros.length, guia: s.registro.guia || null, bajoMinimo: s.estadoPax === "bajo-minimo", aMedida: s.aMedida }));
+    return (await salidasEntre(desde, hasta)).map(s => ({ fecha: s.fecha, tour: s.tourNombre, personas: s.personas, reservas: s.pasajeros.length, guia: s.registro.guia || null, bajoMinimo: bajoMinimoRentable(s), noLlegaAlMinimo: s.estadoPax === "no-llega", aMedida: s.aMedida }));
   }
   if (nombre === "reservas") {
     const { desde, hasta } = rango(i);

@@ -983,6 +983,14 @@ model Salida {
   /// causa, accion, por, en }] — ver `lib/admin/incidencias.ts`. El guía también anota.
   incidencias Json?
   notas     String?
+  /// Los folios de sus reservas al último guardado (lote 6, 10 nov 2026): si la
+  /// clave cambia (se renombró el tour a medida, cambió el vehículo del RZR),
+  /// el registro se reconoce por sus reservas y no se pierde. Lista de textos.
+  folios    Json?
+  /// Sube en cada guardado (lote 6, 10 nov 2026): el checklist y las
+  /// incidencias se escriben solo si nadie guardó en medio; si alguien sí, se
+  /// vuelve a leer y se aplica encima. Opcional a propósito (db push).
+  version   Int?     @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

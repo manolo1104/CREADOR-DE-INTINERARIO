@@ -348,10 +348,10 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
 
       {vista === "salidas" && (
         <p className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] font-dm text-[#1B4332]/60">
-          {(["en-meta", "bajo-minimo", "lleno"] as EstadoSalida[]).map(e => (
-            <span key={e} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: COLOR_ESTADO[e] }} aria-hidden="true" />{ETIQUETA_ESTADO_SALIDA[e]}{e === "en-meta" ? ": 3 pax o más" : e === "bajo-minimo" ? ": 2 o menos" : ""}</span>
+          {(["en-meta", "bajo-minimo", "no-llega", "lleno"] as EstadoSalida[]).map(e => (
+            <span key={e} className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm" style={{ background: COLOR_ESTADO[e] }} aria-hidden="true" />{ETIQUETA_ESTADO_SALIDA[e]}{e === "en-meta" ? ": 3 pax o más" : e === "bajo-minimo" ? ": 2 o menos (rentabilidad)" : e === "no-llega" ? ": menos que el mínimo del tour (rafting 5, rappel 4); así no corre" : ""}</span>
           ))}
-          <span>RZR, buceo y salidas a medida no llevan meta.</span>
+          <span>RZR, buceo, salidas a medida y el Edén (privada) no llevan meta.</span>
         </p>
       )}
 
@@ -552,7 +552,7 @@ function CupoDelDia({ dia }: { dia?: CupoDeTourEnDia[] }) {
 // ── Salidas agrupadas (PR 1.2) ──────────────────────────────────────────────
 
 const COLOR_ESTADO: Record<EstadoSalida, string> = {
-  "en-meta": "#2E6B45", "bajo-minimo": "#8A5A00", lleno: "#1C1C1A", "a-medida": "#66655F",
+  "en-meta": "#2E6B45", "bajo-minimo": "#8A5A00", "no-llega": "#A33A26", lleno: "#1C1C1A", "a-medida": "#66655F", privada: "#66655F",
 };
 
 /** Un dato del resumen del mes. */
@@ -592,7 +592,7 @@ function CeldaSalidas({ salidas, cupoDe }: { salidas: SalidaAgrupada[]; cupoDe: 
               </span>
             )}
             <span className="block truncate">{sa.clientes.map(c => c.split(" ")[0]).join(", ")}{sa.reservas > 1 ? ` (${sa.reservas})` : ""}</span>
-            {estado !== "a-medida" && <span className="block font-semibold" style={{ color: COLOR_ESTADO[estado] }}>{ETIQUETA_ESTADO_SALIDA[estado]}</span>}
+            {estado !== "a-medida" && estado !== "privada" && <span className="block font-semibold" style={{ color: COLOR_ESTADO[estado] }}>{ETIQUETA_ESTADO_SALIDA[estado]}</span>}
           </Link>
         );
       })}

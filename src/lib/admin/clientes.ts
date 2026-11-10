@@ -101,7 +101,8 @@ export function agruparClientes(bookings: TourBooking[]): Cliente[] {
 
 export async function getClientes(): Promise<Cliente[]> {
   const bookings = await prisma.tourBooking.findMany({
-    where: { status: { not: "cancelled" } },
+    // Sin los «borrador» del bot viejo: quien solo pidió precio no es cliente (lote 6, 10 nov 2026).
+    where: { status: { notIn: ["cancelled", "borrador"] } },
     orderBy: { createdAt: "desc" },
     include: { encuesta: true },
   });

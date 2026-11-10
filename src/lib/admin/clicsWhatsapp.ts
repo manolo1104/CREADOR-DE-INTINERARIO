@@ -65,7 +65,7 @@ export async function contarClicsWhatsapp(): Promise<ClicsWhatsapp> {
   }
 
   const reservas = await prisma.tourBooking.count({
-    where: { createdAt: { gte: hace30 }, status: { not: "cancelled" } },
+    where: { createdAt: { gte: hace30 }, status: { notIn: ["cancelled", "borrador"] } },
   });
 
   const dias: { dia: string; clics: number }[] = [];

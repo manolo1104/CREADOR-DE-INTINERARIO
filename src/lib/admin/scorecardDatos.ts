@@ -7,7 +7,8 @@ import { domingoDe, etiquetaSemana } from "./corteSemanal";
 import { montoCobrado, saldoPendiente } from "./dinero";
 import { mensajesParaKpi } from "./bandejaDatos";
 import { primerMensajeEn5 } from "./bandeja";
-import { diasDeTourDe } from "./salidas";
+import { bajoMinimoRentable, diasDeTourDe } from "./salidas";
+import { NO_CUENTAN } from "@/lib/cupoTour";
 import { salidasEntre, type SalidaOperativa } from "./salidasDia";
 import { avanceChecklist } from "./checklistSalida";
 import { historialGoogle } from "./satisfaccion";
@@ -69,16 +70,16 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
     salidasEntre(manana, manana).catch(() => []),
   ]);
   const [creadas, delMes, cotizaciones, enTour, revisionRaw, google, salidas, salidasHoy, enviadas, vivas] = await Promise.all([
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }),
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, createdAt: { gte: inicioMX(mesIni), lte: finMX(mesFin) } }, select: { totalAmount: true } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN }, createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN }, createdAt: { gte: inicioMX(mesIni), lte: finMX(mesFin) } }, select: { totalAmount: true } }),
     prisma.tourQuote.findMany({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) }, status: { not: "archivada" } }, select: { customerEmail: true, customerPhone: true } }),
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" }, tourDate: { gte: addDaysYMD(lunes, -21), lte: addDaysYMD(domingo, 21) } } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN }, tourDate: { gte: addDaysYMD(lunes, -21), lte: addDaysYMD(domingo, 21) } } }),
     prisma.revisionSemanal.findUnique({ where: { semana: lunes } }).catch(() => null),
     historialGoogle().catch(() => []),
     salidasEntre(lunes, domingo),
     salidasEntre(hoy, hoy),
     prisma.tourQuote.findMany({ where: { status: "enviada" } }),
-    prisma.tourBooking.findMany({ where: { status: { not: "cancelled" } }, select: { totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true, tourDate: true, tourSlug: true, tourName: true, adults: true, children: true, lineItems: true, confirmationNumber: true } }),
+    prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN } }, select: { totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true, tourDate: true, tourSlug: true, tourName: true, adults: true, children: true, lineItems: true, confirmationNumber: true } }),
   ]);
 
   const cotizados = new Set(cotizaciones.map(q => (q.customerPhone || q.customerEmail || "").trim().toLowerCase()).filter(Boolean)).size;
@@ -139,7 +140,11 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
     const av = avanceChecklist(s.checklist);
     pendientes.push({ tipo: "salida", tono: s.registro.guia ? "neutro" : "atencion", href: `/admin/salidas-dia/${encodeURIComponent(s.clave)}`, titulo: `Mañana · ${s.tourNombre} · ${s.personas} pax`, detalle: `Checklist ${av.hechos} de ${av.total}${s.registro.guia ? ` · guía ${s.registro.guia}` : " · sin guía asignado"}` });
   }
-  const bajo = salidas.filter(s => s.estadoPax === "bajo-minimo" && s.fecha >= hoy);
+  // Lote 6 (10 nov 2026): primero las que no llegan al mínimo del TOUR (así no
+  // corren); aparte, las de 2 o menos (solo rentabilidad). Las operadas ya pasaron.
+  const noLlegan = salidas.filter(s => s.estadoPax === "no-llega" && s.fecha >= hoy && s.registro.estado !== "operada");
+  if (noLlegan.length) pendientes.push({ tipo: "bajo-minimo", tono: "problema", href: "/admin/seguimientos", titulo: `${noLlegan.length} salida${noLlegan.length === 1 ? " no llega" : "s no llegan"} al mínimo del tour esta semana`, detalle: noLlegan.map(s => `${s.codigo} ${s.fecha.slice(8)}/${s.fecha.slice(5, 7)}: ${s.personas} de ${s.minimo}`).join(" · ") + " — confirmar que corre, juntar o reembolsar" });
+  const bajo = salidas.filter(s => bajoMinimoRentable(s) && s.estadoPax !== "no-llega" && s.fecha >= hoy && s.registro.estado !== "operada");
   if (bajo.length) pendientes.push({ tipo: "bajo-minimo", tono: "atencion", href: "/admin/calendario", titulo: `${bajo.length} salida${bajo.length === 1 ? "" : "s"} con 2 personas o menos esta semana`, detalle: "Conviene llenarlas o juntarlas: con 2 el margen cae" });
 
   return {

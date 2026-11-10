@@ -4,7 +4,7 @@ import { limpiarIncidencias, type Incidencia } from "./incidencias";
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD } from "@/lib/dates";
 import { TOURS_DB, partesRecogida, tourDurTexto } from "@/lib/tours";
-import { cupoDeTour } from "@/lib/cupoTour";
+import { MARGEN_DIAS, NO_CUENTAN, cupoDeTour } from "@/lib/cupoTour";
 import { origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import { conceptosDe, type ConceptoCosto } from "./costos";
 import { saldoPendiente } from "./dinero";
@@ -12,7 +12,9 @@ import { claveTarjeta, costosDelCorte, type CostoDelCorte } from "./costosReales
 import { hospedajeDeReserva } from "./hospedaje";
 import { checklistDe, type ItemChecklist } from "./checklistSalida";
 import {
-  agruparSalidas, diasEnRango, estadoDeSalida, numerosDeSalida, type EstadoSalida, type NumerosSalida, type SalidaAgrupada,
+  agruparSalidas, claveDeSalida, diasDeTourDe, diasEnRango, emparejarRegistros, esAMedida, esPrivadaDeCatalogo, estadoDeSalida,
+  guiaDeSalida, minimoDelTour, numerosDeSalida, pagoEnSalida, salidaCancelada,
+  type EstadoSalida, type NumerosSalida, type PagoPasajero, type SalidaAgrupada,
 } from "./salidas";
 
 export interface Pasajero {
@@ -21,9 +23,14 @@ export interface Pasajero {
   cliente: string;
   personas: number;
   canal: OrigenReserva;
-  /** pagado: sin saldo · ota: lo cobra la plataforma · saldo: se cobra en sitio */
-  pago: "pagado" | "ota" | "saldo";
+  /**
+   * pagado: sin saldo · ota: lo cobra la plataforma · saldo: se cobra en sitio
+   * · saldo-otro-dia: debe, pero se cobra el primer día del viaje (`primerDia`).
+   */
+  pago: PagoPasajero;
   saldo: number;
+  /** El primer día de su viaje (YYYY-MM-DD): ahí se cobra el saldo. */
+  primerDia: string;
   telefono: string;
   hospedaje: string | null;
   notas: string;
@@ -56,8 +63,15 @@ export interface ProtocoloSalida {
 export interface SalidaOperativa extends SalidaAgrupada {
   tourNombre: string;
   cupo: number | null;
+  /** El mínimo para que el tour corra (`groupMin` de 3 o más), o null (lote 6). */
+  minimo: number | null;
   estadoPax: EstadoSalida;
+  /** `registro.guia` es el de la salida o, si no tiene, el común de sus reservas (lote 6). */
   registro: RegistroSalida;
+  /** true = el guía viene de las reservas, no se ha guardado en la salida. */
+  guiaDeReservas: boolean;
+  /** Las reservas traen otro guía o varios distintos. */
+  avisoGuia: string | null;
   checklist: ItemChecklist[];
   /** Bitácora de incidencias de la salida (4 nov 2026). */
   incidencias: Incidencia[];
@@ -79,20 +93,51 @@ export interface SalidaOperativa extends SalidaAgrupada {
 
 const REGISTRO_VACIO: RegistroSalida = { tipo: "fija", guia: "", vehiculo: "", estado: "programada", notas: "" };
 
-/** Las salidas (tour + día) con todo lo que hace falta para operarlas, entre dos fechas inclusive. */
-export async function salidasEntre(desde: string, hasta: string): Promise<SalidaOperativa[]> {
-  // `tourDate` es solo el primer tour de la reserva; los días reales viven en
-  // `lineItems`. Se busca con margen y abajo se filtra renglón por renglón.
-  const reservas = await prisma.tourBooking.findMany({
-    where: { status: { not: "cancelled" }, tourDate: { gte: addDaysYMD(desde, -21), lte: addDaysYMD(hasta, 21) } },
+/**
+ * Las reservas que pueden tener un tour entre dos fechas. 🔴 `tourDate` es
+ * solo el PRIMER tour de un carrito; los demás pueden caer hasta seis meses
+ * después (lo que deja elegir el calendario). Con ±21 días, el 2.º tour de un
+ * carrito con fechas separadas no salía en Salidas del día (lote 6, 10 nov
+ * 2026): mismo margen que el cupo (`MARGEN_DIAS`). Y sin los «borrador» del bot
+ * viejo, que eran cotizaciones sin pago: el mismo criterio que el corte.
+ */
+function reservasEntre(desde: string, hasta: string) {
+  return prisma.tourBooking.findMany({
+    where: {
+      status: { notIn: NO_CUENTAN },
+      OR: [{ tourDate: { gte: addDaysYMD(desde, -MARGEN_DIAS), lte: addDaysYMD(hasta, MARGEN_DIAS) } }, { tourDate: "" }],
+    },
     orderBy: { tourDate: "asc" },
   });
+}
+
+/** Las reservas vivas de una salida (lote 6): para escribirles el guía y para reconocer su registro si cambia la clave. */
+export async function reservasDeSalida(clave: string): Promise<{ id: string; folio: string; guia: string | null }[]> {
+  const fecha = clave.slice(0, 10);
+  const reservas = await reservasEntre(fecha, fecha);
+  const folios = new Set(diasEnRango(reservas, fecha, fecha).filter(d => claveDeSalida(d) === clave).map(d => d.folio));
+  return reservas.filter(r => folios.has(r.confirmationNumber)).map(r => ({ id: r.id, folio: r.confirmationNumber, guia: r.guia }));
+}
+
+/**
+ * Las salidas (tour + día) con todo lo que hace falta para operarlas, entre dos
+ * fechas inclusive. Las marcadas «Cancelada» no salen (lote 6, 10 nov 2026):
+ * ni en Inicio, ni en el correo de las 7:30, ni en los KPIs; quien necesite
+ * verlas (la lista del día, la ficha) pide `conCanceladas`.
+ */
+export async function salidasEntre(desde: string, hasta: string, opciones: { conCanceladas?: boolean } = {}): Promise<SalidaOperativa[]> {
+  // `tourDate` es solo el primer tour de la reserva; los días reales viven en
+  // `lineItems`. Se busca con margen y abajo se filtra renglón por renglón.
+  const reservas = await reservasEntre(desde, hasta);
   const dias = diasEnRango(reservas, desde, hasta);
   const salidas = agruparSalidas(dias);
   if (salidas.length === 0) return [];
   const slugs = Array.from(new Set(salidas.map(s => s.slug)));
-  const [registros, costos, rutas, corte] = await Promise.all([
-    prisma.salida.findMany({ where: { clave: { in: salidas.map(s => s.clave) } } }).catch(() => []),
+  const fechas = Array.from(new Set(salidas.map(s => s.fecha)));
+  const slugsAMedida = slugs.filter(esAMedida);
+  const [registrosLeidos, costos, rutas, corte] = await Promise.all([
+    // Con su clave y, por si la clave cambió, los del mismo día de los tours a medida (lote 6).
+    prisma.salida.findMany({ where: { OR: [{ clave: { in: salidas.map(s => s.clave) } }, ...(slugsAMedida.length ? [{ fecha: { in: fechas }, tourSlug: { in: slugsAMedida } }] : [])] } }).catch(() => []),
     prisma.tourCosto.findMany({ where: { tourSlug: { in: slugs } } }),
     prisma.rutaTour.findMany({ where: { tourSlug: { in: slugs } } }).catch(() => []),
     costosDelCorte(desde, hasta).catch(e => { console.error("costos del corte:", (e as Error)?.message); return new Map<string, CostoDelCorte>(); }),
@@ -109,20 +154,37 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
     };
   };
   const porFolio = new Map(reservas.map(r => [r.confirmationNumber, r]));
+  // El primer día del viaje de cada reserva: el saldo se cobra solo ahí (lote 6).
+  const primerDiaDe = new Map<string, string>();
+  for (const r of reservas) primerDiaDe.set(r.confirmationNumber, diasDeTourDe(r).map(d => d.fecha).filter(Boolean).sort()[0] ?? r.tourDate);
+  // El registro de cada salida, aunque su clave haya cambiado (lote 6). El que
+  // se reconoce por sus reservas se pasa a la clave nueva (y sus seguimientos
+  // con él): así lo encuentra el siguiente guardado.
+  const registroDe = emparejarRegistros(salidas, registrosLeidos);
+  for (const s of salidas) {
+    const r = registroDe.get(s.clave);
+    if (!r || r.clave === s.clave) continue;
+    const vieja = r.clave;
+    await prisma.salida.updateMany({ where: { id: r.id, clave: vieja }, data: { clave: s.clave, folios: s.folios } })
+      .then(() => prisma.tarea.updateMany({ where: { salidaClave: vieja }, data: { salidaClave: s.clave } }))
+      .catch(e => console.error("registro de salida (clave nueva):", (e as Error)?.message));
+  }
 
-  return salidas.map(s => {
+  const todas = salidas.map(s => {
     const tour = TOURS_DB.find(t => t.slug === s.slug) ?? null;
-    const reg = registros.find(r => r.clave === s.clave);
+    const reg = registroDe.get(s.clave);
     const conceptos = conceptosDe(costos.find(c => c.tourSlug === s.slug)?.conceptos);
+    // Un pasajero por reserva: `diasDeTourDe` ya junta los renglones del mismo tour ese día (lote 6).
     const pasajeros: Pasajero[] = dias
-      .filter(d => s.folios.includes(d.folio) && d.fecha === s.fecha && d.slug === s.slug && (!s.aMedida || d.nombre.trim().toLowerCase() === s.nombre.trim().toLowerCase()))
+      .filter(d => d.fecha === s.fecha && s.folios.includes(d.folio) && claveDeSalida(d) === s.clave)
       .map(d => {
         const b = porFolio.get(d.folio)!;
         const saldo = saldoPendiente(b);
         const canal = origenValido(b.origen);
+        const primerDia = primerDiaDe.get(d.folio) ?? d.fecha;
         return {
           bookingId: b.id, folio: b.confirmationNumber, cliente: b.customerName, personas: d.personas, canal,
-          pago: saldo === 0 ? "pagado" : canal === "ota" ? "ota" : "saldo", saldo,
+          pago: pagoEnSalida({ saldo, canal, fecha: d.fecha, primerDia }), saldo, primerDia,
           telefono: b.customerPhone ?? "", hospedaje: hospedajeDeReserva(b), notas: b.notes ?? "",
           idioma: b.idiomaTour ?? "es", monto: d.monto,
         };
@@ -143,14 +205,20 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
     const cupo = tour ? cupoDeTour(tour) : null;
     const precioPorPax = tour && tour.precioUnidad !== "vehiculo" && tour.precioUnidad !== "grupo" ? tour.precio : 0;
     const p = tour ? partesRecogida(tour, false) : null;
+    const guia = guiaDeSalida(reg?.guia, pasajeros.map(x => ({ folio: x.folio, guia: porFolio.get(x.folio)?.guia })));
+    // El Edén es privada aunque nadie lo haya marcado (lote 6).
+    const base = reg
+      ? { tipo: reg.tipo, guia: reg.guia ?? "", vehiculo: reg.vehiculo ?? "", estado: reg.estado, notas: reg.notas ?? "" }
+      : { ...REGISTRO_VACIO, tipo: esPrivadaDeCatalogo(s.slug) ? "privada" : REGISTRO_VACIO.tipo };
     return {
       ...s,
       tourNombre: tour?.nombre ?? s.nombre,
       cupo,
+      minimo: minimoDelTour(s.slug),
       estadoPax: estadoDeSalida(s, cupo),
-      registro: reg
-        ? { tipo: reg.tipo, guia: reg.guia ?? "", vehiculo: reg.vehiculo ?? "", estado: reg.estado, notas: reg.notas ?? "" }
-        : REGISTRO_VACIO,
+      registro: { ...base, guia: guia.guia },
+      guiaDeReservas: guia.deReservas,
+      avisoGuia: guia.aviso,
       checklist: checklistDe(s.slug, reg?.checklist),
       incidencias: limpiarIncidencias((reg as { incidencias?: unknown } | undefined)?.incidencias),
       conceptos,
@@ -166,12 +234,13 @@ export async function salidasEntre(desde: string, hasta: string): Promise<Salida
       pasajeros,
     };
   });
+  return opciones.conCanceladas ? todas : todas.filter(s => !salidaCancelada(s.registro.estado));
 }
 
-/** Una salida por su clave ("YYYY-MM-DD|slug[|nombre]"). */
+/** Una salida por su clave ("YYYY-MM-DD|slug[|nombre]"), aunque esté cancelada (para poder reabrirla). */
 export async function salidaPorClave(clave: string): Promise<SalidaOperativa | null> {
   const fecha = clave.slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return null;
-  const todas = await salidasEntre(fecha, fecha);
+  const todas = await salidasEntre(fecha, fecha, { conCanceladas: true });
   return todas.find(s => s.clave === clave) ?? null;
 }

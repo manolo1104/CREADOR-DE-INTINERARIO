@@ -72,7 +72,7 @@ export const RANGO_MAX_DIAS = 190;
  * después (es lo que deja elegir el calendario). Sin margen, el segundo
  * recorrido de un carrito no se contaría en su día.
  */
-const MARGEN_DIAS = 200;
+export const MARGEN_DIAS = 200;
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
