@@ -6,7 +6,7 @@ import { hoyMX } from "@/lib/dates";
 import { registrarEnBitacora } from "./bitacora";
 import { checklistDe, type ItemChecklist } from "./checklistSalida";
 import { limpiarIncidencias, type Incidencia } from "./incidencias";
-import { esPrivadaDeCatalogo, guiaDeSalida, salidaCancelada } from "./salidas";
+import { esPrivadaDeCatalogo, guiaDeSalida, reservasQueTomanElGuia, salidaCancelada } from "./salidas";
 import { reservasDeSalida, type RegistroSalida } from "./salidasDia";
 import { aplicarAlRegistro } from "./registroSalida";
 import { tareaSalidaCancelada } from "./automatizaciones";
@@ -49,6 +49,7 @@ export async function guardarRegistroSalida(
 
   let s: Awaited<ReturnType<typeof prisma.salida.findUnique>> = null;
   let previoEstado: string | null = null;
+  let previoGuia: string | null = null;
   let aplicado: Exclude<ReturnType<typeof aplicarAlRegistro>, { error: string }> | null = null;
   for (let intento = 0; intento < INTENTOS && !s; intento++) {
     if (intento > 0) await esperar(intento);
@@ -57,6 +58,7 @@ export async function guardarRegistroSalida(
     if ("error" in r) return { ok: false, error: r.error, status: r.status };
     aplicado = r;
     previoEstado = previo?.estado ?? null;
+    previoGuia = previo?.guia ?? null;
     // Las reservas de hoy, para reconocer el registro si mañana cambia su clave.
     const data: Record<string, unknown> = { ...r.data, ...(folios.length ? { folios } : {}) };
     if (!previo) {
@@ -80,12 +82,15 @@ export async function guardarRegistroSalida(
   if (!s || !aplicado) return { ok: false, error: "Alguien más guardó esta salida al mismo tiempo. Vuelve a intentarlo.", status: 409 };
 
   // Un solo guía: lo asignado aquí queda también en sus reservas (Calendario, Reservas, PDF).
+  // Las de un viaje de varios días que traen otro guía no se tocan: es el de
+  // sus otros días (revisión 10 nov 2026, `reservasQueTomanElGuia`).
   const guiaNueva = aplicado.data.guia;
-  if (guiaNueva !== undefined && reservas.length) {
-    await prisma.tourBooking.updateMany({ where: { id: { in: reservas.map(r => r.id) } }, data: { guia: (guiaNueva as string | null) ?? null } })
+  const toman = guiaNueva !== undefined ? reservasQueTomanElGuia(reservas, previoGuia) : [];
+  if (toman.length) {
+    await prisma.tourBooking.updateMany({ where: { id: { in: toman.map(r => r.id) } }, data: { guia: (guiaNueva as string | null) ?? null } })
       .catch(e => console.error("guía en las reservas:", (e as Error)?.message));
   }
-  const guiasReservas = reservas.map(r => ({ folio: r.folio, guia: guiaNueva !== undefined ? (guiaNueva as string | null) : r.guia }));
+  const guiasReservas = reservas.map(r => ({ folio: r.folio, guia: toman.includes(r) ? (guiaNueva as string | null) : r.guia, otrosDias: r.otrosDias }));
 
   // Cancelada con reservas vivas: no se bloquea nada, se deja el seguimiento (regla 8 del plan).
   if (aplicado.data.estado !== undefined && salidaCancelada(String(aplicado.data.estado)) && !salidaCancelada(previoEstado)) {
@@ -103,7 +108,7 @@ export async function guardarRegistroSalida(
     accion: "modificó", entidad: "salida", referencia: clave,
     resumen: `Salida ${tourSlug} del ${fecha}: ${[
       ...cambios,
-      ...(guiaNueva !== undefined && reservas.length ? [`guía también en ${folios.join(", ")}`] : []),
+      ...(toman.length ? [`guía también en ${toman.map(r => r.folio).join(", ")}`] : []),
       ...(aplicado.checklist ? ["checklist"] : []),
       ...(aplicado.incidencia ? [`incidencia ${aplicado.incidencia}`] : []),
     ].join(", ") || "sin cambios"}`,
@@ -124,10 +129,17 @@ export async function guardarRegistroSalida(
  * El guía que se asigna en una reserva se refleja en sus salidas (lote 6, 10
  * nov 2026): Salidas del día, Inicio y el correo de las 7:30 dicen el mismo que
  * Reservas y el Calendario. Solo las salidas que ya tienen registro; las demás
- * lo toman solas de la reserva. No lanza.
+ * lo toman solas de la reserva. Solo de hoy en adelante (lo de días pasados es
+ * historia) y sin pisar el guía propio de una salida. No lanza.
  */
-export async function reflejarGuiaEnSalidas(claves: string[], guia: string | null): Promise<void> {
+export async function reflejarGuiaEnSalidas(claves: string[], guia: string | null, anterior: string | null = null): Promise<void> {
   if (!claves.length) return;
-  await prisma.salida.updateMany({ where: { clave: { in: claves } }, data: { guia: (guia ?? "").trim() || null } })
-    .catch(e => console.error("guía en las salidas:", (e as Error)?.message));
+  // 🔴 Solo las salidas sin guía o con el que tenía la reserva (revisión 10 nov
+  // 2026): una salida con guía propio (otro día del viaje, u otra reserva que
+  // comparte la camioneta) no se pisa; si no coincide, la salida lo avisa.
+  const ant = (anterior ?? "").trim();
+  await prisma.salida.updateMany({
+    where: { clave: { in: claves }, OR: [{ guia: null }, { guia: "" }, ...(ant ? [{ guia: { equals: ant, mode: "insensitive" as const } }] : [])] },
+    data: { guia: (guia ?? "").trim() || null },
+  }).catch(e => console.error("guía en las salidas:", (e as Error)?.message));
 }

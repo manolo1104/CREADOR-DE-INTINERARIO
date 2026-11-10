@@ -12,7 +12,7 @@ import { grupoDe } from "@/lib/admin/reserva";
 import { bajoMinimoRentable, diasDeTourDe, salidaYaOperada } from "@/lib/admin/salidas";
 import { salidasEntre } from "@/lib/admin/salidasDia";
 import { PRIMERA_SEMANA_CORTE } from "@/lib/admin/corteSemanal";
-import { limpiarIncidencias, type Incidencia } from "@/lib/admin/incidencias";
+import type { Incidencia } from "@/lib/admin/incidencias";
 import { finMX, inicioMX, lunesDeFecha } from "./periodo";
 import { NO_CUENTAN, enPeriodo, r1, serie, sinDato, tasa } from "./util";
 import type { Periodo, PuntoSerie, ValorKpi } from "./tipos";
@@ -145,9 +145,10 @@ export function calcularOperacion(d: DatosOperacion, p: Periodo, periodos: Perio
 export async function cargarOperacion(periodos: Periodo[], hoy: string): Promise<DatosOperacion> {
   const desde = periodos[0].desde, hasta = periodos[periodos.length - 1].hasta;
   const hastaSalidas = hasta > addDaysYMD(hoy, 14) ? hasta : addDaysYMD(hoy, 14);
-  const [salidas, registros, cortes, bitacora, reservas] = await Promise.all([
+  // Las incidencias salen de la misma salida (`s.incidencias`), ya con su
+  // registro aunque haya cambiado de clave (revisión del lote 6, 10 nov 2026).
+  const [salidas, cortes, bitacora, reservas] = await Promise.all([
     salidasEntre(desde, hastaSalidas),
-    prisma.salida.findMany({ where: { fecha: { gte: desde, lte: hastaSalidas } }, select: { clave: true, incidencias: true } }).catch(() => []),
     prisma.corteSemanal.findMany({ where: { semana: { gte: addDaysYMD(desde, -6), lte: hasta } }, select: { semana: true, ventas: true, utilidad: true, estado: true } }).catch(() => []),
     prisma.bitacora.findMany({ where: { entidad: "corte", createdAt: { gte: inicioMX(addDaysYMD(desde, -7)) } }, select: { createdAt: true, referencia: true, resumen: true }, orderBy: { createdAt: "asc" } }).catch(() => []),
     prisma.tourBooking.findMany({
@@ -155,7 +156,6 @@ export async function cargarOperacion(periodos: Periodo[], hoy: string): Promise
       select: { createdAt: true, adults: true, children: true, tourSlug: true, tourName: true, tourDate: true, totalAmount: true, lineItems: true, confirmationNumber: true },
     }),
   ]);
-  const incPor = new Map(registros.map(r => [r.clave, limpiarIncidencias(r.incidencias)]));
   const primerCierre: Record<string, number> = {};
   for (const b of bitacora) {
     // «Corte semanal …» = se hizo el corte; «Costos del corte … (borrador)» no cuenta.
@@ -167,7 +167,7 @@ export async function cargarOperacion(periodos: Periodo[], hoy: string): Promise
       clave: s.clave, fecha: s.fecha, codigo: s.codigo, tourNombre: s.aMedida ? s.nombre || s.tourNombre : s.tourNombre, personas: s.personas, aMedida: s.aMedida,
       // Las canceladas ya no llegan aquí (`salidasEntre`); bajo mínimo = 2 o menos aunque tampoco llegue al del tour.
       bajoMinimo: bajoMinimoRentable(s), noLlega: s.estadoPax === "no-llega", minimo: s.minimo, estado: s.registro.estado,
-      checklist: avanceChecklist(s.checklist), incidencias: incPor.get(s.clave) ?? [],
+      checklist: avanceChecklist(s.checklist), incidencias: s.incidencias,
     })),
     cortes, primerCierre,
     reservas: reservas.map(b => ({

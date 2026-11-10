@@ -7,7 +7,8 @@ import { permisosDeTodos } from "@/lib/admin/permisos";
 import DashboardClient from "./DashboardClient";
 import { datosScorecard, type DatosScorecard } from "@/lib/admin/scorecardDatos";
 import { lunesDe } from "@/lib/admin/corteSemanal";
-import { NO_CUENTAN } from "@/lib/cupoTour";
+import { MARGEN_DIAS, NO_CUENTAN } from "@/lib/cupoTour";
+import { primerDiaVivoEntre } from "@/lib/admin/salidas";
 
 export const dynamic = "force-dynamic";
 
@@ -27,15 +28,19 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
   // 🔴 Sin los «borrador» del bot viejo: eran cotizaciones sin pago y salían
   // como reservas de hoy, ventas del mes y «pendiente de cobro». Mismo criterio
   // que el corte (`NO_CUENTAN`, lote 6, 10 nov 2026).
-  const [todayBookings, upcomingBookings, recentBookings, pendingQuotes, monthBookings, allPending, activeQuotesCount] = await Promise.all([
+  // 🔴 «Tours de hoy» y «Próximos 7 días» por los días de tour de cada reserva,
+  // no por `tourDate` (solo el primer tour del carrito), y sin los de una
+  // salida marcada «Cancelada» (revisión del lote 6, 10 nov 2026). Mismo
+  // margen que Salidas del día y el cupo.
+  const [cercanas, canceladas, recentBookings, pendingQuotes, monthBookings, allPending, activeQuotesCount] = await Promise.all([
     prisma.tourBooking.findMany({
-      where: { tourDate: todayStr, status: { notIn: NO_CUENTAN } },
+      where: {
+        status: { notIn: NO_CUENTAN },
+        OR: [{ tourDate: { gte: addDaysYMD(todayStr, -MARGEN_DIAS), lte: addDaysYMD(nextWeek, MARGEN_DIAS) } }, { tourDate: "" }],
+      },
       orderBy: { createdAt: "desc" },
     }),
-    prisma.tourBooking.findMany({
-      where: { tourDate: { gt: todayStr, lte: nextWeek }, status: { notIn: NO_CUENTAN } },
-      orderBy: { tourDate: "asc" },
-    }),
+    prisma.salida.findMany({ where: { estado: "cancelada", fecha: { gte: todayStr, lte: nextWeek } }, select: { clave: true } }).catch(() => []),
     prisma.tourBooking.findMany({ where: { status: { not: "borrador" } }, orderBy: { createdAt: "desc" }, take: 6 }),
     // Activas = enviadas (incluye las «por vencer»). Los borradores NO: 106
     // borradores, 101 de antes de octubre, inflaban el número (3 nov 2026).
@@ -55,6 +60,14 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
     // dijera siempre "5" aunque hubiera decenas abiertas.
     prisma.tourQuote.count({ where: { status: "enviada" } }),
   ]);
+  const sinCanceladas = new Set(canceladas.map(c => c.clave));
+  const todayBookings = cercanas.filter(b => primerDiaVivoEntre(b, todayStr, todayStr, sinCanceladas) !== null);
+  // La fecha del recuadro es la de SU próximo tour en la semana (puede ser el 2.º del carrito).
+  const upcomingBookings = cercanas
+    .map(b => ({ b, dia: primerDiaVivoEntre(b, addDaysYMD(todayStr, 1), nextWeek, sinCanceladas) }))
+    .filter((x): x is { b: (typeof cercanas)[number]; dia: string } => x.dia !== null)
+    .sort((x, y) => x.dia.localeCompare(y.dia))
+    .map(x => ({ ...x.b, tourDate: x.dia }));
   // Inicio es solo de Manolo: desde aquí decide qué pestañas ve cada quien.
   const personas = sesion?.rol === "dueno" ? (await permisosDeTodos()).filter(p => p.rol !== "dueno") : [];
 

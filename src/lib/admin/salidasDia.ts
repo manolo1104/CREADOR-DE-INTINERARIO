@@ -11,6 +11,7 @@ import { saldoPendiente } from "./dinero";
 import { claveTarjeta, costosDelCorte, type CostoDelCorte } from "./costosReales";
 import { hospedajeDeReserva } from "./hospedaje";
 import { checklistDe, type ItemChecklist } from "./checklistSalida";
+import { claveReglaConSalidaNueva } from "./automatizaciones";
 import {
   agruparSalidas, claveDeSalida, diasDeTourDe, diasEnRango, emparejarRegistros, esAMedida, esPrivadaDeCatalogo, estadoDeSalida,
   guiaDeSalida, minimoDelTour, numerosDeSalida, pagoEnSalida, salidaCancelada,
@@ -112,11 +113,29 @@ function reservasEntre(desde: string, hasta: string) {
 }
 
 /** Las reservas vivas de una salida (lote 6): para escribirles el guía y para reconocer su registro si cambia la clave. */
-export async function reservasDeSalida(clave: string): Promise<{ id: string; folio: string; guia: string | null }[]> {
+export async function reservasDeSalida(clave: string): Promise<{ id: string; folio: string; guia: string | null; otrosDias: boolean }[]> {
   const fecha = clave.slice(0, 10);
   const reservas = await reservasEntre(fecha, fecha);
   const folios = new Set(diasEnRango(reservas, fecha, fecha).filter(d => claveDeSalida(d) === clave).map(d => d.folio));
-  return reservas.filter(r => folios.has(r.confirmationNumber)).map(r => ({ id: r.id, folio: r.confirmationNumber, guia: r.guia }));
+  return reservas.filter(r => folios.has(r.confirmationNumber)).map(r => ({ id: r.id, folio: r.confirmationNumber, guia: r.guia, otrosDias: tieneOtrosDias(r, clave) }));
+}
+
+/** ¿La reserva tiene tours en otras salidas (otro día u otro tour)? Su guía es de todo el viaje (revisión 10 nov 2026). */
+const tieneOtrosDias = (r: Parameters<typeof diasDeTourDe>[0], clave: string) => diasDeTourDe(r).some(d => claveDeSalida(d) !== clave);
+
+/**
+ * Pasa los seguimientos de una salida a su clave nueva, con su `claveRegla`
+ * (revisión 10 nov 2026): si no, la regla de 48 h o la del mínimo volvían a
+ * crear la misma tarea con la clave nueva y salía dos veces. No lanza.
+ */
+async function moverSeguimientos(vieja: string, nueva: string): Promise<void> {
+  const tareas = await prisma.tarea.findMany({ where: { salidaClave: vieja }, select: { id: true, claveRegla: true } });
+  for (const t of tareas) {
+    const claveRegla = claveReglaConSalidaNueva(t.claveRegla, vieja, nueva);
+    await prisma.tarea.update({ where: { id: t.id }, data: { salidaClave: nueva, ...(claveRegla !== t.claveRegla ? { claveRegla } : {}) } })
+      // Ya hay una con la clave nueva (se creó antes del cambio): solo se mueve la salida.
+      .catch(() => prisma.tarea.update({ where: { id: t.id }, data: { salidaClave: nueva } }));
+  }
 }
 
 /**
@@ -166,7 +185,7 @@ export async function salidasEntre(desde: string, hasta: string, opciones: { con
     if (!r || r.clave === s.clave) continue;
     const vieja = r.clave;
     await prisma.salida.updateMany({ where: { id: r.id, clave: vieja }, data: { clave: s.clave, folios: s.folios } })
-      .then(() => prisma.tarea.updateMany({ where: { salidaClave: vieja }, data: { salidaClave: s.clave } }))
+      .then(() => moverSeguimientos(vieja, s.clave))
       .catch(e => console.error("registro de salida (clave nueva):", (e as Error)?.message));
   }
 
@@ -205,7 +224,10 @@ export async function salidasEntre(desde: string, hasta: string, opciones: { con
     const cupo = tour ? cupoDeTour(tour) : null;
     const precioPorPax = tour && tour.precioUnidad !== "vehiculo" && tour.precioUnidad !== "grupo" ? tour.precio : 0;
     const p = tour ? partesRecogida(tour, false) : null;
-    const guia = guiaDeSalida(reg?.guia, pasajeros.map(x => ({ folio: x.folio, guia: porFolio.get(x.folio)?.guia })));
+    const guia = guiaDeSalida(reg?.guia, pasajeros.map(x => {
+      const b = porFolio.get(x.folio);
+      return { folio: x.folio, guia: b?.guia, otrosDias: !!b && tieneOtrosDias(b, s.clave) };
+    }));
     // El Edén es privada aunque nadie lo haya marcado (lote 6).
     const base = reg
       ? { tipo: reg.tipo, guia: reg.guia ?? "", vehiculo: reg.vehiculo ?? "", estado: reg.estado, notas: reg.notas ?? "" }

@@ -169,6 +169,27 @@ export function diasEnRango(reservas: ReservaParaSalidas[], desde: string, hasta
   return reservas.flatMap(diasDeTourDe).filter(d => d.fecha >= desde && d.fecha <= hasta);
 }
 
+/**
+ * ¿Todas las salidas de la reserva ese día están marcadas «Cancelada»?
+ * (revisión del lote 6, 10 nov 2026). Entonces no se le manda el check-in de
+ * ese día: Operación ya tiene el seguimiento para avisarle y reprogramar o
+ * reembolsar.
+ */
+export function diaConTodoCancelado(b: ReservaParaSalidas, fecha: string, canceladas: Set<string>): boolean {
+  const delDia = diasDeTourDe(b).filter(d => d.fecha === fecha);
+  return delDia.length > 0 && delDia.every(d => canceladas.has(claveDeSalida(d)));
+}
+
+/**
+ * El primer día de tour de una reserva entre dos fechas cuya salida no esté
+ * cancelada, o null (revisión del lote 6, 10 nov 2026). Inicio leía solo
+ * `tourDate` (el primer tour del carrito): el 2.º tour no salía en «Tours de
+ * hoy» y el de una salida cancelada sí.
+ */
+export function primerDiaVivoEntre(b: ReservaParaSalidas, desde: string, hasta: string, canceladas: Set<string>): string | null {
+  return diasDeTourDe(b).filter(d => d.fecha >= desde && d.fecha <= hasta && !canceladas.has(claveDeSalida(d))).map(d => d.fecha).sort()[0] ?? null;
+}
+
 // ── Salidas fijas, estado y números (PR 1.2, 3 nov 2026) ─────────────────────
 
 
@@ -270,27 +291,49 @@ export interface GuiaDeSalida {
  * día, el correo de las 7:30 e Inicio decían «Sin guía asignado» aunque la
  * reserva ya lo tuviera, y el Calendario decía otro.
  */
-export function guiaDeSalida(guiaSalida: string | null | undefined, reservas: { folio: string; guia: string | null | undefined }[]): GuiaDeSalida {
+export function guiaDeSalida(guiaSalida: string | null | undefined, reservas: { folio: string; guia: string | null | undefined; otrosDias?: boolean }[]): GuiaDeSalida {
   const propio = (guiaSalida ?? "").trim();
-  const conGuia = reservas.map(r => ({ folio: r.folio, guia: (r.guia ?? "").trim() })).filter(r => r.guia);
+  const conGuia = reservas.map(r => ({ folio: r.folio, guia: (r.guia ?? "").trim(), otrosDias: !!r.otrosDias })).filter(r => r.guia);
   const igual = (a: string, b: string) => a.toLocaleLowerCase("es") === b.toLocaleLowerCase("es");
   if (propio) {
     const otros = conGuia.filter(r => !igual(r.guia, propio));
+    // La de un viaje de varios días trae el guía de sus otros días: guardar
+    // aquí no se lo cambia (`reservasQueTomanElGuia`, revisión 10 nov 2026).
+    const corregibles = otros.filter(r => !r.otrosDias);
     return {
       guia: propio, deReservas: false,
-      aviso: otros.length ? `Ojo: ${otros.map(r => `la reserva ${r.folio} dice ${r.guia}`).join(", ")}. Guarda el guía aquí y se corrige en todas.` : null,
+      aviso: otros.length
+        ? `Ojo: ${otros.map(r => `la reserva ${r.folio} dice ${r.guia}${r.otrosDias ? " (es su guía de los otros días del viaje)" : ""}`).join(", ")}.${corregibles.length ? " Guarda el guía aquí y se corrige." : ""}`
+        : null,
     };
   }
   const distintos = conGuia.filter((r, i) => conGuia.findIndex(x => igual(x.guia, r.guia)) === i);
   if (distintos.length === 1) return { guia: distintos[0].guia, deReservas: true, aviso: null };
   if (distintos.length > 1) {
-    return { guia: "", deReservas: false, aviso: `Las reservas traen guías distintos (${conGuia.map(r => `${r.guia} en ${r.folio}`).join(", ")}): asigna uno aquí y se escribe en todas.` };
+    return { guia: "", deReservas: false, aviso: `Las reservas traen guías distintos (${conGuia.map(r => `${r.guia} en ${r.folio}`).join(", ")}): asigna uno aquí y se escribe en ${conGuia.some(r => r.otrosDias) ? "las de un solo día (las de varios días conservan el de sus otros días)" : "todas"}.` };
   }
   return { guia: "", deReservas: false, aviso: null };
 }
 
+/**
+ * A qué reservas se les escribe el guía que se guarda en una salida
+ * (revisión del lote 6, 10 nov 2026). Las que solo tienen ESTA salida,
+ * siempre. Las de un viaje de varios días (o dos tours el mismo día) tienen un
+ * solo campo de guía para todo el viaje: se escribe solo si no tienen guía o
+ * traen el que tenía esta salida; si traen otro, es el de sus otros días y no
+ * se pisa (antes, poner a Juan el día 2 cambiaba a Pedro por Juan el día 1 y
+ * el 3, que lo tomaban de la reserva).
+ */
+export function reservasQueTomanElGuia<R extends { guia: string | null | undefined; otrosDias?: boolean }>(
+  reservas: R[], guiaAnteriorDeLaSalida: string | null | undefined,
+): R[] {
+  const norm = (g: string | null | undefined) => (g ?? "").trim().toLocaleLowerCase("es");
+  const anterior = norm(guiaAnteriorDeLaSalida);
+  return reservas.filter(r => !r.otrosDias || !norm(r.guia) || (!!anterior && norm(r.guia) === anterior));
+}
+
 /** Lo mínimo de un registro guardado (`Salida`) para reconocerlo. */
-export interface RegistroParaEmparejar { id: string; clave: string; fecha: string; tourSlug: string; folios?: unknown }
+export interface RegistroParaEmparejar { id: string; clave: string; fecha: string; tourSlug: string; folios?: unknown; estado?: string | null }
 
 const foliosDe = (r: RegistroParaEmparejar): string[] => (Array.isArray(r.folios) ? r.folios.filter((f): f is string => typeof f === "string") : []);
 
@@ -322,9 +365,12 @@ export function emparejarRegistros<R extends RegistroParaEmparejar>(
     if (cands.length === 1) { out.set(s.clave, cands[0]); tomados.add(cands[0].id); }
   }
   // 2) Los que no guardaron sus reservas: solo si no hay duda (uno y uno).
+  // 🔴 Nunca uno «Cancelado» (revisión 10 nov 2026): sin folios no se sabe de
+  // quién era; si su reserva se canceló y otra del mismo tour cae ese día, la
+  // salida de esa otra quedaba cancelada y desaparecía de todas partes.
   for (const s of sinRegistro()) {
     const pares = sinRegistro().filter(x => x.fecha === s.fecha && x.slug === s.slug);
-    const cands = huerfanos().filter(r => r.fecha === s.fecha && r.tourSlug === s.slug && foliosDe(r).length === 0);
+    const cands = huerfanos().filter(r => r.fecha === s.fecha && r.tourSlug === s.slug && foliosDe(r).length === 0 && !salidaCancelada(r.estado));
     if (pares.length === 1 && cands.length === 1) { out.set(s.clave, cands[0]); tomados.add(cands[0].id); }
   }
   return out;

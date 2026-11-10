@@ -13,7 +13,7 @@ import { hospedajeDeReserva } from "@/lib/admin/hospedaje";
 import { grupoDe } from "@/lib/admin/reserva";
 import { colorDeTour, codigoDeTour, nombreDeTour } from "@/lib/admin/coloresTour";
 import {
-  agruparSalidas, diasDeTourDe, estadoDeSalida, resumirSalidas, ETIQUETA_ESTADO_SALIDA,
+  agruparSalidas, claveDeSalida, diasDeTourDe, estadoDeSalida, resumirSalidas, ETIQUETA_ESTADO_SALIDA,
   type EstadoSalida, type SalidaAgrupada,
 } from "@/lib/admin/salidas";
 import { playClick } from "@/lib/admin/sfx";
@@ -51,7 +51,9 @@ export interface ApartadoDelDia {
   vence:    number;
 }
 
-export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {}, diaInicial = null, porJuntar = 0 }: {
+export default function CalendarioClient({ bookings, cupo, apartados = {}, checkins: checkinsIniciales = {}, diaInicial = null, porJuntar = 0, canceladas = [] }: {
+  /** Las claves de las salidas marcadas «Cancelada» (revisión del lote 6, 10 nov 2026). */
+  canceladas?: string[];
   /** Cuántos pares de salidas se pueden juntar (regla «Juntar salidas»). */
   porJuntar?: number;
   /** YYYY-MM-DD: al volver de una salida, el calendario abre en ese mes con ese día abierto. */
@@ -170,7 +172,9 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
     return true;
   };
   const diasMes = diasTour.filter(d => d.fecha >= mesIni && d.fecha <= mesFin);
-  const resumenMes = resumirSalidas(diasMes);
+  // Una salida cancelada no cuenta en los números del mes, como en los KPIs (revisión del lote 6, 10 nov 2026).
+  const canceladasSet = new Set(canceladas);
+  const resumenMes = resumirSalidas(diasMes.filter(d => !canceladasSet.has(claveDeSalida(d))));
   const cupoDe = (slug: string) => cupo.tours.find(t => t.slug === slug)?.cupo ?? null;
 
   // Todos los recorridos con cupo, con cómo están el día abierto: primero los
@@ -318,7 +322,7 @@ export default function CalendarioClient({ bookings, cupo, apartados = {}, check
                   </div>
                   <CupoDelDia dia={cupoDias[dateStr]} />
                 </div>
-                {vista === "salidas" && <CeldaSalidas salidas={salidasPorDia[dateStr] ?? []} cupoDe={cupoDe} />}
+                {vista === "salidas" && <CeldaSalidas salidas={salidasPorDia[dateStr] ?? []} cupoDe={cupoDe} canceladas={canceladasSet} />}
                 <div className={`space-y-0.5 ${vista === "salidas" ? "hidden" : ""}`}>
                   {dayBookings.slice(0,3).map(s => (
                     <div key={s.key}
@@ -571,20 +575,22 @@ function Dato({ valor, etiqueta, nota, tono }: { valor: string; etiqueta: string
  * Las salidas de un día en su celda: código, personas/cupo, barra de ocupación,
  * nombres y estado. Cada una abre su detalle.
  */
-function CeldaSalidas({ salidas, cupoDe }: { salidas: SalidaAgrupada[]; cupoDe: (slug: string) => number | null }) {
+function CeldaSalidas({ salidas, cupoDe, canceladas }: { salidas: SalidaAgrupada[]; cupoDe: (slug: string) => number | null; canceladas: Set<string> }) {
   return (
     <div className="space-y-1" onClick={e => e.stopPropagation()}>
       {salidas.slice(0, 3).map(sa => {
         const cupo = cupoDe(sa.slug);
         const estado = estadoDeSalida(sa, cupo);
-        const color = colorDeTour(sa.slug);
+        // Cancelada en Salidas del día: se ve, pero tachada y sin estado de cupo (revisión del lote 6, 10 nov 2026).
+        const cancelada = canceladas.has(sa.clave);
+        const color = cancelada ? "#66655F" : colorDeTour(sa.slug);
         return (
           <Link key={sa.clave} href={`/admin/salidas-dia/${encodeURIComponent(sa.clave)}?de=calendario`}
-            className="panel-foco block rounded-sm px-1 py-0.5 text-[9px] font-dm leading-tight text-[#1B4332]/80 hover:brightness-95"
+            className={`panel-foco block rounded-sm px-1 py-0.5 text-[9px] font-dm leading-tight text-[#1B4332]/80 hover:brightness-95${cancelada ? " opacity-70" : ""}`}
             style={{ background: color + "1f", borderLeft: `3px solid ${color}` }}
-            title={`${sa.nombre} · ${sa.clientes.join(", ")} · ${ETIQUETA_ESTADO_SALIDA[estado]}`}>
+            title={`${sa.nombre} · ${sa.clientes.join(", ")} · ${cancelada ? "Salida cancelada" : ETIQUETA_ESTADO_SALIDA[estado]}`}>
             <span className="flex justify-between gap-1 font-bold tabular-nums" style={{ color }}>
-              <span>{sa.codigo}</span><span>{sa.personas}{cupo !== null ? `/${cupo}` : "p"}</span>
+              <span className={cancelada ? "line-through" : undefined}>{sa.codigo}</span><span>{sa.personas}{cupo !== null ? `/${cupo}` : "p"}</span>
             </span>
             {cupo !== null && (
               <span className="my-0.5 block h-[3px] overflow-hidden rounded-sm bg-black/10" aria-hidden="true">
@@ -592,7 +598,9 @@ function CeldaSalidas({ salidas, cupoDe }: { salidas: SalidaAgrupada[]; cupoDe: 
               </span>
             )}
             <span className="block truncate">{sa.clientes.map(c => c.split(" ")[0]).join(", ")}{sa.reservas > 1 ? ` (${sa.reservas})` : ""}</span>
-            {estado !== "a-medida" && estado !== "privada" && <span className="block font-semibold" style={{ color: COLOR_ESTADO[estado] }}>{ETIQUETA_ESTADO_SALIDA[estado]}</span>}
+            {cancelada
+              ? <span className="block font-semibold" style={{ color }}>Cancelada</span>
+              : estado !== "a-medida" && estado !== "privada" && <span className="block font-semibold" style={{ color: COLOR_ESTADO[estado] }}>{ETIQUETA_ESTADO_SALIDA[estado]}</span>}
           </Link>
         );
       })}

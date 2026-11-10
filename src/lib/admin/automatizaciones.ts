@@ -225,6 +225,18 @@ export function reglaMinimo(salidas: SalidaConMinimo[], hoy: string): TareaPorRe
     }));
 }
 
+/**
+ * La `claveRegla` de un seguimiento cuando su salida cambia de clave
+ * (revisión del lote 6, 10 nov 2026). La regla vuelve a crear la tarea por
+ * `salida-48h:<clave nueva>`; si solo se movía `salidaClave`, la de la clave
+ * vieja seguía viva y salían DOS «Confirmar salida» (o dos «No llega al
+ * mínimo»). Sin la clave vieja dentro, se queda igual.
+ */
+export function claveReglaConSalidaNueva(claveRegla: string | null, vieja: string, nueva: string): string | null {
+  if (!claveRegla || !vieja || !claveRegla.includes(vieja)) return claveRegla;
+  return claveRegla.split(vieja).join(nueva);
+}
+
 /** La tarea que deja una salida marcada «Cancelada» que todavía tiene reservas activas (no bloquea: avisa). */
 export function tareaSalidaCancelada(s: { clave: string; fecha: string; tour: string; folios: string[] }, hoy: string): TareaPorRegla | null {
   if (!s.folios.length) return null;

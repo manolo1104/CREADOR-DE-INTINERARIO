@@ -1,12 +1,12 @@
 // Lote 6 (10 nov 2026): Operación — salidas, guía, mínimos, checklist.
 import { describe, expect, it } from "vitest";
 import {
-  agruparSalidas, bajoMinimoRentable, diasDeTourDe, diasEnRango, emparejarRegistros, estadoDeSalida, guiaDeSalida,
-  minimoDelTour, minimoParaJuntar, numerosDeFicha, numerosDeSalida, pagoEnSalida, resumirSalidas, salidaCancelada,
+  agruparSalidas, bajoMinimoRentable, diaConTodoCancelado, diasDeTourDe, diasEnRango, emparejarRegistros, estadoDeSalida, guiaDeSalida,
+  minimoDelTour, minimoParaJuntar, numerosDeFicha, numerosDeSalida, pagoEnSalida, primerDiaVivoEntre, reservasQueTomanElGuia, resumirSalidas, salidaCancelada,
   salidaYaOperada, type ReservaParaSalidas,
 } from "../salidas";
 import { sugerenciasDeAgrupar } from "../agrupar";
-import { reglaMinimo, tareaSalidaCancelada, yaNoAplica, RESPONSABLE_OPERACION } from "../automatizaciones";
+import { claveReglaConSalidaNueva, reglaMinimo, tareaSalidaCancelada, yaNoAplica, RESPONSABLE_OPERACION } from "../automatizaciones";
 import { aplicarAlRegistro } from "../registroSalida";
 import { NO_CUENTAN } from "@/lib/cupoTour";
 
@@ -234,5 +234,73 @@ describe("checklist e incidencias sin pisarse", () => {
 describe("los borrador del bot viejo no son ventas", () => {
   it("el mismo criterio que el corte: canceladas y borradores fuera", () => {
     expect(NO_CUENTAN).toEqual(["cancelled", "borrador"]);
+  });
+});
+
+// ── Revisión del lote 6 (10 nov 2026) ──────────────────────────────────────
+describe("revisión: el guía de un viaje de varios días no se pisa", () => {
+  it("se escribe en las reservas de un solo día; en las de varios días solo si no traen guía o traen el que tenía la salida", () => {
+    const rs = [
+      { id: "1", guia: "Pedro", otrosDias: false },  // un solo día: siempre
+      { id: "2", guia: "Pedro", otrosDias: true },   // varios días con otro guía: no
+      { id: "3", guia: "", otrosDias: true },        // varios días sin guía: sí
+      { id: "4", guia: "juan ", otrosDias: true },   // varios días con el de la salida: sí
+    ];
+    expect(reservasQueTomanElGuia(rs, "Juan").map(r => r.id)).toEqual(["1", "3", "4"]);
+    // La salida no tenía guía propio: la de varios días con guía se queda con el suyo.
+    expect(reservasQueTomanElGuia(rs, null).map(r => r.id)).toEqual(["1", "3"]);
+  });
+  it("el aviso no promete corregir la reserva de varios días", () => {
+    const g = guiaDeSalida("Juan", [{ folio: "HP-1", guia: "Pedro", otrosDias: true }]);
+    expect(g.aviso).toContain("HP-1 dice Pedro (es su guía de los otros días del viaje)");
+    expect(g.aviso).not.toContain("se corrige");
+    expect(guiaDeSalida("Juan", [{ folio: "HP-2", guia: "Pedro" }]).aviso).toContain("Guarda el guía aquí y se corrige.");
+  });
+});
+
+describe("revisión: un registro viejo «Cancelado» no se le pega a otra salida", () => {
+  it("sin reservas guardadas, el huérfano cancelado se queda donde está", () => {
+    const reg = { id: "r1", clave: "2026-11-20|rzr-xilitla|rzr · rzr 500", fecha: "2026-11-20", tourSlug: RZR, estado: "cancelada" };
+    const sal = { clave: "2026-11-20|rzr-xilitla|rzr · defender", fecha: "2026-11-20", slug: RZR, folios: ["HP-OTRA"] };
+    expect(emparejarRegistros([sal], [reg]).size).toBe(0);
+    expect(emparejarRegistros([sal], [{ ...reg, estado: "programada" }]).size).toBe(1);
+  });
+});
+
+describe("revisión: los seguimientos se mudan con su salida sin duplicarse", () => {
+  it("la claveRegla cambia a la clave nueva (así la regla de 48 h ya no crea otra)", () => {
+    const v = "2026-11-20|__personalizado|micos", n = "2026-11-20|__personalizado|micos privado";
+    expect(claveReglaConSalidaNueva(`salida-48h:${v}`, v, n)).toBe(`salida-48h:${n}`);
+    expect(claveReglaConSalidaNueva(`minimo-7d:${v}`, v, n)).toBe(`minimo-7d:${n}`);
+    expect(claveReglaConSalidaNueva(null, v, n)).toBeNull();
+    expect(claveReglaConSalidaNueva("corte-lunes:2026-11-09", v, n)).toBe("corte-lunes:2026-11-09");
+  });
+});
+
+describe("revisión: Inicio por días de tour, sin las salidas canceladas", () => {
+  const b = reserva("HP-C", [
+    { tourSlug: TAM, tourName: "Tamul", tourDate: "2026-10-01", adults: 2, subtotal: 2800 },
+    { tourSlug: RAF, tourName: "Rafting", tourDate: "2026-11-12", adults: 2, subtotal: 3200 },
+  ]);
+  it("el 2.º tour de un carrito con fechas separadas sale en su día", () => {
+    expect(primerDiaVivoEntre(b, "2026-11-12", "2026-11-12", new Set())).toBe("2026-11-12");
+    expect(primerDiaVivoEntre(b, "2026-11-11", "2026-11-17", new Set())).toBe("2026-11-12");
+    expect(primerDiaVivoEntre(b, "2026-11-13", "2026-11-17", new Set())).toBeNull();
+  });
+  it("si su salida está cancelada, no sale", () => {
+    expect(primerDiaVivoEntre(b, "2026-11-12", "2026-11-12", new Set([`2026-11-12|${RAF}`]))).toBeNull();
+  });
+});
+
+describe("revisión: el check-in no sale si todas las salidas de ese día están canceladas", () => {
+  const b = reserva("HP-K", [
+    { tourSlug: TAM, tourName: "Tamul", tourDate: "2026-11-12", adults: 2, subtotal: 2800 },
+    { tourSlug: EDEN, tourName: "Edén", tourDate: "2026-11-12", adults: 2, subtotal: 3150 },
+  ]);
+  it("todas canceladas: no; una sigue: sí; ninguna: sí", () => {
+    expect(diaConTodoCancelado(b, "2026-11-12", new Set([`2026-11-12|${TAM}`, `2026-11-12|${EDEN}`]))).toBe(true);
+    expect(diaConTodoCancelado(b, "2026-11-12", new Set([`2026-11-12|${TAM}`]))).toBe(false);
+    expect(diaConTodoCancelado(b, "2026-11-12", new Set())).toBe(false);
+    expect(diaConTodoCancelado(b, "2026-11-13", new Set([`2026-11-12|${TAM}`]))).toBe(false);
   });
 });

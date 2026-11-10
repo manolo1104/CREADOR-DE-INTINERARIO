@@ -223,8 +223,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Un solo guía (lote 6, 10 nov 2026): el que se asigna aquí se refleja en
     // sus salidas (Salidas del día, Inicio, correo de las 7:30). No lanza.
+    // Revisión (10 nov 2026): solo de hoy en adelante y sin pisar la salida que ya tiene otro guía.
     if (antes && (antes.guia ?? "").trim() !== (updated.guia ?? "").trim() && !NO_CUENTAN.includes(updated.status)) {
-      await reflejarGuiaEnSalidas(Array.from(new Set(diasDeTourDe(updated).map(claveDeSalida))), updated.guia);
+      const hoy = hoyMX();
+      await reflejarGuiaEnSalidas(Array.from(new Set(diasDeTourDe(updated).filter(d => d.fecha >= hoy).map(claveDeSalida))), updated.guia, antes.guia);
     }
     // Reactivada: su lead se pone al día con TODAS sus reservas vivas, ya con el
     // dinero recalculado (si se perdió por ella, vuelve).
