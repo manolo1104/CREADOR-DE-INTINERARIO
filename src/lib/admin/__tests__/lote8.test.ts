@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, afterEach } from "vitest";
+import { SignJWT } from "jose";
 import { readdirSync, statSync } from "fs";
 import { join } from "path";
 import { fileURLToPath } from "url";
@@ -183,6 +184,22 @@ describe("la cuenta compartida del guía: cambiar su contraseña corta las sesio
       process.env = antes;
     }
   });
+  it("revisión (10 nov 2026): al subir, las sesiones YA abiertas de Manolo, Martín y Erick siguen; solo el guía vuelve a entrar una vez", async () => {
+    const antes = { ...process.env };
+    try {
+      process.env.ADMIN_JWT_SECRET = "secreto-de-prueba-lote-8";
+      process.env.ADMIN_PASSWORD_GUIA = "la-de-siempre";
+      // Firmadas como antes del lote 8: sin huella (y la más vieja, sin rol).
+      const vieja = (p: Record<string, unknown>) => new SignJWT({ role: "admin", ...p })
+        .setProtectedHeader({ alg: "HS256" }).setIssuedAt().setExpirationTime("7d").sign(secreto);
+      expect((await verifyToken(await vieja({ user: "manolo", nombre: "Manolo" }))).user).toBe("manolo");
+      expect((await verifyToken(await vieja({ user: "martin", rol: "socio", nombre: "Martín", secciones: ["cortes"] }))).user).toBe("martin");
+      expect((await verifyToken(await vieja({ user: "erick", rol: "operacion", nombre: "Erick", secciones: ["bandeja"] }))).user).toBe("erick");
+      await expect(verifyToken(await vieja({ user: "guia", rol: "guia", nombre: "Guía", secciones: ["salidas-dia"] }))).rejects.toThrow();
+    } finally {
+      process.env = antes;
+    }
+  });
 });
 
 describe("lo que llega al navegador del guía: de ayer a 7 días y sin dinero", () => {
@@ -272,6 +289,15 @@ describe("Erick no ve ni cambia lo que nos cuestan los extras", () => {
     const r = conservarCostosExtras(nuevos, guardados, presets) as { costoUnitario: number; precioUnitario: number }[];
     expect(r.map(e => e.costoUnitario)).toEqual([150, 130, 2000, 0]);
     expect(r.map(e => e.precioUnitario)).toEqual([200, 250, 3500, 100]);
+  });
+  it("revisión (10 nov 2026): si borra la 1.ª «Comida», la que queda conserva SU costo, no el de la borrada", () => {
+    const soloDia2 = [{ ...guardados[1], costoUnitario: 0 }];
+    expect((conservarCostosExtras(soloDia2, guardados, presets) as { costoUnitario: number }[]).map(e => e.costoUnitario)).toEqual([130]);
+    // Cambia el detalle de la 1.ª: sin pareja exacta, se queda con la libre del mismo concepto.
+    const otroDetalle = [{ ...guardados[0], detalle: "Día 1", costoUnitario: 0 }, { ...guardados[1], costoUnitario: 0 }];
+    expect((conservarCostosExtras(otroDetalle, guardados, presets) as { costoUnitario: number }[]).map(e => e.costoUnitario)).toEqual([150, 130]);
+    // Sin nada guardado (cotización nueva), el del Cotizador.
+    expect((conservarCostosExtras(soloDia2, null, presets) as { costoUnitario: number }[]).map(e => e.costoUnitario)).toEqual([120]);
   });
 });
 

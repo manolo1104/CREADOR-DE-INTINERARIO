@@ -190,20 +190,34 @@ export function presetsSinCosto(presets: PresetExtra[]): PresetExtra[] {
 /**
  * Lo que se guarda cuando el que guarda NO ve costos: su navegador mandó cada
  * extra con costo 0 (no lo vio). Cada extra se queda con el costo que ya tenía
- * el del mismo concepto (en orden, uno a uno) y uno nuevo toma el del
- * Cotizador; si no hay ninguno, 0. Lo demás (precio, cantidad, incluido) es
- * lo que él capturó.
+ * el suyo de antes (uno a uno) y uno nuevo toma el del Cotizador; si no hay
+ * ninguno, 0. Lo demás (precio, cantidad, incluido) es lo que él capturó.
+ *
+ * El «suyo de antes» se busca primero por concepto Y detalle, y solo después
+ * por concepto (revisión del lote 8, 10 nov 2026): con dos «Comida» de costo
+ * distinto, si Erick borraba la primera, la que quedaba se llevaba el costo de
+ * la borrada y el corte salía con otra utilidad.
  */
 export function conservarCostosExtras(nuevos: unknown, anteriores: unknown, presets: PresetExtra[]): unknown {
   if (!Array.isArray(nuevos)) return nuevos;
   const previos = extrasDe(anteriores);
+  const esExtra = (e: unknown) => !!e && typeof e === "object" && !(e as { _meta?: unknown })._meta;
+  const texto = (e: unknown, k: "concepto" | "detalle") => String((e as Record<string, unknown>)[k] ?? "");
   const usados = new Set<number>();
-  return nuevos.map(e => {
-    if (!e || typeof e !== "object" || (e as { _meta?: unknown })._meta) return e;
-    const concepto = String((e as { concepto?: unknown }).concepto ?? "");
-    const i = previos.findIndex((p, idx) => !usados.has(idx) && mismoConcepto(p.concepto, concepto));
-    if (i >= 0) { usados.add(i); return { ...(e as object), costoUnitario: previos[i].costoUnitario }; }
-    const preset = presets.find(p => mismoConcepto(p.concepto, concepto));
+  const pareja: (number | undefined)[] = nuevos.map(() => undefined);
+  const emparejar = (conDetalle: boolean) => nuevos.forEach((e, j) => {
+    if (pareja[j] !== undefined || !esExtra(e)) return;
+    const i = previos.findIndex((p, idx) => !usados.has(idx) && mismoConcepto(p.concepto, texto(e, "concepto"))
+      && (!conDetalle || mismoConcepto(p.detalle, texto(e, "detalle"))));
+    if (i >= 0) { usados.add(i); pareja[j] = i; }
+  });
+  emparejar(true);
+  emparejar(false);
+  return nuevos.map((e, j) => {
+    if (!esExtra(e)) return e;
+    const i = pareja[j];
+    if (i !== undefined) return { ...(e as object), costoUnitario: previos[i].costoUnitario };
+    const preset = presets.find(p => mismoConcepto(p.concepto, texto(e, "concepto")));
     return { ...(e as object), costoUnitario: preset ? preset.costo : 0 };
   });
 }
