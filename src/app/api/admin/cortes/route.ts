@@ -3,11 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { sesionActual } from "@/lib/admin/sesion";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { hoyMX } from "@/lib/dates";
-import { ES_FECHA, sinTabla, salidasDeLaSemana } from "@/lib/admin/corteSalidas";
+import { ES_FECHA, sinTabla } from "@/lib/admin/corteSalidas";
+import { leerSemana, guardarSemana } from "@/lib/admin/corteGuardar";
 import {
-  lunesDe, domingoDe, etiquetaSemana, limpiarCaptura, capturaDe, calcularCorte,
-  limpiarCobros, PRIMERA_SEMANA_CORTE, ERROR_SEMANA_ANTERIOR,
-  type SalidaCorte, type Captura, type EstadoCorte, type CatalogoCostos,
+  lunesDe, etiquetaSemana, PRIMERA_SEMANA_CORTE, ERROR_SEMANA_ANTERIOR, type CambiosCorte,
 } from "@/lib/admin/corteSemanal";
 
 export const dynamic = "force-dynamic";
@@ -40,22 +39,9 @@ export async function GET(req: NextRequest) {
     if (semana < PRIMERA_SEMANA_CORTE) {
       return NextResponse.json({ error: ERROR_SEMANA_ANTERIOR }, { status: 503 });
     }
-    const hasta  = domingoDe(semana);
-    const { salidas, catalogo } = await salidasDeLaSemana(semana, hasta);
-
-    let guardado = null;
-    try {
-      const g = await prisma.corteSemanal.findUnique({ where: { semana } });
-      if (g) guardado = {
-        captura: limpiarCaptura(g.captura), cobros: limpiarCobros(g.cobros),
-        resumen: g.resumen, guardadoPor: g.guardadoPor, updatedAt: g.updatedAt,
-        estado: (g.estado === "borrador" ? "borrador" : "cerrado") as EstadoCorte,
-      };
-    } catch (e: any) {
-      if (!sinTabla(e)) throw e;
-    }
-
-    return NextResponse.json({ semana, hasta, salidas, catalogo, guardado });
+    // Un corte hecho, con lo que había al hacerlo; las cuentas juntas sin
+    // principal, reacomodadas; y lo registrado en Cobros (lote 7, 10 nov 2026).
+    return NextResponse.json(await leerSemana(semana));
   } catch (e: any) {
     console.error("admin/cortes GET:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
@@ -63,13 +49,10 @@ export async function GET(req: NextRequest) {
 }
 
 /**
- * POST { semana, captura, cerrar } → guarda esa semana (una fila por semana:
- * guardar otra vez la reemplaza). Las cifras se recalculan aquí con las
- * reservas de hoy; no se confía en los totales que manda el navegador.
- *
- * `cerrar: false` es «Guardar costos» (20 oct 2026, Manolo): guarda lo
- * capturado sin hacer el corte, para no perderlo al recargar. Sin la bandera
- * se cierra, que es lo que hacía siempre «Guardar corte».
+ * POST { semana, cerrar, version, cambios } → guarda esa semana (ver
+ * `guardarSemana`). Desde el lote 7 (10 nov 2026) se manda solo lo que cambió
+ * y se junta con lo guardado: dos personas con la misma semana abierta ya no
+ * se pisan, y si tocaron lo mismo, 409 sin guardar nada.
  */
 export async function POST(req: NextRequest) {
   let b: any;
@@ -79,43 +62,32 @@ export async function POST(req: NextRequest) {
   if (!ES_FECHA.test(String(b?.semana ?? ""))) {
     return NextResponse.json({ error: "Semana inválida" }, { status: 400 });
   }
+  // Una pestaña abierta desde antes de este cambio manda la captura entera: que
+  // recargue en lugar de escribir encima de lo de otros.
+  if (!b?.cambios || typeof b.cambios !== "object") {
+    return NextResponse.json({ error: "La pantalla del corte cambió. Recarga la página y vuelve a guardar." }, { status: 400 });
+  }
 
   try {
-    const semana  = lunesDe(String(b.semana));
+    const semana = lunesDe(String(b.semana));
     // Tampoco se guardan (ver `PRIMERA_SEMANA_CORTE`).
     if (semana < PRIMERA_SEMANA_CORTE) {
       return NextResponse.json({ error: ERROR_SEMANA_ANTERIOR }, { status: 503 });
     }
-    const hasta   = domingoDe(semana);
-    const { salidas } = await salidasDeLaSemana(semana, hasta);
-    const pedida  = limpiarCaptura(b.captura);
-    // Lo cobrado de la semana, escrito a mano en «La semana» con quién y de qué.
-    const cobros  = limpiarCobros(b.cobros);
-    const cerrar  = b.cerrar !== false;
-
+    const cambios: CambiosCorte = {
+      captura: b.cambios.captura && typeof b.cambios.captura === "object" ? b.cambios.captura : {},
+      base: b.cambios.base && typeof b.cambios.base === "object" ? b.cambios.base : {},
+      cobros: Array.isArray(b.cambios.cobros) ? b.cambios.cobros : null,
+      baseCobros: Array.isArray(b.cambios.baseCobros) ? b.cambios.baseCobros : null,
+    };
     const sesion = await sesionActual();
-    const guardadoPor = sesion?.nombre ?? "Desconocido";
 
-    let previo, g, estado: EstadoCorte, captura: Captura, resumen: ReturnType<typeof calcularCorte>;
+    let r;
     try {
-      previo = await prisma.corteSemanal.findUnique({ where: { semana }, select: { id: true, estado: true } });
-      // Un corte hecho no se «deshace» guardando costos: los números se
-      // recalculan igual, así que guardar costos encima es rehacerlo.
-      estado = cerrar || previo?.estado === "cerrado" ? "cerrado" : "borrador";
-      captura = estado === "cerrado"
-        // Al cerrar se congela una entrada por cada tarjeta viva —también las
-        // que no se tocaron—, para que lo propuesto por el Cotizador quede fijo.
-        ? Object.fromEntries(salidas.map(s => [s.clave, capturaDe(s, pedida)]))
-        // En borrador solo lo que se tocó: lo demás sigue tomando lo del
-        // Cotizador y la comisión de los cobros que vayan entrando.
-        : Object.fromEntries(salidas.filter(s => pedida[s.clave]).map(s => [s.clave, pedida[s.clave]]));
-      resumen = calcularCorte(salidas, captura, cobros);
-      const datos = {
-        hasta, captura: captura as any, resumen: resumen as any,
-        ventas: resumen.ventas, costos: resumen.costos, utilidad: resumen.utilidad, guardadoPor, estado,
-        cobros: cobros as any,
-      };
-      g = await prisma.corteSemanal.upsert({ where: { semana }, create: { semana, ...datos }, update: datos });
+      r = await guardarSemana({
+        semana, cerrar: b.cerrar === true, version: typeof b.version === "string" ? b.version : null,
+        cambios, guardadoPor: sesion?.nombre ?? "Desconocido", hoy: hoyMX(),
+      });
     } catch (e: any) {
       if (sinTabla(e)) {
         return NextResponse.json(
@@ -125,20 +97,21 @@ export async function POST(req: NextRequest) {
       }
       throw e;
     }
+    if (!r.ok) {
+      return NextResponse.json({ error: r.error, conflicto: r.conflicto ?? false, conflictos: r.conflictos ?? [] }, { status: r.status });
+    }
 
     await registrarEnBitacora({
-      accion: previo ? "modificó" : "creó",
+      accion: r.nuevo ? "creó" : "modificó",
       entidad: "corte",
       referencia: semana,
-      resumen: estado === "cerrado"
-        ? `Corte semanal ${etiquetaSemana(semana)} · utilidad ${pesos(resumen.utilidad)} (${resumen.tarjetas} tours)`
-        : `Costos del corte ${etiquetaSemana(semana)} (borrador) · costos ${pesos(resumen.costos)} (${resumen.tarjetas} tours)`,
+      resumen: (r.estado === "cerrado"
+        ? `Corte semanal ${etiquetaSemana(semana)} · utilidad ${pesos(r.resumen.utilidad)} (${r.resumen.tarjetas} tours)`
+        : `Costos del corte ${etiquetaSemana(semana)} (borrador) · costos ${pesos(r.resumen.costos)} (${r.resumen.tarjetas} tours)`)
+        + (r.juntado ? " · juntado con lo que otro guardó" : ""),
     });
 
-    return NextResponse.json({
-      ok: true,
-      guardado: { captura, cobros, resumen, estado, guardadoPor: g.guardadoPor, updatedAt: g.updatedAt },
-    });
+    return NextResponse.json({ ok: true, juntado: r.juntado, otroGuardo: r.otroGuardo, guardado: r.guardado });
   } catch (e: any) {
     console.error("admin/cortes POST:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

@@ -6,31 +6,37 @@
 // aparecen aquí: ahí se sigue estimando con el Cotizador.
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD } from "@/lib/dates";
-import { costosPorTarjeta, limpiarCaptura } from "./corteSemanal";
+import { armarTarjetasDelCorte, costosRealesPorTarjeta, limpiarCaptura, limpiarTarjetas } from "./corteSemanal";
 import { salidasDeLaSemana } from "./corteSalidas";
 
-export interface CostoDelCorte { costos: number; incluida: boolean; semana: string; estado: string }
+export interface CostoDelCorte {
+  costos: number;
+  incluida: boolean;
+  semana: string;
+  estado: string;
+  /** Lo que se le cobró de extras en esta tarjeta: va al ingreso si sus costos los traen (lote 7). */
+  ventaExtras: number;
+}
 
-/** Clave de una tarjeta del corte: el día, el tour y la reserva. */
-export const claveTarjeta = (fecha: string, slug: string, reservaId: string) => `${fecha}|${slug}|${reservaId}`;
-
-/** Los costos del corte de las tarjetas entre dos fechas (incluidas las que no entraron, con 0). */
+/**
+ * Los costos del corte de las tarjetas entre dos fechas, por la MISMA clave de
+ * tarjeta que usa el corte (`claveDeTarjeta`, lote 7, 10 nov 2026). Solo las
+ * capturadas: en un borrador, las que nadie ha tocado no están (su salida se
+ * estima con el Cotizador). Un corte hecho, con lo que había al hacerlo.
+ */
 export async function costosDelCorte(desde: string, hasta: string): Promise<Map<string, CostoDelCorte>> {
   const out = new Map<string, CostoDelCorte>();
   const cortes = await prisma.corteSemanal.findMany({
     where: { semana: { gte: addDaysYMD(desde, -6), lte: hasta } },
-    select: { semana: true, hasta: true, captura: true, estado: true },
+    select: { semana: true, hasta: true, captura: true, estado: true, tarjetas: true },
   }).catch(() => []);
   for (const c of cortes) {
-    const { salidas } = await salidasDeLaSemana(c.semana, c.hasta);
-    const por = costosPorTarjeta(salidas, limpiarCaptura(c.captura));
-    for (const s of salidas) {
-      const t = por[s.clave];
-      if (!t) continue;
-      const k = claveTarjeta(s.fecha, s.slug, s.reserva.id);
-      const previo = out.get(k);
-      // Una reserva puede tener dos tarjetas el mismo día y tour (dos renglones): se suman.
-      out.set(k, { costos: (previo?.costos ?? 0) + (t.incluida ? t.costos : 0), incluida: (previo?.incluida ?? false) || t.incluida, semana: c.semana, estado: c.estado });
+    const estado = c.estado === "borrador" ? "borrador" : "cerrado";
+    const { salidas: vivas } = await salidasDeLaSemana(c.semana, c.hasta);
+    const { salidas } = armarTarjetasDelCorte(vivas, limpiarTarjetas(c.tarjetas), estado);
+    const por = costosRealesPorTarjeta(salidas, limpiarCaptura(c.captura));
+    for (const [clave, t] of Object.entries(por)) {
+      out.set(clave, { costos: t.incluida ? t.costos : 0, incluida: t.incluida, ventaExtras: t.ventaExtras, semana: c.semana, estado: c.estado });
     }
   }
   return out;

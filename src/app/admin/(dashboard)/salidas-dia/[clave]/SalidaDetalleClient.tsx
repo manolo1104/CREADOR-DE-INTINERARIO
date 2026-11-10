@@ -265,7 +265,8 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                 ? <p className="mt-1 text-[12px] font-dm text-[var(--panel-atencion)]">Estimado con el Cotizador: los reales salen al hacer el corte de esa semana.</p>
                 : <p className="mt-1 text-[12px] font-dm text-[var(--panel-atencion)]">Faltan costos: se capturan en el corte semanal (o se estiman en el Cotizador).</p>}
             <dl className="mt-2 space-y-1.5 text-[13px] font-dm">
-              <Fila k="Ingreso registrado" v={fmx(n.ingreso)} />
+              {/* Los costos del corte traen los extras: el ingreso también (lote 7). */}
+              <Fila k={s.ingresoExtras > 0 ? `Ingreso registrado (con ${fmx(s.ingresoExtras)} de extras)` : "Ingreso registrado"} v={fmx(n.ingreso)} />
               {s.fuenteCostos === "corte" ? <Fila k="Costos capturados en el corte" v={`− ${fmx(n.costos)}`} /> : <>
                 <Fila k={`Costo fijo de la salida`} v={n.conCostos ? `− ${fmx(n.costoFijo)}` : "—"} />
                 <Fila k={`Costo por persona × ${n.pax}`} v={n.conCostos ? `− ${fmx(n.costoPorPax * n.pax)}` : "—"} />

@@ -14,6 +14,7 @@ import { TOURS_LISTA } from "@/lib/tours";
 import { codigoDeTour } from "./coloresTour";
 import { resumirCostos, type ConceptoCosto } from "./costos";
 import { grupoDe, lineasDe, type ConLineas } from "./reserva";
+import { tourDeTarjeta } from "./corteSemanal";
 
 /** Lo que hace falta de una reserva para sacar sus días de tour. */
 export type ReservaParaSalidas = ConLineas & {
@@ -66,12 +67,12 @@ function personasCrudas(l: Record<string, unknown>): number {
 }
 
 /**
- * Qué tour es un renglón dentro de su reserva, igual que el corte
- * (`corteSalidas.ts`): por su slug; los personalizados y los conceptos sin
- * tour, por su nombre (dos personalizados distintos no son el mismo tour).
+ * Qué tour es un renglón dentro de su reserva: EXACTAMENTE la regla del corte
+ * (`tourDeTarjeta`; lote 7, 10 nov 2026, antes era una copia que no juntaba
+ * los espacios): por su slug; los personalizados y los conceptos sin tour, por
+ * su nombre (dos personalizados distintos no son el mismo tour).
  */
-const tourDelRenglon = (slug: string, nombre: string) =>
-  slug && slug !== "__personalizado" ? slug : `${slug || "concepto"}:${nombre.trim().toLowerCase()}`;
+const tourDelRenglon = tourDeTarjeta;
 
 /** Los días de tour de una reserva: uno por tour y fecha; sin renglones, el tour principal. */
 export function diasDeTourDe(b: ReservaParaSalidas): DiaDeTour[] {
@@ -178,6 +179,18 @@ export function diasEnRango(reservas: ReservaParaSalidas[], desde: string, hasta
 export function diaConTodoCancelado(b: ReservaParaSalidas, fecha: string, canceladas: Set<string>): boolean {
   const delDia = diasDeTourDe(b).filter(d => d.fecha === fecha);
   return delDia.length > 0 && delDia.every(d => canceladas.has(claveDeSalida(d)));
+}
+
+/**
+ * ¿TODAS las salidas de la reserva están marcadas «Cancelada»? (lote 7, 10 nov
+ * 2026). Entonces no se le pide reseña ni la encuesta «¿cómo te fue?»: no hizo
+ * ningún tour. Mismo criterio que el check-in (`diaConTodoCancelado`), sobre
+ * todos los días del viaje: si hizo uno, sí se le pregunta. Si se reabre, sale
+ * en la siguiente corrida.
+ */
+export function viajeConTodoCancelado(b: ReservaParaSalidas, canceladas: Set<string>): boolean {
+  const dias = diasDeTourDe(b);
+  return dias.length > 0 && dias.every(d => canceladas.has(claveDeSalida(d)));
 }
 
 /**
@@ -417,6 +430,31 @@ export function numerosDeSalida(ingreso: number, pax: number, conceptos: Concept
     margenPct: ingreso > 0 ? Math.round((margen / ingreso) * 100) : 0,
     parteSocio: Math.floor(margen / 2),
     conCostos: conceptos.length > 0,
+  };
+}
+
+/** Lo que trae el corte de cada reserva de una salida (`costosReales.ts`). */
+export interface CosteoDeTarjeta { costos: number; ventaExtras: number }
+
+/**
+ * Los números de una salida con los costos REALES del corte si todas sus
+ * reservas los tienen (y suman algo); si no, con el Cotizador (4 nov 2026).
+ * 🔴 Con los del corte, el ingreso lleva también lo cobrado de extras (lote 7,
+ * 10 nov 2026): sus costos traen los extras («Extras de las reservas») y el
+ * ingreso no, y el margen salía más bajo de lo que fue.
+ */
+export function numerosConCorte(
+  monto: number, personas: number, conceptos: ConceptoCosto[], tarjetas: (CosteoDeTarjeta | undefined)[],
+): { numeros: NumerosSalida; conCorte: boolean; ingresoExtras: number } {
+  const completas = tarjetas.length > 0 && tarjetas.every(Boolean);
+  const costoCorte = completas ? tarjetas.reduce((t, x) => t + (x?.costos ?? 0), 0) : 0;
+  // 🔴 Un corte con $0 de costos para esta salida (tarjetas sin capturar o fuera
+  // del corte) NO es «costos reales»: daba 100 % de margen (4 nov 2026).
+  if (!(completas && costoCorte > 0)) return { numeros: numerosDeSalida(monto, personas, conceptos), conCorte: false, ingresoExtras: 0 };
+  const ingresoExtras = tarjetas.reduce((t, x) => t + Math.max(0, x?.ventaExtras ?? 0), 0);
+  return {
+    numeros: numerosDeSalida(monto + ingresoExtras, personas, [{ concepto: "Costos del corte", monto: costoCorte, tipo: "fijo" }]),
+    conCorte: true, ingresoExtras,
   };
 }
 

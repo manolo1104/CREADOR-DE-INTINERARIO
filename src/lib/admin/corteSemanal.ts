@@ -140,6 +140,19 @@ export interface SalidaCorte {
   slug: string;
   /** Lo que cuestan los extras de la reserva (solo en su primer tour). */
   extras: number;
+  /**
+   * Lo que se le COBRA al cliente por esos extras (solo en su primer tour). Si
+   * los costos de la tarjeta traen los extras, el ingreso de su salida también
+   * (lote 7, 10 nov 2026). Opcional: los cortes congelados de antes no lo traen.
+   */
+  ventaExtras?: number;
+  /**
+   * Solo en un corte ya hecho (lote 7, 10 nov 2026): «fuera» = estaba al hacer
+   * el corte y ya no está en las reservas (se canceló o cambió de fecha): sigue
+   * contando con lo que tenía; «nueva» = llegó después y no cuenta hasta
+   * rehacer el corte.
+   */
+  trasCorte?: "fuera" | "nueva";
   ventas: number;
   /** De `ventas`, lo que es del hotel. */
   hospedaje: number;
@@ -266,6 +279,15 @@ export function etiquetaSemana(lunes: string): string {
   return `${f(lunes, !mismoMes)} – ${f(domingo, true)} ${domingo.slice(0, 4)}`;
 }
 
+/**
+ * ¿Ya se puede hacer el corte de esa semana? Solo cuando terminó: a partir del
+ * lunes siguiente (lote 7, 10 nov 2026). Antes se podía cerrar a media semana
+ * y los tours que faltaban se quedaban fuera de un corte «hecho».
+ */
+export function puedeHacerCorte(lunes: string, hoy: string): boolean {
+  return hoy > domingoDe(lunes);
+}
+
 /** "lun 13 oct" */
 export function diaCorto(ymd: string): string {
   return fechaUTC(ymd)
@@ -279,12 +301,88 @@ export function fmx(n: number): string {
   return `${v < 0 ? "−" : ""}$${Math.abs(v).toLocaleString("es-MX")}`;
 }
 
+// ── Tarjetas ────────────────────────────────────────────────────────────────
+
+const normalizarNombre = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
+
+/**
+ * Qué tour es un renglón, para la clave de su tarjeta. Los personalizados
+ * comparten slug, así que se distinguen por su nombre: antes dos tours
+ * distintos de dos clientes el mismo día (21 oct 2026) salían como una sola
+ * salida. Un renglón sin tour (un concepto) también va por su nombre.
+ */
+export function tourDeTarjeta(slug: string, nombre: string): string {
+  return slug && slug !== "__personalizado" ? slug : `${slug || "concepto"}:${normalizarNombre(nombre)}`;
+}
+
+/**
+ * La clave de una tarjeta del corte: "YYYY-MM-DD|<id de la reserva>|<tour>".
+ * La MISMA para el corte y para los costos reales de cada salida (lote 7, 10
+ * nov 2026): antes los costos reales se buscaban por día, slug y reserva, y
+ * dos personalizados (o dos conceptos) de una reserva el mismo día se sumaban
+ * y cada salida se llevaba los costos de las dos.
+ */
+export function claveDeTarjeta(fecha: string, reservaId: string, slug: string, nombre: string): string {
+  return `${fecha}|${reservaId}|${tourDeTarjeta(slug, nombre)}`;
+}
+
+/** De lunes a domingo y, el mismo día, por cliente (Manolo, 20 oct 2026). */
+export function ordenTarjetas(a: SalidaCorte, b: SalidaCorte): number {
+  return a.fecha.localeCompare(b.fecha)
+    || a.reserva.cliente.localeCompare(b.reserva.cliente, "es", { sensitivity: "base" })
+    || a.tour.localeCompare(b.tour) || a.reserva.folio.localeCompare(b.reserva.folio);
+}
+
+/**
+ * Las tarjetas con que se calcula un corte (lote 7, 10 nov 2026). Un corte
+ * HECHO se calcula con lo que había al hacerlo: cada tarjeta guarda lo que
+ * llevaba de ventas y de hotel, y la que ya no está en las reservas (se canceló
+ * o cambió de fecha) sigue contando con eso. Las que llegaron después van
+ * aparte (`nuevas`) y no cuentan hasta rehacer el corte. Antes el corte hecho
+ * se recalculaba con las reservas de hoy: un saldo cobrado después movía el
+ * hotel, y una cancelación borraba sus costos de un corte ya pagado.
+ * Un borrador, o un corte de antes de esto (sin tarjetas guardadas), usa las de hoy.
+ */
+export function armarTarjetasDelCorte(
+  vivas: SalidaCorte[], congeladas: SalidaCorte[] | null, estado: EstadoCorte | null,
+): { salidas: SalidaCorte[]; nuevas: SalidaCorte[] } {
+  if (estado !== "cerrado" || !congeladas) return { salidas: vivas, nuevas: [] };
+  const porClave = new Map(vivas.map(s => [s.clave, s]));
+  const fijas = new Set(congeladas.map(c => c.clave));
+  const salidas = congeladas.map((c): SalidaCorte => {
+    const v = porClave.get(c.clave);
+    if (!v) return { ...c, trasCorte: "fuera" };
+    return {
+      ...v, ventas: c.ventas, hospedaje: c.hospedaje,
+      reserva: { ...v.reserva, cobrado: c.reserva.cobrado, hospedaje: c.reserva.hospedaje },
+    };
+  }).sort(ordenTarjetas);
+  const nuevas = vivas.filter(v => !fijas.has(v.clave)).map((v): SalidaCorte => ({ ...v, trasCorte: "nueva" }));
+  return { salidas, nuevas };
+}
+
+/** Las tarjetas guardadas al hacer el corte (columna `tarjetas`), o null si no hay. */
+export function limpiarTarjetas(raw: unknown): SalidaCorte[] | null {
+  if (!Array.isArray(raw)) return null;
+  return raw
+    .filter((x: any) => x && typeof x === "object" && typeof x.clave === "string" && typeof x.fecha === "string"
+      && x.reserva && typeof x.reserva === "object")
+    .map((x: any): SalidaCorte => ({
+      ...x,
+      tour: String(x.tour ?? ""), slug: String(x.slug ?? ""),
+      personas: entero(x.personas), extras: entero(x.extras), ventas: entero(x.ventas), hospedaje: entero(x.hospedaje),
+      costosSugeridos: Array.isArray(x.costosSugeridos) ? x.costosSugeridos : [],
+      reserva: { ...x.reserva, cobrado: entero(x.reserva.cobrado), hospedaje: entero(x.reserva.hospedaje) },
+    }));
+}
+
 // ── Captura ─────────────────────────────────────────────────────────────────
 
-const entero = (v: unknown) => {
+// Declarada como función (no flecha) para poderla usar arriba, en `limpiarTarjetas`.
+function entero(v: unknown): number {
   const n = Math.round(Number(v));
   return Number.isFinite(n) ? Math.max(0, n) : 0;
-};
+}
 
 /** Única puerta de entrada al JSON que llega del navegador o de la base. */
 export function limpiarCaptura(raw: unknown): Captura {
@@ -319,6 +417,78 @@ export function limpiarCobros(raw: unknown): CobroSemana[] {
     }))
     .filter(c => c.monto > 0)
     .slice(0, 200);
+}
+
+// ── Guardar por partes (lote 7, 10 nov 2026) ────────────────────────────────
+//
+// 🔴 Antes «Guardar» mandaba TODA la captura y todos los cobros, y el servidor
+// los escribía encima: si Manolo y Martín tenían abierta la misma semana, el
+// segundo en guardar borraba sin aviso lo del primero. Ahora la pantalla manda
+// solo lo que cambió (las tarjetas tocadas y, si se tocaron, los cobros) junto
+// con cómo estaban al abrir; el servidor lo junta con lo guardado y solo se
+// niega (409) si el otro cambió ESA misma tarjeta o los cobros.
+
+/** Lo que cambió desde que se abrió la semana. */
+export interface CambiosCorte {
+  /** Solo las tarjetas tocadas: su captura nueva, o null si se quitó («Separar»). */
+  captura: Record<string, CapturaSalida | null>;
+  /** Cómo estaban esas tarjetas al abrir (null: sin captura). */
+  base: Record<string, CapturaSalida | null>;
+  /** Los cobros de la semana, solo si se tocaron. */
+  cobros?: CobroSemana[] | null;
+  /** Cómo estaban los cobros al abrir. */
+  baseCobros?: CobroSemana[] | null;
+}
+
+const textoCaptura = (c: CapturaSalida | null | undefined): string =>
+  c ? JSON.stringify(limpiarCaptura({ k: c }).k ?? null) : "null";
+const textoCobros = (c: CobroSemana[] | null | undefined): string => JSON.stringify(limpiarCobros(c ?? []));
+
+/** Lo que cambió entre lo que se abrió y lo que hay en pantalla. */
+export function cambiosDe(
+  abierto: { captura: Captura; cobros: CobroSemana[] },
+  actual: { captura: Captura; cobros: CobroSemana[] },
+): CambiosCorte {
+  const out: CambiosCorte = { captura: {}, base: {} };
+  const claves = Array.from(new Set([...Object.keys(abierto.captura), ...Object.keys(actual.captura)]));
+  for (const k of claves) {
+    if (textoCaptura(abierto.captura[k]) === textoCaptura(actual.captura[k])) continue;
+    out.captura[k] = actual.captura[k] ?? null;
+    out.base[k] = abierto.captura[k] ?? null;
+  }
+  if (textoCobros(abierto.cobros) !== textoCobros(actual.cobros)) {
+    out.cobros = actual.cobros;
+    out.baseCobros = abierto.cobros;
+  }
+  return out;
+}
+
+/** Si los cambios no traen nada que guardar (para no escribir de balde). */
+export const sinCambios = (c: CambiosCorte) => Object.keys(c.captura).length === 0 && !c.cobros;
+
+/**
+ * Junta lo que cambió con lo guardado. Choca (`conflictos`) solo si alguien más
+ * cambió lo MISMO desde que se abrió: una tarjeta tocada por los dos (con
+ * distinto resultado) o los cobros. Choque en una parte = no se guarda nada.
+ */
+export function juntarCambios(
+  guardado: { captura: Captura; cobros: CobroSemana[] },
+  cambios: CambiosCorte,
+): { ok: true; captura: Captura; cobros: CobroSemana[] } | { ok: false; conflictos: string[] } {
+  const conflictos: string[] = [];
+  const captura: Captura = { ...guardado.captura };
+  for (const [k, nueva] of Object.entries(cambios.captura ?? {})) {
+    const ahora = textoCaptura(guardado.captura[k]);
+    if (ahora !== textoCaptura(cambios.base?.[k]) && ahora !== textoCaptura(nueva)) { conflictos.push(k); continue; }
+    if (nueva) captura[k] = nueva; else delete captura[k];
+  }
+  let cobros = limpiarCobros(guardado.cobros);
+  if (cambios.cobros) {
+    const ahora = textoCobros(guardado.cobros);
+    if (ahora !== textoCobros(cambios.baseCobros) && ahora !== textoCobros(cambios.cobros)) conflictos.push("cobros");
+    else cobros = limpiarCobros(cambios.cobros);
+  }
+  return conflictos.length ? { ok: false, conflictos } : { ok: true, captura: limpiarCaptura(captura), cobros };
 }
 
 /** «De qué» es un cobro, en palabras: lo que se escribió. */
@@ -409,6 +579,70 @@ export function costosPorTarjeta(salidas: SalidaCorte[], captura: Captura): Reco
 /** Lo capturado de una salida o, si nunca se tocó, lo que propone el Cotizador. */
 export function capturaDe(s: SalidaCorte, captura: Captura): CapturaSalida {
   return captura[s.clave] ?? { incluida: true, costos: s.costosSugeridos };
+}
+
+/**
+ * Las cuentas juntas cuya tarjeta principal ya no está (lote 7, 10 nov 2026).
+ * 🔴 Si la principal se cancelaba o cambiaba de fecha, cada tarjeta volvía a
+ * «su propia cuenta», que estaba vacía porque los costos vivían en la
+ * principal: quedaban en $0, y al guardar se perdían los costos. Ahora la
+ * primera tarjeta que sigue viva toma la cuenta con los costos de la que se fue
+ * (`heredadas`, para avisar en la pantalla). Si esos costos ya no existen, cada
+ * tarjeta vuelve a lo que propone el Cotizador (nunca a $0).
+ */
+export function normalizarCuentas(salidas: SalidaCorte[], captura: Captura): { captura: Captura; heredadas: string[] } {
+  const vivas = new Set(salidas.map(s => s.clave));
+  const valida = (k: string) => vivas.has(k) && captura[k]?.cuenta === k;
+  const huerfanas = new Map<string, SalidaCorte[]>();
+  for (const s of salidas) {
+    const k = captura[s.clave]?.cuenta;
+    if (!k || k === s.clave || valida(k)) continue;
+    const g = huerfanas.get(k);
+    if (g) g.push(s); else huerfanas.set(k, [s]);
+  }
+  if (huerfanas.size === 0) return { captura, heredadas: [] };
+  const out: Captura = { ...captura };
+  const heredadas: string[] = [];
+  for (const [k, ts] of Array.from(huerfanas.entries())) {
+    const vieja = !vivas.has(k) && captura[k]?.cuenta === k ? captura[k] : null;
+    if (vieja) {
+      const cabeza = ts[0].clave;
+      const propios = ts.flatMap(t => captura[t.clave]?.costos ?? []);
+      out[cabeza] = { incluida: vieja.incluida, costos: [...vieja.costos, ...propios], ...(ts.length > 1 ? { cuenta: cabeza } : {}) };
+      for (const t of ts.slice(1)) out[t.clave] = { incluida: vieja.incluida, costos: [], cuenta: cabeza };
+      delete out[k];
+      heredadas.push(cabeza);
+    } else {
+      for (const t of ts) {
+        const c = captura[t.clave];
+        if (c && c.costos.length > 0) out[t.clave] = { incluida: c.incluida, costos: c.costos };
+        else delete out[t.clave];
+      }
+    }
+  }
+  return { captura: out, heredadas };
+}
+
+/**
+ * Los costos REALES de cada tarjeta, para la utilidad de cada salida
+ * (`costosReales.ts`): solo las capturadas (lote 7, 10 nov 2026). En un corte
+ * hecho son todas las que había al hacerlo (se guardan todas); en un borrador,
+ * las que se tocaron. Las demás traen lo que propone el Cotizador con los
+ * costos fijos COMPLETOS en cada reserva, y pasaban por «costos reales del
+ * corte»; ahora esas salidas se estiman con el Cotizador por salida y se
+ * marcan «estimado».
+ */
+export function costosRealesPorTarjeta(
+  salidas: SalidaCorte[], captura: Captura,
+): Record<string, { incluida: boolean; costos: number; ventaExtras: number }> {
+  const { captura: c } = normalizarCuentas(salidas, captura);
+  const por = costosPorTarjeta(salidas, c);
+  const out: Record<string, { incluida: boolean; costos: number; ventaExtras: number }> = {};
+  for (const cu of cuentasDe(salidas, c)) {
+    if (!c[cu.clave]) continue;
+    for (const t of cu.tarjetas) out[t.clave] = { ...por[t.clave], ventaExtras: t.ventaExtras ?? 0 };
+  }
+  return out;
 }
 
 // ── El estado de resultados ─────────────────────────────────────────────────
@@ -550,4 +784,63 @@ export function calcularCorte(salidas: SalidaCorte[], captura: Captura, cobros: 
       pasa: costosPagados + gMartin + rzrReparto.martin + rzrReparto.vendedor - cobro,
     },
   };
+}
+
+// ── Avisos (lote 7, 10 nov 2026) ────────────────────────────────────────────
+
+export interface DiferenciaCorte { que: string; antes: number; ahora: number; pesos: boolean }
+
+/**
+ * Qué cambió entre lo guardado y lo de ahora. Antes el aviso solo miraba lo
+ * cobrado, los costos y cuántas cuentas había: un saldo cobrado después (que
+ * mueve el hotel) o un cambio en lo que se le pasa a Martín no avisaba.
+ */
+export function diferenciasDelCorte(antes: Partial<ResumenCorte>, ahora: ResumenCorte): DiferenciaCorte[] {
+  const campos: [string, number | undefined, number, boolean][] = [
+    ["Lo cobrado", antes.ventas, ahora.ventas, true],
+    ["Hotel", antes.hospedaje, ahora.hospedaje, true],
+    ["Costos", antes.costos, ahora.costos, true],
+    ["Ganancia", antes.utilidad, ahora.utilidad, true],
+    [`Lo que se le pasa a ${SOCIO_COSTOS}`, antes.liquidacion?.pasa, ahora.liquidacion.pasa, true],
+    ["Tours en el corte", antes.tarjetas ?? antes.salidas?.length, ahora.tarjetas, false],
+  ];
+  return campos
+    .filter(([, a, b]) => typeof a === "number" && a !== b)
+    .map(([que, a, b, pesos]) => ({ que, antes: a as number, ahora: b, pesos }));
+}
+
+/** Lo registrado en Cobros (el panel) en la semana: todo y lo que entró por Stripe. */
+export interface CobrosDelPanel { total: number; stripe: number }
+
+export interface CuadreCobros {
+  escrito: number; registrado: number; diferencia: number;
+  escritoStripe: number; registradoStripe: number; diferenciaStripe: number;
+}
+
+/**
+ * Lo escrito a mano en «Lo cobrado» contra lo registrado en Cobros esa semana
+ * (lote 7, 10 nov 2026): un cobro olvidado, o anotado en dos semanas, cambia
+ * lo que se reparte y nadie lo veía. Solo avisa: decide una persona.
+ */
+export function cuadreCobros(escritos: CobroSemana[], panel: CobrosDelPanel): CuadreCobros {
+  const escrito = escritos.reduce((t, c) => t + entero(c.monto), 0);
+  const escritoStripe = escritos.filter(c => c.stripe).reduce((t, c) => t + entero(c.monto), 0);
+  return {
+    escrito, registrado: panel.total, diferencia: escrito - panel.total,
+    escritoStripe, registradoStripe: panel.stripe, diferenciaStripe: escritoStripe - panel.stripe,
+  };
+}
+
+/** El aviso del cuadre en palabras (vacío si cuadra). */
+export function avisosCuadre(c: CuadreCobros): string[] {
+  const out: string[] = [];
+  if (c.diferencia < 0) {
+    out.push(`Faltan ${fmx(-c.diferencia)}: en Cobros se registraron ${fmx(c.registrado)} esta semana y aquí van ${fmx(c.escrito)}. ¿Un cobro sin anotar?`);
+  } else if (c.diferencia > 0) {
+    out.push(`Aquí van ${fmx(c.diferencia)} más de lo registrado en Cobros esta semana (${fmx(c.registrado)}). ¿Un cobro de otra semana, anotado dos veces o que falta registrar en Cobros?`);
+  }
+  if (c.diferenciaStripe !== 0) {
+    out.push(`Marcado «Vino de Stripe»: ${fmx(c.escritoStripe)}; en Cobros entró por Stripe ${fmx(c.registradoStripe)}. La comisión depende de esto.`);
+  }
+  return out;
 }

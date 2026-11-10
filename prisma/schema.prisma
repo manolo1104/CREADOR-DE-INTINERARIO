@@ -683,6 +683,10 @@ model CorteSemanal {
   /// [{ monto, recibio: "Manolo" | "Martín", concepto: <de qué, texto libre> }].
   /// Nullable: los cortes de antes no lo tienen y `db push` no debe tumbarse.
   cobros      Json?
+  /// Las tarjetas tal como estaban al hacer el corte (lote 7, 10 nov 2026):
+  /// con sus ventas y su hotel. Un corte hecho se calcula con esto, no con las
+  /// reservas de hoy. Nullable: los cortes de antes no lo tienen.
+  tarjetas    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

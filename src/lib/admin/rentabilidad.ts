@@ -8,6 +8,9 @@ import { montoCobrado } from "./dinero";
 import { salidasEntre } from "./salidasDia";
 import { bajoMinimoRentable } from "./salidas";
 import { sugerenciasAgrupar } from "./agruparDatos";
+import { filasPorTour, type FilaTour } from "./rentabilidadPorTour";
+
+export type { FilaTour } from "./rentabilidadPorTour";
 
 /**
  * Lo que se queda cada canal de lo cobrado. OTA ≈ 25 % (prompt); la web paga
@@ -16,10 +19,6 @@ import { sugerenciasAgrupar } from "./agruparDatos";
  */
 export const COMISION_CANAL: Partial<Record<OrigenReserva, number>> = { ota: 0.25, web: 0.036 * 1.16 };
 
-export interface FilaTour {
-  slug: string; codigo: string; nombre: string; salidas: number; personas: number; paxPorSalida: number;
-  ingreso: number; margen: number | null; margenPct: number | null; conCostos: boolean; aMedida: boolean;
-}
 export interface FilaCanal { canal: OrigenReserva; etiqueta: string; reservas: number; cobrado: number; comisionPct: number; comision: number; neto: number }
 
 export interface DatosRentabilidad {
@@ -51,17 +50,8 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
     prisma.tourBooking.findMany({ where: { status: { notIn: ["cancelled", "borrador"] }, createdAt: { gte: new Date(`${ini}T00:00:00-06:00`), lte: new Date(`${fin}T23:59:59.999-06:00`) } } }),
   ]);
 
-  const porSlug = new Map<string, FilaTour>();
-  for (const s of salidas) {
-    const f = porSlug.get(s.slug) ?? { slug: s.slug, codigo: s.codigo, nombre: s.aMedida ? "Salidas a medida" : s.tourNombre, salidas: 0, personas: 0, paxPorSalida: 0, ingreso: 0, margen: 0, margenPct: null, conCostos: s.numeros.conCostos, aMedida: s.aMedida };
-    f.salidas++; f.personas += s.personas; f.ingreso += s.numeros.ingreso;
-    if (s.numeros.conCostos) f.margen = (f.margen ?? 0) + s.numeros.margen; else { f.conCostos = false; f.margen = null; }
-    porSlug.set(s.slug, f);
-  }
-  const porTour = Array.from(porSlug.values()).map(f => ({
-    ...f, paxPorSalida: Math.round((f.personas / f.salidas) * 10) / 10,
-    margenPct: f.conCostos && f.margen !== null && f.ingreso > 0 ? Math.round((f.margen / f.ingreso) * 100) : null,
-  })).sort((a, b) => b.ingreso - a.ingreso);
+  // El margen por tour ya no depende del orden de las salidas (lote 7, 10 nov 2026).
+  const porTour: FilaTour[] = filasPorTour(salidas);
 
   const conCostos = salidas.filter(s => s.numeros.conCostos);
   const regulares = salidas.filter(s => !s.aMedida && s.estadoPax !== "privada");

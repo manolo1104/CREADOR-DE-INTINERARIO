@@ -8,13 +8,14 @@ import { MARGEN_DIAS, NO_CUENTAN, cupoDeTour } from "@/lib/cupoTour";
 import { origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import { conceptosDe, type ConceptoCosto } from "./costos";
 import { saldoPendiente } from "./dinero";
-import { claveTarjeta, costosDelCorte, type CostoDelCorte } from "./costosReales";
+import { costosDelCorte, type CostoDelCorte } from "./costosReales";
+import { claveDeTarjeta } from "./corteSemanal";
 import { hospedajeDeReserva } from "./hospedaje";
 import { checklistDe, type ItemChecklist } from "./checklistSalida";
 import { claveReglaConSalidaNueva } from "./automatizaciones";
 import {
   agruparSalidas, claveDeSalida, diasDeTourDe, diasEnRango, emparejarRegistros, esAMedida, esPrivadaDeCatalogo, estadoDeSalida,
-  guiaDeSalida, minimoDelTour, numerosDeSalida, pagoEnSalida, salidaCancelada,
+  guiaDeSalida, minimoDelTour, numerosConCorte, pagoEnSalida, salidaCancelada,
   type EstadoSalida, type NumerosSalida, type PagoPasajero, type SalidaAgrupada,
 } from "./salidas";
 
@@ -85,6 +86,8 @@ export interface SalidaOperativa extends SalidaAgrupada {
   fuenteCostos: "corte" | "cotizador" | null;
   /** Lunes de la semana del corte de donde salieron (si fuente = corte). */
   semanaCorte: string | null;
+  /** Con costos del corte: lo cobrado de extras que ya va en `numeros.ingreso` (lote 7). */
+  ingresoExtras: number;
   numeros: NumerosSalida;
   /** Precio por persona del catálogo, para el simulador (0 si se cobra por vehículo o a medida). */
   precioPorPax: number;
@@ -194,8 +197,8 @@ export async function salidasEntre(desde: string, hasta: string, opciones: { con
     const reg = registroDe.get(s.clave);
     const conceptos = conceptosDe(costos.find(c => c.tourSlug === s.slug)?.conceptos);
     // Un pasajero por reserva: `diasDeTourDe` ya junta los renglones del mismo tour ese día (lote 6).
-    const pasajeros: Pasajero[] = dias
-      .filter(d => d.fecha === s.fecha && s.folios.includes(d.folio) && claveDeSalida(d) === s.clave)
+    const diasSalida = dias.filter(d => d.fecha === s.fecha && s.folios.includes(d.folio) && claveDeSalida(d) === s.clave);
+    const pasajeros: Pasajero[] = diasSalida
       .map(d => {
         const b = porFolio.get(d.folio)!;
         const saldo = saldoPendiente(b);
@@ -210,17 +213,11 @@ export async function salidasEntre(desde: string, hasta: string, opciones: { con
       });
     // Costos REALES del corte (Manolo, 4 nov 2026): si todas sus reservas están en
     // un corte guardado, la utilidad sale de lo capturado ahí; si no, se estima
-    // con el Cotizador y se dice que es estimado.
-    const tarjetas = pasajeros.map(p => corte.get(claveTarjeta(s.fecha, s.slug, p.bookingId)));
-    const costoCorte = tarjetas.every(Boolean) ? tarjetas.reduce((t, x) => t + (x?.costos ?? 0), 0) : 0;
-    // 🔴 Un corte con $0 de costos para esta salida (tarjetas sin capturar o
-    // fuera del corte) NO es «costos reales»: daba 100 % de margen en
-    // Rentabilidad y en Portafolio mientras esta pantalla decía «Faltan costos»
-    // (4 nov 2026). Sin costos en el corte, manda el Cotizador (o nada).
-    const conCorte = pasajeros.length > 0 && tarjetas.every(Boolean) && costoCorte > 0;
-    const numeros = conCorte
-      ? numerosDeSalida(s.monto, s.personas, [{ concepto: "Costos del corte", monto: costoCorte, tipo: "fijo" }])
-      : numerosDeSalida(s.monto, s.personas, conceptos);
+    // con el Cotizador y se dice que es estimado. Cada reserva se busca por la
+    // MISMA clave de su tarjeta en el corte (lote 7, 10 nov 2026): antes dos
+    // personalizados de una reserva el mismo día se llevaban los costos de los dos.
+    const tarjetas = diasSalida.map(d => corte.get(claveDeTarjeta(d.fecha, porFolio.get(d.folio)!.id, d.slug, d.nombre)));
+    const { numeros, conCorte, ingresoExtras } = numerosConCorte(s.monto, s.personas, conceptos, tarjetas);
     const cupo = tour ? cupoDeTour(tour) : null;
     const precioPorPax = tour && tour.precioUnidad !== "vehiculo" && tour.precioUnidad !== "grupo" ? tour.precio : 0;
     const p = tour ? partesRecogida(tour, false) : null;
@@ -247,6 +244,7 @@ export async function salidasEntre(desde: string, hasta: string, opciones: { con
       numeros,
       fuenteCostos: conCorte ? "corte" as const : numeros.conCostos ? "cotizador" as const : null,
       semanaCorte: conCorte ? (tarjetas[0]?.semana ?? null) : null,
+      ingresoExtras,
       precioPorPax,
       protocolo: tour && p ? {
         // El punto de encuentro capturado en «Rutas» manda sobre el del catálogo.

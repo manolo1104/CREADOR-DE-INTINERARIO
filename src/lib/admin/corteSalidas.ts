@@ -6,13 +6,17 @@ import type { TourBooking } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { montoCobrado, saldoPendiente } from "@/lib/admin/kpis";
 import { conceptosDe } from "@/lib/admin/costos";
-import { extrasDe, costoExtras } from "@/lib/admin/extras";
+import { extrasDe, costoExtras, totalExtras } from "@/lib/admin/extras";
 import { lineasDe, grupoDe } from "@/lib/admin/reserva";
 import { zonaDeReserva, salidaDeReserva, hospedajeDeReserva } from "@/lib/admin/hospedaje";
 import { TOURS_LISTA, cargoVallesDe } from "@/lib/tours";
 import { ID_TRASLADO_VALLES } from "@/lib/tourPricing";
 import { addDaysYMD } from "@/lib/dates";
-import { repartirExacto, sugerirCostos, type SalidaCorte, type CatalogoCostos } from "@/lib/admin/corteSemanal";
+import { MARGEN_DIAS, NO_CUENTAN } from "@/lib/cupoTour";
+import {
+  claveDeTarjeta, ordenTarjetas, repartirExacto, sugerirCostos,
+  type SalidaCorte, type CatalogoCostos, type CobrosDelPanel,
+} from "@/lib/admin/corteSemanal";
 
 export const ES_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -20,21 +24,6 @@ export const ES_FECHA = /^\d{4}-\d{2}-\d{2}$/;
 // todavía no la tiene —o no tiene una columna nueva, como `estado`: P2022—, el
 // corte se puede VER pero no guardar.
 export const sinTabla = (e: any) => e?.code === "P2021" || e?.code === "P2022";
-
-/**
- * El slug de los tours armados a mano en el panel (el de `ReservaModal`). Se
- * repite aquí porque ese archivo es «use client»: importado desde una ruta de
- * servidor no llega como texto.
- */
-const SLUG_PERSONALIZADO = "__personalizado";
-const normalizar = (s: string) => s.toLowerCase().replace(/\s+/g, " ").trim();
-/**
- * Qué tour es un renglón, para la clave. Los personalizados comparten slug, así
- * que se distinguen por su nombre: antes dos tours distintos de dos clientes el
- * mismo día (21 oct 2026) salían como una sola salida.
- */
-const tourDe = (t: { slug: string; nombre: string }) =>
-  t.slug && t.slug !== SLUG_PERSONALIZADO ? t.slug : `${t.slug || "concepto"}:${normalizar(t.nombre)}`;
 
 /**
  * Las tarjetas de una semana: cada reserva se abre en sus tours (`lineItems`,
@@ -51,9 +40,12 @@ export async function salidasDeLaSemana(lunes: string, domingo: string): Promise
       // siempre va en orden (hay paquetes con un tour un día antes), así que se
       // busca con dos semanas de margen a cada lado y abajo se filtra renglón
       // por renglón.
+      // 🔴 Con ±14 días, el 2.º tour de un carrito con fechas separadas no
+      // llegaba al corte (ni sus costos): el mismo margen que Salidas del día y
+      // el cupo (lote 7, 10 nov 2026), y las que no traen `tourDate`.
       where: {
-        tourDate: { gte: addDaysYMD(lunes, -14), lte: addDaysYMD(domingo, 14) },
-        status: { notIn: ["cancelled", "borrador"] },
+        status: { notIn: NO_CUENTAN },
+        OR: [{ tourDate: { gte: addDaysYMD(lunes, -MARGEN_DIAS), lte: addDaysYMD(domingo, MARGEN_DIAS) } }, { tourDate: "" }],
       },
       orderBy: { tourDate: "asc" },
     }),
@@ -78,9 +70,10 @@ export async function salidasDeLaSemana(lunes: string, domingo: string): Promise
       : 0;
     const extrasReserva = extrasDe(b.extraItems);
     const extras = costoExtras(extrasReserva);
+    const ventaExtras = totalExtras(extrasReserva);
     // Dos renglones del mismo tour el mismo día (un vehículo por renglón) son
     // UNA tarjeta: así se cuenta "entre cuántos tours se reparte".
-    const claveDe = (t: { fecha: string; slug: string; nombre: string }) => `${t.fecha}|${b.id}|${tourDe(t)}`;
+    const claveDe = (t: { fecha: string; slug: string; nombre: string }) => claveDeTarjeta(t.fecha, b.id, t.slug, t.nombre);
     const numTours = new Set(tramos.map(claveDe)).size;
 
     // Lo que vale cada tour es lo que dice la reserva: su renglón, y lo demás de
@@ -117,7 +110,7 @@ export async function salidasDeLaSemana(lunes: string, domingo: string): Promise
             personas: 0, cobrado: 0, hospedaje: 0, cobradoReserva: cobrado, tours: numTours,
             precioTour: 0, totalReserva: b.totalAmount, saldo: saldoPendiente(b),
           },
-          extras: 0, grupo: grupoDe(b).total,
+          extras: 0, ventaExtras: 0, grupo: grupoDe(b).total,
         };
         mapa.set(clave, s);
       }
@@ -140,7 +133,7 @@ export async function salidasDeLaSemana(lunes: string, domingo: string): Promise
       s.hospedaje += h;
       // Los extras (comida, transporte) son de la reserva, no de cada tour:
       // se cargan una sola vez, al primero (el mismo que lleva su venta).
-      if (i === iPrimero) s.extras += extras;
+      if (i === iPrimero) { s.extras += extras; s.ventaExtras = (s.ventaExtras ?? 0) + ventaExtras; }
     });
   }
 
@@ -166,10 +159,7 @@ export async function salidasDeLaSemana(lunes: string, domingo: string): Promise
     // De lunes a domingo, y el mismo día por cliente (Manolo, 20 oct 2026). La
     // página las agrupa por cliente en el orden en que aparece cada uno —el día
     // de su primer tour—, y la hoja impresa sale en este mismo orden.
-    .sort((a, b) =>
-      a.fecha.localeCompare(b.fecha)
-      || a.reserva.cliente.localeCompare(b.reserva.cliente, "es", { sensitivity: "base" })
-      || a.tour.localeCompare(b.tour) || a.reserva.folio.localeCompare(b.reserva.folio));
+    .sort(ordenTarjetas);
   return { salidas, catalogo: costosPorSlug };
 }
 
@@ -209,4 +199,39 @@ function tramosDe(b: TourBooking, hotel: number) {
         .reduce((t, a) => t + Math.max(0, Math.round(Number(a.subtotal) || 0)), 0),
     };
   });
+}
+
+/**
+ * Lo registrado en Cobros (renglones vivos) con fecha en la semana, para el
+ * cuadre con lo escrito a mano en «Lo cobrado» (lote 7, 10 nov 2026). Si la
+ * base no responde, sin cuadre: el corte sigue.
+ */
+export async function cobrosRegistrados(desde: string, hasta: string): Promise<(CobrosDelPanel & {
+  lista: { fecha: string; monto: number; metodo: string; recibio: string; folio: string; cliente: string }[];
+}) | null> {
+  try {
+    const movs = await prisma.movimiento.findMany({
+      where: { tipo: "cobro", anulado: false, fecha: { gte: desde, lte: hasta } },
+      select: { fecha: true, monto: true, metodoPago: true, recibidoPor: true, reservaId: true },
+      orderBy: { fecha: "asc" },
+    });
+    const ids = Array.from(new Set(movs.map(m => m.reservaId).filter((x): x is string => !!x)));
+    const reservas = ids.length
+      ? await prisma.tourBooking.findMany({ where: { id: { in: ids } }, select: { id: true, confirmationNumber: true, customerName: true } })
+      : [];
+    const porId = new Map(reservas.map(r => [r.id, r]));
+    const lista = movs.map(m => ({
+      fecha: m.fecha, monto: m.monto, metodo: m.metodoPago ?? "", recibio: m.recibidoPor ?? "",
+      folio: (m.reservaId && porId.get(m.reservaId)?.confirmationNumber) || "",
+      cliente: ((m.reservaId && porId.get(m.reservaId)?.customerName) || "").trim(),
+    }));
+    return {
+      total: lista.reduce((t, m) => t + m.monto, 0),
+      stripe: lista.filter(m => m.metodo === "stripe").reduce((t, m) => t + m.monto, 0),
+      lista,
+    };
+  } catch (e) {
+    console.error("cobros registrados de la semana:", (e as Error)?.message);
+    return null;
+  }
 }
