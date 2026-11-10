@@ -244,6 +244,59 @@ describe("Rentabilidad: el margen por tour no depende del orden", () => {
   });
 });
 
+describe("revisión del lote 7: cortes hechos antes y choques que no lo son", () => {
+  const A = tarjeta("2026-10-21|ra|expedicion-tamul", 5000, { hospedaje: 1000 });
+  const B = tarjeta("2026-10-21|rb|expedicion-tamul", 3000);
+  const captura: Captura = {
+    [A.clave]: { incluida: true, costos: [{ concepto: "Camioneta", monto: 2000 }], cuenta: A.clave },
+    [B.clave]: { incluida: true, costos: [], cuenta: A.clave },
+  };
+  const cobros = [cobro(8000)];
+
+  it("un corte hecho sin tarjetas guardadas: un saldo cobrado después NO avisa (solo lo de siempre)", () => {
+    const alCerrar = calcularCorte([A, B], captura, cobros);
+    // Hoy A pagó su saldo: su parte de hotel subió. Nadie tocó el corte.
+    const hoy = calcularCorte([{ ...A, hospedaje: 1500 }, B], captura, cobros);
+    expect(diferenciasDelCorte(alCerrar, hoy).map(d => d.que)).toEqual(expect.arrayContaining(["Hotel", "Ganancia"]));
+    expect(diferenciasDelCorte(alCerrar, hoy, { comoAntes: true })).toEqual([]);
+    // Lo que avisaba antes sigue avisando: unos costos que cambiaron o una cuenta menos.
+    const otrosCostos = calcularCorte([A, B], { ...captura, [A.clave]: { ...captura[A.clave], costos: [{ concepto: "Camioneta", monto: 2500 }] } }, cobros);
+    expect(diferenciasDelCorte(alCerrar, otrosCostos, { comoAntes: true }).map(d => d.que)).toEqual(["Costos"]);
+    const sinB = calcularCorte([A, tarjeta("2026-10-22|rc|gruta-de-xilo", 1000)], { [A.clave]: { incluida: true, costos: [] } }, cobros);
+    expect(diferenciasDelCorte(alCerrar, sinB, { comoAntes: true }).map(d => d.que)).toContain("Cuentas en el corte");
+  });
+
+  it("un resumen sin `tarjetas` (de antes del 22 oct) compara cuentas con cuentas: la cuenta junta no avisa", () => {
+    const r = calcularCorte([A, B], captura, cobros);
+    const { tarjetas: _t, ...viejo } = r;
+    expect(r.tarjetas).toBe(2);
+    expect(r.salidas).toHaveLength(1);
+    expect(diferenciasDelCorte(viejo, r)).toEqual([]);
+  });
+
+  it("si otro hizo el corte mientras, la tarjeta que nadie tocó (lo del Cotizador) no es choque", () => {
+    const abierto = { captura: {} as Captura, cobros };
+    const mio = cambiosDe(abierto, { captura: { [B.clave]: { incluida: true, costos: [{ concepto: "Guía", monto: 650 }] } }, cobros });
+    // Al hacer el corte, cada tarjeta sin tocar quedó escrita con lo del Cotizador.
+    const trasElCorte = { captura: { [B.clave]: { incluida: true, costos: B.costosSugeridos } } as Captura, cobros };
+    const sugerida = (k: string) => (k === B.clave ? { incluida: true, costos: B.costosSugeridos } : null);
+    expect(juntarCambios(trasElCorte, mio).ok).toBe(false); // sin saber lo sugerido, choca
+    const r = juntarCambios(trasElCorte, mio, sugerida);
+    expect(r.ok && r.captura[B.clave].costos[0].monto).toBe(650);
+    // Pero si el otro sí la cambió (no es lo del Cotizador), choca.
+    const cambiada = { captura: { [B.clave]: { incluida: true, costos: [{ concepto: "Guía", monto: 700 }] } } as Captura, cobros };
+    expect(juntarCambios(cambiada, mio, sugerida)).toEqual({ ok: false, conflictos: [B.clave] });
+  });
+
+  it("las tarjetas guardadas siempre traen cliente y folio como texto (para ordenarlas)", () => {
+    const raro = JSON.parse(JSON.stringify([A, B]));
+    delete raro[0].reserva.cliente;
+    const limpias = limpiarTarjetas(raro)!;
+    expect(limpias[0].reserva.cliente).toBe("");
+    expect(() => armarTarjetasDelCorte([], limpias, "cerrado")).not.toThrow();
+  });
+});
+
 describe("reseña y «¿cómo te fue?»: no si todas sus salidas se cancelaron", () => {
   const b: ReservaParaSalidas = {
     confirmationNumber: "HP-9", tourSlug: "expedicion-tamul", tourName: "Tamul", tourDate: "2026-11-02", totalAmount: 6000, adults: 2, children: 0,

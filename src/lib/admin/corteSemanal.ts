@@ -372,7 +372,11 @@ export function limpiarTarjetas(raw: unknown): SalidaCorte[] | null {
       tour: String(x.tour ?? ""), slug: String(x.slug ?? ""),
       personas: entero(x.personas), extras: entero(x.extras), ventas: entero(x.ventas), hospedaje: entero(x.hospedaje),
       costosSugeridos: Array.isArray(x.costosSugeridos) ? x.costosSugeridos : [],
-      reserva: { ...x.reserva, cobrado: entero(x.reserva.cobrado), hospedaje: entero(x.reserva.hospedaje) },
+      // Texto siempre (revisión, 10 nov 2026): `ordenTarjetas` compara el cliente y el folio.
+      reserva: {
+        ...x.reserva, id: String(x.reserva.id ?? ""), folio: String(x.reserva.folio ?? ""), cliente: String(x.reserva.cliente ?? ""),
+        cobrado: entero(x.reserva.cobrado), hospedaje: entero(x.reserva.hospedaje),
+      },
     }));
 }
 
@@ -474,12 +478,19 @@ export const sinCambios = (c: CambiosCorte) => Object.keys(c.captura).length ===
 export function juntarCambios(
   guardado: { captura: Captura; cobros: CobroSemana[] },
   cambios: CambiosCorte,
+  /** Lo que propone el Cotizador para una tarjeta (la captura de una que nadie ha tocado). */
+  sugerida?: (clave: string) => CapturaSalida | null,
 ): { ok: true; captura: Captura; cobros: CobroSemana[] } | { ok: false; conflictos: string[] } {
   const conflictos: string[] = [];
   const captura: Captura = { ...guardado.captura };
   for (const [k, nueva] of Object.entries(cambios.captura ?? {})) {
     const ahora = textoCaptura(guardado.captura[k]);
-    if (ahora !== textoCaptura(cambios.base?.[k]) && ahora !== textoCaptura(nueva)) { conflictos.push(k); continue; }
+    const base = cambios.base?.[k] ?? null;
+    // Revisión del lote 7 (10 nov 2026): sin tocar al abrir = lo del Cotizador.
+    // Si mientras otro HIZO el corte, esa tarjeta quedó escrita con eso mismo:
+    // nadie la cambió y no es un choque (antes daba 409 a quien capturaba).
+    const comoAlAbrir = ahora === textoCaptura(base) || (!base && !!sugerida && ahora === textoCaptura(sugerida(k)));
+    if (!comoAlAbrir && ahora !== textoCaptura(nueva)) { conflictos.push(k); continue; }
     if (nueva) captura[k] = nueva; else delete captura[k];
   }
   let cobros = limpiarCobros(guardado.cobros);
@@ -795,15 +806,30 @@ export interface DiferenciaCorte { que: string; antes: number; ahora: number; pe
  * cobrado, los costos y cuántas cuentas había: un saldo cobrado después (que
  * mueve el hotel) o un cambio en lo que se le pasa a Martín no avisaba.
  */
-export function diferenciasDelCorte(antes: Partial<ResumenCorte>, ahora: ResumenCorte): DiferenciaCorte[] {
-  const campos: [string, number | undefined, number, boolean][] = [
-    ["Lo cobrado", antes.ventas, ahora.ventas, true],
-    ["Hotel", antes.hospedaje, ahora.hospedaje, true],
-    ["Costos", antes.costos, ahora.costos, true],
-    ["Ganancia", antes.utilidad, ahora.utilidad, true],
-    [`Lo que se le pasa a ${SOCIO_COSTOS}`, antes.liquidacion?.pasa, ahora.liquidacion.pasa, true],
-    ["Tours en el corte", antes.tarjetas ?? antes.salidas?.length, ahora.tarjetas, false],
-  ];
+export function diferenciasDelCorte(
+  antes: Partial<ResumenCorte>, ahora: ResumenCorte, opciones: { comoAntes?: boolean } = {},
+): DiferenciaCorte[] {
+  // Revisión del lote 7 (10 nov 2026): un resumen sin `tarjetas` (de antes del
+  // 22 oct) se compara cuenta contra cuenta; antes se comparaban sus cuentas
+  // contra las tarjetas de hoy y una cuenta junta avisaba sin que nada cambiara.
+  const cuantos: [string, number | undefined, number, boolean] = typeof antes.tarjetas === "number" && !opciones.comoAntes
+    ? ["Tours en el corte", antes.tarjetas, ahora.tarjetas, false]
+    : ["Cuentas en el corte", antes.salidas?.length, ahora.salidas.length, false];
+  // 🔴 `comoAntes` (revisión del lote 7, 10 nov 2026): un corte HECHO antes del
+  // lote 7 no guardó sus tarjetas y se ve con las reservas de hoy. Ahí se compara
+  // solo lo de siempre (lo cobrado, los costos y cuántas cuentas): el hotel, la
+  // ganancia y lo de Martín se mueven con cualquier saldo cobrado después, y el
+  // aviso saldría el primer día en cortes ya pagados sin que nadie tocara nada.
+  const campos: [string, number | undefined, number, boolean][] = opciones.comoAntes
+    ? [["Lo cobrado", antes.ventas, ahora.ventas, true], ["Costos", antes.costos, ahora.costos, true], cuantos]
+    : [
+        ["Lo cobrado", antes.ventas, ahora.ventas, true],
+        ["Hotel", antes.hospedaje, ahora.hospedaje, true],
+        ["Costos", antes.costos, ahora.costos, true],
+        ["Ganancia", antes.utilidad, ahora.utilidad, true],
+        [`Lo que se le pasa a ${SOCIO_COSTOS}`, antes.liquidacion?.pasa, ahora.liquidacion.pasa, true],
+        cuantos,
+      ];
   return campos
     .filter(([, a, b]) => typeof a === "number" && a !== b)
     .map(([que, a, b, pesos]) => ({ que, antes: a as number, ahora: b, pesos }));

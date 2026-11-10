@@ -152,8 +152,12 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
 
   // Se guardó, y después entró un cobro o se canceló una reserva. Compara
   // también el hotel, la ganancia y lo que se le pasa a Martín (lote 7).
+  // Un corte hecho antes del lote 7 (sin tarjetas guardadas) se ve con las
+  // reservas de hoy: ahí se compara solo lo de siempre (revisión, 10 nov 2026).
   const diferencias: DiferenciaCorte[] = useMemo(
-    () => (datos?.guardado && resumen && !sucio ? diferenciasDelCorte(datos.guardado.resumen, resumen) : []),
+    () => (datos?.guardado && resumen && !sucio
+      ? diferenciasDelCorte(datos.guardado.resumen, resumen, { comoAntes: datos.guardado.estado === "cerrado" && !datos.guardado.congelado })
+      : []),
     [datos, resumen, sucio],
   );
   const cambioDesdeGuardado = diferencias.length > 0;

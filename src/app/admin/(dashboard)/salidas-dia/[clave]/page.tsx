@@ -23,7 +23,8 @@ export default async function SalidaDetallePage({ params, searchParams }: { para
   // (revisión del 4 nov 2026): a Operación se le quitó el Cotizador justo por
   // eso, y el guía no ve dinero. Se quitan ANTES de mandarlos al navegador.
   const verDinero = !!sesion && sesion.rol !== "guia" && (await seccionesDe(sesion)).includes("cotizador");
-  const datos = verDinero ? salida : { ...salida, conceptos: [], precioPorPax: 0, numeros: numerosDeSalida(0, salida.personas, []) };
+  // `ingresoExtras` también es dinero de la salida (revisión del lote 7, 10 nov 2026).
+  const datos = verDinero ? salida : { ...salida, conceptos: [], precioPorPax: 0, ingresoExtras: 0, numeros: numerosDeSalida(0, salida.personas, []) };
   return (
     <div className="mx-auto max-w-5xl p-4 pb-16 sm:p-6 md:p-8">
       {/* Desde el Calendario, «regresar» vuelve al Calendario con ese día abierto (Manolo, 4 nov 2026). */}

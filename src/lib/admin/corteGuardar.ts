@@ -88,7 +88,13 @@ export async function guardarSemana(p: {
   const previo = await prisma.corteSemanal.findUnique({ where: { semana } });
   const t = tarjetasDeLaSemana(vivas, previo);
   // Lo guardado, visto igual que en la pantalla: contra eso se compara «cómo estaba al abrir».
-  const junta = juntarCambios({ captura: t.captura, cobros: limpiarCobros(previo?.cobros) }, cambios);
+  // Una tarjeta sin tocar al abrir equivale a lo del Cotizador (revisión, 10 nov 2026).
+  const porClave = new Map(t.salidas.map(s => [s.clave, s]));
+  const sugerida = (k: string) => {
+    const s = porClave.get(k);
+    return s ? { incluida: true, costos: s.costosSugeridos } : null;
+  };
+  const junta = juntarCambios({ captura: t.captura, cobros: limpiarCobros(previo?.cobros) }, cambios, sugerida);
   if (!junta.ok) {
     const tarjetas = junta.conflictos.filter(k => k !== "cobros").length;
     const que = [
