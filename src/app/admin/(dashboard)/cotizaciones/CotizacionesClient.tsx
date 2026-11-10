@@ -133,8 +133,8 @@ export interface InicioCotizaciones {
 export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
 
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, reservasDeCotizaciones = {} }:
-  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, reservasDeCotizaciones = {} }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
 ) {
   const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
@@ -1843,6 +1843,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   extras={extras}
                   personas={personasGrupo}
                   presets={presetsExtras}
+                  verCostos={verCostos}
                   onChange={next => { setExtras(next); soltarPrecioEditado(); }}
                 />
 

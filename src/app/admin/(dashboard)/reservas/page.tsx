@@ -2,6 +2,8 @@ import { prisma } from "@/lib/prisma";
 import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 import { sesionActual } from "@/lib/admin/sesion";
 import { estadosDe } from "@/lib/encuestas/encuesta";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { presetsSinCosto, sinCostosDeExtras } from "@/lib/admin/extras";
 import ReservasClient from "./ReservasClient";
 
 export const dynamic = "force-dynamic";
@@ -15,12 +17,15 @@ export default async function ReservasPage({ searchParams = {} }: { searchParams
     sesionActual(),
   ]);
   const checkins = await estadosDe(bookings.map(b => b.id));
+  // Lo que nos cuestan los extras, solo a quien ve costos (lote 8, 10 nov 2026).
+  const verCostos = await sesionVeCostos(sesion);
   // El nombre de quien entró se usa para prellenar "lo recibió" en el cobro:
   // en la práctica, quien captura es quien tiene el dinero en la mano.
   return (
     <ReservasClient
-      initialBookings={bookings}
-      presetsExtras={presetsExtras}
+      initialBookings={verCostos ? bookings : bookings.map(sinCostosDeExtras)}
+      presetsExtras={verCostos ? presetsExtras : presetsSinCosto(presetsExtras)}
+      verCostos={verCostos}
       quien={sesion?.nombre ?? "Admin"}
       checkins={checkins}
       abrir={folio ? { folio, cobrar: searchParams.cobrar === "1" } : null}

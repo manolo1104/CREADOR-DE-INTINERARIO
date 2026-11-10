@@ -18,10 +18,11 @@
 import type Stripe from "stripe";
 import type { TourBooking } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { registrarEnBitacora, pesos as pesosBitacora, SISTEMA } from "@/lib/admin/bitacora";
 import { enviarCompraGA4 } from "@/lib/ga4Server";
+import { pagoDelEquipo } from "@/lib/equipoInterno";
 import { conSalidaBloqueada, libres, ocupacion } from "./cupo";
 import { rangoCorto } from "./precio";
 import { PUNTO_SALIDA, HORA_SALIDA, VIAJE_NOMBRE, VIAJE_SLUG } from "./config";
@@ -175,7 +176,7 @@ export async function confirmarPasaje(
     nombreCorto(r.salidaTexto),
     `${reserva.adults} persona${reserva.adults === 1 ? "" : "s"}`,
     mxn(cobrado),
-    reserva.customerName,
+    nombreParaLog(reserva.customerName),
     reserva.confirmationNumber,
     origen,
   );
@@ -183,6 +184,7 @@ export async function confirmarPasaje(
   enviarCompraGA4({
     transactionId: reserva.confirmationNumber,
     clientId:      pi.metadata.gaClientId || null,
+    interno:       pagoDelEquipo(pi.metadata),
     value:         cobrado,
     reservaTotal:  reserva.totalAmount,
     paymentPlan:   Math.round((cobrado / Math.max(1, reserva.totalAmount)) * 100),

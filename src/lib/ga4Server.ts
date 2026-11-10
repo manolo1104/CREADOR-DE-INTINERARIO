@@ -46,6 +46,12 @@ export interface CompraGA4 {
    * Es el mismo `reserva_total` que manda el navegador.
    */
   reservaTotal?: number;
+  /**
+   * El pago lo hizo alguien del equipo (`metadata.interno`, lote 8, 10 nov
+   * 2026): no se manda. El navegador del equipo ya no le habla a GA4; sin
+   * esto, sus compras de prueba entraban igual desde aquí.
+   */
+  interno?: boolean;
 }
 
 /**
@@ -60,6 +66,7 @@ function clientIdDeReserva(): string {
 }
 
 export async function enviarCompraGA4(compra: CompraGA4): Promise<void> {
+  if (compra.interno) return;
   const measurementId = process.env.NEXT_PUBLIC_GA4_ID;
   const apiSecret     = process.env.GA4_API_SECRET;
 

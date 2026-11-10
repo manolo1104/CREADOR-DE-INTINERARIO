@@ -26,10 +26,11 @@ import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildAvisoPagoIncompletoHtml } from "@/lib/avisoCarritoGrande";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
 import { reconstruirLineas } from "@/lib/webhookRecuperacion";
 import { armarReservaWeb } from "@/lib/reservaWeb";
 import { enviarCompraGA4 } from "@/lib/ga4Server";
+import { pagoDelEquipo } from "@/lib/equipoInterno";
 import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import { TOURS_DB } from "@/lib/tours";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
@@ -107,7 +108,7 @@ async function recuperarPaquete(pi: Stripe.PaymentIntent, origen: "webhook" | "c
     resumen:    `Reserva ${r.confirmationNumber} — ${nombre || "cliente sin nombre"}, ${meta.tourName || "paquete"}, ${pesos(r.totalFull)} (pago en línea, recuperada ${origen === "conciliacion" ? "por la conciliación" : "por el webhook"})`,
     actor:      SISTEMA,
   });
-  actividad("⚠️  RESERVÓ PAQUETE (recuperada)", nombreCorto(meta.tourName || meta.tourId), mxn(r.totalFull), nombre, emailValido ? email : undefined, r.confirmationNumber, "el cliente no completó la pantalla");
+  actividad("⚠️  RESERVÓ PAQUETE (recuperada)", nombreCorto(meta.tourName || meta.tourId), mxn(r.totalFull), nombreParaLog(nombre), emailValido ? email : undefined, r.confirmationNumber, "el cliente no completó la pantalla");
 
   // Sin correo del cliente nadie le avisó: que lo haga el equipo a mano.
   const adminTo = process.env.ADMIN_EMAIL_TOURS;
@@ -275,7 +276,7 @@ export async function recuperarPago(
         nombreCorto(meta.tourName || meta.tourId),
         quienes,
         mxn(totalAmount),
-        nombre,
+        nombreParaLog(nombre),
         emailValido ? clienteEmail : undefined,
         meta.tourDate,
         confirmationNumber,
@@ -380,6 +381,7 @@ export async function recuperarPago(
     await enviarCompraGA4({
       transactionId: folioParaGA4 || pi.id,
       clientId:      meta.gaClientId || null,
+      interno:       pagoDelEquipo(meta),
       value:         Math.round((pi.amount_received || pi.amount) / 100),
       paymentPlan:   Number(meta.pctPagado) || undefined,
       hasHotel:      !!meta.hospedaje,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sesionActual } from "@/lib/admin/sesion";
 import { ErrorAgente } from "@/lib/admin/agente/claude";
 import { proponerRespuesta, rechazarPropuesta } from "@/lib/admin/agente/copiloto";
+import { esDeOficina } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -10,7 +11,8 @@ export const maxDuration = 120;
 /** POST — que el agente proponga la respuesta al último mensaje del cliente (Fase 4). */
 export async function POST(_req: NextRequest, { params }: { params: { id: string } }) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  // Lista blanca (lote 8, 10 nov 2026): solo la oficina; antes se frenaba solo al guía.
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   try {
     return NextResponse.json({ ok: true, propuesta: await proponerRespuesta(params.id, sesion.nombre) });
   } catch (e) {
@@ -23,7 +25,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
 /** PATCH { propuestaId, motivo } — rechazar la propuesta con su motivo. */
 export async function PATCH(req: NextRequest) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   let body: { propuestaId?: unknown; motivo?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {

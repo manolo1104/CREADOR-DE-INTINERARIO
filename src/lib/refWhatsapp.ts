@@ -19,6 +19,8 @@
  * Las partes puras (sin `window`) también las usa el servidor.
  */
 
+import { textoSinPrivados } from "@/lib/medicionPrivada";
+
 /** Sin 0/O/1/I: se dicta y se lee sin confusiones. */
 const ALFABETO = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 const RE_REF = /\bref\.?\s*([A-HJ-NP-Z2-9]{5})\b/i;
@@ -102,7 +104,8 @@ export function guardarOrigenVisita(): void {
       referrer = h && h !== window.location.hostname ? h : null;
     } catch { /* sin referrer */ }
     const origen: OrigenVisita = {
-      landing: u.pathname.slice(0, 120),
+      // Sin el token si entró por su liga de /checkin u /opina (lote 8, 10 nov 2026).
+      landing: textoSinPrivados(u.pathname).slice(0, 120),
       fuente: q("utm_source") ?? (u.searchParams.get("gclid") ? "gclid" : null),
       medio: q("utm_medium"),
       campana: q("utm_campaign"),

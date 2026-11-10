@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sesionActual } from "@/lib/admin/sesion";
 import { guardarRegistroSalida } from "@/lib/admin/registroSalidaDatos";
-import { addDaysYMD } from "@/lib/dates";
+import { addDaysYMD, hoyMX } from "@/lib/dates";
+import { esDeOficina } from "@/lib/admin/usuarios";
+import { fechaVisibleAlGuia } from "@/lib/admin/vistaGuia";
 
 export const dynamic = "force-dynamic";
 
@@ -25,8 +27,13 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Esa salida no existe." }, { status: 400 });
   }
   const sesion = await sesionActual();
+  // El guía solo toca sus salidas de ayer a 7 días adelante (lote 8, 10 nov 2026).
+  if (!sesion) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  if (!esDeOficina(sesion.rol) && !fechaVisibleAlGuia(fecha, hoyMX())) {
+    return NextResponse.json({ error: "Esa salida no está en tus días." }, { status: 403 });
+  }
   try {
-    const r = await guardarRegistroSalida(clave, body, sesion ? { nombre: sesion.nombre, rol: sesion.rol } : null);
+    const r = await guardarRegistroSalida(clave, body, { nombre: sesion.nombre, rol: sesion.rol });
     if (!r.ok) return NextResponse.json({ error: r.error }, { status: r.status });
     return NextResponse.json(r);
   } catch (e: any) {

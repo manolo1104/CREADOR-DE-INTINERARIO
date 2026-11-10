@@ -5,7 +5,7 @@ import NewBookingWatcher from "@/components/admin/NewBookingWatcher";
 import SeguimientoWatcher from "@/components/admin/SeguimientoWatcher";
 import { sesionActual } from "@/lib/admin/sesion";
 import { seccionesDe } from "@/lib/admin/permisos";
-import { primeraPagina, seccionRestringida } from "@/lib/admin/usuarios";
+import { esDeOficina, primeraPagina, seccionRestringida } from "@/lib/admin/usuarios";
 import { contadoresCrm } from "@/lib/admin/crmDatos";
 import { noLeidosBandeja } from "@/lib/admin/bandejaDatos";
 
@@ -33,8 +33,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         bg-[radial-gradient(1100px_520px_at_18%_-8%,rgba(27,67,50,0.07),transparent_62%),radial-gradient(760px_420px_at_100%_0%,rgba(82,183,136,0.06),transparent_60%)]" />
 
       <AdminSidebar rol={sesion?.rol ?? "operacion"} nombre={sesion?.nombre ?? ""} secciones={secciones} contadores={contadores} />
-      {sesion && sesion.rol !== "guia" && <NewBookingWatcher />}
-      {sesion && sesion.rol !== "guia" && <SeguimientoWatcher />}
+      {/* Lista blanca (lote 8, 10 nov 2026): los avisos de reservas y seguimientos, solo a la oficina. */}
+      {sesion && esDeOficina(sesion.rol) && <NewBookingWatcher />}
+      {sesion && esDeOficina(sesion.rol) && <SeguimientoWatcher />}
 
       {/* La tinta del panel va aquí: lo que no pone color hereda la del sitio
           público (clara) y se lee lavado. */}

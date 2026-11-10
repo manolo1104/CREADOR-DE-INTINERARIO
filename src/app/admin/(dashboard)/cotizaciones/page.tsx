@@ -3,6 +3,8 @@ import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 import { sesionActual } from "@/lib/admin/sesion";
 import { ESTADOS_RESERVA_MUERTA } from "@/lib/cotizaciones/reglasEnvio";
 import { metaDe } from "@/lib/admin/reserva";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { presetsSinCosto, sinCostosDeExtras } from "@/lib/admin/extras";
 import CotizacionesClient, { type InicioCotizaciones, type LeadsDeCotizaciones } from "./CotizacionesClient";
 
 export const dynamic = "force-dynamic";
@@ -57,13 +59,15 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
       if (id && !reservasDeCotizaciones[id]) reservasDeCotizaciones[id] = b.confirmationNumber;
     }
   }
+  // Lo que nos cuestan los extras, solo a quien ve costos (lote 8, 10 nov 2026).
+  const verCostos = await sesionVeCostos(sesion);
   const inicio: InicioCotizaciones = {
     editar: param(searchParams.editar), convertir: param(searchParams.convertir), nueva: searchParams.nueva === "1",
     lead: lead ? { id: lead.id, nombre: lead.contacto.nombre, telefono: lead.contacto.telefono, correo: lead.contacto.correo } : null,
   };
   return (
     <CotizacionesClient
-      initialQuotes={quotes} presetsExtras={presetsExtras} quien={sesion?.nombre ?? "Admin"}
+      initialQuotes={verCostos ? quotes : quotes.map(sinCostosDeExtras)} presetsExtras={verCostos ? presetsExtras : presetsSinCosto(presetsExtras)} verCostos={verCostos} quien={sesion?.nombre ?? "Admin"}
       guiasConocidos={guias.map(g => (g.guia ?? "").trim()).filter(Boolean)} leads={leads} inicio={inicio} pagadasSinReserva={pagadasSinReserva}
       reservasDeCotizaciones={reservasDeCotizaciones}
     />

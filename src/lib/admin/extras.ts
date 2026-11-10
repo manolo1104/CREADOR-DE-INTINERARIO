@@ -161,3 +161,49 @@ export const extrasIncluidos = (extras: ExtraItem[]) => extras.filter(e => e.inc
 export function etiquetaExtra(e: ExtraItem): string {
   return e.cantidad > 1 ? `${e.concepto} × ${e.cantidad}` : e.concepto;
 }
+
+// ── Quien no ve costos (lote 8, 10 nov 2026) ────────────────────────────────
+// 🔴 Lo que nos cuesta cada extra («Te cuesta», «te deja $X») viajaba al
+// navegador de Erick en Cotizaciones, Reservas y Calendario, y podía editarlo:
+// justo lo que se le quitó al sacar el Cotizador de Operación. Ahora el
+// servidor lo quita antes de mandarlo y, cuando él guarda, conserva el costo
+// que ya tenía cada extra (él ve y cobra el PRECIO al cliente, como siempre).
+
+const mismoConcepto = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Los extras tal como se guardaron, sin lo que nos cuestan. */
+export function extrasSinCosto(raw: unknown): unknown {
+  if (!Array.isArray(raw)) return raw;
+  return raw.map(e => (e && typeof e === "object" && !(e as { _meta?: unknown })._meta ? { ...(e as object), costoUnitario: 0 } : e));
+}
+
+/** Una cotización o reserva sin los costos de sus extras. */
+export function sinCostosDeExtras<T extends { extraItems?: unknown }>(registro: T): T {
+  return registro.extraItems === undefined ? registro : { ...registro, extraItems: extrasSinCosto(registro.extraItems) };
+}
+
+/** Los conceptos del Cotizador sin su costo (el precio al cliente se queda). */
+export function presetsSinCosto(presets: PresetExtra[]): PresetExtra[] {
+  return presets.map(p => ({ ...p, costo: 0 }));
+}
+
+/**
+ * Lo que se guarda cuando el que guarda NO ve costos: su navegador mandó cada
+ * extra con costo 0 (no lo vio). Cada extra se queda con el costo que ya tenía
+ * el del mismo concepto (en orden, uno a uno) y uno nuevo toma el del
+ * Cotizador; si no hay ninguno, 0. Lo demás (precio, cantidad, incluido) es
+ * lo que él capturó.
+ */
+export function conservarCostosExtras(nuevos: unknown, anteriores: unknown, presets: PresetExtra[]): unknown {
+  if (!Array.isArray(nuevos)) return nuevos;
+  const previos = extrasDe(anteriores);
+  const usados = new Set<number>();
+  return nuevos.map(e => {
+    if (!e || typeof e !== "object" || (e as { _meta?: unknown })._meta) return e;
+    const concepto = String((e as { concepto?: unknown }).concepto ?? "");
+    const i = previos.findIndex((p, idx) => !usados.has(idx) && mismoConcepto(p.concepto, concepto));
+    if (i >= 0) { usados.add(i); return { ...(e as object), costoUnitario: previos[i].costoUnitario }; }
+    const preset = presets.find(p => mismoConcepto(p.concepto, concepto));
+    return { ...(e as object), costoUnitario: preset ? preset.costo : 0 };
+  });
+}

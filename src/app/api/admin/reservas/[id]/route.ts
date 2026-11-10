@@ -23,6 +23,9 @@ import { identidadDePaqueteAlEditar, notasConAviso, totalParaGuardar } from "@/l
 import { getPaquete } from "@/lib/paquetes";
 import { claveDeSalida, diasDeTourDe } from "@/lib/admin/salidas";
 import { reflejarGuiaEnSalidas } from "@/lib/admin/registroSalidaDatos";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { conservarCostosExtras, sinCostosDeExtras } from "@/lib/admin/extras";
+import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 
 export const dynamic = "force-dynamic";
 
@@ -66,6 +69,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Foto de cómo estaba ANTES, para poder contar qué cambió en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
+    // Quien no ve costos no los cambia: cada extra conserva el que tenía (lote 8, 10 nov 2026).
+    const veCostosQuien = await sesionVeCostos(sesion);
+    if (data.extraItems !== undefined && !veCostosQuien) {
+      data.extraItems = conservarCostosExtras(data.extraItems, antes?.extraItems, await leerPreciosExtras());
+    }
 
     // 🔴 Un lugar del viaje CDMX–Xilitla solo cambia de fecha o de personas
     // desde Salidas, que pasa por el candado del cupo. Desde aquí se podría
@@ -257,7 +265,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
     }
     // Lo que quedó de verdad (el estado pudo cambiar al recalcular con los cobros).
-    return NextResponse.json({ ok: true, ligasApagadas: ligas.apagadas, updated: (await prisma.tourBooking.findUnique({ where: { id: updated.id } })) ?? updated });
+    const final = (await prisma.tourBooking.findUnique({ where: { id: updated.id } })) ?? updated;
+    return NextResponse.json({ ok: true, ligasApagadas: ligas.apagadas, updated: veCostosQuien ? final : sinCostosDeExtras(final) });
   } catch (e: any) {
     console.error("admin/reservas/[id]:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });

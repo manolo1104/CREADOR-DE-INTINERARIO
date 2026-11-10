@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sesionActual } from "@/lib/admin/sesion";
 import { detalleConversacion, estadoConexion, listarConversaciones } from "@/lib/admin/bandejaDatos";
+import { esDeOficina } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,8 @@ export async function GET(req: NextRequest) {
 /** PUT { rapidas: string[] } — las respuestas rápidas de la Bandeja (las del manual de ventas). */
 export async function PUT(req: NextRequest) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  // Lista blanca (lote 8, 10 nov 2026): solo la oficina; antes se frenaba solo al guía.
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   let body: { rapidas?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   const rapidas = Array.isArray(body.rapidas) ? body.rapidas.map(x => String(x ?? "").trim().slice(0, 1000)).filter(Boolean).slice(0, 40) : [];

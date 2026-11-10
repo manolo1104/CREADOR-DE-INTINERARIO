@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sesionActual } from "@/lib/admin/sesion";
-import { puedeHacer } from "@/lib/admin/usuarios";
+import { esDeOficina, puedeHacer } from "@/lib/admin/usuarios";
 import { hoyMX } from "@/lib/dates";
 import { montoCobrado } from "@/lib/admin/kpis";
 import {
@@ -41,6 +41,10 @@ export const dynamic = "force-dynamic";
 // GET → los cobros de una reserva, con sus comprobantes.
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     return NextResponse.json(await cobrosDeReserva(params.id));
   } catch (e: any) {
     console.error("admin/cobros GET:", e?.message);

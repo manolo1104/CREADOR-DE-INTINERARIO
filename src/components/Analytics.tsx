@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { JS_GUARDA, JS_URL_PRIVADA } from "@/lib/medicionPrivada";
 
 /**
  * 🔴 Los ids se limpian antes de meterlos al script. Del 29 al 30 sep 2026 la
@@ -19,26 +20,12 @@ const CLARITY_ID = process.env.NEXT_PUBLIC_CLARITY_ID?.replace(/[^A-Za-z0-9]/g, 
  * enmascaramiento «equilibrado» no oculta porque son texto, no campos. Ningún
  * visitante real. Así el embudo mide al equipo y no a los clientes.
  *
- * Reglas:
- *  - localhost / 127.0.0.1 / *.local → nunca se mide.
- *  - /admin → nunca se mide, y además marca el navegador como INTERNO
- *    (`hp_interno` en localStorage): quien abre el panel es del equipo, y sus
- *    visitas al sitio público (revisar precios, mandar ligas) tampoco deben
- *    contar como clientes. Para medir desde ese navegador, usar incógnito.
- *  - /checkin y /opina (21 oct 2026) → nunca se miden: la URL lleva la liga
- *    personal del cliente (quien la tiene abre su formulario) y la página
- *    muestra su nombre y lo que escribe de sí mismo (cumpleaños, ciudad).
+ * Las reglas (localhost, /admin y la marca `hp_interno`, /checkin, /opina y,
+ * desde el lote 8, /baja) viven en `lib/medicionPrivada.ts` con sus pruebas.
+ * Lote 8 (10 nov 2026): la marca del equipo es UNA para todo —GA4, Clarity,
+ * /api/track y el servidor—: va también en cookie para que el servidor la lea.
  */
-const GUARDA = `
-  var h = location.hostname;
-  if (h === 'localhost' || h === '127.0.0.1' || /\\.local$/.test(h)) return;
-  if (/^\\/(checkin|opina)\\//.test(location.pathname)) return;
-  if (location.pathname.indexOf('/admin') === 0) {
-    try { localStorage.setItem('hp_interno', '1'); } catch (e) {}
-    return;
-  }
-  try { if (localStorage.getItem('hp_interno') === '1') return; } catch (e) {}
-`;
+const GUARDA = JS_GUARDA;
 
 /**
  * ¿El visitante dejó encendido este servicio en el aviso de cookies?
@@ -78,6 +65,7 @@ export function Analytics() {
               (function(){
                 ${GUARDA}
                 ${PERMITE}
+                ${JS_URL_PRIVADA}
                 // El aviso de cookies la llama si el visitante lo vuelve a
                 // encender sin recargar la página.
                 window.hpActivarGA = function(){
@@ -86,10 +74,17 @@ export function Analytics() {
                   window.dataLayer = window.dataLayer || [];
                   window.gtag = function(){dataLayer.push(arguments);};
                   gtag('js', new Date());
-                  gtag('config', '${GA_ID}', {
+                  var hpCfg = {
                     page_path: window.location.pathname,
                     send_page_view: true
-                  });
+                  };
+                  // Lote 8 (10 nov 2026): con un token o un correo en la
+                  // dirección (carrito recuperado, regreso de Stripe), GA4
+                  // recibe la dirección sin ellos, en la vista y en los eventos.
+                  var hpLoc = hpLimpia(location.href);
+                  if (hpLoc !== location.href) hpCfg.page_location = hpLoc;
+                  if (document.referrer && hpPrivada(document.referrer)) hpCfg.page_referrer = hpLimpia(document.referrer);
+                  gtag('config', '${GA_ID}', hpCfg);
                 };
                 if (hpPermite('analitica')) window.hpActivarGA();
                 else window['ga-disable-${GA_ID}'] = true;
@@ -106,6 +101,10 @@ export function Analytics() {
             (function(){
               ${GUARDA}
               ${PERMITE}
+              ${JS_URL_PRIVADA}
+              // Lote 8 (10 nov 2026): Clarity graba la dirección tal cual: con
+              // un token o un correo en ella, esta visita no se graba.
+              if (hpPrivada(location.href) || (document.referrer && hpPrivada(document.referrer))) return;
               window.hpActivarClarity = function(){
                 if (!window.clarity) {
                   (function(c,l,a,r,i,t,y){

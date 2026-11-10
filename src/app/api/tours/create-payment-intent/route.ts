@@ -4,8 +4,9 @@ import { stripe } from "@/lib/stripe";
 import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName, fechaTourValida } from "@/lib/tourPricing";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
-import { trackServerEvent } from "@/lib/serverTrack";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
+import { peticionDelEquipo, trackServerEvent } from "@/lib/serverTrack";
+import { metadataDelEquipo } from "@/lib/equipoInterno";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -81,13 +82,15 @@ export async function POST(req: NextRequest) {
           gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
           sid:             typeof sid === "string" ? sid.slice(0, 60) : "",
           source:        "huasteca-potosina.com",
+          // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+          ...metadataDelEquipo(peticionDelEquipo()),
         },
       });
       actividad(
         "💳  ABRIÓ EL PAGO (RZR)",
         bookingName,
         veh.pct === 100 ? mxn(veh.charge) : `${mxn(veh.charge)} (anticipo ${veh.pct}% de ${mxn(veh.total)})`,
-        customerName,
+        nombreParaLog(customerName),
         customerEmail,
         tourDetails?.tourDate,
         paymentIntent.id,
@@ -177,6 +180,8 @@ export async function POST(req: NextRequest) {
         gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
         sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
         source:        "huasteca-potosina.com",
+        // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+        ...metadataDelEquipo(peticionDelEquipo()),
       },
     });
 
@@ -194,7 +199,7 @@ export async function POST(req: NextRequest) {
       nombreCorto(charge.tour.nombre),
       quienes,
       charge.pct === 100 ? mxn(charge.charge) : `${mxn(charge.charge)} (anticipo ${charge.pct}% de ${mxn(charge.total)})`,
-      customerName,
+      nombreParaLog(customerName),
       customerEmail,
       tourDetails?.tourDate,
       paymentIntent.id,

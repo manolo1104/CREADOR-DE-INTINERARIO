@@ -8,7 +8,7 @@ import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
-import { actividad, mxn, nombreCorto } from "@/lib/logger";
+import { actividad, mxn, nombreCorto, nombreParaLog, enmascararTexto } from "@/lib/logger";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import { armarReservaWeb, productoDelPago, PAGO_DE_OTRO_PRODUCTO } from "@/lib/reservaWeb";
@@ -199,7 +199,7 @@ export async function POST(req: NextRequest) {
         nombreCorto(tourName),
         quienes,
         saldo > 0 ? `${mxn(cobrado)} de ${mxn(totalAmount)} · saldo ${mxn(saldo)}` : mxn(totalAmount),
-        customerName,
+        nombreParaLog(customerName),
         email,
         telefono,
         tourDate,
@@ -287,7 +287,7 @@ export async function POST(req: NextRequest) {
 
         actividad("📧  CORREO ENVIADO", nombreCorto(tourName), email, confirmationNumber);
       } catch (e: any) {
-        console.error("❌ Brevo email exception:", e.message);
+        console.error("❌ Brevo email exception:", enmascararTexto(String(e?.message ?? "")));
       }
     }
 

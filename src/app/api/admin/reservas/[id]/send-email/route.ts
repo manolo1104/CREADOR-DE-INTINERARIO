@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { enviarConfirmacionReserva } from "@/lib/cotizaciones/convertir";
+import { enmascararTexto } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   // Cancelada (o borrador): no se le confirma nada al cliente (lote 5, 5 nov 2026).
   if (r.motivo === "cancelada") return NextResponse.json({ error: r.error }, { status: 409 });
   if (!r.ok) {
-    console.error("admin/reservas send-email:", r.error);
+    console.error("admin/reservas send-email:", enmascararTexto(String(r.error ?? "")));
     return NextResponse.json({ error: "No se pudo enviar el email" }, { status: 500 });
   }
   return NextResponse.json({ ok: true });

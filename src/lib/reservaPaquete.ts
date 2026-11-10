@@ -18,7 +18,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
 import { getPaquete } from "@/lib/paquetes";
 import { haciaLa } from "@/lib/nocheXantolo";
-import { actividad, mxn } from "@/lib/logger";
+import { actividad, mxn, nombreParaLog, enmascararTexto } from "@/lib/logger";
 import { getEmails, emailLocale } from "@/lib/i18n/emails";
 import { buildPaqueteConfirmEmailHtml } from "@/lib/paqueteEmail";
 import { TOURS_DB } from "@/lib/tours";
@@ -304,7 +304,7 @@ export async function registrarReservaPaquete(
       anticipo,
       `${mxn(cobrado)} de ${mxn(totalFull)}`,
       pendiente > 0 ? `saldo ${mxn(pendiente)}` : "liquidado",
-      customerName,
+      nombreParaLog(customerName),
       email,
       customerPhone,
       fechaInicio,
@@ -366,7 +366,7 @@ export async function registrarReservaPaquete(
       });
       actividad("📧  CORREO PAQUETE ENVIADO", paquete.nombre, email, confirmationNumber);
     } catch (e: any) {
-      console.error("❌ Brevo paquete email:", e.message);
+      console.error("❌ Brevo paquete email:", enmascararTexto(String(e?.message ?? "")));
     }
   }
 

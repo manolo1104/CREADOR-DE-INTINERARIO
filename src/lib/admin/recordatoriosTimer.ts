@@ -3,6 +3,7 @@
 // tocan. El cron de GitHub es solo respaldo: se atrasa horas.
 import { enviarRecordatorios } from "./recordatorios";
 import { aplicarReglas, enviarResumenDiario } from "./automatizacionesDatos";
+import { enmascararTexto } from "@/lib/logger";
 
 /**
  * Una vuelta del reloj (Fase 3, 4 nov 2026): primero las reglas crean los
@@ -26,8 +27,8 @@ export function iniciarRecordatorios() {
       .then(({ reglas, resumen, avisos: r }) => {
         if (reglas?.creadas) console.log(`⚙️  Reglas: ${reglas.creadas} seguimiento(s) nuevo(s) ${JSON.stringify(reglas.porRegla)}`);
         if (reglas?.cerradas) console.log(`⚙️  Reglas: ${reglas.cerradas} seguimiento(s) cerrados porque ya no aplicaban`);
-        if (resumen?.enviados || resumen?.errores.length) console.log(`☀️  Resumen diario: ${resumen.enviados} correo(s)${resumen.errores.length ? ` · errores: ${resumen.errores.join("; ")}` : ""}`);
-        if (r.tareas || r.errores.length) console.log(`🔔 Recordatorios: ${r.tareas} seguimiento(s) en ${r.enviados} correo(s)${r.errores.length ? ` · errores: ${r.errores.join("; ")}` : ""}`);
+        if (resumen?.enviados || resumen?.errores.length) console.log(`☀️  Resumen diario: ${resumen.enviados} correo(s)${resumen.errores.length ? ` · errores: ${enmascararTexto(resumen.errores.join("; "))}` : ""}`);
+        if (r.tareas || r.errores.length) console.log(`🔔 Recordatorios: ${r.tareas} seguimiento(s) en ${r.enviados} correo(s)${r.errores.length ? ` · errores: ${enmascararTexto(r.errores.join("; "))}` : ""}`);
       })
       .catch(e => console.error("recordatorios:", (e as Error)?.message));
   };

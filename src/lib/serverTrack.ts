@@ -1,5 +1,20 @@
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { MARCA_EQUIPO, esMarcaDelEquipo } from "@/lib/equipoInterno";
+
+/**
+ * ¿La petición en curso viene de un navegador del equipo? La MISMA marca que
+ * GA4, Clarity y /api/track (lote 8, 10 nov 2026). Fuera de una petición (un
+ * cron, el webhook de Stripe) no hay navegador: no es del equipo.
+ */
+export function peticionDelEquipo(): boolean {
+  try {
+    return esMarcaDelEquipo(cookies().get(MARCA_EQUIPO)?.value);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Guarda un evento del embudo desde el SERVIDOR.
@@ -27,6 +42,9 @@ export async function trackServerEvent(
     data?: Record<string, unknown>;
   } = {},
 ): Promise<void> {
+  // Lo que hace el equipo no se mide (lote 8): antes «llegó al pago» contaba
+  // también las pruebas del equipo, que GA4 y /api/track ya dejaban fuera.
+  if (peticionDelEquipo()) return;
   try {
     await prisma.trackEvent.create({
       data: {

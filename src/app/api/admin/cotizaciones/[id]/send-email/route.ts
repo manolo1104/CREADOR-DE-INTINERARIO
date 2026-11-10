@@ -3,6 +3,7 @@ import { enviarCotizacionPorCorreo } from "@/lib/cotizaciones/enviar";
 import { mensajeTrasEnviarCorreo } from "@/lib/cotizaciones/reglasEnvio";
 import { leadDesdeCotizacion } from "@/lib/admin/crmDatos";
 import { sesionActual } from "@/lib/admin/sesion";
+import { enmascararTexto } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   // bitácora toma a quien tiene la sesión del panel abierta, como siempre.
   const r = await enviarCotizacionPorCorreo(params.id);
   if (!r.ok) {
-    console.error("admin/cotizaciones send-email:", r.error);
+    console.error("admin/cotizaciones send-email:", enmascararTexto(String(r.error ?? "")));
     return NextResponse.json({ error: "No se pudo enviar el email" }, { status: 500 });
   }
   // Mandada AL CLIENTE → su lead pasa a Cotizado (3 nov 2026). Una copia o un

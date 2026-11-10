@@ -4,13 +4,15 @@ import { TOURS_LISTA } from "@/lib/tours";
 import { sesionActual } from "@/lib/admin/sesion";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { limpiarRuta } from "@/lib/admin/rutas";
+import { esDeOficina } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 
 /** PUT — la ficha de ruta y protocolo de un tour (Fase 1). La sección «Rutas» la cierra el middleware. */
 export async function PUT(req: NextRequest, { params }: { params: { slug: string } }) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  // Lista blanca (lote 8, 10 nov 2026): solo la oficina; antes se frenaba solo al guía.
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   const tour = TOURS_LISTA.find(t => t.slug === params.slug);
   if (!tour) return NextResponse.json({ error: "Ese tour no existe." }, { status: 404 });
   let body: Record<string, unknown>;

@@ -12,8 +12,13 @@ import { abonarLigasDeCotizacion } from "@/lib/admin/linksPago";
 import { pedidosSinCupo } from "@/lib/cupoTour";
 import { crearReservaDeCotizacion, esErrorCotizacion } from "@/lib/cotizaciones/convertir";
 import { avisoSobrecupo, pedidosDeCupo } from "@/lib/cotizaciones/reglasConversion";
-import { puedeHacer } from "@/lib/admin/usuarios";
+import { esDeOficina, puedeHacer } from "@/lib/admin/usuarios";
 import { dineroAlCrearReserva } from "@/lib/admin/candadosCobro";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { conservarCostosExtras, sinCostosDeExtras } from "@/lib/admin/extras";
+import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
+import { reservaParaGuia } from "@/lib/admin/vistaGuia";
+import { enmascararCorreo } from "@/lib/logger";
 
 /** El lead que manda el panel, solo si existe (un id roto no se guarda). */
 async function leadExistente(v: unknown): Promise<string | null> {
@@ -40,6 +45,12 @@ export async function GET(req: NextRequest) {
       [b.customerName, b.customerEmail, b.confirmationNumber, b.tourName]
         .some(v => v?.toLowerCase().includes(search))
     );
+    // Lote 8 (10 nov 2026): el guía (si Manolo le abre una pestaña que use
+    // esta lista) no recibe dinero ni datos de contacto; quien no ve costos,
+    // no recibe lo que nos cuestan los extras.
+    const sesion = await sesionActual();
+    if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json(filtered.map(reservaParaGuia));
+    if (!(await sesionVeCostos(sesion))) return NextResponse.json(filtered.map(sinCostosDeExtras));
     return NextResponse.json(filtered);
   } catch (e: any) { console.error("admin/reservas:", e?.message); return NextResponse.json({ error: "Error interno" }, { status: 500 }); }
 }
@@ -70,6 +81,15 @@ export async function POST(req: NextRequest) {
     // es socio ya no puede crearla con depósito ni «pagada» mandándolo por la API
     // (el PATCH ya lo impedía; el panel manda 0 y «pending»).
     const dinero = dineroAlCrearReserva(body, !!sesion && puedeHacer(sesion.rol, "anularMovimiento"));
+    // Quien no ve costos no los pone (lote 8, 10 nov 2026): cada extra toma el de
+    // su cotización (si viene de una) o el del Cotizador.
+    const extraItems = body.extraItems !== undefined && !(await sesionVeCostos(sesion))
+      ? conservarCostosExtras(
+          body.extraItems,
+          cotizacionId ? (await prisma.tourQuote.findUnique({ where: { id: cotizacionId }, select: { extraItems: true } }).catch(() => null))?.extraItems : null,
+          await leerPreciosExtras(),
+        )
+      : body.extraItems;
     // 🔴 Con `cotizacionId` (5 nov 2026): candado sobre la cotización y 409 si
     // ya tiene una reserva viva (la liga pagada la convirtió sola, otra persona
     // la convirtió o fue un doble clic). La cotización queda «aceptada» con su
@@ -94,7 +114,7 @@ export async function POST(req: NextRequest) {
       notes:                 [avisoCupo, body.notes].filter(Boolean).join("\n") || null,
       lineItems:             (sellado.lineItems as any) ?? undefined,
       packageItems:          body.packageItems ?? undefined,
-      extraItems:            body.extraItems   ?? undefined,
+      extraItems:            (extraItems as any) ?? undefined,
       // Sin estado explícito, lo dice el dinero (antes nacía «pagada» con $0).
       status:                dinero.status,
       guia:                  body.guia ? String(body.guia).slice(0, 80) : null,
@@ -118,7 +138,7 @@ export async function POST(req: NextRequest) {
     // las ventas de los links de pago manuales.
     const cerrados = await cerrarCarritosDe(booking.customerEmail, toursDeReserva(body));
     if (cerrados) {
-      console.log(`🛟  admin/reservas: ${cerrados} carrito(s) cerrados para ${booking.customerEmail}`);
+      console.log(`🛟  admin/reservas: ${cerrados} carrito(s) cerrados para ${enmascararCorreo(booking.customerEmail)}`);
     }
 
     await registrarEnBitacora({

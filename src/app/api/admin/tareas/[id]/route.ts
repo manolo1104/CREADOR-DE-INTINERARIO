@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sesionActual } from "@/lib/admin/sesion";
 import { cambiarTarea, ErrorCrm } from "@/lib/admin/crmDatos";
+import { esDeOficina } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 
 /** PATCH { accion: "hecha" | "reabrir" | "posponer" | "editar", dias?, titulo?, vence?, hora?, responsable? } */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  // Lista blanca (lote 8, 10 nov 2026): solo la oficina; antes se frenaba solo al guía.
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {

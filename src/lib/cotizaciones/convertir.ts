@@ -48,6 +48,7 @@ import type {
   ComprobanteBot, ConfirmacionResultado, ConfirmarPagoInput, LocaleBot, RecorridoConfirmado,
   ResultadoCorreoReserva,
 } from "./tipos";
+import { enmascararTexto } from "@/lib/logger";
 
 // ── Errores con su código HTTP ──────────────────────────────────────────────
 
@@ -992,7 +993,7 @@ export async function confirmarPagoCotizacion(p: ConfirmarPagoInput): Promise<Co
     emailEnviado = correo.emailEnviado;
     if (correo.motivo === "sin-correo") avisos.push("La reserva no tiene correo del cliente: la confirmación va solo por WhatsApp.");
     else if (!correo.ok) {
-      console.error("cotizaciones/confirmar correo:", correo.error);
+      console.error("cotizaciones/confirmar correo:", enmascararTexto(String(correo.error ?? "")));
       avisos.push("El correo de confirmación no salió: reenvíalo desde el panel.");
     }
   }

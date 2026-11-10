@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 import {
-  primeraPagina, rolDesdeToken, seccionesValidas, seccionRestringida, type RolAdmin, type SeccionAdmin,
+  decisionApiPanel, primeraPagina, rolDesdeToken, seccionesValidas, seccionRestringida, type RolAdmin, type SeccionAdmin,
 } from "@/lib/admin/usuarios";
+import { huellaDeSesionVigente } from "@/lib/admin/huellaClave";
+import { COOKIE_MARCA_EQUIPO, MARCA_EQUIPO } from "@/lib/equipoInterno";
 
 // El secreto NO tiene fallback: si falta la env var, fallamos cerrado (denegar acceso)
 const rawSecret = process.env.ADMIN_JWT_SECRET;
@@ -25,6 +27,8 @@ async function sesionDeCookie(req: NextRequest): Promise<{ rol: RolAdmin; seccio
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secret);
+    // La sesión del guía con una contraseña anterior ya no entra (lote 8, 10 nov 2026).
+    if (!(await huellaDeSesionVigente(payload, secret))) return null;
     const rol = rolDesdeToken(payload.rol);
     return { rol, secciones: seccionesValidas(rol, payload.secciones) };
   } catch {
@@ -32,13 +36,13 @@ async function sesionDeCookie(req: NextRequest): Promise<{ rol: RolAdmin; seccio
   }
 }
 
-// 🔴 El GUÍA (rol nuevo del rediseño, 3 nov 2026) solo usa estas APIs. Las
-// de reservas, cotizaciones o clientes no están amarradas a una pestaña
-// (varias las comparten), así que sin esta lista un guía con sesión podía
+// 🔴 El GUÍA (rol nuevo del rediseño, 3 nov 2026) solo usa unas cuantas APIs.
+// Las de reservas, cotizaciones o clientes no están amarradas a una pestaña
+// (varias las comparten), así que sin lista blanca un guía con sesión podía
 // leer los datos de todos los clientes y cancelar reservas llamándolas a mano.
-// Si Manolo le abre más pestañas desde «¿Quién ve qué?», se le quita el candado.
-const API_GUIA = ["/api/admin/salidas-dia", "/api/admin/sesion", "/api/admin/tareas"];
-const PESTANAS_GUIA: SeccionAdmin[] = ["salidas-dia", "calendario"]; // calendario: por si Manolo se lo vuelve a dar
+// Lote 8 (10 nov 2026): la lista blanca vale SIEMPRE; si Manolo le abre más
+// pestañas, solo se le suman las APIs de esas pestañas (`APIS_POR_SECCION`).
+// La regla completa vive en `decisionApiPanel` (usuarios.ts), con sus pruebas.
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
@@ -46,18 +50,9 @@ export async function middleware(req: NextRequest) {
   // ── Protección de las APIs de admin ───────────────────────────────────────
   // (van antes que las páginas: responden 401 JSON en vez de redirigir)
   if (pathname.startsWith("/api/admin") && !PUBLIC_ADMIN_API.includes(pathname)) {
-    const sesion = await sesionDeCookie(req);
-    if (!sesion) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    const { secciones } = sesion;
-    if (sesion.rol === "guia" && secciones.every(s => PESTANAS_GUIA.includes(s)) && !API_GUIA.some(p => pathname === p || pathname.startsWith(`${p}/`))) {
-      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
-    }
-    const seccion = seccionRestringida(pathname);
-    if (seccion && !secciones.includes(seccion)) {
-      return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
-    }
+    const decision = decisionApiPanel(pathname, await sesionDeCookie(req));
+    if (decision === 401) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    if (decision === 403) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   }
 
   // ── Protección de las páginas /admin ──────────────────────────────────────
@@ -89,7 +84,14 @@ export async function middleware(req: NextRequest) {
   // El layout del panel vuelve a revisar la pestaña con lo guardado HOY en la
   // base (la sesión puede traer pestañas de hace un rato): necesita la ruta.
   requestHeaders.set("x-pathname", pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
+  // Quien abre el panel es del equipo (lote 8, 10 nov 2026): la marca
+  // `hp_interno` va también en cookie para que el servidor (/api/track, los
+  // pagos) aplique el MISMO filtro que GA4 y Clarity en el navegador.
+  if (pathname.startsWith("/admin") && req.cookies.get(MARCA_EQUIPO)?.value !== "1") {
+    res.cookies.set(MARCA_EQUIPO, "1", COOKIE_MARCA_EQUIPO);
+  }
+  return res;
 }
 
 export const config = {

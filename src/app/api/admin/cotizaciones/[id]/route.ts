@@ -10,6 +10,9 @@ import { apagarLigasDe, crearSeguimientoUnico } from "@/lib/admin/linksPago";
 import { tituloLigaSinDestino } from "@/lib/admin/ligasReglas";
 import { avisoSoloLectura, lineItemsAlEditar, puedeRegresarAEnviada } from "@/lib/cotizaciones/reglasEnvio";
 import { reservaVivaDeCotizacion } from "@/lib/cotizaciones/estadoCotizacion";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { conservarCostosExtras } from "@/lib/admin/extras";
+import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +32,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
     if (!antes) return NextResponse.json({ error: "Esa cotización ya no existe." }, { status: 404 });
+    // Quien no ve costos no los cambia: cada extra conserva el que tenía (lote 8, 10 nov 2026).
+    if (data.extraItems !== undefined && !(await sesionVeCostos(await sesionActual()))) {
+      data.extraItems = conservarCostosExtras(data.extraItems, antes.extraItems, await leerPreciosExtras());
+    }
 
     // 🔴 Una ACEPTADA ya no se edita (lote 4, 5 nov 2026, regla de Manolo): lo
     // que se opera es su reserva, y editarla le pasaba al lead fecha, tours y

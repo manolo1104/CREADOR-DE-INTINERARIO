@@ -4,12 +4,17 @@ import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import { leadDesdeCotizacion, leadParaCotizacionNueva } from "@/lib/admin/crmDatos";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { conservarCostosExtras, sinCostosDeExtras } from "@/lib/admin/extras";
+import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
     const quotes = await prisma.tourQuote.findMany({ orderBy: { createdAt: "desc" } });
+    // Sin el costo de los extras para quien no ve costos (lote 8, 10 nov 2026).
+    if (!(await sesionVeCostos(await sesionActual()))) return NextResponse.json(quotes.map(sinCostosDeExtras));
     return NextResponse.json(quotes);
   } catch (e: any) {
     console.error("admin/cotizaciones GET:", e?.message);
@@ -28,6 +33,10 @@ export async function POST(req: NextRequest) {
     const sesion  = await sesionActual();
     // En las cotizaciones el `_meta` de precio va en `packageItems`.
     const sellado = sellarEnLineItems(body.packageItems, null, sesion?.nombre ?? "Desconocido");
+    // Quien no ve costos no los pone: los extras nuevos toman el del Cotizador (lote 8).
+    const extraItems = body.extraItems !== undefined && !(await sesionVeCostos(sesion))
+      ? conservarCostosExtras(body.extraItems, null, await leerPreciosExtras())
+      : body.extraItems;
     // Whitelist de campos permitidos.
     const quote = await prisma.tourQuote.create({
       data: {
@@ -44,7 +53,7 @@ export async function POST(req: NextRequest) {
         notes:         body.notes || null,
         lineItems:     body.lineItems    ?? undefined,
         packageItems:  (sellado.lineItems as any) ?? undefined,
-        extraItems:    body.extraItems   ?? undefined,
+        extraItems:    (extraItems as any) ?? undefined,
         status:        "borrador",
       },
     });

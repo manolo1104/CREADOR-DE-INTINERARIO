@@ -28,6 +28,11 @@ const { Client, LocalAuth } = require("whatsapp-web.js");
 const QR = require("qrcode");
 
 const PANEL = (process.env.PANEL_URL || "http://localhost:3399").replace(/\/$/, "");
+
+// Los logs de Railway no llevan el teléfono ni el nombre del cliente (lote 8,
+// 10 nov 2026): «…4567» del chat y el nombre de pila con su inicial.
+const chatParaLog = (chatId) => { const d = String(chatId || "").split("@")[0].replace(/\D/g, ""); return d ? `…${d.slice(-4)}` : "chat"; };
+const nombreParaLog = (n) => { const p = String(n || "").trim().split(/\s+/).filter(Boolean); return p.length > 1 ? `${p[0]} ${p[1][0].toUpperCase()}.` : (p[0] || ""); };
 const TOKEN = process.env.WHATSAPP_PUENTE_TOKEN || "";
 const SESION_DIR = process.env.SESION_DIR || path.join(__dirname, ".wwebjs_auth");
 const IMPORTAR_DIAS = Number(process.env.IMPORTAR_DIAS || 60);
@@ -111,7 +116,7 @@ async function telefonoDe(chatId) {
     const x = Array.isArray(lista) ? lista[0] : null;
     pn = x && x.pn ? String(x.pn).split("@")[0].replace(/\D/g, "") || null : null;
   } catch (e) {
-    console.warn(`⚠️ No supe el teléfono de ${chatId}: ${primeraLinea(e)}`);
+    console.warn(`⚠️ No supe el teléfono de ${chatParaLog(chatId)}: ${primeraLinea(e)}`);
   }
   cacheTel.set(chatId, pn);
   return pn;
@@ -197,7 +202,7 @@ async function mandarPendientes() {
         if (waId) propios.add(waId);
         await panel("POST", { confirmar: [{ id: p.id, ok: true, waId: waId || null }] });
       } catch (e) {
-        console.error(`❌ No se pudo mandar a ${p.chatId}: ${primeraLinea(e)}`);
+        console.error(`❌ No se pudo mandar a ${chatParaLog(p.chatId)}: ${primeraLinea(e)}`);
         await panel("POST", { confirmar: [{ id: p.id, ok: false, error: primeraLinea(e) }] });
       }
       // Uno por uno, con pausa: así lo haría una persona.
@@ -226,7 +231,7 @@ async function importarHistorial() {
       }
       while (cola.length > 200) await new Promise((r) => setTimeout(r, 500)); // que el panel respire
     } catch (e) {
-      console.warn(`⚠️ No pude leer el historial de ${chat.name || chat.id._serialized}: ${primeraLinea(e)}`);
+      console.warn(`⚠️ No pude leer el historial de ${nombreParaLog(chat.name) || chatParaLog(chat.id._serialized)}: ${primeraLinea(e)}`);
     }
   }
   fs.mkdirSync(SESION_DIR, { recursive: true });

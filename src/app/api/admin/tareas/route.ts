@@ -3,6 +3,7 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { prisma } from "@/lib/prisma";
 import { crearTarea, ErrorCrm } from "@/lib/admin/crmDatos";
 import { ahoraMX } from "@/lib/admin/crm";
+import { esDeOficina } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,8 @@ export const dynamic = "force-dynamic";
  */
 export async function GET() {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ tareas: [] });
+  // Lista blanca (lote 8, 10 nov 2026): solo la oficina; antes se frenaba solo al guía.
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ tareas: [] });
   const { hoy, hhmm } = ahoraMX();
   const ts = await prisma.tarea.findMany({
     where: { estado: "pendiente", responsable: sesion.nombre, vence: { lte: hoy } },
@@ -27,7 +29,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   const sesion = await sesionActual();
   // Seguimientos y Leads usan esta ruta; el guía no ve ninguna de las dos.
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {

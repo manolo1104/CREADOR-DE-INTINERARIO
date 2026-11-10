@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sesionActual } from "@/lib/admin/sesion";
+import { esDeOficina } from "@/lib/admin/usuarios";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { MAX_BYTES_EVIDENCIA, TIPOS_OK, tipoDeArchivo } from "@/lib/admin/evidencia";
 
@@ -14,6 +16,10 @@ function esArchivo(v: FormDataEntryValue | null): v is ArchivoSubido & FormDataE
 // GET → metadatos de las evidencias de una reserva (NUNCA los bytes).
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     const evidencias = await prisma.evidencia.findMany({
       where: { bookingId: params.id },
       select: { id: true, bookingId: true, movimientoId: true, nombreArchivo: true, tipoMime: true, tamanoBytes: true, createdAt: true },
@@ -29,6 +35,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 // POST → sube un archivo (multipart/form-data, campo "archivo").
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     const reserva = await prisma.tourBooking.findUnique({
       where: { id: params.id },
       select: { id: true, confirmationNumber: true, customerName: true },

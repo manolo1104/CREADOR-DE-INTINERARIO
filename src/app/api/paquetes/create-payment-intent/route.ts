@@ -10,9 +10,10 @@ import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { habitacionesDePaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger, actividad, mxn } from "@/lib/logger";
+import { logger, actividad, mxn, nombreParaLog } from "@/lib/logger";
 import { fechaTourValida } from "@/lib/tourPricing";
-import { trackServerEvent } from "@/lib/serverTrack";
+import { peticionDelEquipo, trackServerEvent } from "@/lib/serverTrack";
+import { metadataDelEquipo } from "@/lib/equipoInterno";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -304,6 +305,8 @@ export async function POST(req: NextRequest) {
         recogidaCliente: recogidaCliente.slice(0, 490),
         personas,
         source:        "huasteca-potosina.com",
+        // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+        ...metadataDelEquipo(peticionDelEquipo()),
         // El idioma y la identidad de medición, como en el carrito de tours: si
         // el cliente cierra la pestaña, el webhook es el único que se entera de
         // la compra y sin esto no sabe en qué idioma escribirle ni de dónde vino.
@@ -331,7 +334,7 @@ export async function POST(req: NextRequest) {
       // se leía como una reserva casi liquidada cuando faltaban $32,252.
       `${mxn(charge)} de ${mxn(cobro.total)}`,
       personas ? `${personas} personas` : "",
-      customerName,
+      nombreParaLog(customerName),
       customerEmail,
       fecha,
       paymentIntent.id,

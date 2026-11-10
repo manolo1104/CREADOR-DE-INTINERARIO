@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
-import { puedeHacer } from "@/lib/admin/usuarios";
+import { esDeOficina, puedeHacer } from "@/lib/admin/usuarios";
 import { puedeQuitarComprobante } from "@/lib/admin/candadosCobro";
 
 export const dynamic = "force-dynamic";
@@ -10,6 +10,10 @@ export const dynamic = "force-dynamic";
 // GET → devuelve el archivo para verlo/descargarlo desde el panel.
 export async function GET(req: NextRequest, { params }: { params: { evidenciaId: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     const ev = await prisma.evidencia.findUnique({
       where: { id: params.evidenciaId },
     });

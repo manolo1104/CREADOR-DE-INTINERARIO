@@ -76,8 +76,8 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin", checkins: checkinsIniciales = {}, abrir = null }:
-  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string; checkins?: Record<string, EstadoCheckin>;
+  { initialBookings, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", checkins: checkinsIniciales = {}, abrir = null }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; checkins?: Record<string, EstadoCheckin>;
     /** Desde la ficha de un lead: la reserva a abrir (y si es para cobrar). */
     abrir?: { folio: string; cobrar: boolean } | null },
 ) {
@@ -1115,11 +1115,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       )}
 
       {modal === "new" && (
-        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
+        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} verCostos={verCostos} guiasConocidos={guiasConocidos}
           onSave={saveNew} onClose={() => setModal(null)} saving={saving} />
       )}
       {modal === "edit" && (
-        <ReservaModal soloLecturaCobro title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
+        <ReservaModal soloLecturaCobro title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} verCostos={verCostos} guiasConocidos={guiasConocidos}
           folio={editTarget?.confirmationNumber}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}

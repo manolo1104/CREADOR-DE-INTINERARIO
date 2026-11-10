@@ -695,6 +695,8 @@ interface Props {
   title:   string;
   /** Los conceptos con sus precios, tal como Manolo los dejó en el Cotizador. */
   presetsExtras?: PresetExtra[];
+  /** false = no enseña lo que nos cuesta cada extra (quien no tiene el Cotizador; lote 8, 10 nov 2026). */
+  verCostos?: boolean;
   /** Guías ya usados en otras reservas: se ofrecen para no teclearlos de nuevo. */
   guiasConocidos?: string[];
   form:    ReservaFormState;
@@ -714,7 +716,7 @@ interface Props {
   folio?: string;
 }
 
-export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, guiasConocidos = [], soloLecturaCobro = false, folio }: Props) {
+export function ReservaModal({ title, form, setForm, onSave, onClose, saving, presetsExtras = EXTRAS_PRESET, verCostos = true, guiasConocidos = [], soloLecturaCobro = false, folio }: Props) {
   const [step,         setStep]         = useState<1 | 2 | 3>(1);
   const [editingTotal, setEditingTotal] = useState(false);
   // Lo que se va tecleando en «Editar» el total; el ajuste se saca de ahí.
@@ -1185,6 +1187,7 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                 extras={form.extras ?? []}
                 personas={personasGrupo}
                 presets={presetsExtras}
+                verCostos={verCostos}
                 onChange={extras => setForm(f => ({ ...f, extras }))}
               />
 

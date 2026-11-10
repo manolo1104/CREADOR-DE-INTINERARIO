@@ -6,12 +6,13 @@ import { tarifarRecorridos, zonaValida, nombreZona, carritoPideZona } from "@/li
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { esIdApartado, renovarApartado } from "@/lib/apartadosAlmacen";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger, actividad, mxn } from "@/lib/logger";
-import { trackServerEvent } from "@/lib/serverTrack";
+import { logger, actividad, mxn, nombreParaLog } from "@/lib/logger";
+import { peticionDelEquipo, trackServerEvent } from "@/lib/serverTrack";
 import { MAX_ITEMS, ANTICIPO_PCT, pctACobrar } from "@/lib/carrito";
 import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { getTraslado, tarifaTraslado } from "@/lib/traslados";
 import { metadataDeRenglones } from "@/lib/webhookRecuperacion";
+import { metadataDelEquipo } from "@/lib/equipoInterno";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -240,6 +241,8 @@ export async function POST(req: NextRequest) {
         // `TourBooking.idiomaTour`, que el panel y el calendario ya pintan.
         idiomaTour:    guiaIngles === true ? "en" : "es",
         source:        "huasteca-potosina.com",
+        // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+        ...metadataDelEquipo(peticionDelEquipo()),
         // Identidad de Google Analytics y de nuestro propio embudo. El webhook
         // es el único que se entera de TODAS las compras (la pestaña cerrada,
         // el pago en `processing`, el bloqueador de anuncios) y no tiene
@@ -306,7 +309,7 @@ export async function POST(req: NextRequest) {
       "🛒 CARRITO EN PAGO",
       resumenNombre,
       `${mxn(cobrar)} de ${mxn(total)}`,
-      customerName,
+      nombreParaLog(customerName),
       customerEmail,
       lineItems[0].tourDate,
       paymentIntent.id,

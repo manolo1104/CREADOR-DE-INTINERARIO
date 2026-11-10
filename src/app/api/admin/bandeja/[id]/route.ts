@@ -3,13 +3,15 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { cambiarConversacion, encolarRespuesta, reintentar } from "@/lib/admin/bandejaDatos";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { propuestaUsada } from "@/lib/admin/agente/copiloto";
+import { esDeOficina } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 
 /** POST { texto } — contestar desde el panel (queda en cola y el puente lo manda). */
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  // Lista blanca (lote 8, 10 nov 2026): solo la oficina; antes se frenaba solo al guía.
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   let body: { texto?: unknown; propuestaId?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 /** PATCH { accion: leida | archivar | desarchivar | no-es-cliente | es-cliente | reintentar, mensajeId? } */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "guia") return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
+  if (!sesion || !esDeOficina(sesion.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
   let body: { accion?: unknown; mensajeId?: unknown };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {

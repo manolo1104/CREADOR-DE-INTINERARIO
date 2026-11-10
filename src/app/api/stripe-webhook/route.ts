@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { marcarLinkPagado } from "@/lib/admin/linksPago";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
 import { recuperarPago, esPagoDeTours, ESPERA_WEBHOOK_MS } from "@/lib/recuperarPago";
 import { esPagoDelViaje } from "@/lib/viajeCdmx/confirmar";
 import { manejarEventoViaje } from "@/lib/viajeCdmx/webhook";
@@ -257,7 +257,7 @@ export async function POST(req: NextRequest) {
       motivo,
       err?.message,
       err?.payment_method?.type,
-      meta.customerName,
+      nombreParaLog(meta.customerName),
       meta.customerEmail || pi.receipt_email || undefined,
       meta.tourDate,
       pi.id,

@@ -6,6 +6,7 @@
 // Embudo comercial y el cruce de Web y canales.
 
 import { canalDeVisita, type CanalVisita } from "@/lib/refWhatsapp";
+import { textoSinPrivados } from "@/lib/medicionPrivada";
 
 export interface OrigenWeb {
   ref: string;
@@ -26,6 +27,12 @@ export interface OrigenWeb {
 }
 
 const txt = (v: unknown, max = 120) => (typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null);
+/**
+ * Una página sin el token de /checkin u /opina (lote 8, 10 nov 2026): el clic
+ * guardado antes del arreglo puede traer la liga personal del cliente, y de
+ * aquí pasaba al lead y a «De la web a la reserva».
+ */
+const pagina = (v: unknown) => { const t = txt(v); return t ? textoSinPrivados(t) : null; };
 
 /** El origen a partir del clic (o solo el código, si el clic no apareció). */
 export function origenWebDeClic(ref: string, clic: { path?: string | null; tourSlug?: string | null; createdAt?: Date | null; data?: unknown } | null): OrigenWeb {
@@ -33,8 +40,8 @@ export function origenWebDeClic(ref: string, clic: { path?: string | null; tourS
   const o = { fuente: txt(d.fuente, 80), medio: txt(d.medio, 80), campana: txt(d.campana, 80), referrer: txt(d.referrerVisita, 120) };
   return {
     ref,
-    pagina: txt(clic?.path) ?? txt(d.pagina),
-    landing: txt(d.landing),
+    pagina: pagina(clic?.path) ?? pagina(d.pagina),
+    landing: pagina(d.landing),
     ...o,
     canal: clic ? canalDeVisita(o) : "otro",
     tour: txt(clic?.tourSlug, 80) ?? txt(d.tour, 80),
@@ -49,7 +56,7 @@ export function leerOrigenWeb(raw: unknown): OrigenWeb | null {
   const r = raw as Record<string, unknown>;
   if (typeof r.ref !== "string") return null;
   return {
-    ref: r.ref, pagina: txt(r.pagina), landing: txt(r.landing), fuente: txt(r.fuente), medio: txt(r.medio), campana: txt(r.campana),
+    ref: r.ref, pagina: pagina(r.pagina), landing: pagina(r.landing), fuente: txt(r.fuente), medio: txt(r.medio), campana: txt(r.campana),
     referrer: txt(r.referrer), canal: (txt(r.canal, 20) ?? "otro") as CanalVisita, tour: txt(r.tour), clicEn: txt(r.clicEn, 40), conClic: r.conClic === true,
   };
 }

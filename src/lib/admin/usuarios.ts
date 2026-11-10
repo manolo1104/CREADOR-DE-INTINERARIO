@@ -198,6 +198,32 @@ export function puedeHacer(rol: RolAdmin, accion: AccionFinanciera): boolean {
   return PERMISOS_FINANCIEROS[rol].includes(accion);
 }
 
+// ── Listas blancas por rol (lote 8, 10 nov 2026) ────────────────────────────
+// Antes cada API decía a quién NO dejar («rol === "guia"», «rol ===
+// "operacion"»): el viaje CDMX frenaba a Operación pero dejaba pasar al guía.
+// Ahora se dice a quién SÍ: un rol nuevo no entra a nada por omisión.
+
+/** Quien trabaja en la oficina (Manolo, Martín, Erick): todo menos el guía. */
+export const ROLES_DE_OFICINA: readonly RolAdmin[] = ["dueno", "socio", "operacion"];
+export function esDeOficina(rol: RolAdmin): boolean {
+  return ROLES_DE_OFICINA.includes(rol);
+}
+
+/** Crear y editar salidas del viaje CDMX, y dar cortesías: Manolo y Martín. */
+export function administraSalidasCdmx(rol: RolAdmin): boolean {
+  return rol === "dueno" || rol === "socio";
+}
+
+/**
+ * ¿Ve lo que NOS cuesta (costos y margen de extras, de la salida)? Quien tiene
+ * el Cotizador, que es justo la pestaña que enseña costos; el guía nunca.
+ * Erick (Operación) no lo tiene de entrada: ve y cobra el precio al cliente,
+ * no lo que deja (lote 8, 10 nov 2026).
+ */
+export function veCostos(rol: RolAdmin, secciones: readonly SeccionAdmin[]): boolean {
+  return rol !== "guia" && secciones.includes("cotizador");
+}
+
 // Un token viejo (emitido antes de que existieran los roles) no trae rol:
 // se trata como dueño, porque hasta hoy la única credencial era la de Manolo.
 export function rolDesdeToken(valor: unknown): RolAdmin {
@@ -217,10 +243,24 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   { prefijo: "/api/admin/permisos",          seccion: "inicio" },
   // La revisión del jueves se captura desde el scorecard de Inicio.
   { prefijo: "/api/admin/revision-semanal",  seccion: "inicio" },
+  // Lote 8 (10 nov 2026): APIs que contestaban a cualquiera con sesión. El
+  // cupo de los eventos y el estado del río se mueven solo desde Inicio; la
+  // migración de imágenes del blog es de una vez y nadie más la usa.
+  { prefijo: "/api/admin/cupo-paquete",      seccion: "inicio" },
+  { prefijo: "/api/admin/rio-estado",        seccion: "inicio" },
+  { prefijo: "/api/admin/migrate-images",    seccion: "inicio" },
   { prefijo: "/admin/reservas",              seccion: "reservas"     },
   { prefijo: "/admin/calendario",            seccion: "calendario"   },
+  // Cerrar un día lo hace solo el Calendario (lote 8).
+  { prefijo: "/api/admin/fechas-cerradas",   seccion: "calendario"   },
   { prefijo: "/admin/salidas",               seccion: "salidas"      },
+  // El viaje CDMX (pasajeros, ventas, lista de espera) solo lo usa su pestaña
+  // (lote 8). No choca con «/api/admin/salidas-dia»: se compara exacto o con «/».
+  { prefijo: "/api/admin/salidas",           seccion: "salidas"      },
   { prefijo: "/admin/cotizaciones",          seccion: "cotizaciones" },
+  // Solo la llama la pestaña Cotizaciones (convertir, PDF, correo, WhatsApp);
+  // la Bandeja propone por su propia API (lote 8).
+  { prefijo: "/api/admin/cotizaciones",      seccion: "cotizaciones" },
   { prefijo: "/admin/fotos",                 seccion: "fotos"        },
   { prefijo: "/admin/resenas",               seccion: "resenas"      },
   // La lectura de Google se anota desde Reseñas; nadie más la usa.
@@ -284,6 +324,75 @@ export function seccionRestringida(pathname: string): SeccionAdmin | null {
     r => limpio === r.prefijo || (!r.exacto && limpio.startsWith(`${r.prefijo}/`))
   );
   return hit ? hit.seccion : null;
+}
+
+// ── Las APIs del GUÍA (lote 8, 10 nov 2026) ─────────────────────────────────
+// 🔴 Antes, en cuanto Manolo le abría al guía UNA pestaña más (Fotos, por
+// ejemplo), el middleware le quitaba la lista blanca entera: con su sesión
+// podía leer todas las reservas con su dinero o cancelarlas llamando las APIs
+// a mano. Ahora su lista blanca vale SIEMPRE y solo crece con las APIs que usa
+// cada pestaña que se le dé. Un texto es un prefijo (exacto o seguido de «/»);
+// una expresión, una ruta concreta (p. ej. solo los cobros de una reserva).
+type ApiDePestana = string | RegExp;
+const COBROS_DE_RESERVA = /^\/api\/admin\/reservas\/[^/]+\/(cobros|evidencia)$/;
+const CHECKIN_DE_RESERVA = /^\/api\/admin\/reservas\/[^/]+\/checkin$/;
+
+/** Las APIs que llama la página de cada pestaña (lo compartido va en cada una que lo usa). */
+export const APIS_POR_SECCION: Record<SeccionAdmin, ApiDePestana[]> = {
+  inicio:        ["/api/admin/permisos", "/api/admin/revision-semanal", "/api/admin/cupo-paquete", "/api/admin/rio-estado", "/api/admin/migrate-images"],
+  reservas:      ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple"],
+  calendario:    ["/api/admin/fechas-cerradas", COBROS_DE_RESERVA, CHECKIN_DE_RESERVA, "/api/admin/evidencia"],
+  cotizaciones:  ["/api/admin/cotizaciones", "/api/admin/codigos-cumple", COBROS_DE_RESERVA, "/api/admin/evidencia"],
+  cotizador:     ["/api/admin/costos", "/api/admin/precios-extras", "/api/admin/tarifas-proveedor"],
+  clientes:      ["/api/admin/clientes"],
+  ingresos:      ["/api/admin/kpis"],
+  curso:         ["/api/admin/curso"],
+  bitacora:      ["/api/admin/bitacora"],
+  cortes:        ["/api/admin/cortes"],
+  cobros:        ["/api/admin/links-pago"],
+  fotos:         [],
+  resenas:       ["/api/admin/resenas", /^\/api\/admin\/reservas\/[^/]+\/resena-whatsapp$/],
+  salidas:       ["/api/admin/salidas", COBROS_DE_RESERVA, "/api/admin/evidencia"],
+  analisis:      ["/api/admin/analisis"],
+  bandeja:       ["/api/admin/bandeja", "/api/admin/leads", "/api/admin/tareas"],
+  leads:         ["/api/admin/leads", "/api/admin/tareas"],
+  seguimientos:  ["/api/admin/tareas"],
+  "salidas-dia": ["/api/admin/salidas-dia"],
+  rutas:         ["/api/admin/rutas"],
+  proveedores:   ["/api/admin/proveedores"],
+  rentabilidad:  [],
+  score:         ["/api/admin/score"],
+  agente:        ["/api/admin/agente"],
+  metas:         ["/api/admin/cambios"],
+  demanda:       [], embudo: [], ocupacion: [], portafolio: [], precios: [], experiencia: [],
+};
+
+/** Lo que el guía usa siempre: sus salidas, refrescar su sesión y la campana de seguimientos (que a él le llega vacía). */
+export const API_GUIA_BASE: readonly string[] = ["/api/admin/salidas-dia", "/api/admin/sesion", "/api/admin/tareas"];
+
+const coincide = (pathname: string, api: ApiDePestana) =>
+  typeof api === "string" ? pathname === api || pathname.startsWith(`${api}/`) : api.test(pathname);
+
+/**
+ * ¿El guía puede llamar esta API? Su lista blanca más las APIs de las pestañas
+ * que tiene. La pestaña en sí la sigue revisando `seccionRestringida`.
+ */
+export function apiPermitidaAlGuia(pathname: string, secciones: readonly SeccionAdmin[]): boolean {
+  const limpio = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  if (API_GUIA_BASE.some(p => coincide(limpio, p))) return true;
+  return secciones.some(s => (APIS_POR_SECCION[s] ?? []).some(api => coincide(limpio, api)));
+}
+
+/**
+ * La decisión del middleware para una API del panel, ya con la sesión leída
+ * (lote 8): null = pasa; si no, el código HTTP con que se frena.
+ */
+export function decisionApiPanel(pathname: string, sesion: { rol: RolAdmin; secciones: readonly SeccionAdmin[] } | null): null | 401 | 403 {
+  if (!sesion) return 401;
+  if (sesion.rol === "guia" && !apiPermitidaAlGuia(pathname, sesion.secciones)) return 403;
+  const seccion = seccionRestringida(pathname);
+  if (seccion && !sesion.secciones.includes(seccion)) return 403;
+  return null;
 }
 
 // ── Las personas con acceso ─────────────────────────────────────────────────

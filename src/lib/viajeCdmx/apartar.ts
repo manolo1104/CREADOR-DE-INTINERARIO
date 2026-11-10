@@ -16,6 +16,8 @@ import { hayMsi } from "@/lib/stripeMsi";
 import { addDaysYMD, weekdayYMD, ymdMX } from "@/lib/dates";
 import { conSalidaBloqueada, ErrorViaje, libres, ocupacion } from "./cupo";
 import { montos, precioVigente, rangoCorto, seVende, type Montos } from "./precio";
+import { peticionDelEquipo } from "@/lib/serverTrack";
+import { metadataDelEquipo } from "@/lib/equipoInterno";
 import {
   APARTADO_MIN, MAX_POR_APARTADO, OXXO_DIAS_FICHA, OXXO_HASTA_DIAS_ANTES_DEL_CORTE, OXXO_MAXIMO,
   RENOVAR_MIN, ULTIMOS_LUGARES, VIAJE_NOMBRE, VIAJE_SLUG, COMPARTIR_VALIDO, CUARTO_VALIDO, precioCuarto,
@@ -186,6 +188,8 @@ export async function crearCobroDelApartado(c: ApartadoCreado, ctx: ContextoCobr
       // `source` + `tourId` hacen que la conciliación de pagos lo vea como de
       // este sitio; `producto` lo manda a su propia rama (`recuperarPago.ts`).
       source:         "huasteca-potosina.com",
+      // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+      ...metadataDelEquipo(peticionDelEquipo()),
       producto:       "viaje-cdmx",
       tourId:         VIAJE_SLUG,
       tourSlug:       VIAJE_SLUG,

@@ -39,6 +39,7 @@ import type {
   HospedajePrecio, ItemBotCrudo, LineaPrecio, LocaleBot, PaquetePrecio, PaqueteCotizacionBot,
   ResultadoEnvio, ResultadoReemplazo,
 } from "./tipos";
+import { enmascararTexto } from "@/lib/logger";
 
 /** El slug reservado de los conceptos escritos a mano (`SLUG_PERSONALIZADO` del panel). */
 const SLUG_PERSONALIZADO = "__personalizado";
@@ -950,7 +951,7 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
   // llegó al equipo (lote 4, 5 nov 2026: eso ya no la deja Enviada)—, la
   // cotización salió por WhatsApp: se anota así, con su fecha límite.
   if (!envio.emailEnviado && !envio.copia) {
-    if (!envio.ok) console.error(`❌ ${etiqueta} correo ${quote.quoteNumber}:`, envio.error);
+    if (!envio.ok) console.error(`❌ ${etiqueta} correo ${quote.quoteNumber}:`, enmascararTexto(String(envio.error ?? "")));
     const porWhatsapp = await marcarEnviadaPorWhatsapp(quote.id, undefined, BOT);
     if (porWhatsapp.ok) envio = porWhatsapp;
     else console.error(`❌ ${etiqueta} anotar envío ${quote.quoteNumber}:`, porWhatsapp.error);

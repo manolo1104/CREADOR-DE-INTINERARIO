@@ -100,7 +100,12 @@ export function sugerenciasDeAgrupar(
 
 const diaCorto = (ymd: string) => new Date(`${ymd}T12:00:00Z`).toLocaleDateString("es-MX", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).replace(/\./g, "");
 
-/** El seguimiento que se le deja a Operación para proponerlo al cliente. */
+/**
+ * El seguimiento que se le deja a Operación para proponerlo al cliente. Sin
+ * el «ahorro ~$X» (lote 8, 10 nov 2026): es un costo de la salida y el
+ * seguimiento lo lee Erick, que no ve costos, en el panel y en su correo de
+ * recordatorios. El ahorro sigue en Agente y Rentabilidad.
+ */
 export function tituloAgrupar(s: SugerenciaAgrupar): string {
-  return `Juntar salidas: proponer a ${s.mover.clientes.join(", ")} (${s.mover.personas} pax) pasar su ${s.tour.split(" — ")[0]} del ${diaCorto(s.mover.fecha)} al ${diaCorto(s.hacia.fecha)}, con ${s.hacia.clientes.join(", ")}: ${s.juntas} pax en una sola salida${s.ahorro ? ` (ahorro ~$${s.ahorro.toLocaleString("es-MX")})` : ""}`;
+  return `Juntar salidas: proponer a ${s.mover.clientes.join(", ")} (${s.mover.personas} pax) pasar su ${s.tour.split(" — ")[0]} del ${diaCorto(s.mover.fecha)} al ${diaCorto(s.hacia.fecha)}, con ${s.hacia.clientes.join(", ")}: ${s.juntas} pax en una sola salida`;
 }

@@ -5,6 +5,7 @@
 // Lo prueba `__tests__/salidasOperacion.test.ts`.
 import { checklistDe, limpiarChecklist, paraGuardar } from "./checklistSalida";
 import { limpiarIncidencias, nuevaIncidencia } from "./incidencias";
+import { ROLES_DE_OFICINA } from "./usuarios";
 
 export const ESTADOS_SALIDA = ["programada", "confirmada", "operada", "cancelada"] as const;
 export const TIPOS_SALIDA = ["fija", "privada"] as const;
@@ -34,8 +35,10 @@ export type ResultadoGuardado =
  */
 export function aplicarAlRegistro(previo: RegistroPrevio | null, body: Record<string, unknown>, c: ContextoGuardado): ResultadoGuardado {
   // El guía marca el checklist, escribe notas y anota incidencias; asignar
-  // guía, vehículo, estado o tipo es de Operación.
-  if (c.rol === "guia" && ["guia", "vehiculo", "estado", "tipo"].some(k => body[k] !== undefined)) {
+  // guía, vehículo, estado o tipo es de Operación. Lista blanca (lote 8, 10 nov
+  // 2026): asigna solo la oficina; un rol desconocido no.
+  const deOficina = (ROLES_DE_OFICINA as readonly unknown[]).includes(c.rol);
+  if (!deOficina && ["guia", "vehiculo", "estado", "tipo"].some(k => body[k] !== undefined)) {
     return { error: "Eso lo asigna Operación.", status: 403 };
   }
   const data: Record<string, unknown> = {};
@@ -84,7 +87,7 @@ export function aplicarAlRegistro(previo: RegistroPrevio | null, body: Record<st
   // quién y cuándo (el guía también); { quitarIncidencia: id } la quita (solo Operación).
   let incidencia: "anotada" | "quitada" | null = null;
   if (body.incidencia !== undefined || body.quitarIncidencia !== undefined) {
-    if (body.quitarIncidencia !== undefined && c.rol === "guia") return { error: "Eso lo quita Operación.", status: 403 };
+    if (body.quitarIncidencia !== undefined && !deOficina) return { error: "Eso lo quita Operación.", status: 403 };
     let lista = limpiarIncidencias(previo?.incidencias);
     if (body.incidencia !== undefined) {
       const nueva = nuevaIncidencia(body.incidencia, c.quien, c.ahora, `i-${c.idNuevo}`);

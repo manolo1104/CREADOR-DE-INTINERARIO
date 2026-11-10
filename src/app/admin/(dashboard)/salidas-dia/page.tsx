@@ -9,6 +9,9 @@ import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { EstadoVacio } from "@/components/admin/ui/EstadoVacio";
 import { ChipEstado } from "@/components/admin/ui/ChipEstado";
 import { TONO_ESTADO_SALIDA, fechaLarga } from "./comun";
+import { sesionActual } from "@/lib/admin/sesion";
+import { esDeOficina } from "@/lib/admin/usuarios";
+import { fechaParaGuia, ventanaDelGuia } from "@/lib/admin/vistaGuia";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Salidas del día — Admin" };
@@ -20,12 +23,22 @@ export const metadata = { title: "Salidas del día — Admin" };
 export default async function SalidasDiaPage({ searchParams }: { searchParams: { fecha?: string } }) {
   const hoy = hoyMX();
   const pedida = searchParams.fecha ?? "";
-  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(pedida) && addDaysYMD(pedida, 0) === pedida ? pedida : hoy;
+  const valida = /^\d{4}-\d{2}-\d{2}$/.test(pedida) && addDaysYMD(pedida, 0) === pedida ? pedida : hoy;
+  // El guía ve de ayer a 7 días adelante (lote 8, 10 nov 2026): las flechas se
+  // apagan en la orilla y una fecha tecleada fuera se lleva a la orilla.
+  const sesion = await sesionActual();
+  const esGuia = !sesion || !esDeOficina(sesion.rol);
+  const fecha = esGuia ? fechaParaGuia(valida, hoy) : valida;
+  const ventana = esGuia ? ventanaDelGuia(hoy) : null;
   // Las canceladas no cuentan (lote 6, 10 nov 2026): van aparte, abajo, para poder reabrirlas.
   const todas = await salidasEntre(fecha, fecha, { conCanceladas: true });
   const salidas = todas.filter(s => !salidaCancelada(s.registro.estado));
   const canceladas = todas.filter(s => salidaCancelada(s.registro.estado));
-  const nav = (f: string, aria: string, Icono: typeof ChevronLeft) => (
+  const nav = (f: string, aria: string, Icono: typeof ChevronLeft) => ventana && (f < ventana.desde || f > ventana.hasta) ? (
+    <span aria-hidden="true" className="inline-flex h-10 w-10 items-center justify-center rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white text-[var(--panel-tinta)] opacity-30">
+      <Icono className="h-4 w-4" />
+    </span>
+  ) : (
     <Link href={`/admin/salidas-dia?fecha=${f}`} aria-label={aria}
       className="panel-foco inline-flex h-10 w-10 items-center justify-center rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white text-[var(--panel-tinta)]">
       <Icono className="h-4 w-4" aria-hidden="true" />
