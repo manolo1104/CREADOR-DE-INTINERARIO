@@ -251,6 +251,18 @@ export function importeHotelDePaquete(meta: Meta): number | null {
   return r.importeHotel > 0 ? r.importeHotel : null;
 }
 
+/**
+ * El % que se cobró de un paquete: el de la metadata, que escribió el servidor
+ * al cobrar; el del navegador solo si falta, y si no, lo que dicen los montos.
+ * 🔴 Antes mandaba el del navegador: el correo del cliente y la nota del
+ * equipo podían decir «Pago inicial: 100 %» de un anticipo del 30 % (revisión
+ * del lote 5, 10 nov 2026).
+ */
+export function pctDelPaquete(metaPct: unknown, respaldo: unknown, cobrado: number, total: number): number {
+  return Number(metaPct) || Number(respaldo)
+    || (total > 0 ? Math.min(100, Math.round((cobrado / total) * 100)) : 100);
+}
+
 // ── El contacto del CRM ─────────────────────────────────────────────────────
 
 /**
@@ -264,4 +276,17 @@ export function correoParaContacto(correo: string | null | undefined): string | 
   if (!c.includes("@")) return null;
   if (/@desconocido$/i.test(c) || /\.invalid$/i.test(c)) return null;
   return c;
+}
+
+/**
+ * El nombre con que se puede juntar a un cliente, o null si es de relleno
+ * («Pendiente (vía webhook)», la reserva pagada que llegó sin nombre). 🔴 Con
+ * él, la lista de Clientes y el indicador «clientes que vuelven» juntaban a
+ * desconocidos distintos en una sola persona que «repetía» (revisión del lote
+ * 5, 10 nov 2026).
+ */
+export function nombreParaContacto(nombre: string | null | undefined): string | null {
+  const n = (nombre ?? "").trim();
+  if (!n || /^pendiente \(/i.test(n)) return null;
+  return n;
 }

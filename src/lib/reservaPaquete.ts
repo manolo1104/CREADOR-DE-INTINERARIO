@@ -26,7 +26,7 @@ import { parseEleccion } from "@/lib/paquetePricing";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { revisarSobrecupo } from "@/lib/sobrecupo";
-import { HOTEL_PARAISO_WEB, importeHotelDePaquete } from "@/lib/reservaWeb";
+import { HOTEL_PARAISO_WEB, importeHotelDePaquete, pctDelPaquete } from "@/lib/reservaWeb";
 import fs from "fs";
 import path from "path";
 
@@ -103,8 +103,8 @@ export async function registrarReservaPaquete(
   const totalMeta = Math.round(Number(meta.totalCompleto) || 0);
   const totalFull = totalMeta > 0 ? totalMeta : paquete.precio;
   const pendiente = Math.max(0, totalFull - cobrado);
-  const pctNum    = Number(pct) || Number(meta.paquetePct)
-    || (totalFull > 0 ? Math.min(100, Math.round((cobrado / totalFull) * 100)) : 100);
+  // El % de la metadata primero (revisión del lote 5, 10 nov 2026).
+  const pctNum    = pctDelPaquete(meta.paquetePct, pct, cobrado, totalFull);
 
   // ── El grupo, con sus tramos ──────────────────────────────────────────
   // También de la metadata: el cuerpo de la petición solo manda `personas`,

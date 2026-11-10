@@ -5,8 +5,9 @@ import { cotizarHabitaciones } from "@/lib/habitaciones";
 import { computePaqueteCharge } from "@/lib/paquetePricing";
 import { metadataDeRenglones, reconstruirLineas, MAX_RENGLONES_META } from "@/lib/webhookRecuperacion";
 import {
-  armarReservaWeb, correoParaContacto, importeHotelDePaquete, productoDelPago, renglonHotelCarrito,
+  armarReservaWeb, correoParaContacto, importeHotelDePaquete, nombreParaContacto, pctDelPaquete, productoDelPago, renglonHotelCarrito,
 } from "@/lib/reservaWeb";
+import { agruparClientes, claveCliente } from "@/lib/admin/clientes";
 import {
   esConceptoSinTour, habitacionesParaEditar, identidadDePaqueteAlEditar, importeDeConcepto, importeHabitacion,
   lineaParaGuardar, notasConAviso, totalParaGuardar,
@@ -328,6 +329,35 @@ describe("el CRM no junta clientes por el correo de relleno (web#4)", () => {
     expect(correoParaContacto("algo@prueba.invalid")).toBeNull();
     expect(correoParaContacto("")).toBeNull();
     expect(correoParaContacto(" ana@correo.mx ")).toBe("ana@correo.mx");
+  });
+
+  // Revisión del lote 5 (10 nov 2026): el mismo relleno juntaba a desconocidos
+  // en la lista de Clientes y en el indicador «clientes que vuelven».
+  it("🔴 dos pagos sin correo ni nombre son dos clientes, ninguno «vuelve»", () => {
+    const pago = (id: string, extra: Record<string, unknown> = {}) => ({
+      id, confirmationNumber: `HP${id}`, tourName: "Expedición Tamul", tourDate: "2026-12-01", lineItems: null,
+      totalAmount: 3000, depositoPagado: 3000, stripePaymentIntentId: `pi_${id}`, createdAt: new Date("2026-11-10T12:00:00Z"),
+      customerName: "Pendiente (vía webhook)", customerEmail: "pendiente@desconocido", customerPhone: null, ...extra,
+    }) as unknown as Parameters<typeof agruparClientes>[0][number];
+    expect(claveCliente(pago("A1"))).toBe("res:A1");
+    const clientes = agruparClientes([pago("A1"), pago("B2")]);
+    expect(clientes.map((c) => c.totalReservas)).toEqual([1, 1]);
+    expect(clientes.every((c) => c.email === "")).toBe(true);
+    // Con teléfono o un nombre de verdad se siguen juntando como antes.
+    expect(claveCliente(pago("C3", { customerPhone: "489 123 4567" }))).toBe("tel:4891234567");
+    expect(claveCliente(pago("D4", { customerName: "Ana  López" }))).toBe("nom:ana lópez");
+    expect(claveCliente(pago("E5", { customerEmail: "Ana@Correo.mx" }))).toBe("mail:ana@correo.mx");
+    expect(nombreParaContacto("Pendiente (vía webhook)")).toBeNull();
+    expect(nombreParaContacto(" Ana ")).toBe("Ana");
+  });
+});
+
+describe("el paquete dice el % que de verdad se cobró (revisión del lote 5)", () => {
+  it("🔴 manda la metadata, no lo que diga el navegador", () => {
+    expect(pctDelPaquete("30", "100", 3000, 10000)).toBe(30);
+    expect(pctDelPaquete(undefined, "50", 5000, 10000)).toBe(50);
+    expect(pctDelPaquete(undefined, undefined, 3000, 10000)).toBe(30);
+    expect(pctDelPaquete(undefined, undefined, 0, 0)).toBe(100);
   });
 });
 
