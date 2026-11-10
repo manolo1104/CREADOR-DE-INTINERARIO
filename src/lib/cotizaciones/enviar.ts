@@ -132,9 +132,11 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
       ...seq, venceEl,
       ...(venceEl !== previa ? { recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
     });
+    // La primera vez que sale al cliente (lote 9, 10 nov 2026): «Cotización →
+    // reserva» cuenta desde aquí. Un reenvío no la mueve.
     await prisma.tourQuote.update({
       where: { id: quoteId },
-      data:  { status: "enviada", lineItems: lineItems as never },
+      data:  { status: "enviada", lineItems: lineItems as never, ...(q.enviadaEn ? {} : { enviadaEn: new Date() }) },
     });
     await registrarEnBitacora({
       accion:     "envió",
@@ -195,7 +197,8 @@ export async function marcarEnviadaPorWhatsapp(
     });
     await prisma.tourQuote.update({
       where: { id: q.id },
-      data:  { status: "enviada", lineItems: lineItems as never },
+      // La primera vez que sale al cliente (lote 9): un reenvío no la mueve.
+      data:  { status: "enviada", lineItems: lineItems as never, ...(q.enviadaEn ? {} : { enviadaEn: new Date() }) },
     });
     await registrarEnBitacora({
       accion:     "envió",

@@ -16,14 +16,15 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { cargarEnv, describeBase } from "./_env";
-import { normalizarTelefono, subirA, etapaPorCobro, etapaPorReglas, type Etapa } from "../lib/admin/crm";
+import { CREADO_POR_IMPORTACION, normalizarTelefono, subirA, etapaPorCobro, etapaPorReglas, type Etapa } from "../lib/admin/crm";
 import { montoCobrado } from "../lib/admin/dinero";
 import { diasDeTourDe } from "../lib/admin/salidas";
 import { lineasDe } from "../lib/admin/reserva";
 
 cargarEnv();
 const prisma = new PrismaClient();
-const POR = "Importación inicial";
+// Con esta marca los indicadores reconocen lo sembrado y lo dejan fuera de las cohortes (lote 9).
+const POR = CREADO_POR_IMPORTACION;
 const ABIERTAS = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
 const hoyMX = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
 const esFecha = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);

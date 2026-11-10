@@ -900,7 +900,10 @@ export async function leadTrasReactivarReserva(bookingId: string): Promise<void>
 // fecha del tour?». Al día siguiente del último tour, un lead con Anticipo
 // pagado o Confirmado pasa solo a Operado y sale del tablero. Si quedó saldo
 // sin registrar, se anota en su historial para cobrarlo o registrarlo. Se
-// revisa al abrir Leads o una ficha: sin cron y sin que nadie lo empuje.
+// revisa al abrir Leads o una ficha y, desde el lote 9 (10 nov 2026), también
+// cada hora en el cron (`/api/cron/recordatorios`): si nadie abría Leads, el
+// lead seguía «Confirmado» y quien volvía a escribir no disparaba «¿Consulta
+// nueva?». Es idempotente: solo mueve si nadie lo movió mientras tanto.
 
 /** Pasa a Operado los leads cuyo viaje ya pasó. Con `soloId`, solo ese. Devuelve cuántos movió. */
 export async function operarViajesPasados(hoy: string = hoyMX(), soloId?: string): Promise<number> {

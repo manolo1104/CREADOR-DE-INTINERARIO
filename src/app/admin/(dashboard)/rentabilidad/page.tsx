@@ -42,10 +42,12 @@ export default async function RentabilidadPage({ searchParams }: { searchParams:
             Costos: <strong className="text-[var(--panel-tinta)]">{d.salidasConCorte} de {d.salidas}</strong> salidas con los costos reales del corte semanal{d.salidasConCorte < d.salidas ? "; el resto, estimado con el Cotizador hasta que se haga su corte" : ""}.
           </p>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            <TarjetaKpi etiqueta="Margen de contribución" area="Dinero" valor={d.margenPct === null ? "—" : `${d.margenPct} %`}
-              contexto={d.margenPct === null ? "Ninguna salida con costos capturados" : `${fmx(d.margen)} sobre ${fmx(d.ingresoConCostos)} con costos · meta 35 %`}
-              estado={d.margenPct === null ? { tono: "neutro", texto: "Faltan costos" } : d.margenPct >= 35 ? { tono: "bien", texto: "En meta" } : d.margenPct >= 30 ? { tono: "atencion", texto: "Cerca de meta" } : { tono: "problema", texto: "Debajo de meta" }} />
-            <TarjetaKpi etiqueta="Personas por salida" area="Operación" valor={String(d.paxPorSalida)} contexto={`${d.personas} personas en ${d.salidas} salidas · meta 3.5`}
+            {/* Lote 9 (10 nov 2026): es el ESTIMADO por salida (sin comisiones), sin meta;
+                la meta del 35 % es del «Margen del corte» (Ocupación e Inicio). */}
+            <TarjetaKpi etiqueta="Margen estimado por salida" area="Dinero" valor={d.margenPct === null ? "—" : `${d.margenPct} %`}
+              contexto={d.margenPct === null ? "Ninguna salida con costos capturados" : `${fmx(d.margen)} sobre ${fmx(d.ingresoConCostos)} con costos · sin comisiones`}
+              estado={{ tono: "neutro", texto: d.margenPct === null ? "Faltan costos" : "Estimado · sin meta" }} />
+            <TarjetaKpi etiqueta="Personas por salida" area="Operación" valor={String(d.paxPorSalida)} contexto={`${d.personasRegulares} personas en ${d.salidasRegulares} salidas regulares · meta 3.5`}
               estado={d.paxPorSalida >= 3.5 ? { tono: "bien", texto: "En meta" } : d.paxPorSalida >= 3 ? { tono: "atencion", texto: "Cerca de meta" } : { tono: "problema", texto: "Debajo de meta" }} />
             <TarjetaKpi etiqueta="Salidas bajo mínimo" area="Operación" valor={String(d.bajoMinimo)} contexto={`de ${d.regulares} salidas regulares con 2 personas o menos · meta 3 o menos al mes`}
               estado={d.bajoMinimo <= 3 ? { tono: "bien", texto: "En meta" } : { tono: "atencion", texto: "Arriba de meta" }} />

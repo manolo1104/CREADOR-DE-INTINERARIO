@@ -14,8 +14,10 @@ import { avanceChecklist } from "./checklistSalida";
 import { historialGoogle } from "./satisfaccion";
 import { etapaDe } from "@/lib/vencimientoCotizacion";
 import { calcularScorecard, numeroSemana, type Scorecard } from "./scorecard";
-import { cargarComercial, cotizo, reservo } from "./indicadores/comercial";
-import { periodoDe, cohorteMadura } from "./indicadores/periodo";
+import { calcularComercial, cargarComercial } from "./indicadores/comercial";
+import { periodoDe } from "./indicadores/periodo";
+import { nuevasResenas, resenasDe } from "./indicadores/servicio";
+import type { ValorKpi } from "./indicadores/tipos";
 
 export interface RevisionSemanalDatos {
   semana: string;
@@ -58,21 +60,24 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   const mesIni = `${lunes.slice(0, 7)}-01`;
   const mesFin = ymdMX(new Date(Date.UTC(Number(lunes.slice(0, 4)), Number(lunes.slice(5, 7)), 0, 12)));
 
-  const leadsCrm = await prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }).catch(() => 0);
-  // La cohorte de la semana con la MISMA función que «Embudo comercial» (4 nov 2026).
+  // Lo comercial de la semana con las MISMAS funciones que «Embudo comercial»
+  // (lote 9, 10 nov 2026): cohorte sin leads importados ni nacidos de una
+  // reserva, cerrada a 14 días, y «reservó» = reserva viva con dinero.
   const pSemana = periodoDe("semana", lunes, hoy);
-  const comercial = await cargarComercial([pSemana], hoy).catch(() => null);
-  const leadsSemana = comercial ? comercial.leads.filter(l => l.ymd >= lunes && l.ymd <= domingo) : [];
+  const comercial = await cargarComercial([pSemana], hoy).then(d => calcularComercial(d, pSemana, [pSemana])).catch(e => { console.error("scorecard (comercial):", (e as Error)?.message); return null; });
+  const valorDe = (k: string): ValorKpi => comercial?.valores.find(v => v.clave === k) ?? { clave: k, valor: null, calidad: "sin-dato" };
+  const leadsCrm = comercial ? comercial.detalle.leadsCrm
+    : await prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }).catch(() => 0);
   const manana = addDaysYMD(hoy, 1);
   const [sinResponder, salidasManana] = await Promise.all([
     // Chats cuyo último mensaje es del cliente y lleva más de 10 min sin respuesta (plan: «alerta a los 10 min»).
     prisma.conversacion.count({ where: { noEsCliente: false, archivada: false, ultimoDe: "cliente", ultimoEntranteEn: { lt: new Date(Date.now() - 10 * 60_000), gte: new Date(Date.now() - 48 * 3_600_000) } } }).catch(() => 0),
     salidasEntre(manana, manana).catch(() => []),
   ]);
-  const [creadas, delMes, cotizaciones, enTour, revisionRaw, google, salidas, salidasHoy, enviadas, vivas] = await Promise.all([
+  const [creadas, delMes, cotizaciones, enTour, revisionRaw, google, salidasTodas, salidasHoy, enviadas, vivas, corte] = await Promise.all([
     prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN }, createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }),
     prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN }, createdAt: { gte: inicioMX(mesIni), lte: finMX(mesFin) } }, select: { totalAmount: true } }),
-    prisma.tourQuote.findMany({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) }, status: { not: "archivada" } }, select: { customerEmail: true, customerPhone: true } }),
+    prisma.tourQuote.findMany({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) }, status: { not: "archivada" } }, select: { customerEmail: true, customerPhone: true, status: true } }),
     prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN }, tourDate: { gte: addDaysYMD(lunes, -21), lte: addDaysYMD(domingo, 21) } } }),
     prisma.revisionSemanal.findUnique({ where: { semana: lunes } }).catch(() => null),
     historialGoogle().catch(() => []),
@@ -80,15 +85,21 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
     salidasEntre(hoy, hoy),
     prisma.tourQuote.findMany({ where: { status: "enviada" } }),
     prisma.tourBooking.findMany({ where: { status: { notIn: NO_CUENTAN } }, select: { totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true, tourDate: true, tourSlug: true, tourName: true, adults: true, children: true, lineItems: true, confirmationNumber: true } }),
+    // «Margen del corte» (lote 9): el KPI oficial sale del corte de la semana.
+    prisma.corteSemanal.findUnique({ where: { semana: lunes }, select: { ventas: true, utilidad: true, estado: true } }).catch(() => null),
   ]);
+  // Personas por salida y el margen estimado: solo las salidas regulares, sin
+  // viaje CDMX, RZR, buceo, a medida ni renglones de concepto (lote 9, como Ocupación).
+  const salidas = salidasTodas.filter(s => !s.aMedida);
 
-  const cotizados = new Set(cotizaciones.map(q => (q.customerPhone || q.customerEmail || "").trim().toLowerCase()).filter(Boolean)).size;
+  // Los cotizados de la cohorte, como en Embudo (lote 9); antes contaba
+  // también borradores que nunca salieron.
+  const cotizados = comercial ? (comercial.detalle.embudo[1]?.n ?? 0)
+    : new Set(cotizaciones.filter(q => q.status !== "borrador").map(q => (q.customerPhone || q.customerEmail || "").trim().toLowerCase()).filter(Boolean)).size;
   const operadas = enTour.filter(b => { const u = ultimoDia(b); return u >= lunes && u <= domingo; }).length;
   const conCostos = salidas.filter(s => s.numeros.conCostos);
-  // Reseñas de Google en la semana: la última lectura de la semana menos la última de antes.
-  const antes = google.filter(p => p.fecha < lunes).sort((a, b) => a.fecha.localeCompare(b.fecha)).at(-1);
-  const enSemana = google.filter(p => p.fecha >= lunes && p.fecha <= domingo).sort((a, b) => a.fecha.localeCompare(b.fecha)).at(-1);
-  const resenasGoogleSemana = antes && enSemana ? Math.max(0, enSemana.total - antes.total) : null;
+  // Reseñas de Google en la semana: de la lectura del lunes a la del lunes siguiente (lote 9).
+  const resenasGoogleSemana = nuevasResenas(google, pSemana)?.nuevas ?? null;
 
   const revision: RevisionSemanalDatos = {
     semana: lunes,
@@ -119,10 +130,13 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
     margenConCostos: conCostos.reduce((t, s) => t + s.numeros.margen, 0),
     salidasConCostos: conCostos.length,
     reservasOperadas: operadas,
-    cohorte: leadsSemana.length ? {
-      leads: leadsSemana.length, cotizados: leadsSemana.filter(cotizo).length, reservaron: leadsSemana.filter(reservo).length,
-      preliminar: !cohorteMadura(pSemana, hoy),
+    comercial: comercial ? {
+      leads: comercial.detalle.leadsCrm, leadReserva: valorDe("lead-reserva"), leadsCotizados: valorDe("leads-cotizados"),
+      respuesta5: valorDe("respuesta-5min"), embudo: comercial.detalle.embudo,
     } : null,
+    corte: corte ? { ventas: corte.ventas, utilidad: corte.utilidad, cerrado: corte.estado === "cerrado" } : null,
+    // La de «Experiencia»: lecturas de Google de lunes a lunes (lote 9).
+    resenas: resenasDe({ google, operadas: enTour.map(b => ({ ultimoDia: ultimoDia(b) || b.tourDate, conCheckin: false })), hoy }, pSemana),
   });
 
   // Pendientes de hoy.

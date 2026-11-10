@@ -16,7 +16,10 @@ describe("scorecard semanal (fórmulas del prompt)", () => {
     expect(k.respuesta.valor).toBe("67 %");
     expect(k.leads.contexto).toContain("44 cotizados (58 %");
     expect(k.pax.valor).toBe("2.8");
-    expect(k.margen.valor).toBe("30 %");
+    // Lote 9: el oficial es el del corte; sin corte cerrado, «—». El estimado va aparte.
+    expect(k.margen.valor).toBe("—");
+    expect(k["margen-estimado"].valor).toBe("30 %");
+    expect(calcularScorecard({ ...base, corte: { ventas: 37_730, utilidad: 11_388, cerrado: true } }).kpis.find(x => x.clave === "margen")?.valor).toBe("30 %");
     expect(k.score.estado.texto).toBe("Cerca");
     expect(k.resenas.valor).toBe("20 %");
     expect(k.vendido.contexto).toContain("$238,889 de $310,000");

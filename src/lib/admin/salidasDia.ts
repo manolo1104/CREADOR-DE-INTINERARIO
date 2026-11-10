@@ -11,6 +11,7 @@ import { saldoPendiente } from "./dinero";
 import { costosDelCorte, type CostoDelCorte } from "./costosReales";
 import { claveDeTarjeta } from "./corteSemanal";
 import { hospedajeDeReserva } from "./hospedaje";
+import { factorDeTotal } from "./reserva";
 import { checklistDe, type ItemChecklist } from "./checklistSalida";
 import { claveReglaConSalidaNueva } from "./automatizaciones";
 import {
@@ -217,7 +218,10 @@ export async function salidasEntre(desde: string, hasta: string, opciones: { con
     // MISMA clave de su tarjeta en el corte (lote 7, 10 nov 2026): antes dos
     // personalizados de una reserva el mismo día se llevaban los costos de los dos.
     const tarjetas = diasSalida.map(d => corte.get(claveDeTarjeta(d.fecha, porFolio.get(d.folio)!.id, d.slug, d.nombre)));
-    const { numeros, conCorte, ingresoExtras } = numerosConCorte(s.monto, s.personas, conceptos, tarjetas);
+    // El ingreso es lo que de verdad se cobró de cada renglón: después de
+    // descuentos y del total editado (lote 9, 10 nov 2026); antes, su precio de lista.
+    const ingresoNeto = Math.round(diasSalida.reduce((t, d) => t + d.monto * factorDeTotal(porFolio.get(d.folio)!), 0));
+    const { numeros, conCorte, ingresoExtras } = numerosConCorte(ingresoNeto, s.personas, conceptos, tarjetas);
     const cupo = tour ? cupoDeTour(tour) : null;
     const precioPorPax = tour && tour.precioUnidad !== "vehiculo" && tour.precioUnidad !== "grupo" ? tour.precio : 0;
     const p = tour ? partesRecogida(tour, false) : null;

@@ -8,6 +8,8 @@ import { tipoFolio } from "@/lib/admin/folio";
 import { diasDeTourDe } from "@/lib/admin/salidas";
 import { estadoConexion } from "@/lib/admin/bandejaDatos";
 import { haceCuanto } from "@/lib/admin/bandeja";
+import { usuariosAdmin } from "@/lib/admin/usuarios";
+import { CLAVE_ULTIMO_WEBHOOK_STRIPE, estadoCorreos, estadoPuente, estadoStripe, faltanLlavesCompraGA4, type EstadoFuente } from "./fuentes";
 import { historialGoogle } from "@/lib/admin/satisfaccion";
 import { PRIMERA_SEMANA_CORTE } from "@/lib/admin/corteSemanal";
 import { detalleGA4 } from "./ga4";
@@ -41,21 +43,13 @@ export async function medirDatos(p: Periodo, periodos: Periodo[]): Promise<{ val
   return { valores: [datosConfiables(rs, p)], series: { "datos-confiables": serie(periodos, x => datosConfiables(rs, x).valor) } };
 }
 
-export interface EstadoFuente {
-  nombre: string;
-  /** Qué KPIs alimenta. */
-  alimenta: string;
-  estado: "ok" | "atencion" | "falla";
-  detalle: string;
-  /** Qué hacer si no está bien. */
-  arreglo?: string;
-}
+export type { EstadoFuente } from "./fuentes";
 
 /** El estado de cada fuente de datos del panel, con cómo arreglarla. */
 export async function estadoFuentes(hoy: string): Promise<EstadoFuente[]> {
   const ayer = addDaysYMD(hoy, -1);
   const lunesPasado = addDaysYMD(lunesDeFecha(hoy), -7);
-  const [ga4, gsc, conexion, ultimoChat, reservasWeb, cortes, google, encuesta, leadsSemana, revision] = await Promise.all([
+  const [ga4, gsc, conexion, ultimoChat, reservasWeb, cortes, google, encuesta, leadsSemana, revision, webhook] = await Promise.all([
     detalleGA4(addDaysYMD(hoy, -7), ayer),
     busquedaGoogle(addDaysYMD(hoy, -10), addDaysYMD(hoy, -4)),
     estadoConexion().catch(() => null),
@@ -66,33 +60,36 @@ export async function estadoFuentes(hoy: string): Promise<EstadoFuente[]> {
     prisma.encuestaReserva.findFirst({ where: { satisfaccionEn: { not: null } }, orderBy: { satisfaccionEn: "desc" }, select: { satisfaccionEn: true } }).catch(() => null),
     prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunesPasado), lte: finMX(addDaysYMD(lunesPasado, 6)) } } }).catch(() => 0),
     prisma.revisionSemanal.findUnique({ where: { semana: lunesPasado } }).catch(() => null),
+    prisma.config.findUnique({ where: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE } }).catch(() => null),
   ]);
   const out: EstadoFuente[] = [];
 
-  out.push(ga4.ok
-    ? { nombre: "GA4 (la web)", alimenta: "Web y canales", estado: "ok", detalle: `Conectado · ${ga4.datos.sesiones.toLocaleString("es-MX")} sesiones en 7 días · leído ${haceCuanto(ga4.datos.leidoEn)}` }
-    : { nombre: "GA4 (la web)", alimenta: "Web y canales", estado: "falla", detalle: ga4.motivo, arreglo: "En Railway: GA4_PROPERTY_ID=545095004 y las llaves del robot. En GA4: el robot como Lector." });
+  // Lote 9: además de leer GA4, que el servidor le pueda contar las compras
+  // (sin esas llaves, la «Conversión del pago en línea» sale baja sin serlo).
+  const faltanCompras = faltanLlavesCompraGA4(process.env);
+  out.push(!ga4.ok
+    ? { nombre: "GA4 (la web)", alimenta: "Web y canales", estado: "falla", detalle: ga4.motivo, arreglo: "En Railway: GA4_PROPERTY_ID=545095004 y las llaves del robot. En GA4: el robot como Lector." }
+    : faltanCompras.length
+      ? { nombre: "GA4 (la web)", alimenta: "Web y canales, conversión del pago en línea", estado: "atencion", detalle: `Conectado · ${ga4.datos.sesiones.toLocaleString("es-MX")} sesiones en 7 días, pero las compras que confirma el servidor NO llegan a GA4 (falta ${faltanCompras.join(" y ")})`, arreglo: "En Railway: GA4_API_SECRET (GA4 → Administrar → Flujos de datos → el flujo web → Measurement Protocol) y NEXT_PUBLIC_GA4_ID (el G-…)." }
+      : { nombre: "GA4 (la web)", alimenta: "Web y canales", estado: "ok", detalle: `Conectado · ${ga4.datos.sesiones.toLocaleString("es-MX")} sesiones en 7 días · leído ${haceCuanto(ga4.datos.leidoEn)} · las compras del servidor sí se envían` });
 
   out.push(gsc.ok
     ? { nombre: "Search Console (búsquedas en Google)", alimenta: "Web y canales: demanda del mercado", estado: "ok", detalle: `Conectado · ${gsc.datos.impresiones.toLocaleString("es-MX")} impresiones en 7 días` }
     : { nombre: "Search Console (búsquedas en Google)", alimenta: "Web y canales: demanda del mercado", estado: "atencion", detalle: gsc.motivo, arreglo: "El robot como usuario «Restringido» en Search Console y la API encendida en Google Cloud." });
 
-  const conectado = conexion?.estado === "conectado";
-  const horasChat = ultimoChat?.ultimoEntranteEn ? (Date.now() - ultimoChat.ultimoEntranteEn.getTime()) / 3_600_000 : null;
-  out.push({
-    nombre: "Bandeja de WhatsApp", alimenta: "Leads, primer mensaje en 5 min, seguimiento",
-    estado: !conexion ? "falla" : !conectado ? "falla" : horasChat !== null && horasChat > 24 ? "atencion" : "ok",
-    detalle: !conexion ? "El puente nunca se ha conectado." : `${conectado ? "Conectada" : `Estado: ${conexion.estado}`}${ultimoChat?.ultimoEntranteEn ? ` · último mensaje de un cliente ${haceCuanto(ultimoChat.ultimoEntranteEn)}` : " · sin mensajes"}`,
-    arreglo: conectado ? undefined : "Abre Bandeja y escanea el QR con el teléfono del negocio.",
-  });
+  // Lote 9: con la hora del último latido del puente, no solo la palabra guardada.
+  out.push(estadoPuente(conexion, ultimoChat?.ultimoEntranteEn ?? null));
 
+  // Lote 9: ya no dice «Bien» siempre: revisa que los avisos de Stripe lleguen.
   const web = reservasWeb.find(b => tipoFolio(b.confirmationNumber) === "web");
-  out.push({ nombre: "Pago en línea (Stripe)", alimenta: "Reservas pagadas en la web", estado: "ok", detalle: web ? `Última reserva web ${haceCuanto(web.createdAt)}` : "Aún no hay reservas web" });
+  let ultimoWebhook: Date | null = null;
+  try { const en = webhook ? new Date(JSON.parse(webhook.value).en) : null; ultimoWebhook = en && !Number.isNaN(en.getTime()) ? en : null; } catch { /* sin dato */ }
+  out.push(estadoStripe({ secreto: !!process.env.STRIPE_WEBHOOK_SECRET, ultimoWebhook, ultimaReservaWeb: web?.createdAt ?? null }));
 
   const ultimaSemana = lunesPasado >= PRIMERA_SEMANA_CORTE ? lunesPasado : null;
   const ultimoCorte = cortes[0]?.semana ?? null;
   out.push({
-    nombre: "Corte semanal", alimenta: "Margen de contribución, cortes a tiempo",
+    nombre: "Corte semanal", alimenta: "Margen del corte, cortes a tiempo",
     estado: !ultimaSemana || (ultimoCorte && ultimoCorte >= ultimaSemana) ? "ok" : "atencion",
     detalle: ultimoCorte ? `Último corte cerrado: semana del ${ultimoCorte}` : "Ningún corte cerrado",
     arreglo: ultimaSemana && (!ultimoCorte || ultimoCorte < ultimaSemana) ? "Cerrar el corte de la semana pasada (Corte semanal → Hacer corte)." : undefined,
@@ -108,6 +105,9 @@ export async function estadoFuentes(hoy: string): Promise<EstadoFuente[]> {
   });
 
   out.push({ nombre: "Encuesta y check-in", alimenta: "NPS, encuestas contestadas, check-in", estado: "ok", detalle: encuesta?.satisfaccionEn ? `Última respuesta ${haceCuanto(encuesta.satisfaccionEn)}` : "Nadie ha contestado aún" });
+
+  // Lote 9: el resumen de las 7:30 y los recordatorios, a cada quien.
+  out.push(estadoCorreos(process.env, usuariosAdmin()));
 
   const faltanLeads = !!revision?.leadsNuevos && revision.leadsNuevos > leadsSemana * 1.2;
   out.push({

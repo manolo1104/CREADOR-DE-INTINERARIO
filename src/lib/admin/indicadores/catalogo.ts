@@ -64,7 +64,7 @@ export const KPIS: DefKpi[] = [
 
   // ── Comercial (CRM, Bandeja, cotizaciones y reservas) ──────────────────────
   k({ clave: "lead-reserva", frente: "comercial", nombre: "Lead → reserva", fuente: "CRM", frecuencia: "semanal",
-      formula: "Leads que entraron en el periodo y llegaron a anticipo, confirmado u operado ÷ leads nuevos del periodo. Cohorte: se da por cerrada 14 días después.",
+      formula: "Leads que entraron en el periodo y tienen una reserva viva con dinero cobrado ÷ leads nuevos del periodo. Cohorte cerrada 14 días después: lo que pasa más tarde ya no cuenta. Sin los leads que nacieron de una reserva ni los importados.",
       unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "30 % (23 de 76)", valor: 30 }, meta: { valor: 40, texto: "40 %" }, metaSS: { valor: 40, texto: "40 %" }, objetivo: 2 }),
   k({ clave: "respuesta-5min", frente: "comercial", nombre: "Primer mensaje en 5 min", fuente: "Bandeja", frecuencia: "semanal",
@@ -72,13 +72,13 @@ export const KPIS: DefKpi[] = [
       unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "67 %", valor: 67 }, meta: { valor: 90, texto: "90 %" } }),
   k({ clave: "leads-cotizados", frente: "comercial", nombre: "Leads cotizados", fuente: "CRM", frecuencia: "semanal",
-      formula: "Leads que entraron en el periodo y llegaron a cotizado o más ÷ leads nuevos del periodo.", unidad: "pct", tipo: "tasa", direccion: "subir",
+      formula: "Leads que entraron en el periodo y llegaron a cotizado o más (o se les envió una cotización) en los 14 días siguientes ÷ leads nuevos del periodo. Sin los nacidos de una reserva ni los importados.", unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "58 % (44 de 76)", valor: 58 }, meta: { valor: 80, texto: "80 %" } }),
   k({ clave: "cotizacion-reserva", frente: "comercial", nombre: "Cotización → reserva (número)", fuente: "Panel", frecuencia: "semanal",
-      formula: "Cotizaciones enviadas en el periodo que se aceptaron en 14 días o menos ÷ cotizaciones enviadas.", unidad: "pct", tipo: "tasa", direccion: "subir",
+      formula: "Cotizaciones que salieron al cliente en el periodo (por su fecha de envío; sin borradores) y se aceptaron en 14 días o menos desde el envío ÷ cotizaciones enviadas.", unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "48 %", valor: 48 }, meta: { valor: 55, texto: "55 %" } }),
   k({ clave: "cotizacion-reserva-monto", frente: "comercial", nombre: "Cotización → reserva (monto)", fuente: "Panel", frecuencia: "semanal",
-      formula: "Monto de las cotizaciones aceptadas en 14 días o menos ÷ monto cotizado en el periodo.", unidad: "pct", tipo: "tasa", direccion: "subir",
+      formula: "Monto de las cotizaciones aceptadas en 14 días o menos desde su envío ÷ monto de las enviadas en el periodo.", unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "23 %", valor: 23 }, meta: { valor: 35, texto: "35 %" } }),
   k({ clave: "seguimiento", frente: "comercial", nombre: "Seguimiento a tiempo", fuente: "CRM", frecuencia: "semanal",
       formula: "Leads que pasaron a cotizado y a las 72 h no habían pagado: cuántos recibieron seguimiento (mensaje enviado desde la Bandeja o tarea marcada hecha) entre 1 y 72 h ÷ los que lo necesitaban.",
@@ -102,14 +102,19 @@ export const KPIS: DefKpi[] = [
 
   // ── Operación (salidas, corte y bitácora) ──────────────────────────────────
   k({ clave: "pax-salida", frente: "operacion", nombre: "Personas por salida", fuente: "Panel", frecuencia: "semanal",
-      formula: "Personas ÷ salidas (tour + día) con fecha en el periodo.", unidad: "dec", tipo: "promedio", direccion: "subir",
+      formula: "Personas ÷ salidas (tour + día) de los tours regulares con fecha en el periodo; sin viaje CDMX, RZR, buceo, salidas a medida ni renglones de concepto.", unidad: "dec", tipo: "promedio", direccion: "subir",
       base: { texto: "2.8 (noviembre)", valor: 2.8 }, meta: { valor: 3.5, texto: "3.5" }, metaSS: { valor: 4, texto: "4.0" }, objetivo: 4 }),
   k({ clave: "bajo-minimo", frente: "operacion", nombre: "Salidas bajo mínimo", fuente: "Panel", frecuencia: "semanal",
       formula: "Salidas regulares (no a medida) con 2 personas o menos.", unidad: "num", tipo: "conteo", direccion: "bajar",
       base: { texto: "8 en noviembre", valor: 8 }, meta: { valor: 3, texto: "3 o menos al mes" }, periodoMeta: "mes" }),
-  k({ clave: "margen", frente: "operacion", nombre: "Margen de contribución", fuente: "Corte semanal", frecuencia: "semanal",
-      formula: "Utilidad ÷ ventas de los cortes CERRADOS de las semanas del periodo.", unidad: "pct", tipo: "tasa", direccion: "subir",
+  // Lote 9 (10 nov 2026): el oficial es el del corte (con comisiones); el
+  // estimado por salida va aparte y sin meta.
+  k({ clave: "margen", frente: "operacion", nombre: "Margen del corte", fuente: "Corte semanal", frecuencia: "semanal",
+      formula: "Utilidad ÷ ventas de los cortes CERRADOS de las semanas del periodo (ya descontadas las comisiones de Stripe y el hosting).", unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "30 % (19–25 oct, único corte)", valor: 30 }, meta: { valor: 35, texto: "35 %" } }),
+  k({ clave: "margen-salidas", frente: "operacion", nombre: "Margen estimado por salida", fuente: "Panel", frecuencia: "semanal",
+      formula: "(Ingreso − costos) ÷ ingreso de las salidas regulares con costos (los del corte o, si no, los del Cotizador). El ingreso es lo cobrado de cada renglón, después de descuentos y del total editado. Sin comisiones: es una estimación.", unidad: "pct", tipo: "tasa", direccion: "info",
+      base: { texto: "Sin medir" } }),
   k({ clave: "cortes-tiempo", frente: "operacion", nombre: "Cortes cerrados a tiempo", fuente: "Bitácora", frecuencia: "semanal",
       formula: "Semanas terminadas cuyo corte se hizo por primera vez a más tardar el lunes siguiente ÷ semanas terminadas.", unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "1 corte cerrado" }, meta: { valor: 100, texto: "100 %" } }),
@@ -159,7 +164,7 @@ export const KPIS: DefKpi[] = [
 
   // ── Servicio ───────────────────────────────────────────────────────────────
   k({ clave: "resenas", frente: "servicio", nombre: "Reseñas", fuente: "Google (lectura a mano)", frecuencia: "semanal",
-      formula: "Reseñas nuevas de Google (diferencia entre lecturas) ÷ reservas operadas (su último día de tour cae en el periodo).", unidad: "pct", tipo: "tasa", direccion: "subir",
+      formula: "Reseñas nuevas de Google (de la lectura del lunes en que empieza el periodo a la del lunes siguiente a que termina) ÷ reservas operadas (su último día de tour cae en el periodo).", unidad: "pct", tipo: "tasa", direccion: "subir",
       base: { texto: "Sin medir" }, meta: { valor: 40, texto: "40 %" }, metaSS: { valor: 40, texto: "40 %" }, objetivo: 6 }),
   k({ clave: "nps", frente: "servicio", nombre: "Recomendación (NPS)", fuente: "Encuesta", frecuencia: "mensual",
       formula: "% que da 9–10 − % que da 0–6 a «¿nos recomendarías?», de las encuestas contestadas en el periodo.", unidad: "num", tipo: "promedio", direccion: "info",

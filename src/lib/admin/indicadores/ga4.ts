@@ -9,13 +9,13 @@
 // personas · purchase 5 · view_item 379 personas. Si un día no cuadra, lo
 // primero es revisar que nadie haya cambiado los nombres de los eventos.
 //
-// Caché en `Config`: 3 h si el rango toca los últimos 2 días (GA4 sigue
-// procesando), 30 días si ya es pasado. Sin acceso no truena: devuelve el
-// motivo para decirlo en pantalla.
+// Caché en `Config`: 3 h si el rango tocaba los últimos 2 días AL LEERLO (GA4
+// sigue procesando), 30 días si ya estaba completo (lote 9). Sin acceso no
+// truena: devuelve el motivo para decirlo en pantalla.
 
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
-import { addDaysYMD, hoyMX } from "@/lib/dates";
+import { addDaysYMD, ymdMX } from "@/lib/dates";
 import { auth, canalDe } from "@/lib/ga4Datos";
 import type { CanalGA4 } from "@/lib/admin/analisisComun";
 
@@ -61,15 +61,28 @@ export function motivoDeError(e: unknown, servicio: "GA4" | "Search Console"): s
   return `${servicio} no contestó: ${msg.slice(0, 160)}`;
 }
 
+/**
+ * ¿Cuántas horas vale una lectura guardada? (lote 9, 10 nov 2026). 30 días
+ * SOLO si al leerla los datos ya estaban completos: todo el rango había
+ * terminado hace más de 2 días (GA4 sigue procesando los últimos). 🔴 Antes
+ * se decidía con la fecha de HOY: una lectura hecha cuando el rango era
+ * reciente (incompleta) pasaba a valer 30 días en cuanto el rango envejecía, y
+ * el panel enseñaba un mes entero los números a medias.
+ */
+export function horasDeCache(rangos: Rango[], leidoEn: Date | string): number {
+  const dia = ymdMX(new Date(leidoEn));
+  const completos = !rangos.some(r => r.hasta >= addDaysYMD(dia, -2));
+  return completos ? 24 * 30 : 3;
+}
+
 /** Caché en `Config`: lo pasado casi no cambia; lo reciente, sí. */
 export async function conCache<T>(clave: string, rangos: Rango[], leer: () => Promise<T>): Promise<T & { leidoEn: string }> {
-  const reciente = rangos.some(r => r.hasta >= addDaysYMD(hoyMX(), -2));
-  const horas = reciente ? 3 : 24 * 30;
   const guardado = await prisma.config.findUnique({ where: { key: clave } }).catch(() => null);
   if (guardado) {
     try {
       const v = JSON.parse(guardado.value) as T & { leidoEn: string };
-      if (Date.now() - new Date(v.leidoEn).getTime() < horas * 3_600_000) return v;
+      const leido = new Date(v.leidoEn);
+      if (!Number.isNaN(leido.getTime()) && Date.now() - leido.getTime() < horasDeCache(rangos, leido) * 3_600_000) return v;
     } catch { /* se vuelve a leer */ }
   }
   const datos = { ...(await leer()), leidoEn: new Date().toISOString() };

@@ -81,6 +81,17 @@ export async function extraerDeChat(conversacionId: string): Promise<{ cambios: 
  * y de los últimos 3 días. Si se llega al tope o está apagado, se detiene.
  */
 export async function vueltaAgente(): Promise<{ leidos: number; llenados: number; detenido?: string }> {
+  // Una vuelta a la vez (lote 9, 10 nov 2026): ahora también la llama el cron
+  // horario, y una vuelta larga del reloj se encimaba con la siguiente; las dos
+  // leían el mismo chat y lo pagaban dos veces en Claude.
+  if (enCurso.agente) return { leidos: 0, llenados: 0 };
+  enCurso.agente = true;
+  try { return await unaVueltaAgente(); } finally { enCurso.agente = false; }
+}
+
+const enCurso = globalThis as unknown as { agente?: boolean };
+
+async function unaVueltaAgente(): Promise<{ leidos: number; llenados: number; detenido?: string }> {
   const ahora = Date.now();
   const convs = await prisma.conversacion.findMany({
     where: {

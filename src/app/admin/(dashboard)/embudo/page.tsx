@@ -41,7 +41,7 @@ export default async function EmbudoPage({ searchParams }: { searchParams: { p?:
       <RejillaIndicadores defs={kpisDe("comercial")} valores={m.valores} series={m.series} periodo={periodo.tipo} />
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Bloque titulo="Embudo de los leads del periodo" descripcion={`Leads que entraron ${periodo.tipo === "semana" ? "esta semana" : "en el periodo"} y hasta dónde llegaron.${d.leadsRevision !== null ? ` La revisión del jueves contó ${d.leadsRevision} leads; el CRM tiene ${d.leadsCrm}.` : ""}`}>
+        <Bloque titulo="Embudo de los leads del periodo" descripcion={`Leads que entraron ${periodo.tipo === "semana" ? "esta semana" : "en el periodo"} y hasta dónde llegaron en los 14 días siguientes. «Reservaron» = reserva con dinero cobrado. No cuentan los que nacieron de una reserva ni los importados.${d.leadsRevision !== null ? ` La revisión del jueves contó ${d.leadsRevision} leads; el CRM tiene ${d.leadsCrm}.` : ""}`}>
           <div className="space-y-2.5 px-4 pb-4">
             {d.embudo.map(e => (
               <div key={e.etiqueta}>

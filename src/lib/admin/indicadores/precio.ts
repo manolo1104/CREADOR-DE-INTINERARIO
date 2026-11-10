@@ -5,12 +5,19 @@
 // tour, misma fecha (promo de temporada incluida) y mismo tamaño de grupo
 // (`totalRecorrido`, la función con la que cobra la web). Los complementos
 // (traslado desde Valles, actividades opcionales) se quitan antes de comparar.
+//
+// Lote 9 (10 nov 2026): la lista lleva la OPCIÓN elegida (Ruta Acuática →
+// Tamasopo, +$150 por persona; sin ella salía «arriba de lista»), lo vendido es
+// lo que de verdad se cobró del renglón (después de descuentos y del total
+// editado) y el descuento de una reserva se cuenta UNA vez: el código de
+// cumpleaños ya se guarda como su descuento y se sumaba dos veces.
 
 import { prisma } from "@/lib/prisma";
 import { ymdMX } from "@/lib/dates";
 import { TOURS_LISTA, esPorPersona, tourEnFecha } from "@/lib/tours";
 import { totalRecorrido } from "@/lib/tourBooking";
-import { lineasDe, metaDe, grupoDe } from "@/lib/admin/reserva";
+import { factorDeTotal, lineasDe, metaDe, grupoDe, type LineaTour } from "@/lib/admin/reserva";
+import { extrasDe, totalExtras } from "@/lib/admin/extras";
 import { descuentoDeMeta, montoDescuento } from "@/lib/admin/descuento";
 import { baseCumple, codigoDeLineas } from "@/lib/encuestas/cumple";
 import { claveMotivo } from "@/lib/admin/crm";
@@ -122,13 +129,63 @@ export function calcularPrecio(d: DatosPrecio, p: Periodo, periodos: Periodo[]):
   return { valores, series, detalle: { porTour, porTamano, porRango, porCanal } };
 }
 
+/**
+ * El precio de lista de un renglón de tour por persona: mismo tour, misma fecha,
+ * mismo grupo y la MISMA opción elegida (lote 9). Puro, para probarlo.
+ */
+export function listaDeRenglon(t: Parameters<typeof tourEnFecha>[0], l: LineaTour): number {
+  const adultos = Number(l.adults) || 0;
+  const mid = Number(l.childrenMid ?? (l.childrenSmall === undefined ? l.children : 0)) || 0;
+  const chicos = Number(l.childrenSmall) || 0;
+  return totalRecorrido(tourEnFecha(t, l.tourDate ?? ""), adultos, mid, chicos, 0, l.eleccion);
+}
+
+/** Una reserva lista para medir su precio (puro: lo usa `cargarPrecio` y las pruebas). */
+export interface ReservaParaPrecio {
+  createdAt: Date; origen: string; totalAmount: number; promoDiscount: number | null;
+  lineItems: unknown; packageItems?: unknown; extraItems?: unknown;
+  tourSlug: string; tourName: string; tourDate: string; adults: number; children: number;
+}
+
+/** Los renglones y el descuento de una reserva (lote 9). */
+export function precioDeReserva(b: ReservaParaPrecio): { lineas: LineaPrecio[]; reserva: ReservaPrecio } {
+  const ymd = ymdMX(b.createdAt);
+  const factor = factorDeTotal(b);
+  const lineas: LineaPrecio[] = [];
+  let subTours = 0, listaTotal = 0;
+  for (const l of lineasDe(b)) {
+    const t = TOURS_LISTA.find(x => x.slug === l.tourSlug);
+    const extras = (l.addOns ?? []).reduce((s, a) => s + (Number(a?.subtotal) || 0), 0);
+    const subtotal = Math.max(0, (Number(l.subtotal) || 0) - extras);
+    listaTotal += Number(l.subtotal) || 0;
+    subTours += subtotal;
+    if (!t || !esPorPersona(t) || subtotal <= 0) continue;
+    const personas = personasDeLinea(l);
+    if (personas <= 0) continue;
+    // Lo vendido = lo cobrado de ese renglón (después de descuentos y total editado).
+    lineas.push({ ymd, slug: t.slug, personas, subtotal: Math.round(subtotal * factor), lista: listaDeRenglon(t, l) });
+  }
+  // Descuentos: el del panel (el código de cumpleaños se guarda como él) sobre
+  // la misma base que usa el panel (renglones + hotel + extras); el de
+  // cumpleaños suelto solo si no hay descuento guardado; el código web (%), estimado.
+  const meta = metaDe(b);
+  const base = listaTotal
+    + (Array.isArray(b.packageItems) ? (b.packageItems as Record<string, unknown>[]) : []).filter(p => p && !p._meta).reduce((t, p) => t + (Number(p.subtotal) || 0), 0)
+    + totalExtras(extrasDe(b.extraItems));
+  const manual = montoDescuento(descuentoDeMeta(meta), base);
+  const cumple = !manual && codigoDeLineas(b.lineItems) ? baseCumple(b.lineItems).monto : 0;
+  const pct = Number(b.promoDiscount) || 0;
+  const web = pct > 0 && pct < 100 ? Math.round(subTours * pct / (100 - pct)) : 0;
+  return { lineas, reserva: { ymd, origen: b.origen, total: b.totalAmount, descuento: manual + cumple + web, aproximado: web > 0 } };
+}
+
 export async function cargarPrecio(periodos: Periodo[]): Promise<DatosPrecio> {
   const desde = periodos[0].desde, hasta = periodos[periodos.length - 1].hasta;
   const rango = { gte: inicioMX(desde), lte: finMX(hasta) };
   const [reservas, perdidos, quotes] = await Promise.all([
     prisma.tourBooking.findMany({
       where: { createdAt: rango, status: { notIn: NO_CUENTAN } },
-      select: { createdAt: true, origen: true, totalAmount: true, promoDiscount: true, lineItems: true, tourSlug: true, tourName: true, tourDate: true, adults: true, children: true },
+      select: { createdAt: true, origen: true, totalAmount: true, promoDiscount: true, lineItems: true, packageItems: true, extraItems: true, tourSlug: true, tourName: true, tourDate: true, adults: true, children: true },
     }),
     prisma.etapaOportunidad.findMany({ where: { nueva: "perdido", createdAt: rango }, select: { createdAt: true, oportunidad: { select: { motivoPerdida: true } } } }).catch(() => []),
     prisma.tourQuote.findMany({ where: { createdAt: rango, status: { in: ESTADOS_ENVIADA } }, select: { createdAt: true, totalAmount: true, status: true, lineItems: true, tourSlug: true, tourName: true, tourDate: true, adults: true, children: true } }),
@@ -137,29 +194,9 @@ export async function cargarPrecio(periodos: Periodo[]): Promise<DatosPrecio> {
   const lineas: LineaPrecio[] = [];
   const res: ReservaPrecio[] = [];
   for (const b of reservas) {
-    const ymd = ymdMX(b.createdAt);
-    let subTours = 0;
-    for (const l of lineasDe(b)) {
-      const t = TOURS_LISTA.find(x => x.slug === l.tourSlug);
-      const extras = (l.addOns ?? []).reduce((s, a) => s + (Number(a?.subtotal) || 0), 0);
-      const subtotal = Math.max(0, (Number(l.subtotal) || 0) - extras);
-      subTours += subtotal;
-      if (!t || !esPorPersona(t) || subtotal <= 0) continue;
-      const personas = personasDeLinea(l);
-      if (personas <= 0) continue;
-      const adultos = Number(l.adults) || 0;
-      const mid = Number(l.childrenMid ?? (l.childrenSmall === undefined ? l.children : 0)) || 0;
-      const chicos = Number(l.childrenSmall) || 0;
-      const lista = totalRecorrido(tourEnFecha(t, l.tourDate), adultos, mid, chicos, 0);
-      lineas.push({ ymd, slug: t.slug, personas, subtotal, lista });
-    }
-    // Descuentos: el manual del panel, el código de cumpleaños y el código web (%).
-    const meta = metaDe(b);
-    const manual = montoDescuento(descuentoDeMeta(meta), subTours);
-    const cumple = codigoDeLineas(b.lineItems) ? baseCumple(b.lineItems).monto : 0;
-    const pct = Number(b.promoDiscount) || 0;
-    const web = pct > 0 && pct < 100 ? Math.round(subTours * pct / (100 - pct)) : 0;
-    res.push({ ymd, origen: b.origen, total: b.totalAmount, descuento: manual + cumple + web, aproximado: web > 0 });
+    const r = precioDeReserva(b);
+    lineas.push(...r.lineas);
+    res.push(r.reserva);
   }
   return {
     lineas, reservas: res,

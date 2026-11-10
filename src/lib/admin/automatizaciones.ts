@@ -13,10 +13,12 @@ export const RESPONSABLE_OPERACION = "Erick";
 /** Quién registra el dinero: los saldos vencidos son suyos. */
 export const RESPONSABLE_COBROS = "Manolo";
 
-export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "minimo-7d" | "salida-cancelada" | "lectura-google" | "corte-lunes" | "consulta-nueva";
+export type ReglaClave = "cotizado-24h" | "saldo-vencido" | "liga-24h" | "salida-48h" | "agrupar-salidas" | "minimo-7d" | "salida-cancelada" | "lectura-google" | "corte-lunes" | "consulta-nueva" | "revision-jueves" | "tours-sin-costos";
 
 /** Quién cierra el corte semanal (el socio que captura los costos). */
 export const RESPONSABLE_CORTE = "Martín";
+/** Quién hace la revisión del jueves (el dueño: el score del operador). */
+export const RESPONSABLE_REVISION = "Manolo";
 
 export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] = [
   { clave: "cotizado-24h", etiqueta: "Cotizado sin respuesta 24 h", detalle: "Lead en Cotizado desde hace 24 h y sin ningún seguimiento pendiente." },
@@ -29,9 +31,12 @@ export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] 
   { clave: "salida-cancelada", etiqueta: "Salida cancelada con reservas", detalle: "Se marcó «Cancelada» una salida que todavía tiene reservas activas: avisar a cada cliente y reprogramar o reembolsar desde Reservas." },
   // Indicadores (4 nov 2026): los datos que se capturan a mano y sin los que un KPI sale «Sin dato».
   { clave: "lectura-google", etiqueta: "Lectura semanal de Google", detalle: "Si la última lectura de reseñas de Google tiene más de 6 días: anotar la calificación y el número de reseñas (KPI «Reseñas»)." },
-  { clave: "corte-lunes", etiqueta: "Corte del lunes", detalle: "La semana terminó y su corte no está cerrado: cerrarlo (KPIs «Margen de contribución» y «Cortes cerrados a tiempo»)." },
+  { clave: "corte-lunes", etiqueta: "Corte del lunes", detalle: "La semana terminó y su corte no está cerrado: cerrarlo (KPIs «Margen del corte» y «Cortes cerrados a tiempo»)." },
   // 5 nov 2026: un «¡gracias!» después del viaje ya no abre un lead nuevo.
   { clave: "consulta-nueva", etiqueta: "¿Consulta nueva?", detalle: "Escribe por WhatsApp alguien cuyo lead se cerró (Operado o Perdido) hace menos de 14 días: en vez de abrirle otro lead, se le pregunta a Operación si es un viaje nuevo." },
+  // Lote 9 (10 nov 2026): los otros dos datos que se capturan a mano.
+  { clave: "revision-jueves", etiqueta: "Revisión del jueves", detalle: "Llegó el jueves y la revisión de la semana no se ha guardado: capturarla en Inicio (KPIs «Score del operador» y, de respaldo, leads y respuesta en 5 min)." },
+  { clave: "tours-sin-costos", etiqueta: "Tours sin costos", detalle: "Hay tours del catálogo sin costos en el Cotizador: capturarlos (KPI «Tours con margen medido»; sin ellos no se sabe cuánto deja cada tour). Uno al mes mientras falten." },
 ];
 
 /** Quién «hace» un seguimiento automático que se cerró solo porque su motivo desapareció. */
@@ -57,6 +62,11 @@ export interface HechosSeguimiento {
   corteCerrado?: boolean;
   /** lectura-google: ¿ya hay una lectura de los últimos 6 días? */
   lecturaReciente?: boolean;
+  /** revision-jueves: ¿ya se guardó la revisión de esa semana? */
+  revisionGuardada?: boolean;
+  /** tours-sin-costos: cuántos tours activos siguen sin costos, y si la tarea es de un mes que ya pasó. */
+  toursSinCostos?: number;
+  deOtroMes?: boolean;
 }
 
 /**
@@ -80,6 +90,9 @@ export function yaNoAplica(regla: string | null, h: HechosSeguimiento, hoy: stri
       return typeof h.fechaSalida === "string" && /^\d{4}-\d{2}-\d{2}$/.test(h.fechaSalida) && h.fechaSalida < hoy;
     case "corte-lunes": return h.corteCerrado === true;
     case "lectura-google": return h.lecturaReciente === true;
+    case "revision-jueves": return h.revisionGuardada === true;
+    // La del mes pasado cede su lugar a la de este mes (si todavía faltan).
+    case "tours-sin-costos": return h.deOtroMes === true || h.toursSinCostos === 0;
     default: return false;
   }
 }
@@ -278,6 +291,36 @@ export function reglaCorteLunes(cerrado: boolean, semanaTerminada: string, prime
   }];
 }
 
+/**
+ * La revisión del jueves (lote 9, 10 nov 2026): desde el jueves, si la de la
+ * semana no se ha guardado, una tarea a quien la hace (`revision-jueves:<lunes>`),
+ * con vencimiento ese jueves. Sin ella el «Score del operador» sale «Sin dato».
+ */
+export function reglaRevisionJueves(guardada: boolean, hoy: string, lunes: string): TareaPorRegla[] {
+  const jueves = addDaysYMD(lunes, 3);
+  if (guardada || hoy < jueves || hoy > addDaysYMD(lunes, 6)) return [];
+  return [{
+    claveRegla: `revision-jueves:${lunes}`, regla: "revision-jueves",
+    titulo: `Hacer la revisión del jueves de la semana del ${lunes} (Inicio → Revisión del jueves): score del operador, leads y respuesta en 5 min`,
+    responsable: RESPONSABLE_REVISION, vence: jueves,
+  }];
+}
+
+/**
+ * Tours del catálogo sin costos en el Cotizador (lote 9): una tarea al mes
+ * (`tours-sin-costos:<AAAA-MM>`) a quien captura los costos, con los códigos
+ * de los que faltan. Sin costos, «Tours con margen medido» no avanza.
+ */
+export function reglaToursSinCostos(sinCostos: { codigo: string }[], hoy: string): TareaPorRegla[] {
+  if (!sinCostos.length) return [];
+  const codigos = Array.from(new Set(sinCostos.map(t => t.codigo)));
+  return [{
+    claveRegla: `tours-sin-costos:${hoy.slice(0, 7)}`, regla: "tours-sin-costos",
+    titulo: `Capturar en el Cotizador los costos de ${sinCostos.length === 1 ? "1 tour" : `${sinCostos.length} tours`} (${codigos.join(", ")}): sin ellos no se sabe cuánto deja cada uno`,
+    responsable: RESPONSABLE_CORTE, vence: hoy,
+  }];
+}
+
 // ── El correo del resumen diario de las 7:30 (puro: lo prueba Vitest) ─────────
 
 export const BASE_URL = "https://www.huasteca-potosina.com";
@@ -285,10 +328,17 @@ const esc = (s: string) => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;
 
 export interface LineaResumen { titulo: string; cuando: string; cliente: string | null; href: string; rojo?: boolean }
 
-/** El correo del resumen: vencidos, lo de hoy y las salidas de hoy y mañana. */
-export function correoResumen(nombre: string, hoy: string, vencidos: LineaResumen[], deHoy: LineaResumen[], salidas: LineaResumen[]) {
+/**
+ * El correo del resumen: vencidos, lo de hoy y las salidas de hoy y mañana.
+ * `avisos` (lote 9, 10 nov 2026): lo que el panel no pudo hacer solo (p. ej. el
+ * reporte de los jueves que no salió); van primero.
+ */
+export function correoResumen(nombre: string, hoy: string, vencidos: LineaResumen[], deHoy: LineaResumen[], salidas: LineaResumen[], avisos: string[] = []) {
   const total = vencidos.length + deHoy.length;
-  const subject = `Tu día · ${total} seguimiento${total === 1 ? "" : "s"}${vencidos.length ? ` (${vencidos.length} vencido${vencidos.length === 1 ? "" : "s"})` : ""}${salidas.length ? ` · ${salidas.length} salida${salidas.length === 1 ? "" : "s"}` : ""}`;
+  const subject = `Tu día · ${total} seguimiento${total === 1 ? "" : "s"}${vencidos.length ? ` (${vencidos.length} vencido${vencidos.length === 1 ? "" : "s"})` : ""}${salidas.length ? ` · ${salidas.length} salida${salidas.length === 1 ? "" : "s"}` : ""}${avisos.length ? ` · ${avisos.length} aviso${avisos.length === 1 ? "" : "s"}` : ""}`;
+  const bloqueAvisos = !avisos.length ? "" : `
+    <div style="font-size:12px;letter-spacing:1.5px;color:#A33A26;margin:18px 0 4px">AVISOS</div>
+    ${avisos.map(a => `<div style="padding:9px 12px;margin:6px 0;background:#FBEDEA;border-radius:8px;font-size:14px;color:#1C1C1A">${esc(a)}</div>`).join("")}`;
   const bloque = (titulo: string, ls: LineaResumen[]) => !ls.length ? "" : `
     <div style="font-size:12px;letter-spacing:1.5px;color:#66655F;margin:18px 0 4px">${esc(titulo.toUpperCase())}</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${ls.map(l => `<tr><td style="padding:9px 0;border-bottom:1px solid #E6E4DF">
@@ -299,11 +349,11 @@ export function correoResumen(nombre: string, hoy: string, vencidos: LineaResume
   <table role="presentation" width="100%" style="max-width:560px;background:#FFFFFF;border:1px solid #E6E4DF;border-radius:12px" cellpadding="0" cellspacing="0"><tr><td style="padding:24px">
   <div style="font-size:11px;letter-spacing:2px;color:#66655F">PANEL HUASTECA · TU DÍA</div>
   <div style="font-size:22px;color:#1C1C1A;margin:6px 0 4px">Buenos días, ${esc(nombre)}</div>
-  ${bloque("Vencidos", vencidos)}${bloque("Para hoy", deHoy)}${bloque("Salidas de hoy y mañana", salidas)}
+  ${bloqueAvisos}${bloque("Vencidos", vencidos)}${bloque("Para hoy", deHoy)}${bloque("Salidas de hoy y mañana", salidas)}
   <div style="margin-top:20px"><a href="${BASE_URL}/admin/seguimientos" style="display:inline-block;background:#1F3B2D;color:#fff;text-decoration:none;padding:10px 16px;border-radius:8px;font-size:14px;font-weight:600">Abrir Seguimientos</a></div>
   </td></tr></table></td></tr></table></body></html>`;
   const linea = (l: LineaResumen) => `- ${l.cuando}: ${l.titulo}${l.cliente ? ` (${l.cliente})` : ""}`;
-  const textContent = [`Buenos días, ${nombre}`, vencidos.length ? `\nVencidos:\n${vencidos.map(linea).join("\n")}` : "", deHoy.length ? `\nPara hoy:\n${deHoy.map(linea).join("\n")}` : "", salidas.length ? `\nSalidas:\n${salidas.map(linea).join("\n")}` : "", `\n${BASE_URL}/admin/seguimientos`].join("\n");
+  const textContent = [`Buenos días, ${nombre}`, avisos.length ? `\nAvisos:\n${avisos.map(a => `- ${a}`).join("\n")}` : "", vencidos.length ? `\nVencidos:\n${vencidos.map(linea).join("\n")}` : "", deHoy.length ? `\nPara hoy:\n${deHoy.map(linea).join("\n")}` : "", salidas.length ? `\nSalidas:\n${salidas.map(linea).join("\n")}` : "", `\n${BASE_URL}/admin/seguimientos`].join("\n");
   return { subject: subject.slice(0, 140), htmlContent, textContent };
 }
 

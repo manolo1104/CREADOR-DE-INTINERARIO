@@ -24,6 +24,8 @@ export interface FilaCanal { canal: OrigenReserva; etiqueta: string; reservas: n
 export interface DatosRentabilidad {
   mes: string; etiqueta: string; mesAnterior: string; mesSiguiente: string;
   salidas: number; personas: number; paxPorSalida: number; bajoMinimo: number; regulares: number;
+  /** Lote 9: «Personas por salida» solo con los tours regulares (sin viaje CDMX, RZR, buceo, a medida ni conceptos), como Ocupación. */
+  salidasRegulares: number; personasRegulares: number;
   ingreso: number; margen: number; ingresoConCostos: number; margenPct: number | null;
   toursConCostos: number; toursTotal: number;
   /** Cuántas salidas usan los costos REALES del corte (el resto se estima con el Cotizador). */
@@ -56,6 +58,8 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
   const conCostos = salidas.filter(s => s.numeros.conCostos);
   const regulares = salidas.filter(s => !s.aMedida && s.estadoPax !== "privada");
   const personas = salidas.reduce((t, s) => t + s.personas, 0);
+  const paraPax = salidas.filter(s => !s.aMedida);
+  const personasRegulares = paraPax.reduce((t, s) => t + s.personas, 0);
   const ingresoConCostos = conCostos.reduce((t, s) => t + s.numeros.ingreso, 0);
   const margen = conCostos.reduce((t, s) => t + s.numeros.margen, 0);
 
@@ -73,7 +77,8 @@ export async function datosRentabilidad(mes: string): Promise<DatosRentabilidad>
 
   return {
     mes, etiqueta: `${MESES[m - 1]} de ${y}`, mesAnterior, mesSiguiente,
-    salidas: salidas.length, personas, paxPorSalida: salidas.length ? Math.round((personas / salidas.length) * 10) / 10 : 0,
+    salidas: salidas.length, personas, paxPorSalida: paraPax.length ? Math.round((personasRegulares / paraPax.length) * 10) / 10 : 0,
+    salidasRegulares: paraPax.length, personasRegulares,
     // 2 o menos, aunque además no lleguen al mínimo del tour; sin el Edén (lote 6, 10 nov 2026).
     bajoMinimo: regulares.filter(bajoMinimoRentable).length, regulares: regulares.length,
     ingreso: salidas.reduce((t, s) => t + s.numeros.ingreso, 0), margen, ingresoConCostos,

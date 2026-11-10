@@ -9,6 +9,8 @@
 // tour. El tamaño real del grupo es entonces el MÁXIMO por línea, no la suma.
 // Los datos viejos no se tocan: se corrigen al leerlos.
 
+import { extrasDe, totalExtras } from "./extras";
+
 export interface LineaTour {
   tourSlug?: string;
   tourName?: string;
@@ -42,6 +44,25 @@ export interface Grupo {
   ninosSmall: number;  // menores de 6
   ninos: number;
   total: number;
+}
+
+/**
+ * Cuánto se cobra de verdad por cada peso de lista de una reserva (lote 9, 10
+ * nov 2026): su total ÷ (renglones + hotel + extras). Con descuento, código o
+ * un precio pactado más bajo da menos de 1; con el total editado hacia arriba,
+ * más de 1. Así el ingreso de cada renglón es lo que se cobró y no su precio de
+ * lista (el margen estimado y la realización de precio salían inflados). Sin
+ * renglones, sin lista o con algún renglón sin subtotal (reservas viejas), 1.
+ */
+export function factorDeTotal(b: { totalAmount: number; lineItems?: unknown; packageItems?: unknown; extraItems?: unknown }): number {
+  const sinMeta = (raw: unknown) => (Array.isArray(raw) ? raw : []).filter((x: any) => x && typeof x === "object" && !x._meta) as Record<string, unknown>[];
+  const lineas = sinMeta(b.lineItems);
+  if (!lineas.length || lineas.some(l => l.subtotal === undefined || l.subtotal === null || !Number.isFinite(Number(l.subtotal)))) return 1;
+  const lista = lineas.reduce((t, l) => t + Number(l.subtotal), 0)
+    + sinMeta(b.packageItems).reduce((t, p) => t + (Number(p.subtotal) || 0), 0)
+    + totalExtras(extrasDe(b.extraItems));
+  const total = Number(b.totalAmount) || 0;
+  return lista > 0 && total >= 0 ? total / lista : 1;
 }
 
 /** Las líneas de tour reales, sin la línea `_meta`. */

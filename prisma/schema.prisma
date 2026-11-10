@@ -149,6 +149,11 @@ model TourQuote {
   /// Cuándo pasó a «aceptada» (KPI «Cotización → reserva a 14 días», 4 nov 2026).
   /// Opcional: las aceptadas antes de esta fecha no lo tienen y se estiman.
   aceptadaEn    DateTime?
+  /// La PRIMERA vez que salió al cliente: por correo, por WhatsApp o al bajar su
+  /// PDF (lote 9, 10 nov 2026). «Cotización → reserva» cuenta desde aquí, no
+  /// desde que se creó el borrador. Opcional: las de antes no lo tienen y se
+  /// estiman con lo mejor que haya (el arranque de su seguimiento o la Bitácora).
+  enviadaEn     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 

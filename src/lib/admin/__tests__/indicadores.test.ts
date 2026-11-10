@@ -120,9 +120,10 @@ describe("demanda: la línea base del documento sale exacta (7 oct – 3 nov)", 
 });
 
 describe("comercial: cohortes y seguimiento", () => {
+  // Lote 9: «reservó» = reserva viva con dinero (`pagoEn`), dentro de los 14 días.
   const lead = (i: number, ymd: string, reservo: boolean): LeadCohorte => ({
     id: `l${i}`, ymd, canal: "whatsapp", responsable: "Erick", etapa: reservo ? "anticipo" : "cotizado",
-    historial: [{ nueva: "nuevo", en: 0 }], reservas: 0, cotizacionesEnviadas: 0,
+    historial: [{ nueva: "nuevo", en: 0 }], pagoEn: reservo ? Date.parse(`${ymd}T20:00:00Z`) : null, cotizacionEn: null,
   });
   const base = (leads: LeadCohorte[]): DatosComercial => ({
     leads, seguimiento: [], cotizaciones: [], revisiones: [], chats: [], reservas: [], saldos: [], perdidos: [], ahora: Date.parse("2026-11-04T18:00:00Z"), hoy: HOY,
@@ -211,7 +212,11 @@ describe("scorecard de Inicio con la misma fórmula que Embudo", () => {
     ingresoConCostos: 0, margenConCostos: 0, salidasConCostos: 0, reservasOperadas: 0,
   };
   it("con leads en el CRM, Lead → reserva sale por cohorte; sin ellos, como antes", () => {
-    const con = calcularScorecard({ ...base, cohorte: { leads: 20, cotizados: 12, reservaron: 6, preliminar: true } });
+    const kv = (clave: string, valor: number, detalle: string): ValorKpi => ({ clave, valor, detalle, calidad: "exacto", preliminar: true });
+    const con = calcularScorecard({ ...base, comercial: {
+      leads: 20, leadReserva: kv("lead-reserva", 30, "6 de 20 leads"), leadsCotizados: kv("leads-cotizados", 60, "12 de 20 leads"),
+      respuesta5: { clave: "respuesta-5min", valor: null, calidad: "sin-dato" }, embudo: [],
+    } });
     expect(con.kpis.find(k => k.clave === "conversion")?.valor).toBe("30 %");
     const sin = calcularScorecard(base);
     expect(sin.kpis.find(k => k.clave === "conversion")?.valor).toBe("40 %");

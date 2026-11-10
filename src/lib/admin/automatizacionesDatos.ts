@@ -16,7 +16,7 @@ import { usuariosAdmin } from "./usuarios";
 import { ahoraMX, estaAbierta } from "./crm";
 import { correoDe } from "./recordatorios";
 import {
-  DIAS_AVISO_MINIMO, HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaMinimo, reglaSaldo, reglaSalida, yaNoAplica,
+  DIAS_AVISO_MINIMO, HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaMinimo, reglaRevisionJueves, reglaSaldo, reglaSalida, reglaToursSinCostos, yaNoAplica,
   type HechosSeguimiento, type LineaResumen, type TareaPorRegla,
 } from "./automatizaciones";
 import { NO_CUENTAN } from "@/lib/cupoTour";
@@ -24,7 +24,24 @@ import { salidaCancelada } from "./salidas";
 import { historialGoogle } from "./satisfaccion";
 import { PRIMERA_SEMANA_CORTE, lunesDe } from "./corteSemanal";
 import { hechosDeLigas } from "./linksPago";
+import { TOURS_LISTA } from "@/lib/tours";
+import { esAMedida } from "./salidas";
+import { codigoDeTour } from "./coloresTour";
+import { conceptosDe } from "./costos";
 import { motivoParaApagarLiga } from "./ligasReglas";
+import { avisoReporteJueves } from "./agente/calidadReglas";
+
+/**
+ * Los tours activos del catálogo sin costos en el Cotizador (lote 9): la misma
+ * cuenta del KPI «Tours con margen medido» (sin RZR ni salidas a medida).
+ * Null si no se pudo leer (así nunca se cierra una tarea por un error).
+ */
+async function toursSinCostos(): Promise<{ slug: string; codigo: string }[] | null> {
+  const costos = await prisma.tourCosto.findMany({ select: { tourSlug: true, conceptos: true } }).catch(() => null);
+  if (!costos) return null;
+  const con = new Set(costos.filter(c => conceptosDe(c.conceptos).length > 0).map(c => c.tourSlug));
+  return TOURS_LISTA.filter(t => !esAMedida(t.slug) && !con.has(t.slug)).map(t => ({ slug: t.slug, codigo: codigoDeTour(t.slug) }));
+}
 
 /** Ligas más viejas que esto no generan tarea: son de antes de la regla. */
 const DIAS_LIGA = 14;
@@ -40,9 +57,12 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
   // Indicadores (4 nov 2026): la lectura de Google y el corte de la semana pasada.
   const lunes = lunesDe(hoy);
   const semanaPasada = addDaysYMD(lunes, -7);
-  const [google, cortePasado] = await Promise.all([
+  const [google, cortePasado, revision, sinCostos] = await Promise.all([
     historialGoogle().catch(() => []),
     prisma.corteSemanal.findUnique({ where: { semana: semanaPasada }, select: { estado: true } }).catch(() => null),
+    // Lote 9: la revisión del jueves de esta semana y los tours sin costos.
+    prisma.revisionSemanal.findUnique({ where: { semana: lunes }, select: { id: true } }).then(r => !!r).catch(() => null),
+    toursSinCostos(),
   ]);
   const [cotizados, reservas, ligasActivas, salidas] = await Promise.all([
     prisma.oportunidad.findMany({
@@ -102,6 +122,9 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
     ...reglaMinimo(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, minimo: s.minimo, estado: s.registro.estado })), hoy),
     ...reglaLecturaGoogle(google.at(-1)?.fecha ?? null, hoy, lunes),
     ...reglaCorteLunes(cortePasado?.estado === "cerrado", semanaPasada, PRIMERA_SEMANA_CORTE),
+    // Sin poder leer la base no se crea nada (lote 9).
+    ...(revision === null ? [] : reglaRevisionJueves(revision, hoy, lunes)),
+    ...(sinCostos === null ? [] : reglaToursSinCostos(sinCostos, hoy)),
     // Juntar salidas (4 nov 2026): una tarea por par, a Operación, para proponerlo al cliente.
     ...(await sugerenciasAgrupar(hoy).catch(() => [])).map(g => ({
       claveRegla: `agrupar-salidas:${g.mover.clave}>${g.hacia.clave}`, regla: "agrupar-salidas" as const,
@@ -123,7 +146,7 @@ const objetoDe = (claveRegla: string | null) => (claveRegla ?? "").split(":").sl
 export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date()): Promise<number> {
   const { hoy } = ahoraMX(ahora);
   const pendientes = await prisma.tarea.findMany({
-    where: { estado: "pendiente", origen: "regla", regla: { in: ["cotizado-24h", "consulta-nueva", "liga-24h", "saldo-vencido", "salida-48h", "agrupar-salidas", "minimo-7d", "corte-lunes", "lectura-google"] } },
+    where: { estado: "pendiente", origen: "regla", regla: { in: ["cotizado-24h", "consulta-nueva", "liga-24h", "saldo-vencido", "salida-48h", "agrupar-salidas", "minimo-7d", "corte-lunes", "lectura-google", "revision-jueves", "tours-sin-costos"] } },
     select: { id: true, titulo: true, regla: true, claveRegla: true, oportunidadId: true, salidaClave: true },
   });
   if (!pendientes.length) return 0;
@@ -132,6 +155,11 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
   const idsLiga = de("liga-24h").map(t => objetoDe(t.claveRegla)).filter(Boolean);
   const idsReserva = de("saldo-vencido").map(t => objetoDe(t.claveRegla)).filter(Boolean);
   const semanas = de("corte-lunes").map(t => objetoDe(t.claveRegla)).filter(Boolean);
+  const semanasRevision = de("revision-jueves").map(t => objetoDe(t.claveRegla)).filter(Boolean);
+  const [revisiones, sinCostos] = await Promise.all([
+    semanasRevision.length ? prisma.revisionSemanal.findMany({ where: { semana: { in: semanasRevision } }, select: { semana: true } }).then(rs => new Set(rs.map(r => r.semana))).catch(() => null) : Promise.resolve(new Set<string>()),
+    de("tours-sin-costos").length ? toursSinCostos() : Promise.resolve([]),
+  ]);
   const [leads, ligas, reservas, cortes, google] = await Promise.all([
     idsLead.length ? prisma.oportunidad.findMany({ where: { id: { in: idsLead } }, select: { id: true, etapa: true, contactoId: true } }) : [],
     idsLiga.length ? prisma.linkPago.findMany({ where: { id: { in: idsLiga } }, select: { id: true, estado: true } }) : [],
@@ -176,6 +204,8 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
       }
       case "corte-lunes": return { corteCerrado: cortes.find(c => c.semana === objetoDe(t.claveRegla))?.estado === "cerrado" };
       case "lectura-google": return { lecturaReciente: google === undefined ? undefined : !!google && diffDiasYMD(google, hoy) <= 6 };
+      case "revision-jueves": return { revisionGuardada: revisiones === null ? undefined : revisiones.has(objetoDe(t.claveRegla)) };
+      case "tours-sin-costos": return { toursSinCostos: sinCostos === null ? undefined : sinCostos.length, deOtroMes: objetoDe(t.claveRegla) < hoy.slice(0, 7) };
       default: return {};
     }
   };
@@ -249,6 +279,12 @@ export async function enviarResumenDiario(ahora: Date = new Date()): Promise<{ e
   const { hoy, hhmm } = ahoraMX(ahora);
   if (hhmm < HORA_RESUMEN.desde || hhmm >= HORA_RESUMEN.hasta) return { enviados: 0, errores: [] };
   const personas = usuariosAdmin().filter(u => u.rol !== "guia");
+  // Lote 9: si el reporte de los jueves no salió, se le avisa al dueño (viernes a domingo).
+  const lunes = lunesDe(hoy);
+  const avisoReporte = await import("./agente/calidad")
+    .then(m => m.estadoReporteJueves(lunes))
+    .then(e => avisoReporteJueves(e, hoy, lunes, addDaysYMD(lunes, 3)))
+    .catch(() => null);
   const [tareas, salidas] = await Promise.all([
     prisma.tarea.findMany({
       where: { estado: "pendiente", vence: { lte: hoy } },
@@ -263,7 +299,8 @@ export async function enviarResumenDiario(ahora: Date = new Date()): Promise<{ e
     const suyas = tareas.filter(t => t.responsable === u.nombre);
     // Las salidas van a quien opera (Operación) y al dueño; el socio las ve en el panel.
     const conSalidas = u.rol === "operacion" || u.rol === "dueno";
-    if (!suyas.length && !(conSalidas && salidas.length)) continue;
+    const avisos = u.rol === "dueno" && avisoReporte ? [avisoReporte] : [];
+    if (!suyas.length && !(conSalidas && salidas.length) && !avisos.length) continue;
     const clave = `resumen-diario:${hoy}:${u.user}`;
     try { await prisma.config.create({ data: { key: clave, value: new Date(ahora).toISOString() } }); }
     catch { continue; } // ya salió hoy
@@ -277,7 +314,7 @@ export async function enviarResumenDiario(ahora: Date = new Date()): Promise<{ e
       cuando: s.fecha === hoy ? "Hoy" : "Mañana", href: `${BASE_URL}/admin/salidas-dia/${encodeURIComponent(s.clave)}`, rojo: !s.registro.guia,
     })) : [];
     try {
-      const correo = correoResumen(u.nombre, hoy, suyas.filter(t => t.vence < hoy).map(linea), suyas.filter(t => t.vence === hoy).map(linea), lineasSalidas);
+      const correo = correoResumen(u.nombre, hoy, suyas.filter(t => t.vence < hoy).map(linea), suyas.filter(t => t.vence === hoy).map(linea), lineasSalidas, avisos);
       await sendBrevoEmail({ to: correoDe(u.nombre), ...correo, senderName: "Panel Huasteca" });
       enviados++;
       const sinHora = suyas.filter(t => !t.hora || t.vence < hoy).map(t => t.id);

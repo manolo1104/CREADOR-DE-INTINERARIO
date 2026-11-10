@@ -8,12 +8,13 @@ import { enmascararTexto } from "@/lib/logger";
 /**
  * Una vuelta del reloj (Fase 3, 4 nov 2026): primero las reglas crean los
  * seguimientos que tocan, después sale el resumen de las 7:30 y al final los
- * recordatorios de lo que ya venció. Cada paso falla solo, sin tumbar al otro.
+ * recordatorios de lo que ya venció. Cada paso falla solo, sin tumbar al otro
+ * (lote 9, 10 nov 2026: el último sí tumbaba la vuelta y el cron daba error).
  */
 export async function vueltaDeAvisos() {
   const reglas = await aplicarReglas().catch(e => { console.error("reglas:", (e as Error)?.message); return null; });
   const resumen = await enviarResumenDiario().catch(e => { console.error("resumen diario:", (e as Error)?.message); return null; });
-  const avisos = await enviarRecordatorios();
+  const avisos = await enviarRecordatorios().catch(e => { console.error("recordatorios:", (e as Error)?.message); return { tareas: 0, enviados: 0, errores: [String((e as Error)?.message ?? e)] }; });
   return { reglas, resumen, avisos };
 }
 

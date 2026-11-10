@@ -8,6 +8,10 @@ on:
     - cron: "0 * * * *"
   workflow_dispatch: {}
 
+# Lote 9 (10 nov 2026): cada paso es independiente. Antes, si fallaba la
+# recuperación de carritos, GitHub se saltaba los correos de los leads, las
+# cotizaciones y el curso de esa hora. Ahora corren todos (`!cancelled()`) y,
+# si alguno falla, el trabajo igual sale en rojo para que se note.
 jobs:
   recuperar:
     runs-on: ubuntu-latest
@@ -26,7 +30,9 @@ jobs:
 
       - name: Recordatorios de seguimiento (respaldo)
         # El servidor los manda solo cada 5 min; esto es por si se reinició.
-        # Cada seguimiento sale una sola vez aunque coincidan los dos.
+        # Cada seguimiento sale una sola vez aunque coincidan los dos. Desde el
+        # lote 9 también pasa a Operado los viajes ya pasados y da una vuelta
+        # del agente de los chats (con su tope de gasto).
         continue-on-error: true
         run: |
           curl -fsS -X POST \
@@ -55,6 +61,7 @@ jobs:
             https://www.huasteca-potosina.com/api/cron/checkin
 
       - name: Llamar al endpoint de recuperación
+        if: ${{ !cancelled() }}
         run: |
           # -f hace que un 401 (secreto mal configurado) falle el job en vez de
           # pasar desapercibido como si no hubiera nada que enviar.
@@ -63,12 +70,14 @@ jobs:
             https://www.huasteca-potosina.com/api/cron/recuperar-carritos
 
       - name: Secuencia de correos a los leads del recomendador
+        if: ${{ !cancelled() }}
         run: |
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
             https://www.huasteca-potosina.com/api/cron/secuencia-leads
 
       - name: Seguimiento de las cotizaciones (panel y bot)
+        if: ${{ !cancelled() }}
         run: |
           # Las cotizaciones que Manolo manda a mano no tenían ningún
           # seguimiento. Este paso las retoma a la hora, a las 24 h y a las
@@ -79,6 +88,7 @@ jobs:
             https://www.huasteca-potosina.com/api/cron/secuencia-cotizaciones
 
       - name: Secuencias del curso Turismo con IA
+        if: ${{ !cancelled() }}
         run: |
           curl -fsS -X POST \
             -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \

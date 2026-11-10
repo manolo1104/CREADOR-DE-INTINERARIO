@@ -15,6 +15,13 @@ export const ETAPAS = [
 
 export type Etapa = (typeof ETAPAS)[number]["clave"];
 
+/**
+ * El `creadoPor` de los leads que sembró la importación inicial
+ * (`scripts/sembrar-crm.ts`, 3 nov 2026). No son leads que entraron ese día:
+ * se quedan fuera de las cohortes del Embudo y de Inicio (lote 9, 10 nov 2026).
+ */
+export const CREADO_POR_IMPORTACION = "Importación inicial";
+
 /** Las columnas del pipeline. Operado y Perdido van en vistas aparte. */
 export const ETAPAS_PIPELINE: Etapa[] = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
 

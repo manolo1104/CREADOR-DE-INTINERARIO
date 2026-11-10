@@ -22,6 +22,8 @@ export interface SalidaK {
   bajoMinimo: boolean; checklist: { hechos: number; total: number }; incidencias: Incidencia[];
   /** Lote 6 (10 nov 2026): por debajo del mínimo del TOUR (no corre así), su mínimo y el estado del registro. */
   noLlega?: boolean; minimo?: number | null; estado?: string;
+  /** Lote 9: para «Margen estimado por salida» (ingreso ya después de descuentos). */
+  ingreso?: number; margen?: number; conCostos?: boolean;
 }
 export interface CorteK { semana: string; ventas: number; utilidad: number; estado: string }
 export interface DatosOperacion {
@@ -46,9 +48,17 @@ export interface MedicionOperacion { valores: ValorKpi[]; series: Record<string,
 // Pasada = la fecha ya pasó o Operación la marcó «Operada» (lote 6, 10 nov 2026).
 const pasadas = (d: DatosOperacion, p: Periodo) => d.salidas.filter(s => enPeriodo(s.fecha, p) && salidaYaOperada(s, d.hoy));
 
+/**
+ * Las salidas que cuentan para «Personas por salida» (lote 9, 10 nov 2026):
+ * solo los tours regulares. Fuera el viaje CDMX, el RZR, el buceo, las salidas
+ * a medida y los renglones de concepto (traslados, cobros a mano): no llevan
+ * meta de personas y movían el promedio sin que nada cambiara.
+ */
+export const cuentaParaPax = (s: Pick<SalidaK, "aMedida">) => !s.aMedida;
+
 function paxSalida(d: DatosOperacion, p: Periodo): ValorKpi {
-  const ss = d.salidas.filter(s => enPeriodo(s.fecha, p));
-  if (!ss.length) return sinDato("pax-salida", "Sin salidas en el periodo.");
+  const ss = d.salidas.filter(s => enPeriodo(s.fecha, p) && cuentaParaPax(s));
+  if (!ss.length) return sinDato("pax-salida", "Sin salidas regulares en el periodo.");
   const pax = ss.reduce((t, s) => t + s.personas, 0);
   return { clave: "pax-salida", valor: r1(pax / ss.length), detalle: `${pax} personas en ${ss.length} salidas`, calidad: "exacto" };
 }
@@ -59,6 +69,26 @@ const bajoMinimo = (d: DatosOperacion, p: Periodo): ValorKpi => {
   return { clave: "bajo-minimo", valor: n, detalle: `de ${ss.length} salidas regulares`, calidad: "exacto" };
 };
 
+/**
+ * «Margen estimado por salida» (lote 9): informativo, sin meta. (Ingreso −
+ * costos) ÷ ingreso de las salidas regulares con costos; el ingreso ya va
+ * después de descuentos y del total editado, y no lleva comisiones. La meta
+ * del 35 % es del «Margen del corte».
+ */
+function margenSalidas(d: DatosOperacion, p: Periodo): ValorKpi {
+  const regulares = d.salidas.filter(s => enPeriodo(s.fecha, p) && cuentaParaPax(s));
+  const ss = regulares.filter(s => s.conCostos && (s.ingreso ?? 0) > 0);
+  const ingreso = ss.reduce((t, s) => t + (s.ingreso ?? 0), 0);
+  if (!ingreso) return sinDato("margen-salidas", "Ninguna salida regular con costos en el periodo.");
+  const util = ss.reduce((t, s) => t + (s.margen ?? 0), 0);
+  return {
+    clave: "margen-salidas", valor: r1((util / ingreso) * 100),
+    detalle: `$${Math.round(util).toLocaleString("es-MX")} de $${Math.round(ingreso).toLocaleString("es-MX")} en ${ss.length} de ${regulares.length} salidas`,
+    calidad: "aproximado", nota: "Estimado: sin comisiones de Stripe ni hosting.",
+  };
+}
+
+/** «Margen del corte»: el KPI oficial (meta 35 %), con comisiones y hosting. */
 function margen(d: DatosOperacion, p: Periodo): ValorKpi {
   const cs = d.cortes.filter(c => c.estado === "cerrado" && enPeriodo(c.semana, p));
   const ventas = cs.reduce((t, c) => t + c.ventas, 0);
@@ -113,10 +143,10 @@ function porReserva(d: DatosOperacion, p: Periodo): { pax: ValorKpi; mismoDia: V
 
 export function calcularOperacion(d: DatosOperacion, p: Periodo, periodos: Periodo[]): MedicionOperacion {
   const pr = porReserva(d, p);
-  const valores = [paxSalida(d, p), bajoMinimo(d, p), margen(d, p), cortesATiempo(d, p), checklist(d, p), incidencias(d, p), pr.pax, pr.mismoDia];
+  const valores = [paxSalida(d, p), bajoMinimo(d, p), margen(d, p), margenSalidas(d, p), cortesATiempo(d, p), checklist(d, p), incidencias(d, p), pr.pax, pr.mismoDia];
   const v = (f: (x: Periodo) => ValorKpi) => serie(periodos, x => f(x).valor);
   const series: Record<string, PuntoSerie[]> = {
-    "pax-salida": v(x => paxSalida(d, x)), "bajo-minimo": v(x => bajoMinimo(d, x)), "margen": v(x => margen(d, x)),
+    "pax-salida": v(x => paxSalida(d, x)), "bajo-minimo": v(x => bajoMinimo(d, x)), "margen": v(x => margen(d, x)), "margen-salidas": v(x => margenSalidas(d, x)),
     "cortes-tiempo": v(x => cortesATiempo(d, x)), "checklist": v(x => checklist(d, x)), "incidencias": v(x => incidencias(d, x)),
     "pax-reserva": v(x => porReserva(d, x).pax), "mismo-dia": v(x => porReserva(d, x).mismoDia),
   };
@@ -129,9 +159,10 @@ export function calcularOperacion(d: DatosOperacion, p: Periodo, periodos: Perio
     valores, series,
     detalle: {
       semanas: periodos.map(x => {
-        const ss = d.salidas.filter(s => enPeriodo(s.fecha, x));
+        // Las regulares, como el KPI (lote 9).
+        const ss = d.salidas.filter(s => enPeriodo(s.fecha, x) && cuentaParaPax(s));
         const pax = ss.reduce((t, s) => t + s.personas, 0);
-        return { corta: x.corta, salidas: ss.length, paxPorSalida: ss.length ? r1(pax / ss.length) : null, bajoMinimo: ss.filter(s => !s.aMedida && s.bajoMinimo).length };
+        return { corta: x.corta, salidas: ss.length, paxPorSalida: ss.length ? r1(pax / ss.length) : null, bajoMinimo: ss.filter(s => s.bajoMinimo).length };
       }),
       proximasBajoMinimo: d.salidas.filter(s => s.fecha >= d.hoy && s.fecha <= addDaysYMD(d.hoy, 14) && (s.bajoMinimo || s.noLlega) && !s.aMedida && s.estado !== "operada").sort((a, b) => a.fecha.localeCompare(b.fecha)),
       cortes,
@@ -168,6 +199,7 @@ export async function cargarOperacion(periodos: Periodo[], hoy: string): Promise
       // Las canceladas ya no llegan aquí (`salidasEntre`); bajo mínimo = 2 o menos aunque tampoco llegue al del tour.
       bajoMinimo: bajoMinimoRentable(s), noLlega: s.estadoPax === "no-llega", minimo: s.minimo, estado: s.registro.estado,
       checklist: avanceChecklist(s.checklist), incidencias: s.incidencias,
+      ingreso: s.numeros.ingreso, margen: s.numeros.margen, conCostos: s.numeros.conCostos,
     })),
     cortes, primerCierre,
     reservas: reservas.map(b => ({

@@ -69,6 +69,9 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // Cuándo se aceptó (KPI «Cotización → reserva a 14 días», 4 nov 2026): solo
     // la primera vez que pasa a «aceptada»; volver a guardarla no la mueve.
     if (data.status === "aceptada" && antes?.status !== "aceptada") data.aceptadaEn = new Date();
+    // Marcada «Enviada» a mano por primera vez: desde ahí cuenta «Cotización →
+    // reserva» (lote 9, 10 nov 2026). Si ya tenía fecha de envío, no se mueve.
+    if (data.status === "enviada" && !antes?.enviadaEn) data.enviadaEn = new Date();
     // El descuento: sellado con quién y cuándo si cambió (ver `descuento.ts`).
     let eventoDescuento = null;
     // En las cotizaciones el `_meta` de precio va en `packageItems`.

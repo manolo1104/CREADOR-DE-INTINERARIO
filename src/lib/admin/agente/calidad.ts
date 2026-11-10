@@ -14,8 +14,8 @@ import { ErrorAgente, pedirJson } from "./claude";
 import { MODELO_EXTRAER, MODELO_RESPONDER } from "./costos";
 import { transcripcion } from "./copilotoReglas";
 import {
-  primerMensajeDelChat, schemaReporte, schemaRevisionChat, sumarRevisiones, systemReporte, systemRevisionChat,
-  type Hallazgo, type ReglasChat,
+  decidirReporte, leerEstadoReporte, primerMensajeDelChat, schemaReporte, schemaRevisionChat, sumarRevisiones, systemReporte, systemRevisionChat,
+  type EstadoReporte, type Hallazgo, type ReglasChat,
 } from "./calidadReglas";
 
 const AGENTE: Actor = { usuario: "agente", nombre: "Agente", rol: "sistema" };
@@ -135,6 +135,12 @@ export async function reporteOportunidades(semanaPedida: string, quien: string) 
     });
   }
   await registrarEnBitacora({ accion: "creó", entidad: "panel", referencia: `Reporte ${lunes}`, resumen: `Reporte de oportunidades de la semana del ${lunes}: ${hallazgos.length} hallazgos (pedido por ${quien})`, actor: AGENTE });
+  // Armado a mano desde el jueves de esa semana: ya salió y el resumen de las
+  // 7:30 deja de avisar (lote 9). Antes del jueves no: el automático sigue en pie.
+  if (hoyMX() >= addDaysYMD(lunes, 3)) {
+    const listo = JSON.stringify({ intentos: 1, ultimoIntento: new Date().toISOString(), listo: true });
+    await prisma.config.upsert({ where: { key: claveReporteJueves(lunes) }, update: { value: listo }, create: { key: claveReporteJueves(lunes), value: listo } }).catch(() => {});
+  }
   return { semana: lunes, hallazgos: hallazgos.length };
 }
 
@@ -150,13 +156,39 @@ export async function decidirHallazgo(id: string, accion: unknown, quien: string
   await prisma.hallazgoAgente.update({ where: { id }, data: { estado: "aceptado", tareaId: t.id, decididoPor: quien } });
 }
 
-/** Los jueves desde las 7:00 (hora de México) sale solo el reporte de la semana; una vez por semana. */
+/** Dónde queda cómo va el reporte de los jueves de una semana. */
+export const claveReporteJueves = (lunes: string) => `reporte-jueves:${lunes}`;
+
+/** Cómo va el reporte de los jueves de una semana (null = nunca se intentó). */
+export async function estadoReporteJueves(lunes: string): Promise<EstadoReporte | null> {
+  const fila = await prisma.config.findUnique({ where: { key: claveReporteJueves(lunes) } });
+  return leerEstadoReporte(fila?.value);
+}
+
+/**
+ * Los jueves desde las 7:00 (hora de México) sale solo el reporte de la
+ * semana; una vez por semana. Si falla, se reintenta hasta 3 veces con 1 h
+ * entre intentos (lote 9, 10 nov 2026; antes, cada minuto sin tope). Cada
+ * intento se RECLAMA en `Config` (si otra vuelta ya lo tomó, esta no hace nada).
+ */
 export async function reporteDelJueves(ahora: Date = new Date()) {
   const { hoy, hhmm } = ahoraMX(ahora);
   if (new Date(`${hoy}T12:00:00Z`).getUTCDay() !== 4 || hhmm < "07:00") return null;
   const lunes = lunesDe(hoy);
-  try { await prisma.config.create({ data: { key: `reporte-jueves:${lunes}`, value: new Date().toISOString() } }); }
-  catch { return null; } // ya salió esta semana
-  try { return await reporteOportunidades(lunes, "Agente (jueves)"); }
-  catch (e) { await prisma.config.delete({ where: { key: `reporte-jueves:${lunes}` } }).catch(() => {}); throw e; }
+  const clave = claveReporteJueves(lunes);
+  const fila = await prisma.config.findUnique({ where: { key: clave } });
+  const estado = leerEstadoReporte(fila?.value);
+  if (decidirReporte(estado, ahora) !== "correr") return null;
+  const intento: EstadoReporte = { intentos: (estado?.intentos ?? 0) + 1, ultimoIntento: ahora.toISOString(), listo: false };
+  if (!fila) {
+    try { await prisma.config.create({ data: { key: clave, value: JSON.stringify(intento) } }); }
+    catch { return null; } // otra vuelta lo tomó
+  } else {
+    const r = await prisma.config.updateMany({ where: { key: clave, value: fila.value }, data: { value: JSON.stringify(intento) } });
+    if (!r.count) return null;
+  }
+  // Si falla, el intento queda contado: el siguiente espera 1 h (y el tercero es el último).
+  const r = await reporteOportunidades(lunes, "Agente (jueves)");
+  await prisma.config.update({ where: { key: clave }, data: { value: JSON.stringify({ ...intento, listo: true }) } }).catch(() => {});
+  return r;
 }

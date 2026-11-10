@@ -116,7 +116,16 @@ export const HORARIO_RESPUESTA = { desde: "08:00", hasta: "20:00" } as const;
 
 const hhmmMX = (d: Date) => new Intl.DateTimeFormat("en-GB", { timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hour12: false }).format(d).replace(/^24/, "00");
 
-export interface MensajeLigero { direccion: string; fecha: Date; importado?: boolean }
+/**
+ * Un mensaje del equipo que NO llegó al cliente: falló, o sigue en la cola del
+ * puente (lote 9, 10 nov 2026). No cuenta como respuesta ni como seguimiento:
+ * antes un «fallo» a los 2 minutos salía como «contestado en 5 min».
+ */
+export const ESTADOS_NO_SALIO = ["fallo", "pendiente", "enviando"] as const;
+export const salioAlCliente = (m: { direccion: string; estado?: string | null }) =>
+  m.direccion === "sale" && !(ESTADOS_NO_SALIO as readonly string[]).includes(m.estado ?? "");
+
+export interface MensajeLigero { direccion: string; fecha: Date; importado?: boolean; estado?: string | null }
 
 /**
  * De las conversaciones NUEVAS de la semana (su primer mensaje del cliente cae
@@ -131,12 +140,13 @@ export function primerMensajeEn5(conversaciones: MensajeLigero[][], desde: Date,
     const primero = orden.find(m => m.direccion === "entra");
     if (!primero || primero.fecha < desde || primero.fecha > hasta) continue;
     // Si el negocio ya le había escrito antes (no es un cliente nuevo), no cuenta.
-    if (orden.some(m => m.direccion === "sale" && m.fecha < primero.fecha) || ms.some(m => m.importado)) continue;
+    if (orden.some(m => salioAlCliente(m) && m.fecha < primero.fecha) || ms.some(m => m.importado)) continue;
     nuevas++;
     const h = hhmmMX(primero.fecha);
     if (h < HORARIO_RESPUESTA.desde || h >= HORARIO_RESPUESTA.hasta) continue;
     enHorario++;
-    const resp = orden.find(m => m.direccion === "sale" && m.fecha >= primero.fecha);
+    // Solo un mensaje que de verdad salió es respuesta (lote 9).
+    const resp = orden.find(m => salioAlCliente(m) && m.fecha >= primero.fecha);
     if (resp && resp.fecha.getTime() - primero.fecha.getTime() <= 5 * 60_000) en5++;
   }
   return { nuevas, enHorario, en5 };

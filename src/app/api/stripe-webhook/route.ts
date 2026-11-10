@@ -8,6 +8,7 @@ import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger
 import { recuperarPago, esPagoDeTours, ESPERA_WEBHOOK_MS } from "@/lib/recuperarPago";
 import { esPagoDelViaje } from "@/lib/viajeCdmx/confirmar";
 import { manejarEventoViaje } from "@/lib/viajeCdmx/webhook";
+import { CLAVE_ULTIMO_WEBHOOK_STRIPE } from "@/lib/admin/indicadores/fuentes";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -37,6 +38,15 @@ export async function POST(req: NextRequest) {
     logger.error("stripe_webhook_signature_error", { reason: msg });
     return NextResponse.json({ error: msg }, { status: 400 });
   }
+
+  // El último aviso de Stripe que llegó (lote 9, 10 nov 2026): «Metas →
+  // Fuentes» lo compara con la última reserva web para saber si el webhook
+  // sigue vivo. Nunca frena el aviso.
+  await prisma.config.upsert({
+    where: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE },
+    update: { value: JSON.stringify({ en: new Date().toISOString(), tipo: event.type }) },
+    create: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE, value: JSON.stringify({ en: new Date().toISOString(), tipo: event.type }) },
+  }).catch(() => {});
 
   // ── Viaje mensual CDMX–Xilitla ────────────────────────────────────────────
   // Va PRIMERO y se espera: si algo falla, 500 y Stripe reintenta. Sin los 90 s

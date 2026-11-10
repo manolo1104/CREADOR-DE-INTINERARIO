@@ -395,7 +395,7 @@ export async function noLeidosBandeja(): Promise<number> {
 export async function mensajesParaKpi(desde: Date, hasta: Date) {
   const convs = await prisma.conversacion.findMany({
     where: { noEsCliente: false, mensajes: { some: { fecha: { gte: desde, lte: hasta }, direccion: "entra" } } },
-    select: { mensajes: { select: { direccion: true, fecha: true, importado: true }, orderBy: { fecha: "asc" }, take: 400 } },
+    select: { mensajes: { select: { direccion: true, fecha: true, importado: true, estado: true }, orderBy: { fecha: "asc" }, take: 400 } },
   });
   return convs.map(c => c.mensajes);
 }

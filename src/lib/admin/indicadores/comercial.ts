@@ -6,14 +6,24 @@
 // que termina el periodo; antes se marca «preliminar».
 //
 // El scorecard de Inicio usa ESTAS mismas funciones (una sola fórmula por KPI).
+//
+// Lote 9 (10 nov 2026, plan aprobado por Manolo):
+//  · «Reservó» = una reserva VIVA (sin canceladas ni borradores) con dinero
+//    cobrado. Antes bastaba la etapa del lead o una reserva sin un peso.
+//  · La cohorte se CIERRA 14 días después del periodo: lo que pasa después ya
+//    no cuenta, así un periodo maduro ya no sube (antes seguía subiendo).
+//  · Fuera de la cohorte: los leads que nacieron de una reserva (no hubo lead
+//    antes de la compra) y los de la importación inicial.
+//  · «Cotización → reserva» cuenta desde que la cotización SALIÓ al cliente.
 
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD, ymdMX } from "@/lib/dates";
-import { primerMensajeEn5, type MensajeLigero } from "@/lib/admin/bandeja";
+import { ESTADOS_NO_SALIO, primerMensajeEn5, type MensajeLigero } from "@/lib/admin/bandeja";
 import { mensajesParaKpi } from "@/lib/admin/bandejaDatos";
 import { saldoPendiente } from "@/lib/admin/dinero";
 import { diasDeTourDe } from "@/lib/admin/salidas";
-import { contarMotivos } from "@/lib/admin/crm";
+import { CREADO_POR_IMPORTACION, contarMotivos } from "@/lib/admin/crm";
+import { montoCobrado } from "@/lib/admin/dinero";
 import { leerOrigenWeb } from "@/lib/admin/origenWeb";
 import { HECHA_POR_REGLA } from "@/lib/admin/automatizaciones";
 import { ETIQUETA_CANAL } from "@/lib/admin/analisisComun";
@@ -28,14 +38,22 @@ const ETAPAS_RESERVA = ["anticipo", "confirmado", "operado"];
 const ETAPAS_COTIZADO = ["cotizado", "seguimiento", ...ETAPAS_RESERVA];
 const H = 3_600_000;
 const DIA = 24 * H;
+/** Días que se espera a una cohorte después de que termina su periodo. */
+export const DIAS_COHORTE = 14;
 
 export interface LeadCohorte {
   id: string; ymd: string; canal: string; responsable: string | null; etapa: string;
   /** Cambios de etapa: a qué etapa y cuándo (ms). */
   historial: { nueva: string; en: number }[];
-  /** Reservas ligadas al lead que cuentan (sin canceladas ni borradores). */
-  reservas: number;
-  cotizacionesEnviadas: number;
+  /** Cuándo entró el primer dinero a una reserva VIVA del lead (ms); null = ninguna reserva viva con dinero (lote 9). */
+  pagoEn: number | null;
+  /** Cuándo salió al cliente su primera cotización (ms); null = ninguna salió. */
+  cotizacionEn: number | null;
+  /**
+   * No entra a la cohorte (lote 9): «comprado» = nació de una reserva (no hubo
+   * lead antes de la compra); «importado» = lo sembró la importación inicial.
+   */
+  fuera?: "comprado" | "importado" | null;
   /** Si llegó por un botón del sitio con código de referencia: el canal de su visita y la página del clic. */
   origen?: { canal: string; pagina: string | null } | null;
 }
@@ -50,7 +68,14 @@ export interface CasoSeguimiento {
   salientes: number[];
   tareasHechas: number[];
 }
-export interface CotizacionK { ymd: string; creada: number; total: number; status: string; aceptadaEn: number | null; aproximada: boolean }
+/** Una cotización que salió al cliente: `ymd` y `enviada` son de su ENVÍO (lote 9), no de cuando se creó el borrador. */
+export interface CotizacionK {
+  ymd: string; enviada: number; total: number; status: string; aceptadaEn: number | null;
+  /** La fecha en que se aceptó se estimó (las de antes del 4 nov). */
+  aproximada: boolean;
+  /** La fecha de envío se estimó (las de antes del 10 nov sin rastro en la Bitácora). */
+  envioAproximado?: boolean;
+}
 
 export interface DatosComercial {
   leads: LeadCohorte[];
@@ -84,9 +109,40 @@ export interface DetalleComercial {
 
 export interface MedicionComercial { valores: ValorKpi[]; series: Record<string, PuntoSerie[]>; detalle: DetalleComercial }
 
-const llego = (l: LeadCohorte, etapas: string[]) => etapas.includes(l.etapa) || l.historial.some(h => etapas.includes(h.nueva));
-export const reservo = (l: LeadCohorte) => llego(l, ETAPAS_RESERVA) || l.reservas > 0;
-export const cotizo = (l: LeadCohorte) => llego(l, ETAPAS_COTIZADO) || l.cotizacionesEnviadas > 0 || reservo(l);
+/** Hasta cuándo (ms) cuenta lo que hicieron los leads de un periodo: 14 días después de que termina (lote 9). */
+export const cierreCohorte = (p: Pick<Periodo, "hasta">) => finMX(addDaysYMD(p.hasta, DIAS_COHORTE)).getTime();
+
+/** ¿Llegó a alguna de esas etapas a más tardar en `corte`? Sin historial, se cree a la etapa de hoy. */
+const llego = (l: LeadCohorte, etapas: string[], corte: number) =>
+  l.historial.length ? l.historial.some(h => etapas.includes(h.nueva) && h.en <= corte) : etapas.includes(l.etapa);
+/** Reservó = una reserva viva con dinero cobrado, a más tardar en `corte` (lote 9: ya no basta la etapa). */
+export const reservo = (l: LeadCohorte, corte = Infinity) => l.pagoEn !== null && l.pagoEn <= corte;
+export const cotizo = (l: LeadCohorte, corte = Infinity) =>
+  llego(l, ETAPAS_COTIZADO, corte) || (l.cotizacionEn !== null && l.cotizacionEn <= corte) || reservo(l, corte);
+/** Los leads de la cohorte de un periodo: entraron en él y no nacieron comprados ni importados (lote 9). */
+export const cohorteDe = (leads: LeadCohorte[], p: Pick<Periodo, "desde" | "hasta">) => leads.filter(l => enPeriodo(l.ymd, p) && !l.fuera);
+
+/**
+ * ¿El lead nació de una reserva? (lote 9) Su primera reserva se capturó antes
+ * que el lead: es la regla «reserva sin lead → nace el lead» del CRM, no un
+ * contacto que se convirtió. Puro, para probarlo.
+ */
+export const nacioComprado = (leadCreado: number, reservasCreadas: number[]) => reservasCreadas.some(r => r <= leadCreado);
+
+/**
+ * Cuándo salió al cliente una cotización (lote 9). `enviadaEn` desde el 10 nov;
+ * las de antes, con lo mejor que haya: la primera «envió» de la Bitácora
+ * (correo, WhatsApp o PDF), el arranque de su seguimiento por correo, o —sin
+ * nada— cuando se creó (aproximado).
+ */
+export function fechaDeEnvio(q: { enviadaEn?: Date | null; createdAt: Date; lineItems?: unknown }, primeraBitacora?: Date | null): { en: Date; aproximada: boolean } {
+  if (q.enviadaEn) return { en: q.enviadaEn, aproximada: false };
+  if (primeraBitacora) return { en: primeraBitacora, aproximada: false };
+  const meta = Array.isArray(q.lineItems) ? (q.lineItems as Record<string, unknown>[]).find(x => x && x._meta === true) : null;
+  const seq = typeof meta?.seqDesde === "string" ? new Date(meta.seqDesde) : null;
+  if (seq && !Number.isNaN(seq.getTime()) && seq >= q.createdAt) return { en: seq, aproximada: true };
+  return { en: q.createdAt, aproximada: true };
+}
 
 /** Leads de la revisión del jueves que caen en el periodo (por el lunes de su semana). */
 function leadsRevision(d: DatosComercial, p: Periodo): number | null {
@@ -95,10 +151,11 @@ function leadsRevision(d: DatosComercial, p: Periodo): number | null {
 }
 
 export function leadReserva(d: DatosComercial, p: Periodo): ValorKpi {
-  const ls = d.leads.filter(l => enPeriodo(l.ymd, p));
+  const ls = cohorteDe(d.leads, p);
   const rev = leadsRevision(d, p);
   const faltan = rev !== null && rev > ls.length;
-  return tasa("lead-reserva", ls.filter(reservo).length, ls.length, {
+  const corte = cierreCohorte(p);
+  return tasa("lead-reserva", ls.filter(l => reservo(l, corte)).length, ls.length, {
     unidadDetalle: "leads", preliminar: !cohorteMadura(p, d.hoy),
     calidad: faltan ? "aproximado" : "exacto",
     nota: faltan ? `El CRM tiene ${ls.length} leads y la revisión del jueves ${rev}: faltan leads en el CRM y la tasa puede salir inflada.` : undefined,
@@ -107,11 +164,14 @@ export function leadReserva(d: DatosComercial, p: Periodo): ValorKpi {
 }
 
 export function leadsCotizados(d: DatosComercial, p: Periodo): ValorKpi {
-  const ls = d.leads.filter(l => enPeriodo(l.ymd, p));
+  const ls = cohorteDe(d.leads, p);
   const rev = leadsRevision(d, p);
   const faltan = rev !== null && rev > ls.length;
-  return tasa("leads-cotizados", ls.filter(cotizo).length, ls.length, {
-    unidadDetalle: "leads", preliminar: !cohorteMadura(p, d.hoy, 3),
+  const corte = cierreCohorte(p);
+  // Se cierra a los 14 días, como Lead → reserva (lote 9): antes se daba por
+  // final a los 3 días y seguía subiendo hasta los 14.
+  return tasa("leads-cotizados", ls.filter(l => cotizo(l, corte)).length, ls.length, {
+    unidadDetalle: "leads", preliminar: !cohorteMadura(p, d.hoy),
     calidad: faltan ? "aproximado" : "exacto",
     nota: faltan ? `El CRM tiene ${ls.length} leads y la revisión del jueves ${rev}.` : undefined,
     sinDatoNota: "No entraron leads al CRM en el periodo.",
@@ -131,11 +191,17 @@ export function respuesta5(d: DatosComercial, p: Periodo): ValorKpi {
 
 function cotizacionReserva(d: DatosComercial, p: Periodo): { numero: ValorKpi; monto: ValorKpi } {
   const qs = d.cotizaciones.filter(q => enPeriodo(q.ymd, p));
-  const aceptada14 = (q: CotizacionK) => q.status === "aceptada" && q.aceptadaEn !== null && q.aceptadaEn - q.creada <= 14 * DIA;
+  // 14 días desde que SALIÓ al cliente (lote 9), no desde el borrador.
+  const aceptada14 = (q: CotizacionK) => q.status === "aceptada" && q.aceptadaEn !== null && q.aceptadaEn - q.enviada <= 14 * DIA;
   const ok = qs.filter(aceptada14);
   const aprox = ok.some(q => q.aproximada);
-  const o = { preliminar: !cohorteMadura(p, d.hoy), calidad: aprox ? ("aproximado" as const) : ("exacto" as const),
-    nota: aprox ? "Algunas se aceptaron antes de que el panel guardara la fecha: se estima con su reserva." : undefined,
+  const envioAprox = qs.filter(q => q.envioAproximado).length;
+  const notas = [
+    aprox ? "Algunas se aceptaron antes de que el panel guardara la fecha: se estima con su reserva." : "",
+    envioAprox ? `${envioAprox} sin fecha de envío guardada: se estima con su seguimiento o con cuando se creó.` : "",
+  ].filter(Boolean);
+  const o = { preliminar: !cohorteMadura(p, d.hoy), calidad: aprox || envioAprox ? ("aproximado" as const) : ("exacto" as const),
+    nota: notas.length ? notas.join(" ") : undefined,
     sinDatoNota: "No se enviaron cotizaciones en el periodo." };
   const montoTot = qs.reduce((t, q) => t + q.total, 0);
   const montoOk = ok.reduce((t, q) => t + q.total, 0);
@@ -199,13 +265,15 @@ export function calcularComercial(d: DatosComercial, p: Periodo, periodos: Perio
     "ticket": v(x => ventas(d, x)[2]),
   };
 
-  const ls = d.leads.filter(l => enPeriodo(l.ymd, p));
-  const cot = ls.filter(cotizo).length, res = ls.filter(reservo).length;
+  const ls = cohorteDe(d.leads, p);
+  const corte = cierreCohorte(p);
+  const cotizoL = (l: LeadCohorte) => cotizo(l, corte), reservoL = (l: LeadCohorte) => reservo(l, corte);
+  const cot = ls.filter(cotizoL).length, res = ls.filter(reservoL).length;
   const resp = new Map<string, { leads: number; cotizados: number; reservaron: number }>();
   for (const l of ls) {
     const k = l.responsable?.trim() || "Sin responsable";
     const f = resp.get(k) ?? { leads: 0, cotizados: 0, reservaron: 0 };
-    f.leads++; if (cotizo(l)) f.cotizados++; if (reservo(l)) f.reservaron++;
+    f.leads++; if (cotizoL(l)) f.cotizados++; if (reservoL(l)) f.reservaron++;
     resp.set(k, f);
   }
   const perdidos = d.perdidos.filter(x => enPeriodo(x.ymd, p));
@@ -216,7 +284,7 @@ export function calcularComercial(d: DatosComercial, p: Periodo, periodos: Perio
     for (const l of conWeb) {
       const k = clave(l);
       const f = m.get(k) ?? { clave: k, etiqueta: etiqueta(k), leads: 0, cotizados: 0, reservaron: 0 };
-      f.leads++; if (cotizo(l)) f.cotizados++; if (reservo(l)) f.reservaron++;
+      f.leads++; if (cotizoL(l)) f.cotizados++; if (reservoL(l)) f.reservaron++;
       m.set(k, f);
     }
     return Array.from(m.values()).sort((a, b) => b.leads - a.leads);
@@ -251,16 +319,19 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   const desde = periodos[0].desde, hasta = periodos[periodos.length - 1].hasta;
   const rango = { gte: inicioMX(desde), lte: finMX(hasta) };
 
-  const [ops, cotTrans, quotes, revisiones, chats, reservas, vivas, perdidos] = await Promise.all([
+  const [ops, cotTrans, quotesLeidas, revisiones, chats, reservas, vivas, perdidos] = await Promise.all([
     prisma.oportunidad.findMany({
       where: { createdAt: rango },
-      select: { id: true, createdAt: true, canal: true, responsable: true, etapa: true, origenWeb: true, historial: { select: { nueva: true, createdAt: true } } },
+      select: { id: true, createdAt: true, canal: true, responsable: true, etapa: true, origenWeb: true, creadoPor: true, historial: { select: { nueva: true, createdAt: true } } },
     }).catch(() => []),
     // Las veces que un lead pasó a «cotizado» en la serie (para el seguimiento).
     prisma.etapaOportunidad.findMany({ where: { nueva: "cotizado", createdAt: rango }, select: { oportunidadId: true } }).catch(() => []),
+    // Las que SALIERON en la serie (lote 9): por su envío, no por el borrador.
+    // Las de antes sin fecha de envío se buscan desde 60 días antes y abajo se
+    // les estima la fecha.
     prisma.tourQuote.findMany({
-      where: { createdAt: rango, status: { in: ESTADOS_ENVIADA } },
-      select: { id: true, createdAt: true, totalAmount: true, status: true, aceptadaEn: true, oportunidadId: true, updatedAt: true },
+      where: { status: { in: ESTADOS_ENVIADA }, OR: [{ enviadaEn: rango }, { enviadaEn: null, createdAt: { gte: inicioMX(addDaysYMD(desde, -60)), lte: rango.lte } }] },
+      select: { id: true, quoteNumber: true, createdAt: true, enviadaEn: true, lineItems: true, totalAmount: true, status: true, aceptadaEn: true, oportunidadId: true, updatedAt: true },
     }),
     prisma.revisionSemanal.findMany({ where: { semana: { gte: addDaysYMD(desde, -6), lte: hasta } }, select: { semana: true, leadsNuevos: true, respuestas5min: true, score: true } }).catch(() => []),
     mensajesParaKpi(inicioMX(desde), finMX(hasta)).catch(() => [] as MensajeLigero[][]),
@@ -275,16 +346,40 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   // Reservas y cotizaciones ligadas a los leads de la serie.
   const idsLeads = ops.map(o => o.id);
   const [resLead, cotLead] = await Promise.all([
-    idsLeads.length ? prisma.tourBooking.findMany({ where: { oportunidadId: { in: idsLeads } }, select: { oportunidadId: true, status: true, createdAt: true, cotizacionId: true } }) : Promise.resolve([]),
-    idsLeads.length ? prisma.tourQuote.findMany({ where: { oportunidadId: { in: idsLeads }, status: { in: ESTADOS_ENVIADA } }, select: { oportunidadId: true } }) : Promise.resolve([]),
+    idsLeads.length ? prisma.tourBooking.findMany({
+      where: { oportunidadId: { in: idsLeads } },
+      select: { id: true, oportunidadId: true, status: true, createdAt: true, depositoPagado: true, stripePaymentIntentId: true, totalAmount: true },
+    }) : Promise.resolve([]),
+    idsLeads.length ? prisma.tourQuote.findMany({
+      where: { oportunidadId: { in: idsLeads }, status: { in: ESTADOS_ENVIADA } },
+      select: { oportunidadId: true, quoteNumber: true, createdAt: true, enviadaEn: true, lineItems: true },
+    }) : Promise.resolve([]),
   ]);
-  const cuentaPor = <T extends { oportunidadId: string | null }>(xs: T[], ok: (x: T) => boolean = () => true) => {
-    const m = new Map<string, number>();
-    for (const x of xs) if (x.oportunidadId && ok(x)) m.set(x.oportunidadId, (m.get(x.oportunidadId) ?? 0) + 1);
-    return m;
-  };
-  const resPor = cuentaPor(resLead, x => cuenta(x.status));
-  const cotPor = cuentaPor(cotLead);
+  // Cuándo salió cada cotización sin `enviadaEn` (las de antes del lote 9): la
+  // primera «envió» de la Bitácora (correo, WhatsApp o PDF).
+  const sinFecha = Array.from(new Set([...quotesLeidas, ...cotLead].filter(q => !q.enviadaEn).map(q => q.quoteNumber)));
+  const [bitacoraEnvios, cobros] = await Promise.all([
+    sinFecha.length ? prisma.bitacora.findMany({ where: { entidad: "cotización", accion: "envió", referencia: { in: sinFecha } }, select: { referencia: true, createdAt: true }, orderBy: { createdAt: "asc" } }).catch(() => []) : Promise.resolve([]),
+    // Cuándo entró el dinero de cada reserva: su primer cobro registrado.
+    resLead.length ? prisma.movimiento.findMany({ where: { tipo: "cobro", anulado: false, reservaId: { in: resLead.map(b => b.id) } }, select: { reservaId: true, createdAt: true } }).catch(() => []) : Promise.resolve([]),
+  ]);
+  const primeraEnvio = new Map<string, Date>();
+  for (const b of bitacoraEnvios) if (b.referencia && !primeraEnvio.has(b.referencia)) primeraEnvio.set(b.referencia, b.createdAt);
+  const envioDe = (q: { quoteNumber: string; enviadaEn: Date | null; createdAt: Date; lineItems: unknown }) => fechaDeEnvio(q, primeraEnvio.get(q.quoteNumber));
+
+  const primerCobro = new Map<string, number>();
+  for (const c of cobros) if (c.reservaId) primerCobro.set(c.reservaId, Math.min(primerCobro.get(c.reservaId) ?? Infinity, c.createdAt.getTime()));
+  const minPor = new Map<string, number>(), cotEnPor = new Map<string, number>(), creadasPor = new Map<string, number[]>();
+  const menor = (m: Map<string, number>, k: string, v: number) => m.set(k, Math.min(m.get(k) ?? Infinity, v));
+  for (const b of resLead) {
+    if (!b.oportunidadId || b.status === "borrador") continue;
+    creadasPor.set(b.oportunidadId, [...(creadasPor.get(b.oportunidadId) ?? []), b.createdAt.getTime()]);
+    // Reservó = reserva VIVA con dinero cobrado; cuenta desde que entró el dinero (lote 9).
+    if (!cuenta(b.status) || montoCobrado(b) <= 0) continue;
+    menor(minPor, b.oportunidadId, primerCobro.get(b.id) ?? b.createdAt.getTime());
+  }
+  for (const q of cotLead) if (q.oportunidadId) menor(cotEnPor, q.oportunidadId, envioDe(q).en.getTime());
+  const quotes = quotesLeidas.map(q => ({ ...q, envio: envioDe(q) })).filter(q => q.envio.en >= rango.gte && q.envio.en <= rango.lte);
 
   // Seguimiento: los leads que pasaron a cotizado en la serie, con su historia completa.
   const idsSeg = Array.from(new Set(cotTrans.map(t => t.oportunidadId)));
@@ -297,7 +392,8 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   const contactos = Array.from(new Set(seg.map(o => o.contactoId)));
   const convs = contactos.length ? await prisma.conversacion.findMany({
     where: { contactoId: { in: contactos } },
-    select: { contactoId: true, mensajes: { where: { direccion: "sale", fecha: { gte: inicioMX(desde), lte: finMX(addDaysYMD(hasta, 4)) } }, select: { fecha: true } } },
+    // Solo lo que de verdad salió al cliente (lote 9): un mensaje fallido no es seguimiento.
+    select: { contactoId: true, mensajes: { where: { direccion: "sale", estado: { notIn: [...ESTADOS_NO_SALIO] }, fecha: { gte: inicioMX(desde), lte: finMX(addDaysYMD(hasta, 4)) } }, select: { fecha: true } } },
   }).catch(() => []) : [];
   const salientesDe = new Map<string, number[]>();
   const conChat = new Set<string>();
@@ -326,12 +422,13 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
     opsQ.length ? prisma.tourBooking.findMany({ where: { oportunidadId: { in: opsQ } }, select: { oportunidadId: true, createdAt: true } }) : Promise.resolve([]),
   ]);
   const cotizaciones: CotizacionK[] = quotes.map(q => {
-    if (q.aceptadaEn) return { ymd: ymdMX(q.createdAt), creada: q.createdAt.getTime(), total: q.totalAmount, status: q.status, aceptadaEn: q.aceptadaEn.getTime(), aproximada: false };
-    if (q.status !== "aceptada") return { ymd: ymdMX(q.createdAt), creada: q.createdAt.getTime(), total: q.totalAmount, status: q.status, aceptadaEn: null, aproximada: false };
+    const base = { ymd: ymdMX(q.envio.en), enviada: q.envio.en.getTime(), total: q.totalAmount, status: q.status, envioAproximado: q.envio.aproximada };
+    if (q.aceptadaEn) return { ...base, aceptadaEn: q.aceptadaEn.getTime(), aproximada: false };
+    if (q.status !== "aceptada") return { ...base, aceptadaEn: null, aproximada: false };
     const propia = resPorCot.find(b => b.cotizacionId === q.id)?.createdAt;
     const delLead = resPorOpQ.filter(b => b.oportunidadId && b.oportunidadId === q.oportunidadId && b.createdAt >= q.createdAt).map(b => b.createdAt).sort((a, b) => a.getTime() - b.getTime())[0];
     const en = propia ?? delLead ?? q.updatedAt;
-    return { ymd: ymdMX(q.createdAt), creada: q.createdAt.getTime(), total: q.totalAmount, status: q.status, aceptadaEn: en.getTime(), aproximada: true };
+    return { ...base, aceptadaEn: en.getTime(), aproximada: true };
   });
 
   const ultimoDia = (b: Parameters<typeof diasDeTourDe>[0]) => diasDeTourDe(b).map(x => x.fecha).sort().at(-1) ?? b.tourDate;
@@ -339,7 +436,9 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
     leads: ops.map(o => ({
       id: o.id, ymd: ymdMX(o.createdAt), canal: o.canal, responsable: o.responsable, etapa: o.etapa,
       historial: o.historial.map(h => ({ nueva: h.nueva, en: h.createdAt.getTime() })),
-      reservas: resPor.get(o.id) ?? 0, cotizacionesEnviadas: cotPor.get(o.id) ?? 0,
+      pagoEn: minPor.get(o.id) ?? null, cotizacionEn: cotEnPor.get(o.id) ?? null,
+      fuera: o.creadoPor === CREADO_POR_IMPORTACION ? "importado" as const
+        : nacioComprado(o.createdAt.getTime(), creadasPor.get(o.id) ?? []) ? "comprado" as const : null,
       origen: (() => { const w = leerOrigenWeb(o.origenWeb); return w?.conClic ? { canal: w.canal, pagina: w.pagina } : null; })(),
     })),
     seguimiento, cotizaciones, revisiones, chats,

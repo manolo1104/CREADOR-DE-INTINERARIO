@@ -35,20 +35,37 @@ export interface MedicionServicio { valores: ValorKpi[]; series: Record<string, 
 /** La lectura de Google más reciente en o antes de `fecha`. */
 const lecturaAl = (h: PuntoGoogle[], fecha: string) => h.filter(p => p.fecha <= fecha).sort((a, b) => a.fecha.localeCompare(b.fecha)).at(-1) ?? null;
 
-function resenas(d: DatosServicio, p: Periodo): ValorKpi {
+/**
+ * Las reseñas nuevas de un periodo, alineadas a la lectura del LUNES (lote 9,
+ * 10 nov 2026): de la lectura del día en que empieza (el lunes) a la del día
+ * siguiente a que termina (el lunes que sigue). 🔴 Antes se tomaba la lectura
+ * del domingo anterior y la del último domingo: con lecturas en lunes, la
+ * semana se medía con las reseñas de la semana ANTERIOR. Null si falta la
+ * lectura de cierre (la semana en curso, o el lunes sin anotar).
+ */
+export function nuevasResenas(google: PuntoGoogle[], p: Pick<Periodo, "desde" | "hasta">): { nuevas: number; antes: PuntoGoogle; despues: PuntoGoogle } | null {
+  const antes = lecturaAl(google, p.desde);
+  const despues = lecturaAl(google, addDaysYMD(p.hasta, 1));
+  if (!antes || !despues || despues.fecha <= antes.fecha || despues.fecha < p.desde) return null;
+  return { nuevas: Math.max(0, despues.total - antes.total), antes, despues };
+}
+
+/** «Reseñas» (la usan Experiencia y el scorecard de Inicio). */
+export function resenasDe(d: Pick<DatosServicio, "google" | "operadas" | "hoy">, p: Periodo): ValorKpi {
   const operadas = d.operadas.filter(o => enPeriodo(o.ultimoDia, p) && o.ultimoDia < d.hoy).length;
-  const antes = lecturaAl(d.google, addDaysYMD(p.desde, -1));
-  const despues = lecturaAl(d.google, p.hasta);
-  if (!antes || !despues || despues.fecha < p.desde) return sinDato("resenas", "Faltan lecturas de Google: anota la calificación y el número de reseñas en Reseñas cada lunes.");
-  const nuevas = Math.max(0, despues.total - antes.total);
-  if (operadas === 0) return sinDato("resenas", `${nuevas} reseñas nuevas, pero ninguna reserva operada en el periodo.`);
-  const desfasada = antes.fecha < addDaysYMD(p.desde, -4) || despues.fecha < addDaysYMD(p.hasta, -3);
-  return tasa("resenas", nuevas, operadas, {
+  const r = nuevasResenas(d.google, p);
+  if (!r) return sinDato("resenas", `Falta la lectura de Google del lunes ${addDaysYMD(p.hasta, 1)} (o la del ${p.desde}): anota la calificación y el número de reseñas en Reseñas cada lunes.`);
+  if (operadas === 0) return sinDato("resenas", `${r.nuevas} reseñas nuevas, pero ninguna reserva operada en el periodo.`);
+  // Una lectura tomada unos días tarde se acepta, avisando: la de inicio hasta
+  // 3 días antes; la de cierre, desde el último día del periodo.
+  const desfasada = r.antes.fecha < addDaysYMD(p.desde, -3) || r.despues.fecha < p.hasta;
+  return tasa("resenas", r.nuevas, operadas, {
     unidadDetalle: "reservas operadas",
     calidad: desfasada ? "aproximado" : "exacto",
-    nota: desfasada ? `Lecturas del ${antes.fecha} y del ${despues.fecha}: no coinciden con el periodo.` : undefined,
+    nota: desfasada ? `Lecturas del ${r.antes.fecha} y del ${r.despues.fecha}: no coinciden con los lunes del periodo.` : undefined,
   });
 }
+const resenas = resenasDe;
 
 function encuestasDe(d: DatosServicio, p: Periodo) {
   // Una encuesta «le llegó» si se mandó en el periodo, o si se contestó en él sin marca de envío.
