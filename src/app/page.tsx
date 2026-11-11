@@ -9,7 +9,7 @@ import { TOURS_DB, partesRecogida, GRUPO_MIN, GRUPO_MAX, TOUR_CATEGORIAS, rankTo
 import { incluyeDesayuno, rangoPorPersona } from "@/lib/catalogoResumen";
 import { PAQUETES_DB, precioVisible, getPaquete } from "@/lib/paquetes";
 import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_PERFIL_URL } from "@/lib/resenas";
-import { GUIAS } from "@/lib/guias";
+import { GUIAS, nombresGuias, TODOS_NOM09, TODOS_DE_XILITLA } from "@/lib/guias";
 import { BuscadorHero, type GrupoOpciones } from "@/components/BuscadorHero";
 import { ToursGridFiltrable } from "@/components/ToursGridFiltrable";
 import { BloqueConfianza } from "@/components/BloqueConfianza";
@@ -473,9 +473,14 @@ export default async function HomePage() {
               ))}
             </div>
             <p className="max-w-[300px] font-dm text-sm leading-snug text-negro/60">
-              {en
-                ? <>Guided by <span className="font-medium text-verde-profundo">Alex</span> and <span className="font-medium text-verde-profundo">Ángel</span>, NOM-09 certified guides from Xilitla</>
-                : <>Te guían <span className="font-medium text-verde-profundo">Alex</span> y <span className="font-medium text-verde-profundo">Ángel</span>, guías certificados NOM-09, de Xilitla</>}
+              {/* Los nombres salen de `guias.ts`; «certificados NOM-09» y «de
+                  Xilitla» solo si valen para TODOS (Erick, 11 nov: sin el dato). */}
+              {en ? "Guided by " : "Te guían "}
+              <span className="font-medium text-verde-profundo">{nombresGuias(en)}</span>
+              {TODOS_NOM09
+                ? (en ? ", NOM-09 certified guides" : ", guías certificados NOM-09")
+                : (en ? ", our own local guides" : ", guías de la casa")}
+              {TODOS_DE_XILITLA ? (en ? " from Xilitla" : ", de Xilitla") : ""}
             </p>
           </div>
         </div>

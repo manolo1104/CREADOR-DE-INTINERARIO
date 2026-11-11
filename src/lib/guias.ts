@@ -2,13 +2,25 @@
  * Los guías reales que salen en las fichas de tour («Quién te guía»).
  *
  * Datos que pasó Manolo el 29 sep 2026; las frases son de redacción nuestra
- * (autorizado por él ese día: «las frases invéntalas de los dos»). SOLO se
- * pintan en las fichas de tour — decisión explícita: /nosotros no se toca.
+ * (autorizado por él ese día: «las frases invéntalas de los dos»). Salen en
+ * las fichas de tour, en el inicio y, desde el 26 oct 2026 (Manolo: «cambia
+ * los nombres por los guías reales»), en /nosotros: historia, línea del
+ * tiempo, la foto de «Seguridad primero» y las fichas JSON-LD.
  *
- * `tours` lleva los slugs donde aparece cada guía. Hoy los dos cubren los
- * acuáticos de ecoturismo (Tamul, Meco, Minas-Micos y Puente de Dios); la
- * Olla es de montaña y el buceo, el rafting y el rappel tienen su propio
- * equipo, así que no se prometen caras que ese día no van.
+ * `tours` lleva los slugs donde aparece cada guía. Alex y Ángel cubren los
+ * acuáticos de ecoturismo (Tamul, Meco, Minas-Micos y Puente de Dios); el
+ * buceo, el rafting y el rappel tienen su propio equipo, así que no se
+ * prometen caras que ese día no van.
+ *
+ * 🟢 11 nov 2026 (Manolo): se suma **Erick**, guía desde 2020, español e
+ * inglés básico, con su foto. Va en la Olla de la Luz y la Gruta de Xilo
+ * porque las reseñas reales lo nombran ahí («la hoya de la luz… nuestro guía
+ * erick», Ram; «el último tour con el guía Erick hacía la cueva», Karina).
+ * Su frase es redacción nuestra, como las de los otros dos.
+ * 🔴 Faltan su apellido, de dónde es y sus certificaciones: sin el dato no se
+ * promete. Por eso `origen` es opcional y los textos que hablan de TODOS
+ * («certificados NOM-09», «de Xilitla») salen de `TODOS_NOM09` y
+ * `TODOS_DE_XILITLA`: cuando Manolo lo confirme, basta llenarlo aquí.
  */
 
 export interface Guia {
@@ -24,7 +36,8 @@ export interface Guia {
   fotoAlt: { es: string; en: string };
   /** Año en que empezó a guiar. */
   desde: number;
-  origen: string;
+  /** De dónde es. Sin el dato confirmado por Manolo, se deja vacío y no se pinta. */
+  origen?: string;
   certificaciones: { es: string[]; en: string[] };
   idiomas: { es: string; en: string };
   frase: { es: string; en: string };
@@ -84,7 +97,38 @@ export const GUIAS: Guia[] = [
     },
     tours: ACUATICOS_ECOTURISMO,
   },
+  {
+    nombre: "Erick",
+    foto: "/guias/erick.jpg",
+    fotoCara: "/guias/erick-cara.jpg",
+    fotoPos: "47% 40%",
+    fotoAlt: {
+      es: "Erick, guía de Tours Huasteca Potosina, sobre las rocas de la sierra con un sótano detrás",
+      en: "Erick, Tours Huasteca Potosina guide, on the rocks of the sierra with a sinkhole behind him",
+    },
+    desde: 2020,
+    // Sin origen ni certificaciones hasta que Manolo los confirme (11 nov 2026).
+    certificaciones: { es: [], en: [] },
+    idiomas: { es: "Español · inglés básico", en: "Spanish · basic English" },
+    frase: {
+      es: "Cada grupo trae su propio ritmo. Yo me acomodo al de ustedes, no al revés: así se disfruta de verdad.",
+      en: "Every group brings its own pace. I adjust to yours, not the other way around — that's how you really enjoy it.",
+    },
+    tours: ["olla-de-la-luz", "gruta-de-xilo"],
+  },
 ];
+
+/** «Alex, Ángel y Erick» / «Alex, Ángel and Erick»: el nombre corto de cada guía. */
+export function nombresGuias(en: boolean): string {
+  const n = GUIAS.map((g) => g.apodo ?? g.nombre.split(" ")[0]);
+  return n.length < 2 ? n.join("") : `${n.slice(0, -1).join(", ")} ${en ? "and" : "y"} ${n[n.length - 1]}`;
+}
+
+/** Solo si TODOS tienen la NOM-09 se dice «guías certificados NOM-09» de todos. */
+export const TODOS_NOM09 = GUIAS.every((g) => g.certificaciones.es.some((c) => c.includes("NOM-09")));
+
+/** Solo si TODOS son de Xilitla se dice «de Xilitla» de todos. */
+export const TODOS_DE_XILITLA = GUIAS.every((g) => g.origen?.startsWith("Xilitla"));
 
 /** Los guías que salen en la ficha de un tour. */
 export function guiasDeTour(slug: string): Guia[] {

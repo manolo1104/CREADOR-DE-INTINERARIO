@@ -1576,10 +1576,17 @@ export default function TourDetailPage({ params }: Props) {
               <h2 id="guias-tour" className="font-cormorant text-crema text-2xl mb-2">
                 {locale === "en" ? "Who guides you" : "Quién te guía"}
               </h2>
+              {/* «Certificados… en estos ríos» es de Alex y Ángel (acuáticos).
+                  Erick (Olla de la Luz, Gruta de Xilo; 11 nov 2026) va sin
+                  certificación confirmada y no es de río: frase neutra. */}
               <p className="text-sm text-crema/55 font-dm mb-5">
-                {locale === "en"
-                  ? "Local certified guides, on these rivers all year round."
-                  : "Guías locales certificados, en estos ríos todo el año."}
+                {guiasDeTour(tour.slug).every((g) => g.certificaciones.es.length > 0)
+                  ? (locale === "en"
+                    ? "Local certified guides, on these rivers all year round."
+                    : "Guías locales certificados, en estos ríos todo el año.")
+                  : (locale === "en"
+                    ? "One of our own guides, not a subcontractor."
+                    : "Un guía de la casa, no subcontratado.")}
               </p>
               {/* Retrato editorial: la foto 3:4 entera (por eso el contenedor
                   es 3:4, sin recorte), el nombre sobre un degradado al pie y
@@ -1604,7 +1611,7 @@ export default function TourDetailPage({ params }: Props) {
                         </p>
                         <p className="mt-1.5 text-xs text-crema/75 font-dm">
                           {g.apodo ? <>{g.nombre}<br /></> : null}
-                          {locale === "en" ? `Guiding since ${g.desde}` : `Guía desde ${g.desde}`} · {g.origen}
+                          {locale === "en" ? `Guiding since ${g.desde}` : `Guía desde ${g.desde}`}{g.origen ? ` · ${g.origen}` : ""}
                         </p>
                       </div>
                     </div>

@@ -16,6 +16,9 @@ import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } f
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { getNosotros, type NosotrosContent } from "@/lib/i18n/nosotros.en";
 import { GOOGLE_PERFIL_URL as GOOGLE_REVIEWS_URL } from "@/lib/resenas";
+import { RESENAS_REALES } from "@/lib/resenasReales";
+import { AvatarResena } from "@/components/AvatarResena";
+import { GUIAS } from "@/lib/guias";
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -49,7 +52,13 @@ export function generateMetadata(): Metadata {
 const orgSchema = (t: NosotrosContent, locale: Locale) =>
   buildOrganizationJsonLd(locale, t.orgDescription);
 
-const personSchemas = (t: NosotrosContent) => [
+/**
+ * 🔴 26 oct 2026 (Manolo): aquí iban tres fichas de guías que no existen
+ * (Carlos Rodríguez, Miguel Ángel Hernández, José Laredo). Ahora las de los
+ * guías salen de `guias.ts`, con lo que de verdad se sabe de ellos: desde qué
+ * año guían, de dónde son, sus certificaciones y en qué recorridos van.
+ */
+const personSchemas = (t: NosotrosContent, locale: Locale) => [
   {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -68,72 +77,51 @@ const personSchemas = (t: NosotrosContent) => [
     worksFor: ORG_REF,
     knowsAbout: ["Turismo en la Huasteca Potosina", "Estrategia de negocios", "Tour operación", "San Luis Potosí"],
   },
-  {
+  ...GUIAS.map((g) => ({
     "@context": "https://schema.org",
     "@type": "Person",
-    name: "Carlos Rodríguez",
-    jobTitle: t.personas[1].jobTitle,
-    description: t.personas[1].description,
-    birthPlace: { "@type": "Place", name: "Tamuín, San Luis Potosí, México" },
+    name: g.nombre,
+    ...(g.apodo ? { alternateName: g.apodo } : {}),
+    jobTitle: t.guiaJobTitle,
+    description: t.guiaDescripcion(g.desde, g.origen, g.certificaciones[locale]),
+    image: `${SITE}${g.foto}`,
+    ...(g.origen ? { homeLocation: { "@type": "Place", name: `${g.origen}, México` } } : {}),
     nationality: "Mexican",
     worksFor: ORG_REF,
-    knowsAbout: ["Cascada de Tamul", "Sótano de las Golondrinas", "Cañón del Tampaón", "Huasteca Potosina", "Turismo de aventura"],
-    hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[1].credential, credentialCategory: t.personas[1].credentialCategory },
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: "Miguel Ángel Hernández",
-    jobTitle: t.personas[2].jobTitle,
-    description: t.personas[2].description,
-    birthPlace: { "@type": "Place", name: "Ciudad Valles, San Luis Potosí, México" },
-    nationality: "Mexican",
-    worksFor: ORG_REF,
-    knowsAbout: ["Río Tampaón", "Rescate acuático", "Cascada de Tamul", "Sótano de las Huahuas", "Cañón del Tampaón"],
-    hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[2].credential, credentialCategory: t.personas[2].credentialCategory },
-  },
-  {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: "José Laredo",
-    jobTitle: t.personas[3].jobTitle,
-    description: t.personas[3].description,
-    birthPlace: { "@type": "Place", name: "Ciudad Valles, San Luis Potosí, México" },
-    nationality: "Mexican",
-    worksFor: ORG_REF,
-    knowsAbout: ["Rappel", "Sótano de las Golondrinas", "Cañones de la Huasteca Potosina", "Turismo extremo", "Seguridad en aventura"],
-    hasCredential: { "@type": "EducationalOccupationalCredential", name: t.personas[3].credential, credentialCategory: t.personas[3].credentialCategory },
-  },
+    knowsAbout: g.tours.map((slug) => TOURS_DB.find((x) => x.slug === slug)?.nombre).filter(Boolean),
+    // Sin certificación confirmada (Erick, 11 nov 2026) no se declara credencial.
+    ...(g.certificaciones.es.length > 0
+      ? { hasCredential: { "@type": "EducationalOccupationalCredential", name: t.guiaCredencial, credentialCategory: t.guiaCredencialCategoria } }
+      : {}),
+  })),
 ];
 
 
 
 /**
- * Lo que NO cambia con el idioma: nombre y foto. El resto sale del diccionario.
+ * 🔴 26 oct 2026 (Manolo: «quita la sección de "quiénes te guiarán"»). Se fue
+ * la sección del equipo con Carlos, Miguel Ángel y José, que no son los guías
+ * reales; sus fotos de `public/guides/` ya no se usan en ninguna página.
  *
- * 🔴 28 sep 2026 — se retiraron las estrellas y el número de reseñas de cada
- * guía (161 + 318 + 274 = 753 reseñas repartidas entre tres personas, cuando
- * el negocio entero tiene 161 en Google). Un guía no tiene perfil propio de
- * Google que respalde una cifra. Lo que sí es verificable es su certificación,
- * que ya se muestra al lado. Ver `src/lib/resenas.ts`.
+ * Las tres reseñas que los «mencionaban por nombre» también eran inventadas
+ * (con caras de banco de imágenes). Ponerles «Alex» y «Ángel» habría sido
+ * inventar reseñas sobre gente real, así que la sección enseña reseñas
+ * REALES del perfil de Google que hablan de los guías, literales, de
+ * `resenasReales.ts`.
+ *
+ * 🟢 11 nov 2026: ya hay reseñas reales que NOMBRAN a los guías (copiadas de
+ * Maps ese día): Javier (Angel y Alex), Ram (Erick) y Giovana (Ángel).
  */
-const GUIAS_BASE = [
-  { nombre: "Carlos Rodríguez",        foto: "/guides/guia-1.png" },
-  { nombre: "Miguel Ángel Hernández",  foto: "/guides/guia-2.png" },
-  { nombre: "José Laredo",             foto: "/guides/guia-3.png" },
-];
-const guias = (t: NosotrosContent) => GUIAS_BASE.map((g, i) => ({ ...g, ...t.guias[i] }));
-
-const TESTIMONIOS_GUIAS = [
-  { texto: "Carlos nos explicó la historia del ejido mientras remábamos por el Tampaón. Me sé toda la historia de la Cascada de Tamul gracias a él. El tour vale el doble solo por eso.", nombre: "Diana L.", ciudad: "Guadalajara, Jal.", guia: "Carlos Rodríguez", foto: "/imagenes/reviews/reviewer-21.jpg" },
-  { texto: "Miguel Ángel nos indicó exactamente dónde pararnos para capturar la cascada con la luz perfecta. Tiene un conocimiento del río que no se aprende en ningún libro.", nombre: "Roberto V.", ciudad: "Ciudad de México", guia: "Miguel Ángel", foto: "/imagenes/reviews/reviewer-13.jpg" },
-  { texto: "Le dije a José que le tenía terror a las alturas. Me llevó al borde del Sótano paso a paso. Terminé sintiéndome la persona más valiente del mundo.", nombre: "Alejandra M.", ciudad: "Monterrey, N.L.", guia: "José Laredo", foto: "/imagenes/reviews/reviewer-10.jpg" },
-];
+const AUTORES_RESENAS_GUIAS = ["Javier Fernández", "Ram Martinez Gutierrez", "Giovana Jimenez"];
+const RESENAS_GUIAS = AUTORES_RESENAS_GUIAS
+  .map((autor) => RESENAS_REALES.find((r) => r.autor === autor))
+  .filter((r): r is (typeof RESENAS_REALES)[number] => Boolean(r));
 
 /** Icono y foto por valor; el título, el texto y el alt salen del diccionario. */
-const VALORES_BASE = [
+const VALORES_BASE: { Icon: typeof Heart; foto: string; pos?: string }[] = [
   { Icon: Heart,      foto: "/imagenes/tours/tamul/hero.jpg" },
-  { Icon: Shield,     foto: "/guides/guia-1.png" },
+  // Alex en el Tamul (antes, la foto de «Carlos»). `pos`: dónde queda la cara.
+  { Icon: Shield,     foto: GUIAS[0].foto, pos: GUIAS[0].fotoPos },
   { Icon: Leaf,       foto: "/imagenes/tours/tamul/gallery-3.jpg" },
   { Icon: Star,       foto: "/imagenes/tours/tamul/gallery-1.jpg" },
   { Icon: Users,      foto: "/imagenes/tours/tamul/gallery-4.jpg" },
@@ -141,33 +129,9 @@ const VALORES_BASE = [
 ];
 const valores = (t: NosotrosContent) => VALORES_BASE.map((v, i) => ({ ...v, ...t.valores[i] }));
 
-/** Año y destino del enlace por hito; el texto sale del diccionario. */
-const HISTORIA_BASE: { año: string; href: string | null }[] = [
-  { año: "2010", href: null },
-  { año: "2012", href: null },
-  { año: "2014", href: "/tours/expedicion-tamul" },
-  { año: "2015", href: "/tours/ruta-surrealista-edward-james" },
-  { año: "2016", href: null },
-  { año: "2017", href: null },
-  { año: "2018", href: "/tours/expedicion-tamul" },
-  { año: "2019", href: null },
-  { año: "2020", href: null },
-  { año: "2021", href: "/tours/expedicion-tamul" },
-  { año: "2022", href: "/sustentabilidad-y-conservacion" },
-  { año: "2023", href: null },
-  { año: "2024", href: "/sustentabilidad-y-conservacion" },
-  { año: "2025", href: "/recomendar" },
-];
-const historia = (t: NosotrosContent, lp: (p: string) => string) =>
-  HISTORIA_BASE.map((h, i) => ({
-    año: h.año,
-    hito: t.historia[i].hito,
-    // Los enlaces a /recomendar y /sustentabilidad son solo-ES; en inglés se
-    // omiten para no sacar al visitante del idioma a media línea del tiempo.
-    cta: h.href && t.historia[i].ctaLabel && !/recomendar|sustentabilidad/.test(h.href)
-      ? { label: t.historia[i].ctaLabel!, href: lp(h.href) }
-      : null,
-  }));
+// (La línea del tiempo, con sus años, vive entera en `NosotrosTimeline`. Aquí
+//  había una segunda copia que ya no se pintaba; se quitó el 26 oct 2026 al
+//  sacar los hitos de los guías que no existen, para que no quedara desfasada.)
 
 const CERT_ICONS = [Award, Stethoscope, Globe, Shield, CheckCircle2, Calendar];
 const certificaciones = (t: NosotrosContent) =>
@@ -184,7 +148,7 @@ export default function NosotrosPage() {
   return (
     <main id="main-content" className="min-h-screen bg-crema">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema(t, locale)) }} />
-      {personSchemas(t).map((s) => (
+      {personSchemas(t, locale).map((s) => (
         <script key={s.name} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }} />
       ))}
 
@@ -390,7 +354,7 @@ export default function NosotrosPage() {
             {valores(t).map((v) => (
               <div key={v.titulo} className="border border-negro/8 bg-crema/60 overflow-hidden hover:border-verde-selva/30 transition-colors group">
                 <div className="relative aspect-[16/9] overflow-hidden">
-                  <Image src={v.foto} alt={v.fotoAlt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
+                  <Image src={v.foto} alt={v.fotoAlt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" style={v.pos ? { objectPosition: v.pos } : undefined} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                   <div className="absolute inset-0 bg-negro/30" />
                   <v.Icon className="absolute top-3 left-3 w-5 h-5 text-white/90" aria-hidden="true" />
                 </div>
@@ -441,42 +405,7 @@ export default function NosotrosPage() {
         </div>
       </section>
 
-      {/* EQUIPO */}
-      <section className="relative py-20 px-6 bg-negro overflow-hidden">
-        <FloatingLeaves count={16} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm text-center">{t.equipoEyebrow}</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            {t.equipoH2a} <em className="shimmer-gold">{t.equipoH2b}</em>
-          </h2>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {guias(t).map((g) => (
-              <div key={g.nombre} className="border border-white/10 bg-negro/60 overflow-hidden">
-                <div className="relative aspect-[4/3] overflow-hidden">
-                  <Image src={g.foto} alt={g.nombre} fill className="object-cover object-top" loading="lazy" sizes="(max-width: 1024px) 100vw, 33vw" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <p className="font-cormorant text-crema text-xl leading-none mb-0.5">{g.nombre}</p>
-                    <p className="text-[9px] tracking-[1.5px] uppercase text-verde-vivo font-dm">{g.rol}</p>
-                  </div>
-                </div>
-                <div className="p-5 space-y-4">
-                  <p className="text-crema/60 font-dm text-sm leading-relaxed">{g.historia}</p>
-                  <div className="border-l-2 border-dorado/40 pl-4 bg-dorado/5 py-3 pr-3">
-                    <Quote className="w-4 h-4 text-dorado/50 mb-1.5" />
-                    <p className="text-crema/75 font-dm text-xs leading-relaxed italic">{g.cita}</p>
-                  </div>
-                  <div className="flex items-center justify-end">
-                    <span className="text-[9px] tracking-[1px] uppercase font-dm text-verde-selva/70 border border-verde-selva/20 px-2 py-1">{g.badge}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIOS CON NOMBRE DE GUÍA */}
+      {/* TESTIMONIOS — reseñas reales de Google sobre los guías (ver RESENAS_GUIAS) */}
       <section className="py-20 px-6 bg-crema border-y border-negro/8">
         <div className="max-w-5xl mx-auto">
           <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">{t.testimoniosEyebrow}</p>
@@ -487,24 +416,20 @@ export default function NosotrosPage() {
             )}
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {TESTIMONIOS_GUIAS.map((tg) => (
-              <div key={tg.nombre} className="bg-white border border-negro/8 p-6">
-                <div className="flex gap-0.5 mb-3">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}
+            {RESENAS_GUIAS.map((r) => (
+              <figure key={r.autor} className="flex flex-col bg-white border border-negro/8 p-6">
+                <div className="flex gap-0.5 mb-3" role="img" aria-label={t.estrellasAria(r.estrellas)}>
+                  {[...Array(r.estrellas)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />)}
                 </div>
-                <p className="text-negro/65 font-dm text-sm leading-relaxed italic mb-4">&ldquo;{tg.texto}&rdquo;</p>
-                <div className="flex items-center gap-3 border-t border-negro/8 pt-4">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={tg.foto} alt={tg.nombre} width={36} height={36} loading="lazy" className="w-9 h-9 rounded-full object-cover flex-shrink-0" />
+                <blockquote className="text-negro/65 font-dm text-sm leading-relaxed italic mb-4">&ldquo;{r.texto}&rdquo;</blockquote>
+                <figcaption className="mt-auto flex items-center gap-3 border-t border-negro/8 pt-4">
+                  <AvatarResena autor={r.autor} foto={r.foto} className="w-9 h-9" />
                   <div>
-                    <p className="font-dm text-sm text-negro/80 font-medium leading-none">{tg.nombre}</p>
-                    <p className="text-[10px] text-negro/40 font-dm mt-0.5">{tg.ciudad}</p>
+                    <p className="font-dm text-sm text-negro/80 font-medium leading-none">{r.autor}</p>
+                    <p className="text-[10px] text-negro/40 font-dm mt-0.5">{t.resenaEnGoogle(r.fecha)}</p>
                   </div>
-                  <div className="ml-auto text-[9px] tracking-[1px] uppercase font-dm text-verde-selva/60 text-right leading-tight">
-                    {t.mencionaA}<br /><span className="text-verde-selva">{tg.guia}</span>
-                  </div>
-                </div>
-              </div>
+                </figcaption>
+              </figure>
             ))}
           </div>
           <p className="text-center mt-6">

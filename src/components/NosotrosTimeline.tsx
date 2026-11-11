@@ -16,12 +16,13 @@ type HitoItem = {
  * Antes la lista vivía aquí, duplicada de `nosotros/page.tsx`. Al traducir había
  * que acordarse de las dos copias, y la que se enseña de verdad es esta.
  * Año y destino del enlace no dependen del idioma; el texto sí.
+ *
+ * 🔴 26 oct 2026: se fueron 2010, 2012, 2014 y 2015, que eran la historia de
+ * tres guías que no existen (Carlos, Miguel Ángel y José). Los hitos del
+ * diccionario van en el MISMO orden que estos años: si se quita uno aquí, se
+ * quita allá.
  */
 const HISTORIA_BASE: { año: string; href: string | null }[] = [
-  { año: "2010", href: null },
-  { año: "2012", href: null },
-  { año: "2014", href: "/tours/expedicion-tamul" },
-  { año: "2015", href: "/tours/ruta-surrealista-edward-james" },
   { año: "2016", href: null },
   { año: "2017", href: null },
   { año: "2018", href: "/tours/expedicion-tamul" },

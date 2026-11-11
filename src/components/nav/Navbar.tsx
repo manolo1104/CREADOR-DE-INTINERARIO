@@ -212,8 +212,10 @@ export default function Navbar() {
   // inglés y «Home» salía encendido en todo el sitio inglés (10 nov 2026).
   const isActive = (href: string) =>
     pathname === href || (href !== "/" && href !== "/en" && pathname.startsWith(href + "/"));
+  // Espaciado de letra más corto entre 1024 y 1279 px: ver el comentario del
+  // menú de escritorio.
   const navLinkClass = (href: string) =>
-    `text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 nav-link-shimmer ${
+    `text-[11px] tracking-[1.5px] xl:tracking-[2.5px] uppercase font-dm transition-colors duration-200 nav-link-shimmer ${
       isActive(href) ? "text-lima" : "text-crema/70 hover:text-crema"
     }`;
 
@@ -240,8 +242,12 @@ export default function Navbar() {
               Con «Sustentabilidad» el menú en español mide ~1,030 px con el
               hueco de 20 px y a 1024 se encimaba con el logo (medido con la
               fuente real). Con 14 px cabe desde ~980 px, también en Windows,
-              donde la barra de scroll se come 17. Desde 1280 vuelve el de 28. */}
-          <div className={`hidden lg:flex items-center ${MENU_SUSTENTABILIDAD ? "gap-3.5" : "gap-5"} xl:gap-7`}>
+              donde la barra de scroll se come 17. Desde 1280 vuelve el de 28.
+              🔴 26 oct 2026: con «Nosotros» de vuelta el menú medía 867 px y a
+              1024 tocaba el logo (0 px de aire; en Windows, encimado). Entre
+              1024 y 1279 los enlaces van con 1.5 px de espaciado de letra y
+              12 de hueco: ~782 px, con aire también en Windows. */}
+          <div className={`hidden lg:flex items-center ${MENU_SUSTENTABILIDAD ? "gap-3" : "gap-5"} xl:gap-7`}>
             <Link href={lp("/")} className={navLinkClass(lp("/"))}>{dict.nav.tours && (locale === "en" ? "Home" : "Inicio")}</Link>
 
             <Link href={lp("/destinos")} className={navLinkClass(lp("/destinos"))}>{dict.nav.destinos}</Link>
@@ -250,10 +256,12 @@ export default function Navbar() {
 
             {/* Paquetes ya existe en los dos idiomas (/en/paquetes y su ficha). */}
             <Link href={lp("/paquetes")} className={navLinkClass(lp("/paquetes"))}>{dict.nav.paquetes}</Link>
-            {/* "Nosotros" y "Precios" salieron de la barra (Manolo, 1 oct 2026).
-                Las páginas siguen vivas: /precios está en el pie (SiteFooter);
-                /nosotros, en el pie solo en inglés. */}
+            {/* "Precios" salió de la barra (Manolo, 1 oct 2026) y vive en el pie
+                (SiteFooter). "Nosotros" salió ese día y volvió el 26 oct 2026
+                (Manolo), en los dos idiomas: /en/nosotros existe. */}
             <Link href={lp("/info-practica")} className={navLinkClass(lp("/info-practica"))}>{dict.nav.infoPractica}</Link>
+
+            <Link href={lp("/nosotros")} className={navLinkClass(lp("/nosotros"))}>{dict.nav.nosotros}</Link>
 
             {/* Blog y Sustentabilidad: en los dos idiomas desde el 10 nov 2026
                 (blog en inglés en /en/blog). "Contacto" vive solo en el pie
@@ -303,6 +311,9 @@ export default function Navbar() {
             </Link>
             <Link href={lp("/tours")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.tours}
+            </Link>
+            <Link href={lp("/nosotros")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
+              {dict.nav.nosotros}
             </Link>
 
             {locale === "es" && (

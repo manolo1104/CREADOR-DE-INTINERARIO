@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, Hotel, UtensilsCrossed, CalendarCheck } from "lucide-react";
 import { HOTEL_PROPIO, horarioRestaurante } from "@/lib/hotelPropio";
-import { GUIAS } from "@/lib/guias";
+import { GUIAS, nombresGuias, TODOS_NOM09, TODOS_DE_XILITLA } from "@/lib/guias";
 import { GRUPO_MAX } from "@/lib/tours";
 import { localePath, type Locale } from "@/lib/i18n/config";
 
@@ -107,9 +107,11 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
     {
       Icon: BadgeCheck,
       titulo: t("Los guías son nuestros", "The guides are ours"),
+      // Nombres de `guias.ts`; «de Xilitla» y «NOM-09» solo si valen para
+      // TODOS (11 nov 2026: de Erick aún no se sabe).
       texto: t(
-        `Alex y Ángel son de Xilitla y llevan guiando desde ${Math.min(...GUIAS.map((g) => g.desde))}. Guías certificados NOM-09 por SECTUR, con seguro de viaje incluido.`,
-        `Alex and Ángel are from Xilitla and have been guiding since ${Math.min(...GUIAS.map((g) => g.desde))}. NOM-09 SECTUR certified, travel insurance included.`,
+        `${nombresGuias(false)} ${TODOS_DE_XILITLA ? "son de Xilitla y" : "son guías de la casa; el equipo"} lleva${TODOS_DE_XILITLA ? "n" : ""} guiando desde ${Math.min(...GUIAS.map((g) => g.desde))}. ${TODOS_NOM09 ? "Guías certificados NOM-09 por SECTUR, con seguro" : "Con seguro"} de viaje incluido.`,
+        `${nombresGuias(true)} ${TODOS_DE_XILITLA ? "are from Xilitla and have" : "are our own guides; the team has"} been guiding since ${Math.min(...GUIAS.map((g) => g.desde))}. ${TODOS_NOM09 ? "NOM-09 SECTUR certified, travel" : "Travel"} insurance included.`,
       ),
     },
     {
@@ -182,11 +184,11 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
           ))}
         </ul>
 
-        {/* ── Alex y Ángel, con cara, nombre y lo que dicen ──
+        {/* ── Los guías (Alex, Ángel y Erick), con cara, nombre y lo que dicen ──
             Los retratos grandes (720×960) estaban solo en las fichas de los
             recorridos acuáticos; en el inicio se veían dos avatares de 48 px.
             Sin caja alrededor: el retrato y la cita se sostienen solos. */}
-        <div className="mb-16 grid gap-8 sm:grid-cols-2 lg:gap-12">
+        <div className="mb-16 grid gap-8 sm:grid-cols-2 lg:grid-cols-3 lg:gap-10">
           {GUIAS.map((g) => (
             <figure key={g.nombre} className="flex gap-5">
               <div className="relative h-36 w-28 shrink-0 overflow-hidden rounded-2xl bg-negro/5 sm:h-40 sm:w-32">
@@ -209,7 +211,9 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
                   {", "}
                   {t(`guía desde ${g.desde}`, `guiding since ${g.desde}`)}
                   <span className="block text-[12px] text-negro/45">
-                    {g.origen}. {(en ? g.certificaciones.en : g.certificaciones.es)[0]}
+                    {/* Sin origen ni certificación (Erick), va el idioma: nunca un dato sin confirmar. */}
+                    {[g.origen, (en ? g.certificaciones.en : g.certificaciones.es)[0]].filter(Boolean).join(" · ") ||
+                      (en ? g.idiomas.en : g.idiomas.es)}
                   </span>
                 </figcaption>
               </div>
