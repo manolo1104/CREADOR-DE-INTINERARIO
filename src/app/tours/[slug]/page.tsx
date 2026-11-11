@@ -30,6 +30,7 @@ import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones, ChevronDown, Award, MapPin, Gauge, Baby, CreditCard, AlarmClock, Languages } from "lucide-react";
 import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour } from "@/components/booking/ReservaFichaTour";
+import { RzrBookingForm } from "@/components/booking/RzrBookingForm";
 import { WhatsAppFicha } from "@/components/booking/WhatsAppFicha";
 import { ID_MODULO_RESERVA } from "@/lib/anclas";
 import { SocialProofToast } from "@/components/booking/SocialProofToast";
@@ -1038,7 +1039,7 @@ export default function TourDetailPage({ params }: Props) {
                 la única acción posible estaba en el sidebar, fuera de pantalla.
                 Este ancla no necesita JavaScript: baja al módulo de reserva. */}
             <a
-              href={esVehiculo ? localePath(`/reservar/carrito?agregar=${tour.slug}`, locale) : `#${ID_MODULO_RESERVA}`}
+              href={`#${ID_MODULO_RESERVA}`}
               /* Va DENTRO del `flex flex-wrap` del precio, a su derecha: en escritorio
                  se leen juntos —cuánto cuesta y qué hacer— y en un teléfono el
                  `flex-wrap` lo baja solo a su propia línea. Sin `mt-*`, que
@@ -1054,7 +1055,7 @@ export default function TourDetailPage({ params }: Props) {
 
       <TourPageTracker tourId={tour.id} nombre={tour.nombre} precio={tour.precio} tipo={tour.tipo} />
       <MobileBookingBar tourSlug={tour.slug} precio={tour.precio} tourId={tour.id} tourName={tour.nombre}
-        precioUnidad={tour.precioUnidad} waHref={waLink(waTour)} conModulo={!esVehiculo} />
+        precioUnidad={tour.precioUnidad} waHref={waLink(waTour)} conModulo />
 
       {/* ── DATOS RÁPIDOS ──────────────────────────────────────────────────
           Las cinco preguntas que alguien se hace ANTES de leer nada: cuánto
@@ -1807,10 +1808,12 @@ export default function TourDetailPage({ params }: Props) {
             </div>
 
             {/* Fecha, personas y total AQUÍ, no una pantalla más allá. Los
-                recorridos por vehículo (RZR, café) se quedan con el enlace: su
-                precio depende de la ruta y del modelo, y eso se elige en el
-                carrito con su propio formulario. */}
-            {!esVehiculo && (
+                recorridos por vehículo (RZR) tienen su módulo hermano con ruta,
+                vehículo y unidades (`RzrBookingForm`, 10 nov 2026): antes se
+                quedaban con un enlace al carrito sin fecha y ahí se perdían. */}
+            {esVehiculo ? (
+              <RzrBookingForm slug={tour.slug} tourId={tour.id} nombre={localizeTour(tour, locale).nombre} />
+            ) : (
               <ReservaFichaTour
                 slug={tour.slug}
                 tourId={tour.id}
@@ -1824,13 +1827,6 @@ export default function TourDetailPage({ params }: Props) {
             )}
 
             <div className="space-y-2.5">
-              {esVehiculo && (
-                <Link href={localePath(`/reservar/carrito?agregar=${tour.slug}`, locale)}
-                  className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
-                  <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-                  {t.bookThisTour}
-                </Link>
-              )}
               <WhatsAppFicha slug={tour.slug} nombre={tour.nombre} mensajeFijo={waTour} etiqueta={t.askWhatsapp}
                 className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>

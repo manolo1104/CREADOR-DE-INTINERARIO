@@ -19,8 +19,8 @@ interface Props {
   tourId?:  string;
   tourName?: string;
   /**
-   * "vehiculo" = precio por vehículo; se reserva por WhatsApp (waHref) en vez
-   * del flujo online. "grupo" = una sola tarifa por todos los que van, así que
+   * "vehiculo" = precio por vehículo (la barra dice «por vehículo»; en la
+   * ficha se reserva con `RzrBookingForm`). "grupo" = una sola tarifa por todos los que van, así que
    * la barra NO puede decir "por persona" debajo de la cifra.
    */
   precioUnidad?: "persona" | "vehiculo" | "grupo";
@@ -51,7 +51,9 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   const waHrefFinal = sel && waHref && !esVehiculo
     ? waLink(WA_MESSAGES.tourConFecha(en ? "en" : "es", tourName ?? tourSlug, sel.fecha, sel.adultos, sel.ninos, sel.total))
     : waHref;
-  const hrefConSeleccion = sel && sel.fecha
+  // El RZR no publica selección (su ruta y vehículo no caben en esta URL): su
+  // botón siempre baja al módulo, donde está «Continuar».
+  const hrefConSeleccion = sel && sel.fecha && !esVehiculo
     ? lp(`/reservar/carrito?agregar=${tourSlug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosMid=${sel.ninosMid}&ninosSmall=${sel.ninosSmall}`)
     : null;
   const hoy = sel ? Math.round((sel.total * pctACobrar()) / 100) : 0;

@@ -469,6 +469,17 @@ export interface BookingMessages {
     viajeroSoloTitulo: string;
     /** `dias` = `CONFIRMA_SALIDA_DIAS`. Es una función para que el número no se escriba a mano. */
     viajeroSolo: (dias: number) => string;
+    /**
+     * El módulo del RZR (`RzrBookingForm`, 10 nov 2026): ruta, vehículo y
+     * unidades se eligen en la ficha y no en el carrito, como en los demás.
+     */
+    queRuta: string;
+    queVehiculo: string;
+    cuantosVehiculos: string;
+    /** La duración de una ruta, en horas. */
+    horas: (h: number) => string;
+    /** Debajo del total: el precio NO es por persona. */
+    porVehiculo: (unidades: number) => string;
   };
 
   calendario: {
@@ -1077,6 +1088,11 @@ const es: BookingMessages = {
     mejorPrecio: "Es el mejor precio por persona de este recorrido",
     viajeroSoloTitulo: "Falta gente para la salida:",
     viajeroSolo: (dias) => `pagas tu lugar al precio normal y te sumamos a una salida compartida. Te confirmamos ${dias} días antes; si no se junta el grupo, te devolvemos el 100 %.`,
+    queRuta: "¿Qué ruta?",
+    queVehiculo: "¿Qué vehículo?",
+    cuantosVehiculos: "¿Cuántos vehículos?",
+    horas: (h) => `${h} h`,
+    porVehiculo: (n) => n === 1 ? "Precio por vehículo, no por persona. Incluye gasolina, equipo y guía." : `Precio de los ${n} vehículos, no por persona. Incluye gasolina, equipo y guía.`,
   },
 
   calendario: {
@@ -1698,6 +1714,11 @@ const en: BookingMessages = {
     mejorPrecio: "That's the best per-person price on this tour",
     viajeroSoloTitulo: "Your group is below the minimum:",
     viajeroSolo: (dias) => `you pay the normal per-person price and we add you to a shared departure. We confirm ${dias} days ahead; if the group does not come together, you get 100 % back.`,
+    queRuta: "Which route?",
+    queVehiculo: "Which vehicle?",
+    cuantosVehiculos: "How many vehicles?",
+    horas: (h) => `${h} h`,
+    porVehiculo: (n) => n === 1 ? "Price per vehicle, not per person. Fuel, gear and guide included." : `Price for the ${n} vehicles, not per person. Fuel, gear and guide included.`,
   },
 
   calendario: {

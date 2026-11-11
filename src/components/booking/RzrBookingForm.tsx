@@ -1,280 +1,203 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveTourBookingState, formatMXN } from "@/lib/tourBooking";
+import { TourCalendar } from "@/components/booking/TourCalendar";
+import { TOURS_DB, salidaCorta, recogidaDeTour } from "@/lib/tours";
+import { computeVehiculoCharge } from "@/lib/tourPricing";
 import { agregarAlCarrito, pctACobrar } from "@/lib/carrito";
 import { itemDesdeTour } from "@/lib/carritoItems";
-import { computeVehiculoCharge, vehiculoBookingName } from "@/lib/tourPricing";
-import { salidaCorta, type Tour } from "@/lib/tours";
-import { TourCalendar } from "@/components/booking/TourCalendar";
-import { ViewersCounter } from "@/components/booking/ViewersCounter";
-import { GOOGLE_RATING } from "@/lib/resenas";
-import { Clock, Shield, Star, Lock } from "lucide-react";
-import { trackDateSelected } from "@/lib/analytics";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getBooking } from "@/lib/i18n/booking";
+import { trackAddToCart, trackDateSelected } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
+import { ID_MODULO_RESERVA, abrirCalendario } from "@/lib/anclas";
+import { marcarToqueHumano } from "@/lib/toqueHumano";
 
-/** Flujo de reserva en línea para tours cobrados POR VEHÍCULO (RZR): el cliente
- *  elige ruta + vehículo + unidades y paga con tarjeta. El precio sale de la
- *  matriz flota×ruta y el servidor lo recalcula al crear el PaymentIntent. */
-export function RzrBookingForm({ tour }: { tour: Tour }) {
+/**
+ * Fecha, ruta, vehículo y unidades del RZR DENTRO de la ficha (10 nov 2026).
+ * Es el hermano de `ReservaFichaTour` para los recorridos que se cobran por
+ * vehículo.
+ *
+ * Por qué: hasta ahora el botón de la ficha del RZR mandaba al carrito SIN
+ * nada (`/reservar/carrito?agregar=rzr-xilitla`): ahí entraba con la primera
+ * ruta y el primer vehículo, y la persona tenía que descubrir que el precio
+ * dependía de dos menús. En Clarity (29 oct–10 nov) el RZR fue el 2.º tour
+ * más visto y las 3 personas que llegaron así al carrito se fueron moviendo
+ * ruta y vehículo. Ahora deciden aquí, viendo el precio de cada combinación, y
+ * el carrito abre con todo puesto.
+ *
+ * El renglón se escribe con `agregarAlCarrito` (como `BotonAgregarTour`) y no
+ * por la URL: el carrito solo lee `fecha` y personas de la URL, no ruta ni
+ * vehículo. El total es para pintar; el que se cobra lo recalcula el servidor
+ * con `computeVehiculoCharge`, la misma función que se usa aquí.
+ *
+ * Selectores nativos y no tarjetas, a propósito: el módulo vive en el bloque
+ * FIJO del sidebar, que tiene que caber en la pantalla de una laptop. Seis
+ * vehículos en tarjetas lo hacían más alto que la ventana y el botón quedaba
+ * fuera de alcance. Las fotos y la tabla completa ya están en la ficha.
+ *
+ * (Antes este archivo era un formulario de página completa con fondo blanco
+ * que ya no usaba nadie.)
+ */
+export function RzrBookingForm({
+  slug,
+  nombre,
+  tourId,
+}: {
+  slug: string;
+  nombre: string;
+  tourId: string;
+}) {
   const router = useRouter();
-  const rutas = tour.rutas ?? [];
-  const flota = tour.flota ?? [];
+  const { locale, lp } = useLocale();
+  const t = getBooking(locale).carrito;
+  const tf = getBooking(locale).ficha;
 
-  const [tourDate,       setTourDate]       = useState("");
-  const [rutaNombre,     setRutaNombre]     = useState(rutas[0]?.nombre ?? "");
-  const [vehiculoNombre, setVehiculoNombre] = useState(flota[0]?.nombre ?? "");
-  const [unidades,       setUnidades]       = useState(1);
-  // La regla de pago vive en `pctACobrar` (30 % de anticipo desde el 29 sep
-  // 2026) y se aplica igual en el carrito y en el servidor: este formulario no
-  // decide el porcentaje por su cuenta.
-  const pct = pctACobrar(1, false);
+  const tour = TOURS_DB.find((x) => x.slug === slug);
+  const rutas = tour?.rutas ?? [];
+  const flota = tour?.flota ?? [];
 
-  const rutaIdx  = rutas.findIndex((r) => r.nombre === rutaNombre);
-  const ruta     = rutas[rutaIdx];
-  const vehiculo = flota.find((v) => v.nombre === vehiculoNombre);
-  const precioUnidad = vehiculo && rutaIdx >= 0 ? (vehiculo.precios[rutaIdx] ?? 0) : 0;
-  const total = precioUnidad * unidades;
-  const chargeAmount = pct === 100 ? total : Math.round((total * pct) / 100);
-  const saldo = total - chargeAmount;
+  const [fecha, setFecha]       = useState("");
+  const [ruta, setRuta]         = useState(rutas[0]?.nombre ?? "");
+  const [vehiculo, setVehiculo] = useState(flota[0]?.nombre ?? "");
+  const [unidades, setUnidades] = useState(1);
+  const [sinLugar, setSinLugar] = useState(false);
 
-  const canContinue = !!tourDate && rutaIdx >= 0 && !!vehiculo && total > 0;
+  // «Ver fechas disponibles» (arriba) y «Reservar» (menú) son anclas a este
+  // módulo: sin fecha, además se abre el calendario. Igual que en
+  // `ReservaFichaTour`.
+  useEffect(() => {
+    const alClic = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement | null)?.closest?.(`a[href$="#${ID_MODULO_RESERVA}"]`);
+      if (!a || fecha) return;
+      window.setTimeout(() => abrirCalendario(slug), 450);
+    };
+    document.addEventListener("click", alClic);
+    return () => document.removeEventListener("click", alClic);
+  }, [slug, fecha]);
 
-  function handleContinue() {
-    if (!canContinue || !ruta || !vehiculo) return;
-    // Recalcula con la misma función del servidor (autoridad de precio compartida).
-    const veh = computeVehiculoCharge({ tourSlug: tour.slug, ruta: ruta.nombre, vehiculo: vehiculo.nombre, unidades, pct });
-    if (!veh) return;
-    const name = vehiculoBookingName(tour, ruta.nombre, vehiculo.nombre, unidades);
-    saveTourBookingState({
-      tourId:        tour.id,
-      tourSlug:      tour.slug,
-      tourName:      name,
-      tourImage:     tour.imagen_hero,
-      tourDuration:  ruta.duracion_hrs,
-      priceAdult:    precioUnidad,
-      tourDate,
-      adults:        unidades,
-      children:      0,
-      childrenMid:   0,
-      childrenSmall: 0,
-      promoCode:     "",
-      promoDiscount: 0,
-      subtotal:      veh.total,
-      total:         veh.total,
-      chargeAmount:  veh.charge,
-      pct:           veh.pct,
-      saldo:         veh.saldo,
-      paymentMode:   veh.pct === 100 ? "full" : "deposit",
-      sessionId:     crypto.randomUUID(),
-      ruta:          ruta.nombre,
-      vehiculo:      vehiculo.nombre,
-      unidades,
-    });
-    router.push(`/reservar-tour/${tour.slug}/checkout`);
-  }
+  if (!tour || !rutas.length || !flota.length) return null;
 
-  function handleAgregarYSeguir() {
-    if (!canContinue || !ruta || !vehiculo) return;
-    const veh = computeVehiculoCharge({ tourSlug: tour.slug, ruta: ruta.nombre, vehiculo: vehiculo.nombre, unidades, pct: 100 });
-    if (!veh) return;
+  const idxRuta = rutas.findIndex((r) => r.nombre === ruta);
+  const cargo = computeVehiculoCharge({ tourSlug: slug, ruta, vehiculo, unidades, pct: 100 });
+  const total = cargo?.total ?? 0;
+  const hoy   = Math.round((total * pctACobrar()) / 100);
+  const resto = total - hoy;
+
+  const dinero = (n: number) => `$${n.toLocaleString(locale === "en" ? "en-US" : "es-MX")}`;
+  const hora = salidaCorta(tour, locale === "en");
+  const esHorario = !!recogidaDeTour(tour).horaTexto;
+
+  function continuar() {
+    if (!fecha || sinLugar || !cargo || !tour) return;
+    marcarToqueHumano();
     // Los campos comunes salen de `itemDesdeTour` (una sola definición de cómo
-    // nace un renglón); aquí solo se encima lo que el cliente ya configuró.
-    agregarAlCarrito(itemDesdeTour(tour, {
-      tourName: vehiculoBookingName(tour, ruta.nombre, vehiculo.nombre, unidades),
-      tourDate,
-      adults:   unidades,
-      ruta:     ruta.nombre,
-      vehiculo: vehiculo.nombre,
-      unidades,
-      total:    veh.total,
-    }));
-    router.push("/reservar#catalogo");
+    // nace un renglón); aquí solo se encima lo que la persona ya eligió.
+    agregarAlCarrito(itemDesdeTour(tour, { tourDate: fecha, ruta, vehiculo, unidades, total }));
+    trackAddToCart({ tourId, tourName: nombre, total, cantidad: unidades, source: "widget" });
+    trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, amount: total, fecha, ruta, vehiculo, unidades, source: "ficha_vehiculo" });
+    router.push(lp("/reservar/carrito"));
   }
+
+  const ETIQUETA = "text-[9px] tracking-[2px] uppercase text-crema/35 font-dm";
+  const SELECT = "w-full border border-crema/20 bg-negro/80 px-3 py-2.5 font-dm text-[12px] text-crema/85 focus:border-verde-vivo focus:outline-none";
+  const BOTON_RESERVAR = "flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors";
 
   return (
-    <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-8 items-start">
-
-      {/* ── FORMULARIO ── */}
-      <div className="space-y-6">
-
-        {/* Fecha */}
-        <section className="bg-white border border-negro/8 p-6">
-          <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Selecciona la fecha</h2>
-          <TourCalendar
-            value={tourDate}
-            onChange={(ymd) => { setTourDate(ymd); if (ymd) trackDateSelected(tour.nombre, ymd); }}
-            salida={salidaCorta(tour)}
-          />
-        </section>
-
-        {/* Ruta */}
-        <section className="bg-white border border-negro/8 p-6">
-          <h2 className="font-cormorant text-verde-profundo text-xl mb-1">Elige tu ruta</h2>
-          <p className="font-dm text-xs text-negro/45 mb-5">El precio depende de la ruta y del vehículo. Todas incluyen gasolina, equipo y guía.</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {rutas.map((r) => {
-              const active = r.nombre === rutaNombre;
-              const veh = flota.find((v) => v.nombre === vehiculoNombre);
-              const idx = rutas.findIndex((x) => x.nombre === r.nombre);
-              const desde = veh ? veh.precios[idx] : r.desde;
-              return (
-                <button key={r.nombre} type="button" onClick={() => setRutaNombre(r.nombre)}
-                  className={`text-left border p-4 transition-colors ${active ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
-                  <div className="flex items-baseline justify-between gap-2 mb-1">
-                    <span className="font-cormorant text-verde-profundo text-base leading-tight">{r.nombre}</span>
-                    <span className="text-[10px] text-negro/40 font-dm flex-shrink-0 flex items-center gap-1"><Clock className="w-3 h-3" />{r.duracion_hrs} h</span>
-                  </div>
-                  {r.destinos && r.destinos.length > 0 && (
-                    <p className="text-[10px] text-negro/45 font-dm leading-snug mb-1.5">{r.destinos.slice(0, 3).join(" · ")}…</p>
-                  )}
-                  <p className="text-[11px] font-dm text-dorado">Desde {formatMXN(desde)} MXN por vehículo</p>
-                </button>
-              );
-            })}
-          </div>
-          {ruta?.incluye && ruta.incluye.length > 0 && (
-            <ul className="mt-3 space-y-1">
-              {ruta.incluye.map((it) => (
-                <li key={it} className="flex items-start gap-1.5 text-xs font-dm text-verde-selva">
-                  <span className="flex-shrink-0">✓</span>{it}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {/* Vehículo */}
-        <section className="bg-white border border-negro/8 p-6">
-          <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Elige tu vehículo</h2>
-          <div className="space-y-2.5">
-            {flota.map((v) => {
-              const active = v.nombre === vehiculoNombre;
-              const precio = rutaIdx >= 0 ? v.precios[rutaIdx] : 0;
-              return (
-                <button key={v.nombre} type="button" onClick={() => setVehiculoNombre(v.nombre)}
-                  className={`w-full flex items-center gap-3 border px-4 py-3 text-left transition-colors ${active ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
-                  <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${active ? "border-verde-selva" : "border-negro/25"}`}>
-                    {active && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-dm text-sm text-negro/85 font-medium leading-none">{v.nombre}</p>
-                    <p className="text-[10px] text-negro/45 font-dm mt-0.5">{v.capacidad}</p>
-                  </div>
-                  <span className="font-cormorant text-dorado text-base flex-shrink-0">{formatMXN(precio)}</span>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Unidades */}
-          <div className="flex items-center justify-between border-t border-negro/6 pt-5 mt-5">
-            <div>
-              <p className="font-dm text-sm text-negro/80">¿Cuántos vehículos?</p>
-              <p className="font-dm text-xs text-negro/40">Si son un grupo grande, aparta varias unidades</p>
-            </div>
-            <div className="flex items-center gap-3">
-              <button type="button" onClick={() => setUnidades(Math.max(1, unidades - 1))}
-                className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                aria-label="Reducir vehículos">−</button>
-              <span className="w-8 text-center font-dm text-negro">{unidades}</span>
-              <button type="button" onClick={() => setUnidades(Math.min(10, unidades + 1))}
-                className="w-9 h-9 border border-negro/20 flex items-center justify-center text-negro/60 hover:border-verde-selva hover:text-verde-selva transition-colors font-dm text-lg leading-none"
-                aria-label="Aumentar vehículos">+</button>
-            </div>
-          </div>
-        </section>
+    <div id={ID_MODULO_RESERVA} className="border border-white/10 bg-negro/60 p-5 space-y-4">
+      <div>
+        <p className={`${ETIQUETA} mb-1.5`}>{tf.cuandoVas}</p>
+        <TourCalendar
+          value={fecha}
+          onChange={(ymd) => {
+            setFecha(ymd);
+            if (ymd) {
+              trackDateSelected(nombre, ymd);
+              trackTourEvent("DATE_SELECTED", { tour: tourId, ficha: true });
+            }
+          }}
+          modo="compact"
+          tema="oscuro"
+          titulo={nombre}
+          permitirLimpiar
+          salida={esHorario ? null : hora}
+          horario={esHorario ? hora : null}
+          // Con slug el calendario pinta los días cerrados y lo abren «Ver
+          // fechas disponibles» y la barra del celular. El RZR no lleva cupo
+          // por fecha (`cupoDeTour` → null), así que el resto sale libre.
+          slug={slug}
+          personas={1}
+          onSinLugar={setSinLugar}
+          hojaVidrio
+        />
       </div>
 
-      {/* ── SIDEBAR ── */}
-      <aside className="lg:sticky lg:top-24 space-y-4">
-        <div className="bg-white border border-negro/8 overflow-hidden">
-          {tour.imagen_hero && (
-            <div className="aspect-video overflow-hidden">
-              <img src={tour.imagen_hero} alt={tour.nombre} loading="lazy" className="w-full h-full object-cover" />
-            </div>
-          )}
-          <div className="p-5">
-            <p className="text-[9px] tracking-[2px] uppercase text-verde-selva/70 font-dm mb-2">{tour.tipo}</p>
-            <h3 className="font-cormorant text-verde-profundo text-lg leading-snug mb-2">{tour.nombre}</h3>
-            <div className="mb-3"><ViewersCounter /></div>
-            <div className="flex flex-wrap gap-3 text-xs font-dm text-negro/50">
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{ruta?.duracion_hrs ?? tour.duracion_hrs}h</span>
-              {/* Calificación del NEGOCIO en Google (resenas.ts), no de esta ruta:
-                  por eso lleva «en Google» y no va sola junto al nombre del tour. */}
-              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-dorado" />{GOOGLE_RATING} en Google</span>
-            </div>
-          </div>
+      <div className="space-y-3 border-t border-white/8 pt-4">
+        <label className="block">
+          <span className={`${ETIQUETA} block mb-1.5`}>{tf.queRuta}</span>
+          <select value={ruta} onChange={(e) => setRuta(e.target.value)} className={SELECT}>
+            {rutas.map((r) => (
+              <option key={r.nombre} value={r.nombre}>{r.nombre} · {tf.horas(r.duracion_hrs)}</option>
+            ))}
+          </select>
+        </label>
+        <label className="block">
+          <span className={`${ETIQUETA} block mb-1.5`}>{tf.queVehiculo}</span>
+          {/* Cada vehículo con su precio EN LA RUTA ELEGIDA: es justo lo que
+              la gente buscaba moviendo los menús del carrito. */}
+          <select value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} className={SELECT}>
+            {flota.map((v) => (
+              <option key={v.nombre} value={v.nombre}>
+                {v.nombre} · {v.capacidad} · {dinero(v.precios[idxRuta] ?? 0)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="flex items-center justify-between gap-3">
+          <span className="font-dm text-[12px] text-crema/60">{tf.cuantosVehiculos}</span>
+          <span className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label={t.menos(tf.cuantosVehiculos, nombre)}
+              onClick={() => setUnidades((n) => Math.max(1, n - 1))}
+              disabled={unidades <= 1}
+              className="w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+            >−</button>
+            <span className="font-dm text-[13px] text-crema/85 w-5 text-center tabular-nums">{unidades}</span>
+            <button
+              type="button"
+              aria-label={t.mas(tf.cuantosVehiculos, nombre)}
+              onClick={() => setUnidades((n) => Math.min(10, n + 1))}
+              disabled={unidades >= 10}
+              className="w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+            >+</button>
+          </span>
         </div>
+      </div>
 
-        <div className="bg-white border border-negro/8 p-5">
-          <h3 className="font-cormorant text-verde-profundo text-lg mb-4">Resumen del pago</h3>
-          <div className="space-y-3 text-sm font-dm">
-            <div className="flex justify-between text-negro/70"><span>Ruta</span><span className="text-right">{rutaNombre.replace(/^Ruta\s/, "")}</span></div>
-            <div className="flex justify-between text-negro/70"><span>Vehículo</span><span className="text-right">{vehiculoNombre}</span></div>
-            <div className="flex justify-between text-negro/70">
-              <span>{unidades} vehículo{unidades !== 1 ? "s" : ""} × {formatMXN(precioUnidad)}</span>
-              <span>{formatMXN(total)}</span>
-            </div>
-            <div className="flex justify-between font-medium text-negro border-t border-negro/10 pt-3 text-base">
-              <span>Total</span>
-              <span key={total} className="font-cormorant text-xl text-dorado animate-price-bump">{formatMXN(total)} MXN</span>
-            </div>
-          </div>
-
-          {/* El selector de anticipo se retiró: el porcentaje lo decide
-              `pctACobrar`, no el formulario. Se conserva el resumen de abajo. */}
-          <div className="mt-5 border-t border-negro/6 pt-4">
-            <div className="mt-3 flex justify-between items-baseline">
-              <span className="font-dm text-sm text-negro/70">Pagas ahora</span>
-              <span key={chargeAmount} className="font-cormorant text-xl text-verde-profundo animate-price-bump">
-                {formatMXN(chargeAmount)} MXN
-              </span>
-            </div>
-            {saldo > 0 && (
-              <p className="mt-1.5 font-dm text-xs text-negro/50">
-                Saldo de <strong className="text-negro/70">{formatMXN(saldo)} MXN</strong> el día del tour,
-                en efectivo o con tarjeta.
-              </p>
-            )}
-          </div>
-
-          <div className="mt-5 border-t border-negro/6 pt-4">
-            <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Incluido</p>
-            <ul className="space-y-1.5">
-              {tour.incluye.slice(0, 5).map((item) => (
-                <li key={item} className="flex items-start gap-2 text-xs font-dm text-negro/60">
-                  <span className="text-verde-selva flex-shrink-0 mt-0.5">✓</span>{item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="mt-4 flex items-start gap-2 text-xs font-dm text-negro/50">
-            <Shield className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-verde-selva" />
-            <span>Pago 100% seguro · Stripe · TLS cifrado</span>
-          </div>
-        </div>
-
-        <button
-          onClick={handleContinue}
-          disabled={!canContinue}
-          className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-        >
-          {canContinue ? (<><Lock className="w-3.5 h-3.5" />{`Pagar ${formatMXN(chargeAmount)} MXN →`}</>) : "Selecciona una fecha para continuar"}
-        </button>
-        {/* El carrito estaba escondido: solo aparecía DESPUÉS de elegir fecha, así
-            que nadie descubría que se podían apartar varios días. Ahora se ve
-            siempre y explica qué le falta. */}
-        <button
-          onClick={handleAgregarYSeguir}
-          disabled={!canContinue}
-          className="w-full border border-verde-selva/40 text-verde-selva hover:bg-verde-selva/8 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-35 disabled:cursor-not-allowed"
-        >
-          ＋ Agregar al carrito y elegir otro día
-        </button>
-        {!tourDate && <p className="text-center text-xs text-negro/40 font-dm">Elige la fecha del recorrido para continuar</p>}
-      </aside>
+      <div className="border-t border-white/8 pt-4">
+        <p className="flex items-baseline justify-between">
+          <span className="font-dm text-[12px] text-crema/55">{tf.total}</span>
+          <span className="font-cormorant text-dorado text-2xl leading-none">{dinero(total)} MXN</span>
+        </p>
+        <p className="font-dm text-[10px] text-crema/40 mt-1">{tf.porVehiculo(unidades)}</p>
+        {fecha && !sinLugar ? (
+          <button type="button" onClick={continuar} className={BOTON_RESERVAR}>
+            {tf.reservarHoy(dinero(hoy))}
+          </button>
+        ) : (
+          <button type="button" onClick={() => abrirCalendario(slug)} className={BOTON_RESERVAR}>
+            {sinLugar ? tf.sinLugarEligeOtra : tf.continuar}
+          </button>
+        )}
+        {total > 0 && (
+          <p className="font-dm text-[11px] text-crema/60 mt-2 text-center">
+            {tf.restoElDia(pctACobrar(), dinero(resto))}
+          </p>
+        )}
+        <p className="font-dm text-[10px] text-crema/35 mt-1 text-center">{tf.pasoUnoDeTres}</p>
+      </div>
     </div>
   );
 }
