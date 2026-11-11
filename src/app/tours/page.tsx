@@ -378,7 +378,7 @@ export default function ToursPage() {
                     <p className="font-cormorant text-crema text-2xl leading-tight">{t.nombreCorto}</p>
                     <p className="mt-1.5 font-dm text-xs text-crema/85">
                       {precioTachado(t) && (
-                        <span className="mr-1.5 text-crema/50 line-through">{money(precioTachado(t)!)}</span>
+                        <span className="mr-1.5 text-crema/50 line-through">{money(precioTachado(t)!)}{en ? " MXN" : ""}</span>
                       )}
                       <span className="text-dorado font-medium text-sm">{money(t.precio)}</span> MXN {etiquetaUnidad(t, en)} · {tourDurTexto(t, en ? " hours" : " horas")}
                     </p>
@@ -595,9 +595,9 @@ export default function ToursPage() {
                     <span className="font-cormorant text-dorado text-3xl font-light leading-none">{money(tour.precio)}</span>
                     {precioTachado(tour) && (
                       <>
-                        <span className="text-[11px] text-crema/30 font-dm line-through">{money(precioTachado(tour)!)}</span>
+                        <span className="text-[11px] text-crema/30 font-dm line-through">{money(precioTachado(tour)!)}{en ? " MXN" : ""}</span>
                         <span className="border border-dorado/40 bg-dorado/10 text-dorado text-[9px] font-dm tracking-wide px-1.5 py-0.5">
-                          {en ? `save $${promoDe(tour)!.monto}` : `−$${promoDe(tour)!.monto}`}
+                          {en ? `save $${promoDe(tour)!.monto} MXN` : `−$${promoDe(tour)!.monto}`}
                         </span>
                       </>
                     )}
@@ -769,7 +769,7 @@ export default function ToursPage() {
             </p>
             <ul className="space-y-2 mb-7">
               {(en
-                ? ["A private transport unit just for your group", "Move at your own pace — no fixed schedules or waiting", "Your guide entirely at your disposal all day", "A custom itinerary tailored to you", `From ${money(privadoDesde)} MXN per person — the tour price plus ${money(PRIVADO_EXTRA_POR_PERSONA)}`, "Discounts for large groups"]
+                ? ["A private transport unit just for your group", "Move at your own pace — no fixed schedules or waiting", "Your guide entirely at your disposal all day", "A custom itinerary tailored to you", `From ${money(privadoDesde)} MXN per person — the tour price plus ${money(PRIVADO_EXTRA_POR_PERSONA)} MXN`, "Discounts for large groups"]
                 : ["Unidad de transporte privada solo para tu grupo", "Se mueven a sus tiempos — sin horarios fijos ni esperas", "Tu guía a tu entera disposición todo el día", "Itinerario personalizado a tu medida", `Desde ${money(privadoDesde)} MXN por persona — el precio del recorrido más ${money(PRIVADO_EXTRA_POR_PERSONA)}`, "Descuentos para grupos grandes"]
               ).map(item => (
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-dorado mt-0.5 flex-shrink-0">✦</span>{item}</li>

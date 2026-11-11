@@ -1697,7 +1697,10 @@ const en: BookingMessages = {
     cuantosVan: "How many of you?",
     total: "Total",
     reservarHoy: () => "Continue booking",
-    restoElDia: (pct, resto) => `A ${pct}% deposit holds your spot. The rest (${resto}) is paid on the day of the tour.`,
+    // 🔴 En inglés, «MXN» detrás de cada importe que llega a secas (`$2,170`):
+    // un lector de EE.UU. lo lee en dólares (auditoría del 10 nov 2026). Quien
+    // llama pasa el número sin moneda (`dinero()` de la ficha).
+    restoElDia: (pct, resto) => `A ${pct}% deposit holds your spot. The rest (${resto} MXN) is paid on the day of the tour.`,
     sinPromoEnFecha: (hasta) => `Regular price on this date: the low-season deal is for tours through ${hasta}.`,
     continuar: "Pick a date and book",
     pasoUnoDeTres: "Step 1 of 3 · next: your details and payment. You can still change date and party size.",
@@ -1707,10 +1710,10 @@ const en: BookingMessages = {
     personas: "people",
     grupoTope: (max) => `${max} people is the maximum the garden allows per experience; it cannot be extended.`,
     tarifaDelGrupo: (max) => `Flat rate for the whole group, up to ${max} people`,
-    porCabeza: (monto) => `That works out to ${monto} per person`,
-    cadaUno: (monto) => `${monto} per person`,
-    unoMasBaja: (personas, monto) => `With ${personas} it drops to ${monto} per person`,
-    escaleraDesde: (personas, monto) => `The more of you, the less you pay: ${monto} per person with ${personas}`,
+    porCabeza: (monto) => `That works out to ${monto} MXN per person`,
+    cadaUno: (monto) => `${monto} MXN per person`,
+    unoMasBaja: (personas, monto) => `With ${personas} it drops to ${monto} MXN per person`,
+    escaleraDesde: (personas, monto) => `The more of you, the less you pay: ${monto} MXN per person with ${personas}`,
     mejorPrecio: "That's the best per-person price on this tour",
     viajeroSoloTitulo: "Your group is below the minimum:",
     viajeroSolo: (dias) => `you pay the normal per-person price and we add you to a shared departure. We confirm ${dias} days ahead; if the group does not come together, you get 100 % back.`,

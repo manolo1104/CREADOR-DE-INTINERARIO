@@ -1,17 +1,16 @@
 import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
-import {
-  TOURS_DB, tourDurTexto, etiquetaUnidad, esPorPersona, recogidaDeTour, partesRecogida,
-  salidaCorta, rankTour, cargoVallesDe,
-} from "@/lib/tours";
-import { excepcionesSalida, horaEnLista } from "@/lib/recogidaTexto";
-import { destinosDeTour } from "@/lib/tourMapping";
+import { headers } from "next/headers";
+import { tourDurTexto, esPorPersona } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { waLink } from "@/lib/whatsapp";
-import { SITE } from "@/lib/i18n/config";
+import { SITE, asLocale, buildAlternates, localePath, localeUrl } from "@/lib/i18n/config";
 import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
+import { localizePaquete } from "@/lib/i18n/paquetes.en";
+import { TOURS_XI, getToursXilitla } from "@/lib/i18n/toursXilitla.en";
 
 /**
  * Landing comercial de Xilitla. Existía la de Ciudad Valles —donde operan los
@@ -34,163 +33,80 @@ import { buildBreadcrumbNode } from "@/lib/jsonld";
  * El molde es `/tours-en-ciudad-valles`, que está probado: 1.111 impresiones y
  * 2,25 % de CTR en el puesto 9,37, más del doble de la media del sitio.
  *
- * Solo en español, igual que su gemela de Ciudad Valles.
+ * Desde el 10 nov 2026 tiene versión inglesa (/en/tours-en-xilitla reexporta
+ * esta página). Todo el texto vive en `toursXilitla.en.ts`; el español sale
+ * idéntico al de antes.
  */
 
-const URL = `${SITE}/tours-en-xilitla`;
+const PATH = "/tours-en-xilitla";
+const OG_IMG = `${SITE}/imagenes/las-pozas-jardin-surrealista/hero.jpg`;
 
-export const metadata: Metadata = {
-  title: "Tours y Paquetes en Xilitla, San Luis Potosí 2026",
-  // Decía «Todo incluido, salidas diarias» de todo lo que sale de aquí, y el
-  // RZR no incluye el transporte. Ahora nombra lo que de verdad sale del pueblo.
-  description:
-    "Somos de Xilitla: tours a Las Pozas, la Gruta de Xilo de noche, el Cerro del Pilón y la Olla de la Luz, y paquetes con hotel propio en el Pueblo Mágico.",
-  keywords: [
-    "paquetes a xilitla",
-    "xilitla paquetes",
-    "tours xilitla",
-    "viaje a xilitla todo incluido",
-    "hoteles en xilitla",
-    "paquetes a xilitla san luis potosi",
-    "tours huasteca potosina desde xilitla",
-  ],
-  alternates: { canonical: URL },
-  openGraph: {
-    title: "Tours y paquetes en Xilitla, San Luis Potosí",
-    description:
-      "Operamos desde Xilitla, el Pueblo Mágico donde está Las Pozas de Edward James. Tours y paquetes con hotel propio.",
-    url: URL,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-    images: [
-      {
-        url: `${SITE}/imagenes/las-pozas-jardin-surrealista/hero.jpg`,
-        width: 1600,
-        height: 960,
-        alt: "Arcos y escaleras de concreto del jardín surrealista de Las Pozas, entre la selva de Xilitla",
-      },
-    ],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Tours y paquetes en Xilitla, San Luis Potosí",
-    description: "Operamos desde Xilitla: tours guiados y paquetes con hotel propio en el Pueblo Mágico.",
-    images: [`${SITE}/imagenes/las-pozas-jardin-surrealista/hero.jpg`],
-  },
-};
-
-/**
- * Responden al racimo comercial. Lo informacional se enlaza, no se contesta
- * aquí: esos artículos ya están entre el puesto 4 y el 9.
- */
-const DIAS_MIN = Math.min(...PAQUETES_DB.map((p) => p.dias));
-const DIAS_MAX = Math.max(...PAQUETES_DB.map((p) => p.dias));
-
-/**
- * Cómo se ANUNCIAN los precios, leído de `precioPorPersona` —el mismo campo
- * que decide `precioVisible()`— en vez de afirmarlo a mano.
- *
- * 🔴 Esta página lo afirmaba a mano («el precio está calculado para dos
- * personas») y el régimen ya cambió dos veces: del 12 al 24 sep 2026 casi
- * todos los paquetes se anunciaban por persona; hoy los cuatro van por pareja.
- * Armada desde el catálogo, la frase se corrige sola cuando cambie un paquete.
- */
-const PAQ_POR_PAREJA = PAQUETES_DB.filter((p) => !p.precioPorPersona);
-const listaEs = (xs: string[]) =>
-  new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
-const NOTA_PRECIOS =
-  PAQ_POR_PAREJA.length === 0
-    ? "Los precios son por persona."
-    : PAQ_POR_PAREJA.length === PAQUETES_DB.length
-      ? "Los precios son por pareja."
-      : `Los precios son por persona, salvo ${listaEs(
-          PAQ_POR_PAREJA.map((p) => p.nombre),
-        )}, que se vende${PAQ_POR_PAREJA.length > 1 ? "n" : ""} por pareja.`;
-
-/**
- * Los recorridos que salen del propio Xilitla, sacados del catálogo: los que
- * recogen solo aquí o parten de nuestra base, más los de recogida general que
- * visitan Las Pozas (la Ruta Surrealista). En el orden de venta de /tours.
- *
- * 🔴 La página solo enlazaba el RZR y su FAQ decía que todos pasan «entre las
- * 8:00 y las 9:00 de la mañana»: la Gruta de Xilo sale a las 7 de la NOCHE y
- * el Amanecer de Nubes de madrugada.
- */
-const TOURS_XI = TOURS_DB
-  .filter((t) => {
-    const tipo = recogidaDeTour(t).tipo;
-    if (tipo === "hospedaje-xilitla" || tipo === "base-xilitla") return true;
-    return tipo === "hospedaje" && destinosDeTour(t.slug).incluye.includes("las-pozas-jardin-surrealista");
-  })
-  .sort((a, b) => rankTour(a.slug) - rankTour(b.slug));
-/** Los que solo recogen en Xilitla, para decir qué pasa si vienes de Valles. */
-const SOLO_XI = TOURS_XI.filter((t) => partesRecogida(t, false).valles);
-
-const FAQS_XI: { q: string; a: string }[] = [
-  {
-    q: "¿Qué incluye un paquete a Xilitla?",
-    a: `Las noches en nuestro hotel de Xilitla, los recorridos guiados de cada día con transporte, las entradas, el desayuno y el guía certificado NOM-09 con seguro de viajero. Los paquetes van de ${DIAS_MIN} a ${DIAS_MAX} días. ${NOTA_PRECIOS} Desde la tercera persona se suman su lugar en cada recorrido y la habitación que haga falta; los menores pagan menos.`,
-  },
-  {
-    q: "¿Por qué quedarse en Xilitla y no en Ciudad Valles?",
-    a: "Porque Las Pozas de Edward James, La Trinidad y el bosque de niebla están aquí mismo, y porque Xilitla es Pueblo Mágico: se camina de noche, se cena bien y se amanece entre montaña. Ciudad Valles es más práctica para el norte de la región, pero es una ciudad de paso. Desde Xilitla también salimos a Tamul, Micos y los sótanos.",
-  },
-  {
-    q: "¿Los tours salen desde Xilitla?",
-    // La frase la arma `excepcionesSalida` desde la `recogida` de cada
-    // recorrido; sin el buceo, que es en Rioverde y no toca Xilitla.
-    a: `Sí. ${excepcionesSalida("es", TOURS_DB.filter((t) => recogidaDeTour(t).tipo !== "en-sitio"))}`,
-  },
-  {
-    q: "¿Tienen hotel propio en Xilitla?",
-    a: "Sí, el Hotel Paraíso Encantado. Los paquetes incluyen las noches ahí, con vista a la sierra y desayuno. Para grupos grandes trabajamos además con hospedaje de la zona.",
-  },
-  {
-    q: "¿Cuántos días necesito en Xilitla?",
-    a: "Con dos días completos ves Las Pozas sin prisa y haces un recorrido a las cascadas. Con tres o cuatro entran Tamul, el bosque de niebla de La Trinidad y los sótanos sin repetir destino ni cambiar de hotel.",
-  },
-  {
-    q: "¿Se puede reservar solo el tour, sin hotel?",
-    a: "Sí. Los recorridos de un día se compran sueltos y se apartan con el 30 % al reservar; el resto se liquida el día del tour.",
-  },
-];
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getToursXilitla(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    keywords: t.keywords,
+    alternates: buildAlternates(PATH, locale),
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl(PATH, locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      images: [{ url: OG_IMG, width: 1600, height: 960, alt: t.ogImageAlt }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t.twitterTitle,
+      description: t.twitterDescription,
+      images: [OG_IMG],
+    },
+  };
+}
 
 export default function ToursEnXilitlaPage() {
-  const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
-  const destinosXi = DESTINOS_DB.filter((d) => d.zona === "Xilitla");
+  const locale = asLocale(headers().get("x-locale"));
+  const en = locale === "en";
+  const t = getToursXilitla(locale);
+  const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
+  const destinosXi = DESTINOS_DB.filter((d) => d.zona === "Xilitla").map((d) => localizeDestino(d, locale));
   // Los paquetes salen todos de aquí: el hotel está en Xilitla.
-  const paquetes = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias);
+  const paquetes = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias).map((p) => localizePaquete(p, locale));
+  const toursXi = TOURS_XI.map((x) => localizeTour(x, locale));
 
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      buildBreadcrumbNode([{ name: "Tours en Xilitla", path: "/tours-en-xilitla" }]),
+      buildBreadcrumbNode([{ name: t.breadcrumb, path: PATH }], locale),
       {
         "@type": "ItemList",
-        name: "Paquetes con hotel en Xilitla",
+        name: t.schemaPaquetes,
         numberOfItems: paquetes.length,
         itemListElement: paquetes.map((p, i) => ({
           "@type": "ListItem",
           position: i + 1,
           name: p.nombre,
-          url: `${SITE}/paquetes/${p.slug}`,
+          url: localeUrl(`/paquetes/${p.slug}`, locale),
         })),
       },
       {
         "@type": "ItemList",
-        name: "Recorridos que salen de Xilitla",
-        numberOfItems: TOURS_XI.length,
-        itemListElement: TOURS_XI.map((t, i) => ({
+        name: t.schemaTours,
+        numberOfItems: toursXi.length,
+        itemListElement: toursXi.map((x, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          name: t.nombreCorto,
-          url: `${SITE}/tours/${t.slug}`,
+          name: x.nombreCorto,
+          url: localeUrl(`/tours/${x.slug}`, locale),
         })),
       },
       {
         "@type": "FAQPage",
-        mainEntity: FAQS_XI.map((f) => ({
+        ...(en ? { inLanguage: "en" } : {}),
+        mainEntity: t.faqs.map((f) => ({
           "@type": "Question",
           name: f.q,
           acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -206,26 +122,24 @@ export default function ToursEnXilitlaPage() {
       {/* ── HERO ── */}
       <section className="px-6 pt-36 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-          ✦ Pueblo Mágico · Hotel propio · Salidas diarias
+          {t.heroEyebrow}
         </p>
         <h1
           className="font-cormorant font-light text-crema mb-5 leading-tight"
           style={{ fontSize: "clamp(34px,5.5vw,62px)" }}
         >
-          Tours y paquetes en <em className="shimmer-gold italic">Xilitla</em>, San Luis Potosí
+          {t.heroH1a}<em className="shimmer-gold italic">{t.heroH1em}</em>{t.heroH1b}
         </h1>
         <p className="text-crema/70 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8">
-          Aquí vivimos. Xilitla no es nuestra parada: es la base desde la que operamos, con hotel y restaurante
-          propios a diez minutos de Las Pozas de Edward James. Desde aquí salimos cada mañana a las cascadas, los
-          sótanos y el bosque de niebla, y de aquí vuelves a dormir sin rehacer maletas.
+          {t.heroIntro}
         </p>
         <a
-          href={waLink("Hola, quiero información de los paquetes con hotel en Xilitla. ¿Qué tienen disponible?")}
+          href={waLink(t.waDisponibilidad)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
         >
-          Consultar disponibilidad
+          {t.ctaDisponibilidad}
         </a>
       </section>
 
@@ -236,17 +150,16 @@ export default function ToursEnXilitlaPage() {
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-3">
-            Paquetes con hotel en Xilitla
+            {t.paquetesTitulo}
           </h2>
           <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-8">
-            De {DIAS_MIN} a {DIAS_MAX} días, todo incluido: las noches en el hotel, los recorridos de cada día con
-            transporte y entradas, el desayuno y el guía. {NOTA_PRECIOS}
+            {t.paquetesTexto}
           </p>
           <div className="grid sm:grid-cols-2 gap-4">
             {paquetes.map((p) => (
               <Link
                 key={p.slug}
-                href={`/paquetes/${p.slug}`}
+                href={localePath(`/paquetes/${p.slug}`, locale)}
                 className="border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{p.duracion}</p>
@@ -260,18 +173,18 @@ export default function ToursEnXilitlaPage() {
                       el doble. La etiqueta sale del mismo paquete, así que cada tarjeta dice
                       «por persona» o «por pareja» según su propio régimen. */}
                   <span className="font-cormorant text-dorado text-2xl">{money(precioVisible(p))}</span>
-                  <span className="text-crema/40 text-xs"> MXN {p.precioLabel} · todo incluido</span>
+                  <span className="text-crema/40 text-xs">{t.paqueteSufijo(p)}</span>
                 </p>
               </Link>
             ))}
           </div>
           <p className="text-crema/45 font-dm text-xs mt-4">
-            ¿Vienen en grupo grande, de escuela o de empresa? Eso se cotiza aparte:{" "}
+            {t.gruposPre}{" "}
             <Link
-              href="/grupos"
+              href={t.gruposHref}
               className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2"
             >
-              viajes de grupo y escolares
+              {t.gruposLink}
             </Link>
             .
           </p>
@@ -285,54 +198,46 @@ export default function ToursEnXilitlaPage() {
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-3">
-            Recorridos que salen de Xilitla
+            {t.recorridosTitulo}
           </h2>
           <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-8">
-            {TOURS_XI.length} recorridos salen del propio pueblo: {listaEs(TOURS_XI.map((t) => t.nombreCorto))}.
-            Cada tarjeta dice a qué hora sale y dónde empieza.
+            {t.recorridosTexto}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TOURS_XI.map((t) => {
-              // 🔴 El `horaTexto` del Edén son las horas en que ABRE el jardín para
-              // el grupo, no la de recogida (pasamos antes), y ya viene separado
-              // con «·»: pegado al lugar se leía «pasan por mí a las 7:00 AM».
-              // Mismo criterio que la FAQ y /info-practica: «horario según el día».
-              const salida = recogidaDeTour(t).horaTexto ? horaEnLista(t, false) : salidaCorta(t);
+            {toursXi.map((x) => {
+              const salida = t.salidaLinea(x);
               // «Desde» cuando el precio sube con la ruta (RZR) o con el grupo (Edén).
-              const desde = !esPorPersona(t) || (t.rutas?.length ?? 0) > 1;
+              const desde = !esPorPersona(x) || (x.rutas?.length ?? 0) > 1;
               return (
                 <Link
-                  key={t.slug}
-                  href={`/tours/${t.slug}`}
+                  key={x.slug}
+                  href={localePath(`/tours/${x.slug}`, locale)}
                   className="border border-white/10 p-5 hover:border-dorado/50 transition-colors group flex flex-col"
                 >
                   <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
-                    {t.tipo} · {tourDurTexto(t, " h")}
+                    {x.tipo} · {tourDurTexto(x, " h")}
                   </p>
                   <h3 className="font-cormorant text-crema text-xl leading-snug mb-1 group-hover:text-dorado transition-colors">
-                    {t.nombreCorto}
+                    {x.nombreCorto}
                   </h3>
-                  <p className="font-dm text-xs text-crema/50 leading-relaxed mb-3 flex-1">{t.tagline}</p>
+                  <p className="font-dm text-xs text-crema/50 leading-relaxed mb-3 flex-1">{x.tagline}</p>
                   {salida && (
                     <p className="font-dm text-[11px] text-crema/60 leading-snug mb-2">
-                      Salida: {salida}, desde {partesRecogida(t, false).lugar}
-                      {cargoVallesDe(t) > 0 && ` (desde Valles, +$${cargoVallesDe(t).toLocaleString("es-MX")} por reserva)`}
+                      {salida}
                     </p>
                   )}
                   <p className="font-dm text-sm">
-                    {desde && <span className="text-crema/40 text-xs">Desde </span>}
-                    <span className="font-cormorant text-dorado text-2xl">{money(t.precio)}</span>
-                    <span className="text-crema/40 text-xs"> MXN {etiquetaUnidad(t)}</span>
+                    {desde && <span className="text-crema/40 text-xs">{t.desde}</span>}
+                    <span className="font-cormorant text-dorado text-2xl">{money(x.precio)}</span>
+                    <span className="text-crema/40 text-xs">{t.unidad(x)}</span>
                   </p>
                 </Link>
               );
             })}
           </div>
-          {SOLO_XI.length > 0 && (
+          {t.soloXiNota && (
             <p className="text-crema/45 font-dm text-xs mt-4">
-              En {listaEs(SOLO_XI.map((t) => t.nombreCorto))}, el traslado incluido es desde hospedajes de
-              Xilitla.{" "}
-              {partesRecogida(SOLO_XI[0], false).valles}
+              {t.soloXiNota}
             </p>
           )}
         </div>
@@ -342,16 +247,16 @@ export default function ToursEnXilitlaPage() {
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-3">
-            Qué hay en Xilitla y sus alrededores
+            {t.destinosTitulo}
           </h2>
           <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-8">
-            {destinosXi.length} destinos dentro del municipio, todos a menos de una hora del pueblo.
+            {t.destinosTexto(destinosXi.length)}
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {destinosXi.map((d) => (
               <Link
                 key={d.slug}
-                href={`/destinos/${d.slug}`}
+                href={localePath(`/destinos/${d.slug}`, locale)}
                 className="border border-white/10 p-5 hover:border-dorado/50 transition-colors group"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{d.tipo}</p>
@@ -368,24 +273,20 @@ export default function ToursEnXilitlaPage() {
       {/* ── POR QUÉ XILITLA ── */}
       <section className="px-6 pb-20">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-3xl mb-5">Por qué dormir en Xilitla</h2>
+          <h2 className="font-cormorant font-light text-crema text-3xl mb-5">{t.porQueTitulo}</h2>
           <p className="font-dm text-sm text-crema/65 leading-relaxed mb-4">
-            Casi todas las agencias de la Huasteca operan desde Ciudad Valles, que es una ciudad de paso: buena para
-            moverse al norte de la región, pero se duerme en una avenida. Xilitla es Pueblo Mágico, está metido en la
-            sierra y es donde Edward James construyó su jardín surrealista. Se camina de noche, se cena bien y se
-            amanece con niebla entre las montañas.
+            {t.porQueP1}
           </p>
           <p className="font-dm text-sm text-crema/65 leading-relaxed">
-            Desde aquí también salimos a lo que está del otro lado —la Cascada de Tamul, las cascadas de Micos, los
-            sótanos de Aquismón—, así que no hay que elegir entre dormir bonito y ver la región completa.
+            {t.porQueP2}
           </p>
           <p className="text-crema/45 font-dm text-xs mt-5">
-            Si dudas entre las dos bases, lo comparamos con los tiempos reales de carretera en{" "}
+            {t.comparaPre}{" "}
             <Link
-              href="/xilitla-o-ciudad-valles"
+              href={localePath("/xilitla-o-ciudad-valles", locale)}
               className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2"
             >
-              ¿Xilitla o Ciudad Valles? Dónde hospedarte
+              {t.comparaLink}
             </Link>
             .
           </p>
@@ -394,22 +295,18 @@ export default function ToursEnXilitlaPage() {
 
       {/* El viaje de cada mes desde la CDMX: duerme en Xilitla y hace los dos recorridos de aquí. */}
       <div className="px-6 pb-16">
-        <TarjetaViajeCdmx origen="tours-en-xilitla" className="max-w-5xl mx-auto" />
+        <TarjetaViajeCdmx origen={t.tarjetaOrigen} className="max-w-5xl mx-auto" locale={locale} />
       </div>
 
       {/* ── PLANEAR EL VIAJE ──
-          Lo informacional NO se contesta aquí: se enlaza. Esos artículos ya están
-          entre el puesto 4 y el 9 y responderlo otra vez les quitaría fuerza. */}
+          Lo informacional NO se contesta aquí: se enlaza. En español, a los
+          artículos del blog que ya ganan esas búsquedas; en inglés, a las
+          páginas inglesas que sí existen (el blog no tiene versión /en). */}
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-3xl mb-8">Para planear tu viaje a Xilitla</h2>
+          <h2 className="font-cormorant font-light text-crema text-3xl mb-8">{t.planearTitulo}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {[
-              { href: "/blog/como-llegar-a-xilitla-rutas-desde-cdmx-monterrey-y-slp", t: "Cómo llegar a Xilitla", d: "Rutas desde CDMX, Monterrey y San Luis Potosí, en autobús, auto y avión." },
-              { href: "/blog/las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece", t: "Las Pozas de Edward James", d: "Horarios, precio de entrada y cómo aprovechar la visita." },
-              { href: "/blog/mejor-temporada-para-ir-el-clima-en-xilitla-cual-es-la-mejor-epoca-par", t: "Cuándo ir: clima y temporada", d: "Qué esperar del clima mes por mes y cuándo el agua está más azul." },
-              { href: "/blog/xilitla-con-ninos-actividades-para-ninos-en-xilitla-viajando", t: "Xilitla con niños", d: "Qué sí aguantan los niños y qué conviene dejar para otro viaje." },
-            ].map((a) => (
+            {t.planear.map((a) => (
               <Link
                 key={a.href}
                 href={a.href}
@@ -428,9 +325,9 @@ export default function ToursEnXilitlaPage() {
       {/* ── FAQ ── */}
       <section className="px-6 pb-20">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-3xl mb-8">Preguntas frecuentes</h2>
+          <h2 className="font-cormorant font-light text-crema text-3xl mb-8">{t.faqTitulo}</h2>
           <div className="space-y-6">
-            {FAQS_XI.map((f) => (
+            {t.faqs.map((f) => (
               <div key={f.q} className="border-b border-white/10 pb-6">
                 <h3 className="font-dm font-medium text-crema text-sm mb-2">{f.q}</h3>
                 <p className="font-dm text-sm text-crema/65 leading-relaxed">{f.a}</p>
@@ -442,25 +339,24 @@ export default function ToursEnXilitlaPage() {
 
       {/* ── CTA ── */}
       <section className="px-6 pb-28 text-center">
-        <h2 className="font-cormorant font-light text-crema text-3xl mb-4">Tu viaje a Xilitla, resuelto</h2>
+        <h2 className="font-cormorant font-light text-crema text-3xl mb-4">{t.ctaTitulo}</h2>
         <p className="text-crema/60 font-dm text-sm mb-8 max-w-xl mx-auto">
-          Somos guías locales certificados NOM-09, con hotel y transporte propios en el pueblo. Escríbenos y te
-          confirmamos disponibilidad en menos de una hora.
+          {t.ctaTexto}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <a
-            href={waLink("Hola, quiero reservar un viaje a Xilitla. ¿Qué fechas tienen disponibles?")}
+            href={waLink(t.waReservar)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
           >
-            Reservar por WhatsApp
+            {t.ctaWhatsapp}
           </a>
           <Link
-            href="/paquetes"
+            href={localePath("/paquetes", locale)}
             className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
           >
-            Ver todos los paquetes
+            {t.ctaPaquetes}
           </Link>
         </div>
       </section>

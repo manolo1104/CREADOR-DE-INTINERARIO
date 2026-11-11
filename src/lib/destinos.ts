@@ -1,4 +1,5 @@
 import { TOURS_DB, conPrecio } from "./tours";
+import { enAuto, enAutobus, horasEnPalabras, MINUTOS_VALLES_XILITLA } from "./tiemposDeViaje";
 
 /**
  * Lo que cobra HOY un recorrido del catálogo, para los destinos cuya "entrada"
@@ -142,8 +143,13 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/las-pozas-jardin-surrealista/gallery-8.jpg",
     ],
     seo: {
-      metaTitle: "Las Pozas de Xilitla 2026 | Horarios, Precio y Cómo Llegar",
-      metaDescription: "El jardín surrealista de Edward James en Xilitla: entrada $180 MXN, abre de miércoles a lunes 09:00–18:00 (cerrado martes). Cómo llegar desde Ciudad Valles, mejor hora y qué llevar.",
+      // Fase 3 SEO (10 nov 2026): precio, boletos y horario son del artículo
+      // de boletos (posición 5.6–7.3) y la visita, de la guía del blog; esta
+      // ficha (posición 13) queda como tarjeta práctica: dónde está, cómo
+      // llegar y qué tour va, y enlaza a los dos (`GUIAS_BLOG_DESTINO`).
+      // Era "Las Pozas de Xilitla 2026 | Horarios, Precio y Cómo Llegar".
+      metaTitle: "Las Pozas, Xilitla: ubicación, cómo llegar y tours 2026",
+      metaDescription: "Las Pozas, el jardín surrealista de Edward James en Xilitla: cómo llegar desde Ciudad Valles (1 h 45 min), la mejor hora para entrar, qué llevar y tours.",
       keywords: ["las pozas xilitla", "jardín surrealista edward james", "las pozas precio", "las pozas horario", "qué hacer en xilitla"],
       faqPrincipales: [
         // 🔴 19 oct 2026: «Conviene comprar el boleto digital» era el esquema
@@ -184,7 +190,11 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascada-de-tamul/cascada-lateral.jpg",
     ],
     seo: {
-      metaTitle: "Cascada de Tamul 2026 | Precio, Horarios y Cómo Llegar",
+      // Fase 3 SEO (10 nov 2026): el dueño de «cascada de tamul» es el artículo
+      // del blog (28k impresiones contra 907); la ficha se queda con lo
+      // práctico: entrada, panga y horario. Enlaza a la guía («Guía a fondo»).
+      // Era "Cascada de Tamul 2026 | Precio, Horarios y Cómo Llegar".
+      metaTitle: "Cascada de Tamul: precio de entrada, panga y horario 2026",
       // ≤155: con 178 el corte de Google se comía "Salidas hasta las 2 PM", el dato
       // que deja sin paseo a quien llega tarde.
       metaDescription: "Cascada más alta de San Luis Potosí (105 m), en panga por el río Tampaón. Entrada $220 MXN + $300 panga por persona, solo efectivo. Salidas hasta las 2 PM.",
@@ -199,7 +209,9 @@ export const DESTINOS_DB: Destino[] = [
   {
     id: "sotano_golondrinas", slug: "sotano-de-las-golondrinas",
     nombre: "Sótano de las Golondrinas", zona: "Aquismón", tipo: "Extrema", icon: "Bird",
-    descripcion: "Abismo kárstico de 376 m de caída libre (hasta 512 m de profundidad). Santuario de vencejos con vuelo espiral al amanecer.",
+    // Las aves dan función doble: salen al amanecer y regresan al atardecer
+    // (confirmado por Manolo el 10 nov 2026; aquí solo se hablaba del amanecer).
+    descripcion: "Abismo kárstico de 376 m de caída libre (hasta 512 m de profundidad). Santuario de vencejos que salen en espiral al amanecer y regresan al atardecer.",
     duracion_hrs: 3, precio_entrada: "$100 MXN", precio_entrada_mxn: 100, dificultad: "media",
     ideal_para: ["fotografia", "naturaleza", "solo"],
     horario: "06:00–18:00", dias_abierto: "Lunes a Domingo",
@@ -220,11 +232,11 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/sotano-de-las-golondrinas/aves-cielo.jpg",
     ],
     seo: {
-      metaTitle: "Sótano de las Golondrinas 2026 | Horario del Vuelo de las Aves",
-      metaDescription: "Abismo de 376 m de caída libre (hasta 512 m de profundidad) en Aquismón. Entrada $100 MXN. Llega a las 5:45 AM para ver salir a los vencejos en espiral. 568 escalones de bajada.",
+      metaTitle: "Sótano de las Golondrinas 2026 | Horario del Vuelo y Precio",
+      metaDescription: "Abismo de 376 m de caída libre (hasta 512 m de fondo) en Aquismón. Entrada $100 MXN. Los vencejos salen al amanecer (llega 5:45 AM) y vuelven al atardecer.",
       keywords: ["sótano de las golondrinas", "golondrinas horario", "sótano de las golondrinas precio", "vuelo de las aves aquismón", "qué hora ver las golondrinas"],
       faqPrincipales: [
-        { pregunta: "¿A qué hora salen las aves del Sótano de las Golondrinas?", respuesta: "El vuelo en espiral es al amanecer: hay que estar en el borde alrededor de las 5:45 AM. Si llegas a las 9 AM las aves ya salieron y te pierdes el espectáculo." },
+        { pregunta: "¿A qué hora salen las aves del Sótano de las Golondrinas?", respuesta: "Hay dos momentos: al amanecer salen en espiral y al atardecer regresan al sótano. Para la salida hay que estar en el borde alrededor de las 5:45 AM: si llegas a las 9 AM, las aves ya salieron." },
         { pregunta: "¿Qué tan profundo es el Sótano de las Golondrinas?", respuesta: "Tiene 376 metros de caída libre y hasta 512 metros de profundidad total. El fondo mide alrededor de tres campos de fútbol." },
         { pregunta: "¿Qué tan pesada es la bajada?", respuesta: "Son 568 escalones para bajar al mirador; la subida de regreso es agotadora. Lleva calzado de tenis, chamarra y lámpara para la hora del amanecer." },
       ],
@@ -253,8 +265,12 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascadas-de-micos/gallery-5.jpg",
     ],
     seo: {
-      metaTitle: "Cascadas de Micos 2026 | Precio, Saltos y Cómo Llegar",
-      metaDescription: "Siete cascadas con circuito de saltos, tirolesa, kayak y skybike a 20 min de Ciudad Valles. Entrada $100 MXN, abre todos los días 08:00–18:00. Chaleco y casco obligatorios.",
+      // Fase 3 SEO (10 nov 2026): el dueño de «cascadas de micos» es el
+      // artículo del blog (guía de saltos); la ficha se queda con entrada y
+      // horario, y enlaza a la guía («Guía a fondo»).
+      // Era "Cascadas de Micos 2026 | Precio, Saltos y Cómo Llegar".
+      metaTitle: "Cascadas de Micos: precio de entrada y horario 2026",
+      metaDescription: "Siete cascadas con saltos, tirolesa, kayak y skybike a 20 min de Ciudad Valles. Entrada $100 MXN, abre diario de 08:00 a 18:00. Chaleco y casco obligatorios.",
       keywords: ["cascadas de micos", "micos precio", "saltos en micos", "cascadas de micos ciudad valles", "qué hacer en ciudad valles"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta entrar a las Cascadas de Micos?", respuesta: "La entrada cuesta $100 MXN y abre todos los días de 08:00 a 18:00. Las actividades (saltos, tirolesa, kayak, skybike) se contratan aparte en el lugar." },
@@ -354,8 +370,8 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascadas-de-tamasopo/gallery-15.jpg",
     ],
     seo: {
-      metaTitle: "Cascadas de Tamasopo 2026 | Precio, Horarios y Pozas para Nadar",
-      metaDescription: "Pozas de agua azul turquesa para nadar en Tamasopo, ideales para familias. Entrada $60 MXN, abre todos los días 08:00–17:00, a 45 min de Ciudad Valles. Solo bloqueador biodegradable.",
+      metaTitle: "Cascadas de Tamasopo 2026 | Precio, Horarios y Pozas",
+      metaDescription: "Pozas turquesa para nadar en Tamasopo, ideales en familia. Entrada $60 MXN, abre diario 08:00–17:00, a 45 min de Ciudad Valles. Solo bloqueador biodegradable.",
       keywords: ["cascadas de tamasopo", "tamasopo precio", "cascadas de tamasopo horario", "qué hacer en tamasopo", "pozas para nadar huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta la entrada a las Cascadas de Tamasopo?", respuesta: "La entrada cuesta $60 MXN y el parque abre todos los días de 08:00 a 17:00. Es uno de los accesos más económicos de la Huasteca Potosina." },
@@ -389,7 +405,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Siete Cascadas de Tamasopo 2026 | Saltos y Pozas Turquesa",
-      metaDescription: "Escalera natural de siete cascadas turquesas en Tamasopo donde saltas de poza en poza con chaleco, casco y guía. Saltos para todos los niveles y pozas cristalinas para nadar.",
+      metaDescription: "Siete cascadas turquesas en escalera en Tamasopo: saltas de poza en poza con chaleco, casco y guía. Saltos para todos los niveles y pozas claras para nadar.",
       keywords: ["siete cascadas tamasopo", "7 cascadas tamasopo", "saltos en tamasopo", "que hacer en tamasopo", "ruta acuática huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿Qué son las Siete Cascadas de Tamasopo?", respuesta: "Una escalera natural de siete cascadas turquesas en secuencia, donde se salta de poza en poza con chaleco, casco y guía. Hay saltos para todos los niveles y pozas cristalinas para quienes prefieren solo nadar." },
@@ -420,7 +436,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Hacienda Los Gómez Tamasopo 2026 | Cascadas y Pozas Turquesa",
-      metaDescription: "Paraje natural en Tamasopo con pequeñas cascadas, pozas de agua turquesa y grandes sabinos, parte de la Ruta Acuática del Puente de Dios. Qué es y cómo visitarlo.",
+      metaDescription: "Paraje en Tamasopo con pequeñas cascadas, pozas de agua turquesa y grandes sabinos, parte de la Ruta Acuática del Puente de Dios. Qué es y cómo visitarlo.",
       keywords: ["hacienda los gómez", "hacienda los gomez tamasopo", "ruta acuática tamasopo", "pozas turquesa tamasopo", "que hacer en tamasopo"],
       faqPrincipales: [
         { pregunta: "¿Qué es Hacienda Los Gómez?", respuesta: "Un paraje natural a orillas del río en Tamasopo, con pequeñas cascadas, pozas de agua turquesa y grandes sabinos de sombra, ideal para nadar y descansar." },
@@ -431,7 +447,9 @@ export const DESTINOS_DB: Destino[] = [
   {
     id: "balneario_taninul", slug: "balneario-taninul",
     nombre: "Balneario Taninul", zona: "Ciudad Valles", tipo: "Naturaleza", icon: "Thermometer",
-    descripcion: "Aguas termales sulfurosas (36°C constante) y lodo terapéutico.",
+    // 38 °C: lo confirmó Manolo el 10 nov 2026. Aquí decía 36 y la narrativa,
+    // 38. Ficha congelada: de ella solo se cambió ese número.
+    descripcion: "Aguas termales sulfurosas (38°C constante) y lodo terapéutico.",
     duracion_hrs: 4, precio_entrada: "$150 MXN", precio_entrada_mxn: 150, dificultad: "baja",
     ideal_para: ["familia", "pareja", "relajacion"],
     horario: "07:00–20:00", dias_abierto: "Lunes a Domingo",
@@ -439,17 +457,17 @@ export const DESTINOS_DB: Destino[] = [
     advertencias: "NO llevar joyería de plata (azufre la oscurece).",
     como_llegar: "15 min desde Valles",
     que_llevar: ["traje de baño", "sandalias", "toalla"],
-    datos_curiosos: ["Agua mantiene 36°C constante todo el año"],
+    datos_curiosos: ["Agua mantiene 38°C constante todo el año"],
     errores_comunes: ["Llevar joyería de plata"],
     lat: 21.9452, lng: -98.8895,
     imagen_hero: "/imagenes/balneario-taninul/hero.webp",
     imagen_galeria: [],
     seo: {
-      metaTitle: "Balneario Taninul Ciudad Valles 2026 | Aguas Termales 36°C — Guía Completa",
-      metaDescription: "Sumérgete en las aguas termales sulfurosas de Taninul a 36°C constante, a solo 15 minutos de Ciudad Valles. Entrada $150 MXN, abierto todos los días de 7 a 20h.",
+      metaTitle: "Balneario Taninul Ciudad Valles 2026 | Aguas Termales 38°C — Guía Completa",
+      metaDescription: "Sumérgete en las aguas termales sulfurosas de Taninul a 38°C constante, a solo 15 minutos de Ciudad Valles. Entrada $150 MXN, abierto todos los días de 7 a 20h.",
       keywords: ["balneario taninul", "aguas termales ciudad valles", "taninul san luis potosi", "balneario sulfuroso huasteca", "termas ciudad valles 2026"],
       faqPrincipales: [
-        { pregunta: "¿A qué temperatura están las aguas de Taninul?", respuesta: "Las aguas termales del Balneario Taninul mantienen una temperatura constante de 36–38°C todo el año, gracias a su origen sulfuroso natural. Es ideal para relajación muscular y tratamientos de lodo terapéutico." },
+        { pregunta: "¿A qué temperatura están las aguas de Taninul?", respuesta: "Las aguas termales del Balneario Taninul mantienen una temperatura constante de 38°C todo el año, gracias a su origen sulfuroso natural. Es ideal para relajación muscular y tratamientos de lodo terapéutico." },
         { pregunta: "¿Por qué no se puede llevar joyería de plata a Taninul?", respuesta: "El agua de Taninul contiene azufre natural que reacciona con la plata y la oscurece de forma permanente en minutos. Se recomienda dejar cualquier joya de plata en el hotel antes de visitar." },
         { pregunta: "¿Cómo llegar al Balneario Taninul desde Ciudad Valles?", respuesta: "El Balneario Taninul está a solo 15 minutos de Ciudad Valles. Toma la carretera 85 hacia Tampico, el acceso está señalizado. También puedes llegar en taxi o mototaxi desde el centro de Valles." },
       ],
@@ -495,8 +513,12 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/cascadas-minas-viejas/gallery-6.jpg",
     ],
     seo: {
-      metaTitle: "Guía Cascadas Minas Viejas 2026 | El Naranjo SLP",
-      metaDescription: "Descubre las Cascadas de Minas Viejas en 2026: precios, horarios, cómo llegar y consejos para ver el turquesa más intenso de la Huasteca Potosina. ¡Planea ya!",
+      // Fase 3 SEO (10 nov 2026): la ficha es la DUEÑA de «minas viejas»; el
+      // artículo del blog se queda con la experiencia (pozas, rappel). La meta
+      // vieja era genérica («¡Planea ya!»): ahora lleva los datos de la ficha.
+      // Era "Guía Cascadas Minas Viejas 2026 | El Naranjo SLP".
+      metaTitle: "Cascadas de Minas Viejas 2026: precio, horario y cómo llegar",
+      metaDescription: "Minas Viejas, El Naranjo: dos caídas de 50 m y pozas turquesa. Entrada $100 MXN, solo efectivo; abre diario de 8:00 a 18:00, a 1 h 45 min de Ciudad Valles.",
       keywords: ["minas viejas cascadas", "el naranjo san luis potosi", "cascadas huasteca potosina", "minas viejas 2026", "pozas turquesa slp"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta la entrada a Minas Viejas en 2026?", respuesta: "El costo aproximado es de $100 MXN por persona. Solo efectivo, no hay cajero en la zona." },
@@ -540,7 +562,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Laguna Media Luna Rioverde 2026 | Guía de Viaje",
-      metaDescription: "Visita el Manantial de la Media Luna en 2026: buceo, snorkel y aguas frescas y cristalinas en Rioverde, San Luis Potosí. Precios, reservaciones y cómo llegar desde Ciudad Valles.",
+      metaDescription: "Manantial de la Media Luna en Rioverde: buceo, snorkel y aguas frescas y cristalinas. Entrada $150 MXN, abre de 08:00 a 18:30, a 2 h de Ciudad Valles.",
       keywords: ["laguna media luna rioverde", "manantial san luis potosi", "buceo media luna", "que hacer en rioverde", "media luna 2026"],
       faqPrincipales: [
         { pregunta: "¿El agua de la Media Luna es fría o templada?", respuesta: "Es un manantial de aguas frescas y cristalinas, no un balneario de aguas termales calientes. Para inmersiones largas de buceo se recomienda traje de neopreno." },
@@ -584,7 +606,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Cascada El Aguacate Tamasopo 2026 | Guía Huasteca",
-      metaDescription: "Cascada El Aguacate en Tamasopo: ~75 metros de caída, sendero de selva y pozas naturales. Guía 2026 con precios, cómo llegar y lo que nadie te cuenta. ¡Descúbrela!",
+      metaDescription: "Cascada El Aguacate en Tamasopo: ~75 metros de caída, sendero de selva y pozas naturales. Entrada $50 MXN, a 75 min de Ciudad Valles. Cómo llegar en 2026.",
       keywords: ["cascada el aguacate tamasopo", "cascadas secretas huasteca potosina", "senderismo tamasopo", "cascadas slp 2026", "turismo aventura san luis potosi"],
       faqPrincipales: [
         { pregunta: "¿Es difícil llegar a la Cascada El Aguacate?", respuesta: "La caminata es de dificultad media — unos 45 minutos por sendero de selva. Se requiere calzado de montaña y guía local obligatorio." },
@@ -678,7 +700,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Cascada El Meco El Naranjo 2026 | Mirador y Pangas",
-      metaDescription: "Cascada El Meco en El Naranjo: la única cascada permanente de la zona. Guía 2026 con precios de panga, rappel, restaurantes con vista y cómo llegar. ¡Descúbrela!",
+      metaDescription: "Cascada El Meco en El Naranjo: la única cascada permanente de la zona. Guía 2026 con precios de panga, rappel, restaurantes con vista y cómo llegar.",
       keywords: ["cascada el meco el naranjo", "paseo en panga huasteca", "el meco san luis potosi 2026", "cascadas permanentes huasteca", "que hacer en el naranjo slp"],
       faqPrincipales: [
         { pregunta: "¿El mirador de Cascada El Meco es gratuito?", respuesta: "Sí, el mirador desde la carretera es completamente gratuito. El acceso al río y las pangas tienen costo adicional (~$60 MXN entrada, ~$150 MXN panga)." },
@@ -723,11 +745,14 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Sótano de las Huahuas 2026 | Espectáculo de Aves",
-      metaDescription: "Sótano de las Huahuas en Aquismón: 478 m de profundidad y miles de aves en espiral al atardecer. Guía 2026 con horarios, caminata y diferencias con las Golondrinas.",
+      metaDescription: "Sótano de las Huahuas (Aquismón): abismo de 478 m; miles de aves salen al amanecer y vuelven al atardecer. Entrada $60 MXN y diferencias con Golondrinas.",
       keywords: ["sótano de las huahuas aquismón", "abismo de aves huasteca potosina", "senderismo aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿A qué hora salen las aves del Sótano de las Huahuas?", respuesta: "Las aves salen al amanecer (6:00–7:00 AM) y regresan al atardecer (18:00–19:00 PM). El atardecer suele ser más espectacular por la luz." },
-        { pregunta: "¿En qué se diferencia el Sótano de las Huahuas del Sótano de las Golondrinas?", respuesta: "Las Golondrinas (376 m de caída libre) tiene vencejos y el vuelo icónico es al amanecer. Las Huahuas (478 m) alberga miles de aves —loros verdes y vencejos— y el mejor espectáculo es al atardecer. Son experiencias distintas." },
+        // 10 nov 2026: decía que en Golondrinas el vuelo «es al amanecer» y en
+        // Huahuas «al atardecer». Manolo confirmó que en los DOS las aves salen
+        // al amanecer y regresan al atardecer.
+        { pregunta: "¿En qué se diferencia el Sótano de las Huahuas del Sótano de las Golondrinas?", respuesta: "En los dos las aves salen al amanecer y regresan al atardecer. Las Golondrinas (376 m de caída libre) es casa de vencejos; Las Huahuas (478 m) alberga miles de aves, loros verdes y vencejos. Son experiencias distintas." },
         { pregunta: "¿Es difícil la caminata al Sótano de las Huahuas?", respuesta: "La caminata de subida es de 30–40 minutos de intensidad media. Requiere calzado de montaña. No es apta para personas con problemas serios de movilidad." },
       ],
     },
@@ -766,7 +791,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Cuevas de Mantetzulel Aquismón 2026 | Guía Completa",
-      metaDescription: "Cuevas de Mantetzulel en Aquismón: bóvedas sagradas con luz cenital y turismo comunitario Tének. Guía 2026 con precios, caminata y el mejor horario para la foto perfecta.",
+      metaDescription: "Cuevas de Mantetzulel en Aquismón: bóvedas sagradas con luz cenital y turismo comunitario tének. Entrada $70 MXN, caminata y mejor hora para la foto.",
       keywords: ["cuevas mantetzulel aquismón", "espeleología huasteca potosina", "turismo comunitario tének slp", "mantetzulel 2026", "cuevas sagradas san luis potosi"],
       faqPrincipales: [
         { pregunta: "¿Cuántas cuevas se visitan en Mantetzulel?", respuesta: "El recorrido estándar visita 2 cuevas grandes. Con tiempo y condición física se pueden explorar las 4 cavidades del conjunto." },
@@ -780,7 +805,10 @@ export const DESTINOS_DB: Destino[] = [
     id: "nacimiento-huichihuayan",
     slug: "nacimiento-huichihuayan",
     nombre: "Nacimiento de Huichihuayán",
-    zona: "Xilitla",
+    // Es del municipio de Huehuetlán, cerca de Xilitla (confirmado por Manolo
+    // el 10 nov 2026; aquí decía Xilitla). 🔴 Por eso ya no sale en la lista
+    // de lugares de Xilitla de /tours-en-xilitla (`zona === "Xilitla"`).
+    zona: "Huehuetlán",
     tipo: "Naturaleza",
     icon: "Waves",
     descripcion: "Río cristalino que nace de una cueva — tan claro que se ven los peces en el fondo desde la orilla.",
@@ -810,8 +838,11 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/nacimiento-huichihuayan/rio.jpg",
     ],
     seo: {
-      metaTitle: "Nacimiento de Huichihuayán 2026 | Huehuetlán SLP",
-      metaDescription: "Nacimiento de Huichihuayán en Huehuetlán: río cristalino con peces visibles y la danza de los Voladores. El destino más auténtico del sur de la Huasteca. Guía 2026 completa.",
+      // Fase 3 SEO (10 nov 2026): la ficha es la DUEÑA del nombre del lugar
+      // (posición 2.9); el artículo del blog se queda con la experiencia.
+      // Era "Nacimiento de Huichihuayán 2026 | Huehuetlán SLP".
+      metaTitle: "Nacimiento de Huichihuayán: entrada, horario y cómo llegar",
+      metaDescription: "Nacimiento de Huichihuayán en Huehuetlán: río cristalino con peces visibles y la danza de los Voladores. Entrada $30 MXN, a 80 min de Ciudad Valles.",
       keywords: ["nacimiento huichihuayán huehuetlán", "rio cristalino huasteca potosina", "voladores huichihuayan", "turismo huehuetlán slp 2026", "destinos sur huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿El agua de Huichihuayán está fría?", respuesta: "Es fresca y agradable, no tan fría como Tambaque. El clima cálido de la zona la mantiene a una temperatura ideal para nadar." },
@@ -903,7 +934,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Voladores de Tamaletón 2026 | Guía del Ritual Sagrado Teenek",
-      metaDescription: "Descubre el Centro Ceremonial Tamaletón en Tancanhuitz. Guía de precios 2026, logística desde Ciudad Valles y el misterio de la Danza del Gavilán Tének. ¡Visítalo ahora!",
+      metaDescription: "Centro Ceremonial Tamaletón en Tancanhuitz: el ritual de los Voladores tének. Entrada $100 MXN, a 52 min de Ciudad Valles; más actividad de jueves a domingo.",
       keywords: ["voladores de tamaletón", "huasteca potosina turismo cultural 2026", "danza del gavilán tancanhuitz", "tancanhuitz san luis potosí", "cultura tének huasteca"],
       faqPrincipales: [
         { pregunta: "¿Los Voladores de Tamaletón son lo mismo que los de Papantla?", respuesta: "No. Aunque comparten el concepto del vuelo, Tamaletón pertenece a la etnia Tének, usa vestimenta de manta blanca con plumas naturales y tiene origen histórico independiente vinculado al gavilán sagrado, no al quetzal." },
@@ -1005,13 +1036,37 @@ export const DESTINOS_DB: Destino[] = [
       "/imagenes/xilitla-pueblo-magico/tianguis.jpg",
     ],
     seo: {
-      metaTitle: "Xilitla Huasteca Potosina 2026 | Guía de Viaje Completa",
-      metaDescription: "Guía de Xilitla, el pueblo surrealista de la Huasteca Potosina: horarios 2026 y costo de Las Pozas ($180 MXN), museos, tours y consejos de seguridad.",
-      keywords: ["xilitla san luis potosí 2026", "jardín escultórico edward james boletos", "museo leonora carrington xilitla precios", "cómo llegar a xilitla desde ciudad valles", "pueblos mágicos huasteca potosina"],
+      // Fase 3 SEO (10 nov 2026): la ficha es la DUEÑA de «xilitla» (2,983
+      // impresiones en la posición 10.4 y 0 clics). «Qué hacer en Xilitla» es
+      // del artículo de la guía y «clima en Xilitla», del del clima: esta ficha
+      // los enlaza (`GUIAS_BLOG_DESTINO`) y se queda con el pueblo, cómo
+      // llegar y dónde dormir. Era "Xilitla Huasteca Potosina 2026 | Guía de
+      // Viaje Completa".
+      metaTitle: "Xilitla, Pueblo Mágico 2026: guía y cómo llegar",
+      metaDescription: "Xilitla, el Pueblo Mágico surrealista de la Huasteca Potosina: Las Pozas ($180 MXN), museos, cómo llegar (1 h 30 min desde Ciudad Valles) y dónde dormir.",
+      keywords: ["xilitla", "xilitla pueblo mágico", "xilitla san luis potosí 2026", "cómo llegar a xilitla", "dónde dormir en xilitla", "pueblos mágicos huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿Cuánto tiempo se necesita para recorrer Xilitla?", respuesta: "Mínimo 2 días: el primero para Las Pozas completo y la Cascada Los Comales, el segundo para los museos del centro y el Huapango dominical en la plaza." },
         { pregunta: "¿Es seguro viajar a Xilitla en 2026?", respuesta: "Sí, es seguro siempre que se transite de día. El principal riesgo no es la violencia sino las condiciones de las carreteras de sierra: neblina densa, curvas cerradas y falta de iluminación nocturna." },
-        { pregunta: "¿Cuánto cuesta la entrada a Las Pozas de Xilitla en 2026?", respuesta: "Adultos: $180 MXN. Niños 6–12 años y adultos mayores con INAPAM: $120 MXN. Menores de 6 años: gratis. Guía obligatorio adicional: $30 MXN en español." },
+        // «Adultos mayores con INAPAM» no es la regla del jardín (65 o más; la
+        // INAPAM se da desde los 60): las cifras salen de `POZAS_ACCESO`.
+        { pregunta: "¿Cuánto cuesta la entrada a Las Pozas de Xilitla en 2026?", respuesta: `Adultos: $${POZAS_ACCESO.adulto} MXN. Niños de 6 a 12 años y mayores de 65: $${POZAS_ACCESO.reducida} MXN. Menores de 6 años: gratis. Guía obligatoria adicional: $${POZAS_ACCESO.guiaEspanol} MXN por persona en español.` },
+        // Fase 3 (10 nov 2026): la ficha era delgada (~1,236 palabras) para ser
+        // la dueña de «xilitla». Los tiempos salen de `tiemposDeViaje.ts`, los
+        // de Manolo; nada de «qué hacer», que es del artículo del blog.
+        {
+          pregunta: "¿Cómo llegar a Xilitla desde la Ciudad de México, Monterrey o San Luis Potosí?",
+          respuesta:
+            `En auto son unas ${enAuto("cdmx")} desde la Ciudad de México, ${enAuto("monterrey")} desde Monterrey, ${enAuto("tampico")} desde Tampico y ${enAuto("san-luis-potosi")} desde San Luis Potosí, que va por Rioverde y Jalpan sin pasar por Ciudad Valles. ` +
+            `Desde Ciudad Valles es ${horasEnPalabras(MINUTOS_VALLES_XILITLA)} por carretera de sierra, toda pavimentada. En autobús, de la Ciudad de México a Xilitla son ${enAutobus("cdmx", "xilitla")}. ` +
+            "Llega de día: después de las 18:00 la carretera no tiene iluminación y suele haber neblina.",
+        },
+        {
+          pregunta: "¿Dónde dormir en Xilitla?",
+          respuesta:
+            "En el pueblo o sobre el camino a Las Pozas, para no manejar de noche por la sierra y llegar a tiempo al jardín, que no tiene estacionamiento y donde quien llega tarde pierde su turno. " +
+            "El Hotel Paraíso Encantado está a unos minutos a pie de la entrada de Las Pozas.",
+        },
       ],
     },
   },
@@ -1035,7 +1090,7 @@ export const DESTINOS_DB: Destino[] = [
     imagen_hero: "/imagenes/aquismon-pueblo-magico/hero.jpg", imagen_galeria: [],
     seo: {
       metaTitle: "Aquismón Pueblo Mágico 2026 | Qué Ver y Cómo Llegar",
-      metaDescription: "Aquismón, Pueblo Mágico tének de la Huasteca Potosina y puerta a Tamul y los sótanos. Qué ver, su Parroquia de San Miguel Arcángel y cómo llegar desde Ciudad Valles.",
+      metaDescription: "Aquismón, Pueblo Mágico tének y puerta a Tamul y los sótanos. Qué ver, su Parroquia de San Miguel Arcángel y cómo llegar desde Ciudad Valles (~1 h).",
       keywords: ["aquismón pueblo mágico", "que ver en aquismón", "aquismón san luis potosí", "puerta a tamul", "huasteca potosina pueblos mágicos"],
       faqPrincipales: [
         { pregunta: "¿Por qué es Pueblo Mágico Aquismón?", respuesta: "Recibió el nombramiento el 11 de octubre de 2018 por su cultura tének viva, su arquitectura y ser la puerta de entrada a maravillas naturales como la Cascada de Tamul y el Sótano de las Golondrinas." },
@@ -1060,8 +1115,8 @@ export const DESTINOS_DB: Destino[] = [
     datos_curiosos: ["El 'chalán' de fierro opera desde hace más de 50 años y es símbolo de Axtla.", "El río se forma por la unión de los ríos Huichihuayán y Tancuilín."],
     errores_comunes: ["Nadar con el río crecido", "No llevar efectivo para el chalán"],
     seo: {
-      metaTitle: "Río Axtla y 'el Chalán' | Pozas para Nadar en Axtla de Terrazas",
-      metaDescription: "Acceso libre. Río de aguas cristalinas en Axtla de Terrazas con pozas para nadar y 'el chalán', la balsa de fierro que cruza el río jalada a mano desde hace más de 50 años.",
+      metaTitle: "Río Axtla y 'el Chalán' 2026 | Pozas para Nadar Gratis",
+      metaDescription: "Acceso libre. Río cristalino en Axtla de Terrazas con pozas para nadar y 'el chalán', la balsa de fierro que cruza el río jalada a mano hace más de 50 años.",
       keywords: ["río axtla", "el chalán axtla", "qué hacer en axtla de terrazas", "pozas para nadar huasteca potosina"],
       faqPrincipales: [],
     },
@@ -1086,7 +1141,7 @@ export const DESTINOS_DB: Destino[] = [
     imagen_hero: "/imagenes/castillo-de-la-salud/hero.jpg", imagen_galeria: ["/imagenes/castillo-de-la-salud/gallery-5.jpg", "/imagenes/castillo-de-la-salud/gallery-6.jpg"],
     seo: {
       metaTitle: "Castillo de la Salud 'Beto Ramón' Axtla 2026 | Guía",
-      metaDescription: "El Castillo de la Salud de Don Beto Ramón en Axtla de Terrazas: arquitectura surrealista, jardín medicinal y herbolaria tének. Precios, horarios y cómo llegar en 2026.",
+      metaDescription: "Castillo de la Salud de Don Beto Ramón en Axtla: arquitectura surrealista, jardín medicinal y herbolaria. Entrada $20 MXN, abre de 08:00 a 18:00.",
       keywords: ["castillo de la salud beto ramón", "axtla de terrazas turismo", "herbolaria huasteca potosina", "beto ramón curandero", "que hacer en axtla"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta entrar al Castillo de la Salud?", respuesta: "La entrada general es de ~$20 MXN ($10 niños y adultos mayores). La visita guiada cuesta ~$30 ($20 reducida). Abre todos los días de 8:00 a 18:00." },
@@ -1143,7 +1198,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Confundirlo con el parque de pago de Tamasopo", "Saltar sin medir la profundidad"],
     seo: {
       metaTitle: "El Trampolín, Tamasopo | Río Gratuito con Pozas Turquesa",
-      metaDescription: "Tramo público y gratuito del río Agua Buena en Tamasopo: agua turquesa, mini cascadas, pozas y cuerdas para lanzarse. Es DISTINTO del parque de pago Cascadas de Tamasopo.",
+      metaDescription: "Tramo público y gratuito del río Agua Buena en Tamasopo: agua turquesa, mini cascadas, pozas y cuerdas para lanzarse. No es el parque de pago de Tamasopo.",
       keywords: ["el trampolín tamasopo", "río agua buena tamasopo", "cascadas gratis huasteca potosina", "qué hacer en tamasopo"],
       faqPrincipales: [
         { pregunta: "¿El Trampolín es lo mismo que las Cascadas de Tamasopo?", respuesta: "No. El Trampolín es un tramo público y gratuito del río Agua Buena; las Cascadas de Tamasopo son un parque de pago distinto. Es la confusión más común de los visitantes." },
@@ -1170,7 +1225,7 @@ export const DESTINOS_DB: Destino[] = [
     imagen_hero: "/imagenes/zona-arqueologica-tamohi-el-consuelo/hero.jpg", imagen_galeria: [],
     seo: {
       metaTitle: "Zona Arqueológica Tamohí / El Consuelo 2026 | Tamuín SLP",
-      metaDescription: "Tamohí (El Consuelo), ciudad huasteca a orillas del río Tampaón en Tamuín, donde se halló 'El Adolescente Huasteco'. Horarios, entrada gratuita y cómo llegar. Guía 2026.",
+      metaDescription: "Tamohí (El Consuelo), ciudad huasteca junto al río Tampaón en Tamuín, donde se halló 'El Adolescente Huasteco'. Entrada gratuita, abre de 09:00 a 18:00.",
       keywords: ["tamohí el consuelo tamuín", "adolescente huasteco", "zona arqueológica tamuín", "huasteca arqueología slp", "inah tamohí"],
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta entrar a Tamohí / El Consuelo?", respuesta: "El acceso es gratuito según el INAH; solo se cobra una cuota por uso de videocámara (~$45 MXN). Abre de 9:00 a 18:00, con último acceso a las 17:00." },
@@ -1193,8 +1248,8 @@ export const DESTINOS_DB: Destino[] = [
     datos_curiosos: ["Se le considera una de las construcciones religiosas más antiguas de la Huasteca Potosina.", "Su construcción habría usado piedra unida con mezcla que incluía conchas marinas molidas."],
     errores_comunes: ["Dar por hecho horarios de visita", "Ir esperando un museo (es templo en uso)"],
     seo: {
-      metaTitle: "Templo de San Juan Bautista, Coxcatlán | Uno de los Más Antiguos",
-      metaDescription: "Templo y ex convento del siglo XVI frente a la plaza de Coxcatlán, considerado uno de los más antiguos de la Huasteca Potosina. Acceso libre; es un templo en uso, no un museo.",
+      metaTitle: "Templo de San Juan Bautista, Coxcatlán | Siglo XVI",
+      metaDescription: "Templo y ex convento del siglo XVI frente a la plaza de Coxcatlán, de los más antiguos de la Huasteca Potosina. Acceso libre; es un templo en uso, no un museo.",
       keywords: ["templo san juan bautista coxcatlán", "ex convento coxcatlán", "qué ver en coxcatlán", "iglesias antiguas huasteca potosina"],
       faqPrincipales: [],
     },
@@ -1217,7 +1272,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Confundirla con la Poza de Rosendo (otro sitio)", "Ir en lluvias (agua turbia)"],
     seo: {
       metaTitle: "Cascada del Rancho El Zapote (Poza Azul), Coxcatlán",
-      metaDescription: "Cascada y poza turquesa en Coxcatlán conocida como 'poza azul', de los rincones menos masificados de la Huasteca Potosina. Sitio poco documentado: confirma acceso y tarifa localmente.",
+      metaDescription: "Cascada y poza turquesa en Coxcatlán conocida como 'poza azul', de los rincones menos masificados de la Huasteca. Poco documentada: confirma acceso y tarifa.",
       keywords: ["poza azul coxcatlán", "cascada rancho el zapote", "qué hacer en coxcatlán", "cascadas poco conocidas huasteca potosina"],
       faqPrincipales: [],
     },
@@ -1240,7 +1295,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Faltar al respeto (es cementerio activo)", "Ir sin guía local"],
     seo: {
       metaTitle: "Ruinas de El Jopoy, Coxcatlán | Ermita Colonial en Ruinas",
-      metaDescription: "Restos de una ermita colonial de muros de piedra y grandes arcos en Coxcatlán, hoy usada como panteón comunitario. Acceso libre; cobra vida el 1 y 2 de noviembre.",
+      metaDescription: "Restos de una ermita colonial de muros de piedra y grandes arcos en Coxcatlán, hoy panteón comunitario. Acceso libre; cobra vida el 1 y 2 de noviembre.",
       keywords: ["ruinas de el jopoy", "el jopoy coxcatlán", "ermita colonial huasteca potosina", "qué hacer en coxcatlán"],
       faqPrincipales: [],
     },
@@ -1263,7 +1318,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Ir fuera de temporada esperando las danzas", "Subestimar la escalinata"],
     seo: {
       metaTitle: "Tancanhuitz | La Iglesia de los 149 Escalones y el Xantolo",
-      metaDescription: "Cabecera tének-nahua con su parroquia de San Miguel Arcángel en lo alto de una larga escalinata, y una de las tradiciones de Xantolo, huapango y danzas más fuertes de la Huasteca.",
+      metaDescription: "Cabecera tének-nahua con su parroquia de San Miguel Arcángel en lo alto de una larga escalinata, y uno de los Xantolos más vivos de la Huasteca. Acceso libre.",
       keywords: ["tancanhuitz", "iglesia 149 escalones", "xantolo tancanhuitz", "ciudad santos san luis potosí"],
       faqPrincipales: [],
     },
@@ -1286,7 +1341,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Visitar fuera del Xantolo esperando las comparsas", "Dar por segura la apertura de la cascada"],
     seo: {
       metaTitle: "San Martín Chalchicuautla | La Cuna del Xantolo",
-      metaDescription: "Municipio conocido como la 'Cuna del Xantolo': del 31 de octubre al 2 de noviembre el Día de Muertos se vive con hondas raíces nahuas. Cerca está la Cascada del Manantial.",
+      metaDescription: "La 'Cuna del Xantolo': del 31 de octubre al 2 de noviembre el Día de Muertos se vive aquí con hondas raíces nahuas. Cerca está la Cascada del Manantial.",
       keywords: ["san martín chalchicuautla", "cuna del xantolo", "xantolo huasteca potosina", "día de muertos san luis potosí"],
       faqPrincipales: [],
     },
@@ -1332,7 +1387,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Ir esperando la Toreada en Día de Muertos (es Semana Santa)"],
     seo: {
       metaTitle: "Tanlajás | La Toreada de los Diablos y Cocina Tének",
-      metaDescription: "Pueblo de raíces tének conocido por sus zacahuiles, bocoles y cecina, y por la 'Toreada de los Diablos', ritual de enmascarados que se celebra en Semana Santa (no en Día de Muertos).",
+      metaDescription: "Pueblo tének de zacahuiles, bocoles y cecina, y de la 'Toreada de los Diablos', ritual de enmascarados que se celebra en Semana Santa (no en Día de Muertos).",
       keywords: ["tanlajás", "toreada de los diablos", "zacahuil huasteca potosina", "cultura tének"],
       faqPrincipales: [
         { pregunta: "¿Cuándo es la Toreada de los Diablos de Tanlajás?", respuesta: "Se celebra en Semana Santa, no en Día de Muertos. Es el error más común al planear la visita." },
@@ -1357,7 +1412,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Llegar sin contactar a un laudero", "Confundir Texquitote Primero con Segundo"],
     seo: {
       metaTitle: "Texquitote, Matlapa | Cuna de la Laudería del Son Huasteco",
-      metaDescription: "Comunidad nahua donde unos 40 lauderos construyen a mano jaranas, quintas huapangueras, violines y arpas del son huasteco. Los talleres son particulares: contacta antes de ir.",
+      metaDescription: "Comunidad nahua donde unos 40 lauderos hacen a mano jaranas, quintas huapangueras, violines y arpas del son huasteco. Talleres particulares: avisa antes.",
       keywords: ["texquitote", "laudería son huasteco", "jarana huasteca", "quinta huapanguera", "artesanías huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿Se puede visitar un taller de lauderos en Texquitote?", respuesta: "Sí, pero los talleres son particulares y no tienen horario formal: hay que contactar antes a un laudero para acordar la visita." },
@@ -1382,7 +1437,7 @@ export const DESTINOS_DB: Destino[] = [
     errores_comunes: ["Esperar servicios turísticos formales", "Confundirla con la Laguna Marland"],
     seo: {
       metaTitle: "Laguna de los Suspiros, Ébano | El Higuerón de 200 Años",
-      metaDescription: "Laguna en el ejido de Plan de Iguala (Ébano) cuyo emblema es un higuerón de unos 200 años, con enormes raíces que forman dos 'puertas' naturales. Sin servicios turísticos formales.",
+      metaDescription: "Laguna del ejido Plan de Iguala (Ébano) cuyo emblema es un higuerón de unos 200 años, con raíces que forman dos 'puertas' naturales. Sin servicios formales.",
       keywords: ["laguna de los suspiros", "ébano san luis potosí", "higuerón laguna de los suspiros", "qué hacer en ébano"],
       faqPrincipales: [],
     },
@@ -1529,7 +1584,7 @@ export const DESTINOS_DB: Destino[] = [
     ],
     seo: {
       metaTitle: "Museo Leonora Carrington Xilitla | Horario y Precios 2026",
-      metaDescription: "Museo Leonora Carrington en el centro de Xilitla: escultura, litografía y dibujo de la artista surrealista amiga de Edward James. Horario, precios y cómo llegar.",
+      metaDescription: "Museo Leonora Carrington en el centro de Xilitla: escultura, litografía y dibujo de la surrealista amiga de Edward James. Entrada $50 MXN, de martes a domingo.",
       keywords: ["museo leonora carrington xilitla", "leonora carrington xilitla", "que hacer en xilitla", "surrealismo xilitla", "museos huasteca potosina"],
       faqPrincipales: [
         { pregunta: "¿Cuál es el horario del Museo Leonora Carrington en Xilitla?", respuesta: "Abre de martes a domingo, de 11:00 a 17:00 horas (último acceso a las 16:30); cierra los lunes." },

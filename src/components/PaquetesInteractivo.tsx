@@ -6,11 +6,11 @@ import { Check, Moon, MapPin, ChevronLeft, ChevronRight, Info } from "lucide-rea
 import { GaleriaPaquete } from "@/components/GaleriaPaquete";
 import { PatronDestinos } from "@/components/PatronDestinos";
 import { PaqueteFormCta } from "@/components/PaqueteFormCta";
-import { galeriaPaquete, precioVisible, precioVisibleTachado, type Paquete } from "@/lib/paquetes";
+import { precioVisible, precioVisibleTachado, type Paquete } from "@/lib/paquetes";
 import { PROMO_TEMPORADA } from "@/lib/tours";
 import { ahorroPaquete } from "@/lib/ahorroPaquete";
 import { useLocale } from "@/lib/i18n/useLocale";
-import { getPaquetesInteractivoUI } from "@/lib/i18n/paquetes.en";
+import { getPaquetesInteractivoUI, galeriaPaqueteLocalizada } from "@/lib/i18n/paquetes.en";
 import { urlComparar } from "@/lib/comparador";
 import { comparadorUI } from "@/lib/i18n/comparador";
 
@@ -44,7 +44,9 @@ function tituloCorto(tour: string): { nombre: string; dia: string } {
 function PaqueteCard({ p }: { p: Paquete }) {
   const { locale, lp } = useLocale();
   const t = getPaquetesInteractivoUI(locale);
-  const fotos = galeriaPaquete(p);
+  // Con los alt en el idioma de la página: en /en/paquetes salían los del
+  // catálogo en español («parada 2 de 9»). En español, lo mismo de antes.
+  const fotos = galeriaPaqueteLocalizada(p, locale);
   const ahorro = ahorroPaquete(p);
 
   return (

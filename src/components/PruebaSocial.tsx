@@ -103,7 +103,7 @@ export function PruebaSocial({ locale, fotos }: { locale: Locale; fotos: FotoVia
                 <p className="font-dm text-[12px] text-dorado" aria-label={t(`${r.estrellas} de 5 estrellas`, `${r.estrellas} out of 5 stars`)}>
                   {"★".repeat(Math.max(1, Math.min(5, r.estrellas)))}
                 </p>
-                <blockquote className="mt-3 line-clamp-4 font-dm text-[15px] leading-relaxed text-negro/75">
+                <blockquote lang="es" className="mt-3 line-clamp-4 font-dm text-[15px] leading-relaxed text-negro/75">
                   &ldquo;{r.texto}&rdquo;
                 </blockquote>
                 <div className="mt-4 flex items-center gap-3">

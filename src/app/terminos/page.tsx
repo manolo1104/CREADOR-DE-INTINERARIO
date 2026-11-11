@@ -1,85 +1,46 @@
-import { Metadata } from "next";
+import { Fragment } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { CONTACTO } from "@/lib/contacto";
-import { TOURS_DB, GRUPO_MAX, esPorPersona } from "@/lib/tours";
-import { ANTICIPO_PCT } from "@/lib/carrito";
-
-const SITE = "https://www.huasteca-potosina.com";
-
-export const metadata: Metadata = {
-  title: "Términos y condiciones — Tours Huasteca Potosina",
-  // La descripción no fija el porcentaje a propósito: la regla vive en
-  // `pctACobrar` y ha cambiado dos veces en 2026.
-  description:
-    "Condiciones de contratación de nuestros tours: reservas, pagos y anticipo, cancelaciones, responsabilidades del viajero, seguridad y uso de imágenes.",
-  alternates: { canonical: `${SITE}/terminos` },
-  robots: { index: true, follow: true },
-  openGraph: {
-    title: "Términos y condiciones — Tours Huasteca Potosina",
-    description: "Condiciones de contratación de nuestros tours en la Huasteca Potosina.",
-    url: `${SITE}/terminos`,
-    type: "website",
-    // Se compartía sin foto: el layout ya no le presta la suya a `twitter`
-    // y esta página no tiene `opengraph-image`. Next rellena twitter:image con
-    // esta. 1200×800 es la medida REAL del archivo (no 630).
-    images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: "Tours Huasteca Potosina" }],
-  },
-};
+import { headers } from "next/headers";
+import { asLocale, buildAlternates, localeUrl, SITE } from "@/lib/i18n/config";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { getTerminos, type Seg } from "@/lib/i18n/terminos.en";
 
 /**
- * Última revisión del documento. Actualízala si cambian las condiciones.
- * 28 sep 2026: pago completo del recorrido suelto de un día, cupo máximo real
- * (salía "12" y el catálogo llega a 14) y las excepciones de cancelación y de
- * precio de niños de los recorridos que no se cobran por persona (el Edén,
- * por grupo, y el RZR, por vehículo).
+ * Términos y condiciones, en español y en inglés (/en desde el 10 nov 2026).
+ *
+ * Todo el texto —y la fecha de la última revisión— vive en
+ * `src/lib/i18n/terminos.en.ts`, los dos idiomas juntos. Los números que
+ * cambian con el negocio (anticipo, cupo máximo, excepciones) salen de donde
+ * vive la regla, no se escriben ahí a mano. El idioma llega por el header
+ * `x-locale` del middleware.
  */
-const ULTIMA_ACTUALIZACION = "28 de septiembre de 2026";
 
-/**
- * 🔴 Los recorridos con condiciones de cancelación propias, del catálogo
- * (`cancelacion` en `tours.ts`). El Edén en el Jardín NO tiene reembolso
- * porque la Fundación Las Pozas no lo devuelve; el resumen de abajo prometía
- * "cancelación gratuita" a todos. Uno nuevo con la misma excepción entra solo.
- */
-const CON_CANCELACION_PROPIA = TOURS_DB.filter((t) => t.cancelacion);
+const RUTA = "/terminos";
 
-/**
- * Los que NO se cobran por persona: por grupo completo (`tarifaGrupo`, el Edén)
- * o por vehículo (el RZR, `precio × unidades` en RzrBookingForm). En ninguno
- * hay precio de niño.
- * 🔴 Filtraba solo por `tarifaGrupo` y el RZR se quedaba con el 70 %/50 % en
- * los términos aunque el pago nunca lo aplica. `esPorPersona` es el mismo
- * criterio que usan /precios y /tours.
- */
-const SIN_PRECIO_NINO = TOURS_DB.filter((t) => !esPorPersona(t));
-
-/** "A", "A y B", "A, B y C". */
-const enLista = (nombres: string[]) =>
-  nombres.length <= 1 ? nombres.join("") : `${nombres.slice(0, -1).join(", ")} y ${nombres[nombres.length - 1]}`;
-
-// Esta página era una de las dos indexables del sitio sin un solo dato
-// estructurado. Mismo patrón que /creditos: la ficha de la página y las migas.
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebPage",
-      name: "Términos y condiciones",
-      description:
-        "Condiciones de contratación de los tours: reservas, anticipo, pagos, cancelaciones, responsabilidades del viajero, seguridad y uso de imágenes.",
-      url: `${SITE}/terminos`,
-      inLanguage: "es-MX",
-      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getTerminos(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    alternates: buildAlternates(RUTA, locale),
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl(RUTA, locale),
+      siteName: "Tours Huasteca Potosina",
+      // Faltaba og:locale (auditoría del 10 nov).
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      // Se compartía sin foto: el layout ya no le presta la suya a `twitter`
+      // y esta página no tiene `opengraph-image`. Next rellena twitter:image con
+      // esta. 1200×800 es la medida REAL del archivo (no 630).
+      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: t.ogImageAlt }],
     },
-    {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
-        { "@type": "ListItem", position: 2, name: "Términos y condiciones", item: `${SITE}/terminos` },
-      ],
-    },
-  ],
-};
+  };
+}
 
 function H2({ children }: { children: React.ReactNode }) {
   return <h2 className="font-cormorant font-light text-verde-profundo text-2xl mt-12 mb-4">{children}</h2>;
@@ -98,165 +59,105 @@ function Li({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** Pinta un párrafo del diccionario con las clases que siempre tuvo esta página. */
+function Rico({ segs }: { segs: Seg[] }) {
+  return (
+    <>
+      {segs.map((s, i) => {
+        if (typeof s === "string") return <Fragment key={i}>{s}</Fragment>;
+        if ("b" in s) return <strong key={i} className="text-verde-profundo">{s.b}</strong>;
+        if ("web" in s) return <span key={i} className="text-verde-profundo">{s.web}</span>;
+        if ("mail" in s)
+          return (
+            <a key={i} href={`mailto:${s.mail}`} className="text-verde-selva underline underline-offset-2">
+              {s.mail}
+            </a>
+          );
+        return (
+          <Link key={i} href={s.href} className="text-verde-selva underline underline-offset-2">
+            {s.link}
+          </Link>
+        );
+      })}
+    </>
+  );
+}
+
 export default function TerminosPage() {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getTerminos(locale);
+
+  // Esta página era una de las dos indexables del sitio sin un solo dato
+  // estructurado. Mismo patrón que /creditos: la ficha de la página y las migas.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        name: t.webPageName,
+        description: t.webPageDescription,
+        url: localeUrl(RUTA, locale),
+        inLanguage: t.inLanguage,
+        isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+      },
+      buildBreadcrumbNode([{ name: t.breadcrumbActual, path: RUTA }], locale),
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-crema pt-28 pb-24">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div className="max-w-3xl mx-auto px-6">
-        <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-3">Legal</p>
+        <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-3">{t.eyebrow}</p>
         <h1 className="font-cormorant font-light text-verde-profundo mb-4" style={{ fontSize: "clamp(32px,6vw,54px)" }}>
-          Términos y <em className="text-dorado">condiciones</em>
+          {t.h1Pre}<em className="text-dorado">{t.h1Em}</em>
         </h1>
-        <p className="font-dm text-xs text-negro/40 mb-10">Última actualización: {ULTIMA_ACTUALIZACION}</p>
+        <p className="font-dm text-xs text-negro/40 mb-10">{t.ultimaActualizacion}</p>
+
+        {/* Solo en inglés: manda el texto español. */}
+        {t.avisoTraduccion && (
+          <p className="font-dm text-xs text-negro/55 border border-negro/10 bg-white px-4 py-3 mb-8">
+            {t.avisoTraduccion.antes}
+            <Link href={t.avisoTraduccion.href} hrefLang="es" className="underline underline-offset-2 text-verde-selva hover:text-verde-vivo">
+              {t.avisoTraduccion.enlace}
+            </Link>
+            {t.avisoTraduccion.despues}
+          </p>
+        )}
 
         <P>
-          Estas condiciones rigen la contratación de los servicios turísticos que{" "}
-          <strong className="text-verde-profundo">{CONTACTO.nombreComercial}</strong> ofrece a través de{" "}
-          <span className="text-verde-profundo">www.huasteca-potosina.com</span> y por sus canales de atención.
-          Al reservar un tour aceptas lo que se describe a continuación.
+          <Rico segs={t.intro} />
         </P>
 
-        <H2>1. Quiénes somos</H2>
-        <P>
-          Somos una operadora de turismo de aventura con base en {CONTACTO.ciudadBase}, que opera
-          recorridos guiados en la Huasteca Potosina con guías certificados en la norma NOM-09-TUR.
-          {CONTACTO.razonSocial && CONTACTO.rfc
-            ? ` Razón social: ${CONTACTO.razonSocial}, RFC ${CONTACTO.rfc}.`
-            : ""}
-        </P>
-        <P>
-          Contacto: WhatsApp {CONTACTO.telefonoDisplay} · correo{" "}
-          <a href={`mailto:${CONTACTO.email}`} className="text-verde-selva underline underline-offset-2">
-            {CONTACTO.email}
-          </a>
-          .
-        </P>
-
-        <H2>2. Reservas</H2>
-        <ul className="mb-4">
-          <Li>Una reserva queda confirmada cuando recibimos el pago —completo o el anticipo, según el caso (ver «Precios y pagos»)— y te enviamos la confirmación por correo o WhatsApp. Hasta ese momento no hay lugar apartado.</Li>
-          {/* Decía "12 participantes en la mayoría": el catálogo va de 6 a 14 y
-              la mayoría sale con 14. Sale de `GRUPO_MAX`, como en la FAQ. */}
-          <Li>Los tours operan con un cupo máximo por salida (hasta {GRUPO_MAX} participantes; la página de cada recorrido indica el suyo). El cupo se asigna por orden de confirmación.</Li>
-          <Li>Es tu responsabilidad revisar que los datos de la reserva —fecha, número de personas, edades y punto de encuentro— sean correctos. Avísanos de inmediato si algo no coincide.</Li>
-          <Li>Podemos requerir un mínimo de participantes para operar ciertas salidas. Si no se alcanza, te ofrecemos otra fecha o el reembolso completo.</Li>
-        </ul>
-
-        <H2>3. Precios y pagos</H2>
-        <ul className="mb-4">
-          <Li>Todos los precios están en pesos mexicanos (MXN) e incluyen lo que cada tour detalla en su página.</Li>
-          {/* El término repite exactamente lo que cobra Stripe (`pctACobrar`,
-              30 % desde el 29 sep 2026): un término que no coincide con el
-              cobro real es un reclamo esperando. */}
-          <Li>Toda reserva se aparta con un anticipo del {ANTICIPO_PCT} % del total; el saldo se liquida el día del tour, en efectivo o con tarjeta. Si lo prefieres, puedes pagar el 100 % al reservar.</Li>
-          <Li>Los pagos con tarjeta se procesan a través de Stripe. No almacenamos los datos de tu tarjeta en ningún momento.</Li>
-          <Li>El saldo del día del tour se puede cubrir en efectivo o con tarjeta. Los pagos con tarjeta en sitio pueden llevar una comisión del 3 %.</Li>
-          <Li>Algunos destinos cobran cuotas locales en efectivo (accesos ejidales, pangas). Cuando así sea, viene indicado en la página del tour o del destino.</Li>
-          <Li>
-            Los precios de niños se aplican por edad: de 6 a 10 años pagan el 70 % del precio de adulto y los menores de 6 años el 50 %. Podemos pedir identificación el día del tour.
-            {/* `totalRecorrido` cobra la tarifa del grupo completo y el RZR, por
-                vehículo: ninguno tiene tramos de menor. */}
-            {SIN_PRECIO_NINO.length > 0 &&
-              ` No aplica a ${enLista(SIN_PRECIO_NINO.map((t) => t.nombreCorto))}, que se ${SIN_PRECIO_NINO.length > 1 ? "cobran" : "cobra"} por vehículo o por grupo completo.`}
-          </Li>
-        </ul>
-
-        <H2>4. Cancelaciones, cambios y clima</H2>
-        <P>
-          Las condiciones completas están en la{" "}
-          <Link href="/politica-de-cancelacion" className="text-verde-selva underline underline-offset-2">
-            política de cancelación y clima
-          </Link>
-          , que forma parte de estos términos. En resumen: cancelación gratuita con 48 horas o más
-          de anticipación; entre 48 y 24 horas se retiene el 50 %; con menos de 24 horas no hay
-          reembolso pero puedes reagendar una vez sin costo. Si cancelamos nosotros —por clima,
-          seguridad o cierre del paraje— eliges entre reembolso completo o reagendar sin costo.
-        </P>
-        {/* El texto sale tal cual de `cancelacion.es` del catálogo: el mismo que
-            enseñan la ficha y el pago, para que no haya tres versiones. */}
-        {CON_CANCELACION_PROPIA.map((t) => (
-          <P key={t.slug}>
-            <strong className="text-verde-profundo">Excepción — {t.nombreCorto}:</strong>{" "}
-            {t.cancelacion!.es}
-          </P>
+        {t.secciones.map((s) => (
+          <Fragment key={s.h2}>
+            <H2>{s.h2}</H2>
+            {s.bloques.map((b, i) =>
+              "ul" in b ? (
+                <ul key={i} className="mb-4">
+                  {b.ul.map((li, j) => (
+                    <Li key={j}>
+                      <Rico segs={li} />
+                    </Li>
+                  ))}
+                </ul>
+              ) : (
+                <P key={i}>
+                  <Rico segs={b.p} />
+                </P>
+              ),
+            )}
+          </Fragment>
         ))}
 
-        <H2>5. Tu responsabilidad como participante</H2>
-        <ul className="mb-4">
-          <Li>Debes informarnos al reservar de cualquier condición médica, lesión, embarazo, limitación física o tratamiento que pueda afectar tu participación en actividades de aventura.</Li>
-          <Li>Las instrucciones del guía son obligatorias, incluido el uso de chaleco salvavidas, casco y arnés donde corresponda. El guía puede excluir de una actividad a quien no las siga, sin derecho a reembolso.</Li>
-          <Li>No se permite participar bajo el efecto de alcohol o de sustancias que alteren la coordinación o el juicio.</Li>
-          <Li>Los menores de edad viajan bajo la responsabilidad de su padre, madre o tutor, que debe acompañarlos durante todo el recorrido.</Li>
-          <Li>Debes presentarte en el punto y a la hora acordados. El grupo no espera indefinidamente; llegar tarde puede significar perder la salida sin reembolso.</Li>
-          <Li>Eres responsable de tus objetos personales. No respondemos por pérdida o daño de equipo electrónico, joyería o pertenencias en actividades acuáticas.</Li>
-        </ul>
-
-        <H2>6. Seguridad y seguro</H2>
-        <P>
-          Operamos con guías certificados NOM-09-TUR y equipo de seguridad revisado. Los tours
-          incluyen seguro de viajero durante la actividad contratada, con las coberturas y los
-          límites que fija la póliza vigente; el seguro no sustituye a un seguro de gastos médicos
-          personal y no cubre condiciones preexistentes ni conductas contrarias a las instrucciones
-          del guía.
-        </P>
-        <P>
-          El turismo de aventura implica riesgos inherentes que no se pueden eliminar por completo.
-          Al participar los reconoces y los aceptas. Nuestra responsabilidad se limita al valor de
-          los servicios contratados y no cubre gastos derivados de tu traslado a la región,
-          hospedaje ajeno al paquete, ni daños que resulten de incumplir las instrucciones de
-          seguridad.
-        </P>
-
-        <H2>7. Cambios en el itinerario</H2>
-        <P>
-          Los tiempos publicados son estimados. Podemos modificar el orden de las visitas, el punto
-          de encuentro o sustituir un destino por otro equivalente cuando lo exijan las condiciones
-          del río, del clima, del tráfico, del acceso o de la seguridad del grupo. Cuando el cambio
-          sea sustancial te lo comunicamos y aplican las opciones de la política de cancelación.
-        </P>
-
-        <H2>8. Imágenes</H2>
-        <P>
-          Durante los recorridos tomamos fotografías y video, que en varios tours se entregan
-          incluidos. Podemos usar ese material con fines de difusión. Si no quieres aparecer,
-          dínoslo antes de la salida o escríbenos después a{" "}
-          <a href={`mailto:${CONTACTO.email}`} className="text-verde-selva underline underline-offset-2">
-            {CONTACTO.email}
-          </a>{" "}
-          y lo retiramos.
-        </P>
-
-        <H2>9. Datos personales</H2>
-        <P>
-          El tratamiento de tus datos se rige por nuestro{" "}
-          <Link href="/aviso-de-privacidad" className="text-verde-selva underline underline-offset-2">
-            Aviso de Privacidad
-          </Link>
-          , conforme a la Ley Federal de Protección de Datos Personales en Posesión de los
-          Particulares.
-        </P>
-
-        <H2>10. Quejas y ley aplicable</H2>
-        <P>
-          Si algo no salió como esperabas, escríbenos primero a nosotros: la mayoría de los casos se
-          resuelven directo y rápido. Estas condiciones se rigen por la legislación mexicana y por
-          la Ley Federal de Protección al Consumidor. En caso de controversia son competentes los
-          tribunales de San Luis Potosí, sin perjuicio de tu derecho a acudir a PROFECO.
-        </P>
-
-        <H2>11. Cambios a estos términos</H2>
-        <P>
-          Podemos actualizar este documento. La versión aplicable a tu reserva es la publicada en
-          esta página el día en que reservaste; la fecha de la última revisión aparece al inicio.
-        </P>
-
         <p className="font-dm text-xs text-negro/40 mt-12 pt-8 border-t border-negro/10">
-          Ver también:{" "}
-          <Link href="/politica-de-cancelacion" className="underline underline-offset-2 hover:text-negro/70">Política de cancelación</Link>
-          {" · "}
-          <Link href="/aviso-de-privacidad" className="underline underline-offset-2 hover:text-negro/70">Aviso de Privacidad</Link>
-          {" · "}
-          <Link href="/contacto" className="underline underline-offset-2 hover:text-negro/70">Contacto</Link>
+          {t.verTambien}{" "}
+          {t.verTambienLinks.map((l, i) => (
+            <Fragment key={l.href}>
+              {i > 0 && " · "}
+              <Link href={l.href} className="underline underline-offset-2 hover:text-negro/70">{l.label}</Link>
+            </Fragment>
+          ))}
         </p>
       </div>
     </main>

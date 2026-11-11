@@ -1,4 +1,4 @@
-import { buildLlmsTxt } from "@/lib/llmsTxt";
+import { buildLlmsTxt, blogEnParaLlms } from "@/lib/llmsTxt";
 import { viajeCdmxParaLlms } from "@/lib/viajeCdmx/llms";
 
 // Gemelo en inglés de `/llms.txt`. Existe porque el sitio ya está traducido
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   // El viaje desde CDMX con sus fechas de hoy (16 oct 2026); sin base, sale sin el bloque.
   const viaje = await viajeCdmxParaLlms("en");
-  return new Response(buildLlmsTxt("en", [], viaje), {
+  return new Response(buildLlmsTxt("en", blogEnParaLlms(), viaje), {
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
       "Cache-Control": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400",

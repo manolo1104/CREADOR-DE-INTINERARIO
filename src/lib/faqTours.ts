@@ -313,7 +313,9 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     return [
       {
         q: "How much does a tour in the Huasteca Potosina cost, and what does the price include?",
-        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
+        // «MXN» en los DOS extremos del rango: con «$900 to $1,950 MXN» un
+        // lector de EE.UU. lee el primero en dólares (auditoría del 10 nov 2026).
+        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} MXN to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
       },
       {
         q: "Where do the tours depart from? Do you pick me up at my hotel?",

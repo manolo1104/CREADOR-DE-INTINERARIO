@@ -12,7 +12,8 @@ import { buildOrganizationNode, ORG_REF } from "@/lib/jsonld";
 const SITE = "https://www.huasteca-potosina.com";
 
 export const metadata: Metadata = {
-  title: "Blog Huasteca Potosina — Guías de Viaje, Rutas e Itinerarios 2026",
+  // ≤60 caracteres (medía 65; auditoría 10 nov 2026).
+  title: "Blog Huasteca Potosina: guías, rutas e itinerarios 2026",
   description: "Guías completas para planear tu viaje a la Huasteca Potosina: mejores épocas, itinerarios de 3-7 días, cascadas, gastronomía y consejos de guías locales.",
   openGraph: {
     title: "Blog Huasteca Potosina — Guías de Viaje 2026",
@@ -27,7 +28,12 @@ export const metadata: Metadata = {
     title: "Blog Huasteca Potosina — Guías de Viaje 2026",
     description: "Itinerarios detallados, mejores épocas y consejos de guías locales.",
   },
-  alternates: { canonical: `${SITE}/blog` },
+  // El índice en inglés existe desde el 10 nov 2026 (`/en/blog`); mientras no
+  // tenga artículos va en noindex, pero el par de idiomas ya es recíproco.
+  alternates: {
+    canonical: `${SITE}/blog`,
+    languages: { "es-MX": `${SITE}/blog`, en: `${SITE}/en/blog`, "x-default": `${SITE}/blog` },
+  },
 };
 
 export const dynamic = "force-dynamic";

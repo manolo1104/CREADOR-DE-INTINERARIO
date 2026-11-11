@@ -1,5 +1,5 @@
 import type { Locale } from "./config";
-import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, precioVisible, horasDeTour, type Paquete, type Habitacion } from "@/lib/paquetes";
+import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, precioVisible, horasDeTour, galeriaPaquete, type Paquete, type Habitacion } from "@/lib/paquetes";
 import { TOURS_DB, esPorPersona } from "@/lib/tours";
 import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { GOOGLE_RESENAS } from "@/lib/resenas";
@@ -17,9 +17,11 @@ import { localizeTour } from "./localize";
  * autobús) NO se traducen: se copian tal cual del español. Ninguna cifra de este
  * archivo es nueva.
  *
- * Las RESEÑAS no se traducen a propósito: son de viajeros con nombre y ciudad, y
- * ponerles palabras en la boca en otro idioma no es traducir, es inventar. En
- * `/en` se enseñan con una etiqueta que avisa del idioma.
+ * Las RESEÑAS de `RESENAS_POR_PAQUETE` no se traducen a propósito: no están en
+ * el perfil de Google, y ponerles palabras en la boca en otro idioma no es
+ * traducir, es inventar. Desde el 10 nov 2026 en `/en` ni se enseñan: van las
+ * reales de la operadora, traducidas y con el original a un toque
+ * (`resenasRealesPara` en `resenasReales.en.ts`).
  */
 
 export interface PaqueteTranslation {
@@ -276,6 +278,38 @@ export function getLocalizedPaquetes(locale: Locale): Paquete[] {
   return PAQUETES_DB.map((p) => localizePaquete(p, locale));
 }
 
+/**
+ * `galeriaPaquete` con los alt en el idioma de la página.
+ *
+ * 🔴 Por qué (10 nov 2026): `galeriaPaquete` lee los alt de `TOURS_DB`, que
+ * están en español, y /en/paquetes los enseñaba tal cual («Cascada del Meco —
+ * panga con viajeros…», «Huasteca Immersion, parada 2 de 9»). Aquí se busca
+ * la MISMA foto en la galería traducida (`tours.en.ts`, vía `localizeTour`);
+ * si no está, el alt genérico va en inglés. En español devuelve lo mismo que
+ * `galeriaPaquete`, sin tocar nada.
+ *
+ * `p` puede venir ya localizado: de él solo se leen `itinerario`, `imagen` y
+ * `nombre`, y los dos primeros no se traducen.
+ */
+export function galeriaPaqueteLocalizada(p: Paquete, locale: Locale): { src: string; alt?: string }[] {
+  const fotos = galeriaPaquete(p);
+  if (locale === "es") return fotos;
+  const altTraducido = new Map<string, string>();
+  for (const t of TOURS_DB) {
+    const traducidas = localizeTour(t, locale).gallery ?? [];
+    // Solo los alt que de verdad cambiaron: si a un tour le falta su
+    // traducción, `localizeTour` devuelve el español y no sirve aquí.
+    (t.gallery ?? []).forEach((g, i) => {
+      const en = traducidas[i]?.alt;
+      if (en && en !== g.alt && !altTraducido.has(g.src)) altTraducido.set(g.src, en);
+    });
+  }
+  return fotos.map((f, i) => ({
+    src: f.src,
+    alt: altTraducido.get(f.src) ?? `${p.nombre}, stop ${i + 1} of ${fotos.length}`,
+  }));
+}
+
 // ── Hotel ───────────────────────────────────────────────────────────────────
 
 const HABITACIONES_EN: Record<string, { descripcion: string; vista: string }> = {
@@ -332,7 +366,7 @@ const LOGISTICA_EN = {
       titulo: "By bus",
       puntos: [
         "From Mexico City there's an overnight departure from the Terminal Central del Norte at around 10:15 PM (Servicios Coordinados, Transportes Frontera and ETN).",
-        `It reaches Xilitla in the morning (about 6:30 AM); the trip takes ${enAutobus("cdmx", "xilitla", true)}. Fares are roughly $520–$900 MXN per person.`,
+        `It reaches Xilitla in the morning (about 6:30 AM); the trip takes ${enAutobus("cdmx", "xilitla", true)}. Fares are roughly $520 MXN to $900 MXN per person.`,
         "If you arrive on that morning bus, we can start the first tour that same day.",
       ],
     },
@@ -527,7 +561,7 @@ function faqsExtra(locale: Locale): { q: string; a: string }[] {
     return [
       {
         q: "How much does a trip to the Huasteca Potosina cost?",
-        a: `An all-inclusive package with hotel starts at ${m(visibleBarato())} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} for ${PAQ_BARATO.dias} days and ${PAQ_BARATO.noches} nights, with lodging, tours, entrance fees, certified guides and breakfasts included. The longest one, ${PAQ_LARGO.dias} days and ${PAQ_LARGO.noches} nights, costs ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. In between sit the rest: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. If you only want tours and no lodging, single-day tours run from ${m(tourMin())} to ${m(tourMax())} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
+        a: `An all-inclusive package with hotel starts at ${m(visibleBarato())} MXN ${etiquetaPrecio(PAQ_BARATO, locale)} for ${PAQ_BARATO.dias} days and ${PAQ_BARATO.noches} nights, with lodging, tours, entrance fees, certified guides and breakfasts included. The longest one, ${PAQ_LARGO.dias} days and ${PAQ_LARGO.noches} nights, costs ${m(precioVisible(PAQ_LARGO))} MXN ${etiquetaPrecio(PAQ_LARGO, locale)}. In between sit the rest: ${PAQ_INTERMEDIOS.map((p) => fichaPaquete(p, locale)).join(", ")}. If you only want tours and no lodging, single-day tours run from ${m(tourMin())} MXN to ${m(tourMax())} MXN per person. On top of that you pay your own travel to Xilitla, lunches and dinners, which are not included.`,
       },
       {
         q: "How many days do I need for the Huasteca Potosina?",
@@ -690,7 +724,7 @@ export interface PaquetesUI {
   cdmxAutoAvion2: string;
   // Reseñas
   resenasTitulo: string;
-  /** Vacío en español; en inglés avisa del idioma original. */
+  /** Vacío en español; en inglés dice de dónde salen las reseñas (Google, de la operadora). */
   resenasEnEspanol: string;
   // Nota
   notaWhatsapp: string;
@@ -861,10 +895,10 @@ const UI_EN: PaquetesUI = {
   cdmxAutoAvion1: "Coming by car or plane? Every package has a ",
   cdmxComoLlegar: "How to get here",
   cdmxAutoAvion2: " section with all the options.",
-  resenasTitulo: "What people who've already done it say",
-  // Mismo criterio que en el carrito y en los destinos: son viajeros con nombre
-  // y ciudad, así que se dejan como los escribieron y se avisa del idioma.
-  resenasEnEspanol: "In their own words (Spanish).",
+  // 🔴 En inglés las citas son las REALES de Google (de la operadora, no de un
+  // paquete en concreto), traducidas: el título y la nota lo dicen tal cual.
+  resenasTitulo: "What travelers say on Google",
+  resenasEnEspanol: "Reviews of our tours in general, translated from Spanish.",
   notaWhatsapp:
     "Book on WhatsApp and we'll confirm hotel availability in under 1 hour. No payment up front.",
   hotelEyebrow: "The hotel behind the packages",
@@ -1197,8 +1231,9 @@ const DET_EN: PaqueteDetalleUI = {
   precioDelPaquete: "Package price",
   precioPorPareja: "Price per person, two sharing a room. Groups and extra people are quoted separately.",
   ahorrasCorto: (monto) => `✓ You save ${monto} MXN`,
-  resenasTitulo: "What people who've done this package say",
-  resenasEnEspanol: "In their own words (Spanish).",
+  // Las reales de la operadora, no de este paquete: así se dice (ver arriba).
+  resenasTitulo: "What travelers say on Google",
+  resenasEnEspanol: "Reviews of our tours in general, translated from Spanish.",
   faqTitulo: "Frequently asked ",
   faqTituloEm: "questions",
   ctaH2a: "Ready to live the ",

@@ -14,7 +14,9 @@ import { buildTourOffer } from "@/lib/jsonld";
 
 // Formato de importe. El agrupado de miles es el mismo en es-MX y en-US para
 // estas cifras, así que se usa uno solo: lo que cambia en inglés no es el
-// número, es que hay que DECIR que son pesos mexicanos.
+// número, es que hay que DECIR que son pesos mexicanos. En inglés, en los DOS
+// extremos de cada rango: «between $900 and $1,950 MXN» deja el primero en
+// dólares para un lector de EE.UU. (auditoría del 10 nov 2026).
 const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
 
 const DIF_LABEL_ES: Record<string, string> = { baja: "Fácil", media: "Moderado", alta: "Avanzado" };
@@ -177,7 +179,7 @@ function preciosUI(locale: Locale) {
   const otrosPrecios = otros.map((x) => precioVisible(x));
   const otrosTexto = otros.length
     ? en
-      ? ` The rest of the packages are not sorted by length but by who is traveling (${otros.map((x) => x.nombre).join(", ")}): ${Math.min(...otrosDias)} to ${Math.max(...otrosDias)} days, from ${money(Math.min(...otrosPrecios))} to ${money(Math.max(...otrosPrecios))} MXN ${unidadComun(otros, locale)}.`
+      ? ` The rest of the packages are not sorted by length but by who is traveling (${otros.map((x) => x.nombre).join(", ")}): ${Math.min(...otrosDias)} to ${Math.max(...otrosDias)} days, from ${money(Math.min(...otrosPrecios))} MXN to ${money(Math.max(...otrosPrecios))} MXN ${unidadComun(otros, locale)}.`
       : ` Los demás paquetes no se ordenan por duración sino por quién viaja (${otros.map((x) => x.nombre).join(", ")}): de ${Math.min(...otrosDias)} a ${Math.max(...otrosDias)} días y de ${money(Math.min(...otrosPrecios))} a ${money(Math.max(...otrosPrecios))} MXN ${unidadComun(otros, locale)}.`
     : "";
   // Nombre corto del recorrido por vehículo, del catálogo (ya localizado): el
@@ -209,7 +211,7 @@ function preciosUI(locale: Locale) {
   const grupoTxt = GRUPO_TOURS.map((x) => {
     const r = rangoGrupo(x);
     return en
-      ? `${nombre(x)}, priced per group: ${money(r.min)} to ${money(r.max)} MXN for the whole group depending on its size (${x.groupMin} to ${x.groupMax} people)`
+      ? `${nombre(x)}, priced per group: ${money(r.min)} MXN to ${money(r.max)} MXN for the whole group depending on its size (${x.groupMin} to ${x.groupMax} people)`
       : `${nombre(x)}, que se cobra por grupo: de ${money(r.min)} a ${money(r.max)} MXN por el grupo completo según cuántos vayan (de ${x.groupMin} a ${x.groupMax} personas)`;
   });
   // 🔴 La respuesta de niños y la nota de la tabla aplicaban el descuento a
@@ -232,7 +234,7 @@ function preciosUI(locale: Locale) {
     ? [
         {
           q: "How much does it cost to visit the Huasteca Potosina?",
-          a: `It depends on how many days you stay. A guided day tour in the Huasteca Potosina costs between ${RANGO_MIN} and ${RANGO_MAX} MXN per person (Mexican pesos), and that is the final price: depending on the tour it includes transport from your lodging, entrance fees, a guide and, on ${CON_DESAYUNO.length} of them, breakfast. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} to ${PAQ_MAX} MXN ${unidadRango} with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800–$1,100 MXN each way) plus your lunches and dinners, which are not included.`,
+          a: `It depends on how many days you stay. A guided day tour in the Huasteca Potosina costs between ${RANGO_MIN} MXN and ${RANGO_MAX} MXN per person (Mexican pesos), and that is the final price: depending on the tour it includes transport from your lodging, entrance fees, a guide and, on ${CON_DESAYUNO.length} of them, breakfast. A full ${DIAS_MIN}-to-${DIAS_MAX}-day trip with hotel and tours runs from ${PAQ_MIN} MXN to ${PAQ_MAX} MXN ${unidadRango} with our packages. On top of that, budget how you get to the region (a bus from Mexico City is roughly $800 MXN to $1,100 MXN each way) plus your lunches and dinners, which are not included.`,
         },
         ...(paqCorto
           ? [
@@ -372,7 +374,7 @@ function preciosUI(locale: Locale) {
     // vehículo y no entra en el rango — decir "los 10 cuestan entre $900 y
     // $1,950 por persona" sería falso.
     heroProsa: en
-      ? `In short: the ${N_TOURS_DIA} day tours last ${HRS_MIN} to ${HRS_MAX} hours. ${N_TOURS_PERSONA} of them are priced per person, between ${RANGO_MIN} and ${RANGO_MAX} MXN; the ${rzrNombre} is priced per vehicle, from ${RZR_DESDE} MXN${GRUPO_TOURS.map((x) => `, and ${nombre(x)} per group, from ${money(rangoGrupo(x).min)} MXN`).join("")}. The packages with hotel run ${DIAS_MIN} to ${DIAS_MAX} days and cost between ${PAQ_MIN} and ${PAQ_MAX} MXN ${unidadRango}.`
+      ? `In short: the ${N_TOURS_DIA} day tours last ${HRS_MIN} to ${HRS_MAX} hours. ${N_TOURS_PERSONA} of them are priced per person, between ${RANGO_MIN} MXN and ${RANGO_MAX} MXN; the ${rzrNombre} is priced per vehicle, from ${RZR_DESDE} MXN${GRUPO_TOURS.map((x) => `, and ${nombre(x)} per group, from ${money(rangoGrupo(x).min)} MXN`).join("")}. The packages with hotel run ${DIAS_MIN} to ${DIAS_MAX} days and cost between ${PAQ_MIN} MXN and ${PAQ_MAX} MXN ${unidadRango}.`
       : `En corto: los ${N_TOURS_DIA} tours de un día duran de ${HRS_MIN} a ${HRS_MAX} horas. ${N_TOURS_PERSONA} se cobran por persona, entre ${RANGO_MIN} y ${RANGO_MAX} MXN; el ${rzrNombre} se cobra por vehículo, desde ${RZR_DESDE} MXN${GRUPO_TOURS.map((x) => `, y ${nombre(x)} por grupo, desde ${money(rangoGrupo(x).min)} MXN`).join("")}. Los paquetes con hotel van de ${DIAS_MIN} a ${DIAS_MAX} días y cuestan entre ${PAQ_MIN} y ${PAQ_MAX} MXN ${unidadRango}.`,
     monedaNota: en
       ? "Every amount on this page is in Mexican pesos (MXN), not US dollars."

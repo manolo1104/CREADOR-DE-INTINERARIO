@@ -95,7 +95,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
       },
       {
         "@type": "FAQPage",
-        inLanguage: "en-US",
+        inLanguage: "en",
         mainEntity: c.faqs.map((f) => ({
           "@type": "Question",
           name: f.q,

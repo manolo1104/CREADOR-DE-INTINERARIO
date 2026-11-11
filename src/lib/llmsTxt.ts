@@ -77,6 +77,7 @@ import { ciudadUnicaDeRecogida } from "@/components/TourDeparture";
 import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { localePath, type Locale } from "@/lib/i18n/config";
+import { listPostsEn, urlBlogEn } from "@/lib/blogEn";
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -692,9 +693,19 @@ ${full
 - [Huasteca Potosina from Mexico City: monthly small-group trip](${SITE}/en/huasteca-potosina-from-mexico-city): leaves the Angel of Independence on Friday at midnight, back Monday 6 am; transport, a night in Xilitla, breakfasts, Las Pozas and Tamul; dates and price updated live
 - [Practical travel information](${SITE}/en/info-practica): airports, driving times, when to go, what to pack
 ${desde.join("\n")}
+- [Things to do in Huasteca Potosina: activities by type](${SITE}/en/que-hacer-en-la-huasteca-potosina)
+- [Huasteca Potosina waterfalls compared](${SITE}/en/huasteca-potosina-waterfalls): entrance fee, best season, time from Ciudad Valles and which tour visits each
+- [Where to stay in Huasteca Potosina, by area](${SITE}/en/where-to-stay-in-huasteca-potosina): Xilitla, Ciudad Valles, Aquismón and Tamasopo, and which tours pick up in each
+- [Where is Huasteca Potosina? Municipalities, travel times, history and Teenek culture](${SITE}/en/sobre-la-huasteca-potosina)
+- [Xilitla or Ciudad Valles? Where to stay](${SITE}/en/xilitla-o-ciudad-valles): times from each base and which tours pick up in each
+- [Tours from Xilitla](${SITE}/en/tours-en-xilitla)
+- [Tours from Ciudad Valles](${SITE}/en/tours-en-ciudad-valles)
+- [Group and school trips: custom quotes for schools, companies and agencies](${SITE}/en/grupos)
+- [Cancellation and weather policy](${SITE}/en/politica-de-cancelacion): free cancellation up to 48 h before; what happens if it rains or a site closes
 - [About us](${SITE}/en/nosotros)
 - [Press & media](${SITE}/en/press): story angles, verified facts, photography for editorial use
-- [Spanish version](${SITE}): includes a blog, a free downloadable PDF guide and regional guides; its own file is [llms.txt](${SITE}/llms.txt)
+- [Travel guides blog](${SITE}/en/blog): best time to visit, waterfalls, getting there, costs and itineraries, translated from the Spanish blog
+- [Spanish version](${SITE}): the full blog, a free downloadable PDF guide and regional guides; its own file is [llms.txt](${SITE}/llms.txt)
 - [Sitemap](${SITE}/sitemap.xml)`;
   }
 
@@ -721,8 +732,10 @@ ${full
 ${desde.join("\n")}
 - [Viajes de grupo: escuelas, empresas y agencias](${SITE}/grupos): cotización a la medida por WhatsApp
 - [Qué hacer en la Huasteca Potosina (guía local)](${SITE}/que-hacer-en-la-huasteca-potosina)
+- [Cascadas de la Huasteca Potosina, comparadas](${SITE}/cascadas-de-la-huasteca-potosina): entrada, mejor época, tiempo desde Ciudad Valles y qué tour visita cada una
+- [Dónde hospedarse en la Huasteca Potosina: zonas y nuestro hotel](${SITE}/donde-hospedarse-en-la-huasteca-potosina): Xilitla, Ciudad Valles, Aquismón y Tamasopo, tiempos a cada lugar y qué tours recogen en cada zona
 - [Guía de viaje en PDF, gratis a cambio de tu correo](${SITE}/guia)
-- [Sobre la región: geografía, cultura Teenek y clima](${SITE}/sobre-la-huasteca-potosina)
+- [¿Dónde está la Huasteca Potosina? Municipios, tiempos de viaje, historia y cultura Teenek](${SITE}/sobre-la-huasteca-potosina)
 - [Información práctica del viaje](${SITE}/info-practica)
 - [Recomendador de tours con IA (gratis)](${SITE}/recomendar)
 - [Quiénes somos](${SITE}/nosotros)
@@ -775,6 +788,16 @@ paquetes que lees aquí son los mismos que ve el cliente al reservar.`,
 export interface BlogLlms {
   slug: string;
   title: string;
+  /** URL absoluta ya armada (los artículos en inglés: /en/blog/<slug-en>). */
+  url?: string;
+}
+
+/**
+ * Los artículos ya traducidos al inglés (`src/content/blog-en`, 10 nov 2026),
+ * del más nuevo al más viejo. Salen de archivos del repo, no de la base.
+ */
+export function blogEnParaLlms(): BlogLlms[] {
+  return listPostsEn().map((p) => ({ slug: p.slug, title: p.title, url: `${SITE}${urlBlogEn(p.slug)}` }));
 }
 
 /**
@@ -798,8 +821,8 @@ export async function blogParaLlms(): Promise<BlogLlms[]> {
 }
 
 /**
- * Solo en español: el blog no existe en inglés (ver `seccionPaginasClave`).
- * La URL pasa por `urlBlog()`: 18 slugs de la base arrastran el año y
+ * En inglés lista los artículos ya traducidos (`blogEnParaLlms`), con su URL /en/blog.
+ * La URL española pasa por `urlBlog()`: 18 slugs de la base arrastran el año y
  * redirigen; aquí se publica la canónica.
  *
  * 🔴 Solo título y URL, también en la versión completa. Se publicaba además la
@@ -811,8 +834,8 @@ export async function blogParaLlms(): Promise<BlogLlms[]> {
 function seccionBlog(posts: BlogLlms[], locale: Locale, full = false): string | null {
   const nota = notaBlog(posts, locale);
   if (!nota) return null;
-  const lineas = posts.map((p) => `- [${p.title.trim()}](${SITE}${urlBlog(p.slug)})`);
-  const titulo = `## Guías del blog (${posts.length} artículos)`;
+  const lineas = posts.map((p) => `- [${p.title.trim()}](${p.url ?? `${SITE}${urlBlog(p.slug)}`})`);
+  const titulo = locale === "en" ? `## Travel guides from the blog (${posts.length} articles)` : `## Guías del blog (${posts.length} artículos)`;
   return full ? `${titulo}\n${nota.cuerpo}\n${lineas.join("\n")}` : `${titulo}\n${lineas.join("\n")}`;
 }
 
@@ -821,7 +844,14 @@ function seccionBlog(posts: BlogLlms[], locale: Locale, full = false): string | 
  * versión corta, así que dice "este archivo" y no "las secciones de arriba".
  */
 function notaBlog(posts: BlogLlms[], locale: Locale): Bloque | null {
-  if (locale === "en" || !posts.length) return null;
+  if (!posts.length) return null;
+  if (locale === "en") {
+    return {
+      titulo: "Travel guides from the blog",
+      cuerpo: `Editorial articles translated from the Spanish blog, newest first. Tour, package and entrance
+prices in this file are the ones that count: if an article gives a different figure, use this file's.`,
+    };
+  }
   return {
     titulo: "Guías del blog",
     cuerpo: `Artículos editoriales del blog del sitio, del más reciente al más antiguo. Los precios de

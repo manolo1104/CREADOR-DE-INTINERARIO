@@ -398,7 +398,7 @@ const EN: FaqContent = {
   twitterDescription:
     "Prices, best season, how to get there, safety, and packing advice for Mexico's waterfall country.",
 
-  inLanguage: "en-US",
+  inLanguage: "en",
 
   breadcrumbHome: "Home",
   breadcrumbActual: "FAQ",

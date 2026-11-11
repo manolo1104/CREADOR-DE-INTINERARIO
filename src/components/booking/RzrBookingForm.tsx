@@ -158,7 +158,8 @@ export function RzrBookingForm({
           <select value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} className={SELECT}>
             {flota.map((v, i) => (
               <option key={v.nombre} value={v.nombre}>
-                {flotaTexto?.[i]?.nombre ?? v.nombre} · {flotaTexto?.[i]?.capacidad ?? v.capacidad} · {dinero(v.precios[idxRuta] ?? 0)}
+                {/* En inglés con «MXN»: «$1,600» a secas se lee en dólares. */}
+                {flotaTexto?.[i]?.nombre ?? v.nombre} · {flotaTexto?.[i]?.capacidad ?? v.capacidad} · {dinero(v.precios[idxRuta] ?? 0)}{locale === "en" ? " MXN" : ""}
               </option>
             ))}
           </select>

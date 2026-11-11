@@ -348,7 +348,7 @@ function buildGuiaHtml(): string {
         <div class="destino-zona">Ciudad Valles · Bienestar</div>
       </div>
     </div>
-    <p>Aguas termales sulfurosas que mantienen 36°C constante todo el año, más piscinas de lodo terapéutico. Es el destino de descanso por excelencia de la región — el complemento perfecto para los días de aventura. El complejo incluye hospedaje de calidad si quieres tener las termas a dos pasos de tu cuarto.</p>
+    <p>Aguas termales sulfurosas que mantienen 38°C constante todo el año, más piscinas de lodo terapéutico. Es el destino de descanso por excelencia de la región — el complemento perfecto para los días de aventura. El complejo incluye hospedaje de calidad si quieres tener las termas a dos pasos de tu cuarto.</p>
     <div class="ficha">
       <div class="ficha-item"><div class="ficha-label">Precio entrada</div><div class="ficha-val">$150 MXN</div></div>
       <div class="ficha-item"><div class="ficha-label">Horario</div><div class="ficha-val">07:00–20:00</div></div>

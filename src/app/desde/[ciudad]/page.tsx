@@ -28,12 +28,15 @@ export function generateMetadata({ params }: { params: { ciudad: string } }): Me
   // CDMX tiene salida grupal propia cada mes (16 oct 2026): el título lo dice,
   // porque «huasteca potosina desde cdmx» mezcla al que busca autobús con el
   // que busca quién lo lleve.
-  const title = c.slug === "cdmx"
+  // `metaTitle`/`metaDescription` solo los traen las ciudades nuevas (San Luis
+  // Potosí, 10 nov 2026), cuyo nombre no cabe en el armado de abajo: CDMX y
+  // Monterrey (congelada) siguen saliendo exactamente igual.
+  const title = c.metaTitle ?? (c.slug === "cdmx"
     ? "Huasteca Potosina desde CDMX — Cómo Llegar y Viaje Todo Incluido"
-    : `Huasteca Potosina desde ${c.nombre} — Cómo Llegar y Qué Reservar 2026`;
-  const description = c.slug === "cdmx"
+    : `Huasteca Potosina desde ${c.nombre} — Cómo Llegar y Qué Reservar 2026`);
+  const description = c.metaDescription ?? (c.slug === "cdmx"
     ? `Cómo llegar desde CDMX en autobús ($${AUTOBUS_CDMX.min}–$${AUTOBUS_CDMX.max}), en auto o en avión, cuántos días necesitas y nuestro viaje grupal de cada mes desde el Ángel, todo incluido.`
-    : `Cómo llegar desde ${c.nombre}, cuántos días necesitas y qué paquete te queda. Tours desde $${desde.toLocaleString("es-MX")}, apartas con el 30 %.`;
+    : `Cómo llegar desde ${c.nombre}, cuántos días necesitas y qué paquete te queda. Tours desde $${desde.toLocaleString("es-MX")}, apartas con el 30 %.`);
 
   return {
     title,

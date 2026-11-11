@@ -10,12 +10,16 @@ import { buildBreadcrumbJsonLd } from "@/lib/jsonld";
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
   const n = DESTINOS_DB.length;
+  // 🔴 10 nov 2026 — medían 75/81 caracteres de título y 171/169 de
+  // descripción: Google cortaba los dos. Título ≤ 60 y descripción 120–160,
+  // con el dato que da clic en las fichas (horarios y precios). Sin año a
+  // propósito: el índice no caduca y así no hay que acordarse de cambiarlo.
   const title = locale === "en"
-    ? `${n} Destinations in the Huasteca Potosina — Waterfalls, Canyons, Art & Archaeology`
-    : `${n} Destinos en la Huasteca Potosina — Cascadas, Cañones, Arte y Arqueología`;
+    ? `${n} Huasteca Potosina Destinations | Hours & Prices`
+    : `${n} Destinos de la Huasteca Potosina | Horarios y Precios`;
   const description = locale === "en"
-    ? `Explore the ${n} unique destinations of the Huasteca Potosina: Tamul Waterfall, Cave of Swallows, Las Pozas, Puente de Dios and more. Complete guide with hours and prices.`
-    : `Explora los ${n} destinos únicos de la Huasteca Potosina: Cascada de Tamul, Sótano de las Golondrinas, Las Pozas, Puente de Dios y más. Guía completa con horarios y precios.`;
+    ? `Explore ${n} destinations in the Huasteca Potosina: Tamul Waterfall, the Cave of Swallows, Las Pozas, Puente de Dios and more, with hours and prices.`
+    : `Explora los ${n} destinos de la Huasteca Potosina: Cascada de Tamul, Sótano de las Golondrinas, Las Pozas, Puente de Dios y más, con horarios y precios.`;
   return {
     title,
     description,

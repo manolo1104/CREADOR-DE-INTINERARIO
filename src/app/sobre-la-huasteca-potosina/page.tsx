@@ -1,144 +1,101 @@
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
+import { MapaRegion } from "@/components/MapaRegion";
 import Link from "next/link";
 import Image from "next/image";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { headers } from "next/headers";
 import { MapPin, Thermometer, Calendar, Globe, Mountain, Droplet } from "lucide-react";
+import { SITE, asLocale, buildAlternates, localePath, localeUrl } from "@/lib/i18n/config";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { getSobreHuasteca } from "@/lib/i18n/sobreHuasteca.en";
 
-import { GRUPO_MAX } from "@/lib/tours";
-import { fechaInicioTexto } from "@/lib/temporada";
-const SITE = "https://www.huasteca-potosina.com";
-export const metadata: Metadata = {
-  title: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
-  description: "Todo lo que necesitas saber sobre la Huasteca Potosina: geografía, clima, cultura Teenek, gastronomía, historia y los mejores momentos para visitar.",
-  keywords: [
-    "huasteca potosina",
-    "qué es la huasteca potosina",
-    "cultura teenek",
-    "clima huasteca potosina",
-    "geografía huasteca potosina",
-    "historia de la huasteca",
-  ],
-  alternates: { canonical: `${SITE}/sobre-la-huasteca-potosina` },
-  openGraph: {
-    title: "La Huasteca Potosina — Historia, Cultura y Geografía",
-    description: "Descubre la geografía, historia Teenek, gastronomía y los mejores destinos de la Huasteca Potosina, San Luis Potosí.",
-    url: `${SITE}/sobre-la-huasteca-potosina`,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-    images: [{ url: `${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`, width: 1920, height: 1280, alt: "Cascada de Tamul — Huasteca Potosina" }],
-  },
-  twitter: { card: "summary_large_image", title: "La Huasteca Potosina — Historia y Cultura", description: "Geografía, historia Teenek, gastronomía y destinos.", images: [`${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`] },
-};
+const PATH = "/sobre-la-huasteca-potosina";
+const OG_IMG = `${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`;
 
-const DATOS = [
-  { Icon: MapPin,       label: "Ubicación",    valor: "San Luis Potosí, México" },
-  { Icon: Mountain,     label: "Altitud",       valor: "50 – 2,000 msnm" },
-  { Icon: Thermometer,  label: "Temperatura",   valor: "22 – 34°C promedio" },
-  // La regla de temporada.ts y del inicio: del 30 de octubre a mayo el agua
-  // baja clara. Decía «Nov – Mayo», con otra fecha. No se acorta a «a
-  // diciembre» aunque esa sea la ventana de la banda del inicio: en una ficha
-  // de la región daría a entender que de enero a mayo no conviene, y es justo
-  // cuando el turquesa está más intenso.
-  { Icon: Calendar,     label: "Mejor época",   valor: `Del ${fechaInicioTexto("es")} a mayo` },
-  { Icon: Globe,        label: "Idiomas",        valor: "Español · Teenek (Huasteco)" },
-  { Icon: Droplet,      label: "Ríos",           valor: "Tampaón, Axtla, Gallinas, Moctezuma" },
-];
+// Todo el texto vive en `sobreHuasteca.en.ts`, con la nota de qué cambió el
+// 10 nov 2026 (H1 propio, respuesta a «dónde está», FAQ) y por qué. El idioma
+// llega por el header `x-locale`: /en/sobre-la-huasteca-potosina reexporta
+// esta página.
 
-const DESTINOS_ICONO = [
-  { nombre: "Cascada de Tamul",           desc: "La cascada más alta de la región, 105 metros sobre el Río Tampaón.",    img: "/imagenes/cascada-de-tamul/hero.jpg" },
-  { nombre: "Las Pozas de Edward James",  desc: "Jardín surrealista único en el mundo construido en la selva de Xilitla.", img: "/imagenes/las-pozas-jardin-surrealista/hero.webp" },
-  { nombre: "Sótano de las Golondrinas",  desc: "El abismo aéreo más profundo del mundo. Hogar de miles de vencejos.",    img: "/imagenes/sotano-de-las-golondrinas/hero.jpg" },
-  { nombre: "Cascadas de Micos",          desc: "7 cascadas escalonadas en un paraje de selva tropical exuberante.",      img: "/imagenes/cascadas-de-micos/hero.jpg" },
-];
-
-const SECCIONES = [
-  {
-    titulo: "Geografía y naturaleza",
-    texto: `La Huasteca Potosina ocupa la franja nororiental del estado de San Luis Potosí,
-    donde la Sierra Madre Oriental desciende abruptamente hacia la llanura costera. Este desnivel
-    geográfico crea uno de los paisajes más dramáticos de México: ríos que corren turquesas sobre
-    lecho de roca caliza, cañones profundos tallados por millones de años de erosión, y selvas
-    tropicales que albergan cientos de especies endémicas.
-
-    El sistema kárstico de la región produce fenómenos únicos: sótanos verticales que cortan la
-    tierra por cientos de metros, manantiales de agua cristalina que emergen de la roca, y cuevas
-    con formaciones geológicas milenarias. La biodiversidad es extraordinaria — más de 3,000 especies
-    de plantas y cientos de aves registradas en un territorio relativamente pequeño.`,
-  },
-  {
-    titulo: "Historia y cultura Teenek",
-    texto: `La Huasteca ha sido habitada por más de 3,000 años. La cultura Teenek (también llamada
-    Huasteca) desarrolló aquí una de las civilizaciones mesoamericanas más sofisticadas, con
-    arquitectura monumental visible en la zona arqueológica de Tamtoc, considerada uno de los
-    centros ceremoniales más importantes del México prehispánico.
-
-    Los Teenek resistieron la conquista española más que muchos otros pueblos, y su cultura
-    permanece viva hoy: el huapango huasteco está declarado Patrimonio Cultural Inmaterial por
-    la UNESCO, y las artesanías bordadas a mano conservan diseños que datan de siglos antes
-    de la colonización. La gastronomía local — el zacahuil, los bocoles, las enchiladas huastecas
-    — es igualmente antigua e incomparable.`,
-  },
-  {
-    titulo: "Gastronomía",
-    texto: `La cocina huasteca es una de las más distintivas de México. El zacahuil es su pieza
-    maestra: un tamal gigante de hasta 3 metros de largo cocido en hoyo de tierra durante toda
-    la noche de los sábados. Los bocoles son tortillas gruesas de masa con frijol negro integrado,
-    fritas en comal. Las enchiladas huastecas llevan cecina de res y queso fresco local.
-
-    El café de altura cultivado en las faldas de la sierra de Xilitla es excepcional — orgánico,
-    de sombra, con notas de chocolate y frutos rojos. El aguardiente de caña artesanal de la
-    región, conocido como "charanda potosina", acompaña las fiestas patronales de cada comunidad.`,
-  },
-];
-
-// Página de referencia sobre la región: se declara como Article para que los
-// buscadores (y los asistentes de IA) puedan citarla como fuente.
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "Article",
-      headline: "Sobre la Huasteca Potosina — Historia, Cultura y Geografía",
-      description:
-        "Geografía, clima, cultura Teenek, gastronomía, historia y mejores épocas para visitar la Huasteca Potosina, San Luis Potosí, México.",
-      url: `${SITE}/sobre-la-huasteca-potosina`,
-      image: `${SITE}/imagenes/cascada-de-tamul/hero-mobile.jpg`,
-      inLanguage: "es-MX",
-      author: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
-      publisher: {
-        "@type": "Organization",
-        name: "Tours Huasteca Potosina",
-        url: SITE,
-        logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo.svg` },
-      },
-      about: {
-        "@type": "Place",
-        name: "Huasteca Potosina",
-        address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
-      },
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getSobreHuasteca(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    keywords: t.keywords,
+    alternates: buildAlternates(PATH, locale),
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl(PATH, locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      images: [{ url: OG_IMG, width: 1920, height: 1280, alt: t.ogImageAlt }],
     },
-    {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
-        { "@type": "ListItem", position: 2, name: "Sobre la Huasteca Potosina", item: `${SITE}/sobre-la-huasteca-potosina` },
-      ],
-    },
-  ],
-};
+    twitter: { card: "summary_large_image", title: t.twitterTitle, description: t.twitterDescription, images: [OG_IMG] },
+  };
+}
+
+/** Los iconos de los datos rápidos, en el mismo orden que `datos` del diccionario. */
+const ICONOS_DATOS = [MapPin, Mountain, Thermometer, Calendar, Globe, Droplet];
 
 export default function SobreLaHuastecaPage() {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getSobreHuasteca(locale);
+  const url = localeUrl(PATH, locale);
+
+  // Página de referencia sobre la región: se declara como Article para que los
+  // buscadores (y los asistentes de IA) puedan citarla como fuente, y ahora
+  // también como FAQPage (la respuesta a «dónde está»).
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        headline: t.articleHeadline,
+        description: t.articleDescription,
+        url,
+        image: OG_IMG,
+        inLanguage: t.inLanguage,
+        author: { "@type": "Organization", name: "Tours Huasteca Potosina", url: SITE },
+        publisher: {
+          "@type": "Organization",
+          name: "Tours Huasteca Potosina",
+          url: SITE,
+          logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo.svg` },
+        },
+        about: {
+          "@type": "Place",
+          name: "Huasteca Potosina",
+          address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+        },
+      },
+      buildBreadcrumbNode([{ name: t.breadcrumb, path: PATH }], locale),
+      {
+        "@type": "FAQPage",
+        inLanguage: t.inLanguage,
+        mainEntity: t.faqs.map((f) => ({
+          "@type": "Question",
+          name: f.q,
+          acceptedAnswer: { "@type": "Answer", text: f.a },
+        })),
+      },
+    ],
+  };
+
   return (
     <main id="main-content" className="min-h-screen bg-crema">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      {/* ── HERO ── */}
+      {/* ── HERO ──
+          H1 propio (10 nov 2026): antes decía «La Huasteca Potosina», igual que
+          el inicio. Ahora responde lo que se busca: dónde está. */}
       <section className="relative min-h-[65vh] flex items-end overflow-hidden">
         <Image
           src="/imagenes/cascada-de-tamul/hero-mobile.jpg"
-          alt="Huasteca Potosina — Cascada de Tamul"
+          alt={t.heroAlt}
           fill
           className="object-cover object-center"
           priority
@@ -146,15 +103,14 @@ export default function SobreLaHuastecaPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/30 to-transparent" />
         <div className="relative z-10 px-6 pb-16 max-w-4xl">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            ✦ San Luis Potosí · México
+            {t.heroEyebrow}
           </p>
-          <h1 className="font-cormorant font-light text-crema leading-tight" style={{ fontSize: "clamp(40px,7vw,80px)" }}>
-            La Huasteca
-            <em className="text-dorado block italic"> Potosina</em>
+          <h1 className="font-cormorant font-light text-crema leading-tight" style={{ fontSize: "clamp(36px,5.5vw,68px)" }}>
+            {t.heroH1}{" "}
+            <em className="text-dorado block italic text-[0.62em] mt-2">{t.heroH1em}</em>
           </h1>
           <p className="text-crema/70 font-dm text-sm mt-4 max-w-xl leading-relaxed">
-            Una región donde la selva, las cascadas turquesas y una cultura milenaria conviven
-            en uno de los paisajes más extraordinarios de México.
+            {t.heroIntro}
           </p>
         </div>
       </section>
@@ -162,19 +118,72 @@ export default function SobreLaHuastecaPage() {
       {/* ── DATOS RÁPIDOS ── */}
       <section className="bg-white border-b border-negro/8 py-10 px-6">
         <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-          {DATOS.map((d) => (
-            <div key={d.label} className="text-center p-4 border border-negro/8 bg-crema/50">
-              <d.Icon className="w-5 h-5 text-verde-selva mx-auto mb-2" aria-hidden="true" />
-              <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-1">{d.label}</p>
-              <p className="text-sm font-dm text-negro/75 font-medium leading-tight">{d.valor}</p>
-            </div>
-          ))}
+          {t.datos.map((d, i) => {
+            const Icon = ICONOS_DATOS[i] ?? MapPin;
+            return (
+              <div key={d.label} className="text-center p-4 border border-negro/8 bg-crema/50">
+                <Icon className="w-5 h-5 text-verde-selva mx-auto mb-2" aria-hidden="true" />
+                <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-1">{d.label}</p>
+                <p className="text-sm font-dm text-negro/75 font-medium leading-tight">{d.valor}</p>
+              </div>
+            );
+          })}
         </div>
       </section>
 
+      {/* ── DÓNDE QUEDA: la respuesta directa ──
+          Estado, municipios (de `zona` en DESTINOS_DB) y tiempos de carretera
+          (de `tiemposDeViaje.ts`). Querétaro y Guadalajara no salen porque esa
+          fuente no los tiene: mejor no decir nada que inventar un número. */}
+      <section className="max-w-3xl mx-auto px-6 pt-16 pb-16">
+        <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm">{t.dondeEyebrow}</p>
+        <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(26px,3.5vw,40px)" }}>
+          {t.dondeTitulo}
+        </h2>
+        <p className="text-negro/75 font-dm text-base leading-relaxed mb-8">{t.dondeRespuesta}</p>
+
+        <h3 className="font-dm text-sm font-medium text-verde-profundo mb-2">{t.municipiosTitulo}</h3>
+        <p className="text-negro/60 font-dm text-sm leading-relaxed mb-8">{t.municipiosTexto}</p>
+
+        <h3 className="font-dm text-sm font-medium text-verde-profundo mb-3">{t.tiemposTitulo}</h3>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-left">
+            <thead>
+              <tr className="border-b border-negro/15">
+                {t.tiemposCols.map((c) => (
+                  <th key={c} className="py-2.5 pr-4 font-dm text-[10px] tracking-[2px] uppercase text-negro/45 whitespace-nowrap">{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {t.tiempos.map((r) => (
+                <tr key={r.ciudad} className="border-b border-negro/8">
+                  <td className="py-2.5 pr-4 font-dm text-sm text-negro/75">{r.ciudad}</td>
+                  <td className="py-2.5 pr-4 font-dm text-sm text-negro/60 whitespace-nowrap">{r.valles}</td>
+                  <td className="py-2.5 pr-4 font-dm text-sm text-negro/60 whitespace-nowrap">{r.xilitla}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-3 text-negro/50 font-dm text-xs leading-relaxed">{t.tiemposBus}</p>
+        <p className="mt-6 text-negro/60 font-dm text-sm leading-relaxed">
+          {t.basePre}{" "}
+          <Link
+            href={localePath("/xilitla-o-ciudad-valles", locale)}
+            className="text-verde-selva underline underline-offset-2 hover:text-terracota transition-colors"
+          >
+            {t.baseLink}
+          </Link>
+        </p>
+      </section>
+
+      {/* ── MAPA ── El mismo esquema del inicio: coordenadas reales de `destinos.ts`. */}
+      <MapaRegion locale={locale} />
+
       {/* ── SECCIONES EDITORIALES ── */}
       <section className="max-w-3xl mx-auto px-6 py-20 space-y-16">
-        {SECCIONES.map((s) => (
+        {t.secciones.map((s) => (
           <div key={s.titulo}>
             <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(26px,3.5vw,40px)" }}>
               {s.titulo}
@@ -191,13 +200,13 @@ export default function SobreLaHuastecaPage() {
       {/* ── DESTINOS ICÓNICOS ── */}
       <section className="bg-white border-y border-negro/8 py-20 px-6">
         <div className="max-w-5xl mx-auto">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">Lugares imperdibles</p>
+          <p className="text-[10px] tracking-[4px] uppercase text-verde-selva mb-3 font-dm text-center">{t.destinosEyebrow}</p>
           <h2 className="font-cormorant font-light text-verde-profundo text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>
-            Destinos <em className="text-dorado">icónicos</em>
+            {t.destinosH2a}<em className="text-dorado">{t.destinosH2em}</em>
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {DESTINOS_ICONO.map((d) => (
-              <div key={d.nombre} className="group border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors">
+            {t.destinosIcono.map((d) => (
+              <div key={d.img} className="group border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors">
                 <div className="aspect-video overflow-hidden">
                   <img
                     src={d.img}
@@ -214,10 +223,10 @@ export default function SobreLaHuastecaPage() {
           </div>
           <div className="text-center mt-10">
             <Link
-              href="/destinos"
+              href={localePath("/destinos", locale)}
               className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all"
             >
-              Ver todos los destinos →
+              {t.destinosBtn}
             </Link>
           </div>
         </div>
@@ -226,59 +235,78 @@ export default function SobreLaHuastecaPage() {
       {/* ── CÓMO LLEGAR ── */}
       <section className="max-w-3xl mx-auto px-6 py-20 text-center">
         <h2 className="font-cormorant font-light text-verde-profundo mb-6" style={{ fontSize: "clamp(26px,3.5vw,42px)" }}>
-          ¿Cómo llegar a la <em className="text-dorado">Huasteca Potosina</em>?
+          {t.llegarH2a}<em className="text-dorado">{t.llegarH2em}</em>{t.llegarH2b}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-left">
-          {[
-            { medio: "Avión", detalle: "Vuelos a Ciudad Valles (CVM) o Tampico (TAM). Desde CVM son ~40 min a la zona." },
-            { medio: "Autobús", detalle: `ADO y Ómnibus de México desde CDMX, Monterrey y SLP. Ciudad Valles en ${enAutobus("cdmx", "valles")} desde CDMX.` },
-            { medio: "Auto",   detalle: `Desde CDMX por la carretera 85D: ${enAuto("cdmx", "valles")} por autopista. Recomendamos llegar de día.` },
-          ].map((t) => (
-            <div key={t.medio} className="border border-negro/8 bg-white p-5">
-              <p className="font-cormorant text-dorado text-lg mb-2">{t.medio}</p>
-              <p className="text-negro/55 font-dm text-sm leading-relaxed">{t.detalle}</p>
+          {t.llegar.map((m) => (
+            <div key={m.medio} className="border border-negro/8 bg-white p-5">
+              <p className="font-cormorant text-dorado text-lg mb-2">{m.medio}</p>
+              <p className="text-negro/55 font-dm text-sm leading-relaxed">{m.detalle}</p>
             </div>
           ))}
         </div>
         <Link
-          href="/info-practica"
+          href={localePath("/info-practica", locale)}
           className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all"
         >
-          Guía completa de información práctica →
+          {t.llegarBtn}
         </Link>
+      </section>
+
+      {/* ── PREGUNTAS FRECUENTES ── (10 nov 2026) El mismo texto va al FAQPage. */}
+      <section className="bg-white border-y border-negro/8 py-20 px-6">
+        <div className="max-w-3xl mx-auto">
+          <h2 className="font-cormorant font-light text-verde-profundo mb-10" style={{ fontSize: "clamp(26px,3.5vw,40px)" }}>
+            {t.faqTitulo}
+          </h2>
+          <div className="divide-y divide-negro/8 border-t border-negro/8">
+            {t.faqs.map((f) => (
+              <div key={f.q} className="py-6">
+                <h3 className="font-cormorant text-verde-profundo text-xl leading-snug mb-2">{f.q}</h3>
+                <p className="text-negro/60 font-dm text-sm leading-relaxed">{f.a}</p>
+                {f.link && (
+                  <Link
+                    href={f.link.href}
+                    className="inline-block mt-3 text-verde-selva font-dm text-sm underline underline-offset-2 hover:text-terracota transition-colors"
+                  >
+                    {f.link.label}
+                  </Link>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
       <div className="max-w-4xl mx-auto px-6 py-10">
-        <TarjetaViajeCdmx origen="sobre-la-huasteca" />
+        <TarjetaViajeCdmx origen={t.tarjetaOrigen} locale={locale} />
       </div>
 
       {/* ── CTA TOURS ── */}
       <section className="bg-verde-profundo py-20 px-6 text-center">
-        <p className="text-[10px] tracking-[4px] uppercase text-lima mb-4 font-dm">Listo para explorar</p>
+        <p className="text-[10px] tracking-[4px] uppercase text-lima mb-4 font-dm">{t.ctaEyebrow}</p>
         <h2 className="font-cormorant font-light text-crema mb-6" style={{ fontSize: "clamp(28px,4vw,48px)" }}>
-          Empieza tu aventura en la <em className="text-dorado">Huasteca</em>
+          {t.ctaH2a}<em className="text-dorado">{t.ctaH2em}</em>
         </h2>
         <p className="text-crema/55 font-dm text-sm mb-8 max-w-md mx-auto leading-relaxed">
-          Tours guiados con transporte, desayuno, guía certificado y todo el equipo incluido.
-          Grupos máximo {GRUPO_MAX} personas — si son más, habla con el equipo y armamos una salida privada.
+          {t.ctaTexto}
         </p>
         <div className="flex flex-wrap gap-4 justify-center">
           <Link
-            href="/reservar"
+            href={localePath("/reservar", locale)}
             className="inline-block bg-dorado text-white px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-terracota transition-colors"
           >
-            Ver recorridos y reservar
+            {t.ctaReservar}
           </Link>
           <Link
-            href="/tours"
+            href={localePath("/tours", locale)}
             className="inline-block border border-crema/30 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-colors"
           >
-            Conocer los tours a fondo →
+            {t.ctaTours}
           </Link>
         </div>
       </section>
-
     </main>
   );
 }

@@ -170,6 +170,11 @@ const nextConfig = {
       { source: "/blog/itinerario-xilitla-itinerario-perfecto-de-3-dias-en-xilitla-2026",      destination: "/blog/itinerario-xilitla-itinerario-perfecto-de-3-dias-en-xilitla",      permanent: true },
       { source: "/blog/xilitla-con-ninos-actividades-para-ninos-en-xilitla-viajando-2026",     destination: "/blog/xilitla-con-ninos-actividades-para-ninos-en-xilitla-viajando",     permanent: true },
       { source: "/blog/opiniones-resena-lo-que-dicen-nuestros-huespedes-de-paraiso-2026",      destination: "/blog/opiniones-resena-lo-que-dicen-nuestros-huespedes-de-paraiso",      permanent: true },
+
+      // ── Blog: URLs viejas que Google sigue mostrando ─────────────────────
+      // Search Console (9 ago–8 nov 2026): esta URL daba 404 y aun así salía
+      // 651 veces en el puesto 2.2. Es el artículo #1 del sitio con otro slug.
+      { source: "/blog/mejor-epoca-visitar-la-huasteca-potosina", destination: "/blog/mejor-epoca-para-visitar-la-huasteca-potosina", permanent: true },
     ];
   },
 };

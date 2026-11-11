@@ -26,6 +26,9 @@ import { PaqueteFormCta } from "@/components/PaqueteFormCta";
 import { TourCollage } from "@/components/TourCollage";
 import { HabitacionesDelPaquete } from "@/components/HabitacionesDelPaquete";
 import { waLink } from "@/lib/whatsapp";
+import { resenasRealesPara } from "@/lib/i18n/resenasReales.en";
+import { AvatarResena } from "@/components/AvatarResena";
+import { ResenaOriginal } from "@/components/ResenaOriginal";
 
 // Los precios de la promo de temporada baja se apagan solos al terminar (ver
 // `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
@@ -224,6 +227,10 @@ export default function PaqueteDetallePage({ params }: Props) {
   // ficha, y «$7,250 MXN» a secas no dice si es de uno o de los dos.
   const waMsg = t.waMsg(p.nombre, p.duracion, `$${num(precioVisible(p))} MXN ${p.precioLabel}`);
   const resenas = RESENAS_POR_PAQUETE[p.slug] ?? RESENAS_PAQUETES;
+  // 🔴 En inglés NO van las de `RESENAS_POR_PAQUETE` (no están en el perfil de
+  // Google; traducirlas sería inventar): salían en español y sin `lang`. Van
+  // tres REALES de la operadora, traducidas y con su original.
+  const resenasEn = locale === "en" ? resenasRealesPara("en", 3) : [];
 
   const url = localeUrl(`/paquetes/${p.slug}`, locale);
 
@@ -371,7 +378,7 @@ export default function PaqueteDetallePage({ params }: Props) {
                   `p.precioLabel`, y un total de pareja debajo de «por persona»
                   anunciaría el doble de lo que cuesta. */}
               {precioVisibleTachado(p) && (
-                <span className="mr-2 align-middle font-dm text-[14px] text-crema/40 line-through">${num(precioVisibleTachado(p)!)}</span>
+                <span className="mr-2 align-middle font-dm text-[14px] text-crema/40 line-through">${num(precioVisibleTachado(p)!)}{locale === "en" ? " MXN" : ""}</span>
               )}
               ${num(precioVisible(p))} <span className="font-dm text-[11px] text-crema/65">MXN {p.precioLabel}</span>
             </span>
@@ -688,6 +695,27 @@ export default function PaqueteDetallePage({ params }: Props) {
               <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
             )}
           </p>
+          {locale === "en" ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {resenasEn.map((r) => (
+                <div key={r.autor} className="flex flex-col border border-white/8 bg-negro/50 p-5">
+                  <div className="flex gap-0.5 mb-3" aria-label={`${r.estrellas} out of 5 stars`}>
+                    {[...Array(r.estrellas)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />)}
+                  </div>
+                  <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-3">&ldquo;{r.texto}&rdquo;</p>
+                  <ResenaOriginal r={r} className="mb-4" />
+                  <div className="mt-auto flex items-center gap-3">
+                    {/* Su foto de perfil de Google o su inicial, nunca una de archivo. */}
+                    <AvatarResena autor={r.autor} foto={r.foto} className="h-9 w-9 border border-white/15" />
+                    <div>
+                      <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.autor}</p>
+                      <p className="text-[9px] font-dm text-crema/35 mt-0.5">Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {resenas.map((r) => (
               <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
@@ -704,6 +732,7 @@ export default function PaqueteDetallePage({ params }: Props) {
               </div>
             ))}
           </div>
+          )}
         </div>
       </section>
 

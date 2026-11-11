@@ -132,7 +132,9 @@ async function leeSitemap(url: string): Promise<Entrada[]> {
 
 function esDelBlog(loc: string): boolean {
   const path = new URL(loc).pathname;
-  return path === "/blog" || path.indexOf("/blog/") === 0;
+  // También el blog en inglés (/en/blog, 10 nov 2026): su fecha es la del
+  // artículo, no la del catálogo.
+  return path === "/blog" || path.indexOf("/blog/") === 0 || path === "/en/blog" || path.indexOf("/en/blog/") === 0;
 }
 
 // ── Programa ──────────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
 import { BandaRio } from "@/components/BandaRio";
 import { BandaViaje } from "@/components/viajeCdmx/BandaViaje";
+import PARES_BLOG from "@/content/blog-en/pares.json";
 
 // Páginas españolas que SÍ tienen pareja en /en (la misma que declara su
 // hreflang). Antes solo estaban el inicio, /tours y /destinos: en /precios,
@@ -21,6 +22,11 @@ const ES_CON_EN = new Set([
   "/", "/tours", "/destinos", "/paquetes", "/precios", "/reservar", "/reservar/carrito",
   "/info-practica", "/nosotros", "/contacto", "/preguntas-frecuentes", "/experiencias",
   "/comparar",
+  // Traducidas el 10 nov 2026.
+  "/politica-de-cancelacion", "/terminos", "/aviso-de-privacidad", "/sustentabilidad-y-conservacion",
+  "/grupos", "/creditos",
+  "/que-hacer-en-la-huasteca-potosina", "/sobre-la-huasteca-potosina", "/tours-en-xilitla",
+  "/tours-en-ciudad-valles", "/xilitla-o-ciudad-valles",
 ]);
 // Fichas: toda ficha de tour, destino o paquete existe en los dos idiomas.
 const FICHAS_CON_EN = /^\/(?:tours|destinos|paquetes)\/[^/]+$/;
@@ -31,21 +37,49 @@ const FICHAS_SOLO_ES = new Set(["/paquetes/noche-de-xantolo", "/paquetes/xantolo
 // quitarles el /en daba 404, así que el botón "Español" lleva al inicio.
 const SOLO_EN = /^\/en\/(?:press|from)(?:\/|$)/;
 
-// «Sustentabilidad» en el menú en español, de escritorio y de celular (Manolo,
-// 7 oct 2026: «súbelo, si no me gusta lo bajamos»). Solo en español: la página
-// no existe en /en. Para BAJARLO basta con poner `false` aquí; con él se va
+// «Sustentabilidad» en el menú, de escritorio y de celular (Manolo,
+// 7 oct 2026: «súbelo, si no me gusta lo bajamos»). Desde el 10 nov 2026 también
+// en inglés (/en/sustentabilidad-y-conservacion). Para BAJARLO basta con poner `false` aquí; con él se va
 // también el espaciado más corto que necesita el menú de escritorio.
 const MENU_SUSTENTABILIDAD = true;
 
 // Contraparte de idioma para el selector (sin pareja → inicio del otro idioma,
 // nunca un 404).
 /** Gemelas con slug distinto en cada idioma (el viaje desde CDMX, 16 oct 2026). */
-const PARES: Record<string, string> = { "/viaje-cdmx-xilitla": "/en/huasteca-potosina-from-mexico-city" };
+const PARES: Record<string, string> = {
+  "/viaje-cdmx-xilitla": "/en/huasteca-potosina-from-mexico-city",
+  // Guías nuevas del 10 nov 2026.
+  "/donde-hospedarse-en-la-huasteca-potosina": "/en/where-to-stay-in-huasteca-potosina",
+  "/cascadas-de-la-huasteca-potosina": "/en/huasteca-potosina-waterfalls",
+};
 const PARES_EN: Record<string, string> = Object.fromEntries(Object.entries(PARES).map(([es, en]) => [en, es]));
+
+/**
+ * Artículos del blog traducidos (10 nov 2026): `{ slug ES: slug EN }`, el mismo
+ * archivo que escribe el robot (`src/content/blog-en/pares.json`). Un artículo
+ * SIN traducción manda al índice del blog del otro idioma, no al inicio.
+ */
+const BLOG_ES_EN: Record<string, string> = PARES_BLOG as Record<string, string>;
+const BLOG_EN_ES: Record<string, string> = Object.fromEntries(Object.entries(BLOG_ES_EN).map(([es, en]) => [en, es]));
+
+function parBlog(pathname: string): string | null {
+  if (pathname === "/blog") return "/en/blog";
+  if (pathname === "/en/blog") return "/blog";
+  const es = pathname.match(/^\/blog\/([^/]+)$/);
+  if (es) {
+    const en = BLOG_ES_EN[es[1].replace(/-20\d{2}$/, "")];
+    return en ? `/en/blog/${en}` : "/en/blog";
+  }
+  const en = pathname.match(/^\/en\/blog\/([^/]+)$/);
+  if (en) return BLOG_EN_ES[en[1]] ? `/blog/${BLOG_EN_ES[en[1]]}` : "/blog";
+  return null;
+}
 
 function counterpartHref(pathname: string, locale: Locale): string {
   if (PARES[pathname]) return PARES[pathname];
   if (PARES_EN[pathname]) return PARES_EN[pathname];
+  const blog = parBlog(pathname);
+  if (blog) return blog;
   if (locale === "en") {
     if (SOLO_EN.test(pathname)) return "/";
     return pathname.replace(/^\/en/, "") || "/";
@@ -174,7 +208,10 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
+  // El inicio solo se marca en el inicio: "/en" + "/" casaba con TODA página en
+  // inglés y «Home» salía encendido en todo el sitio inglés (10 nov 2026).
+  const isActive = (href: string) =>
+    pathname === href || (href !== "/" && href !== "/en" && pathname.startsWith(href + "/"));
   const navLinkClass = (href: string) =>
     `text-[11px] tracking-[2.5px] uppercase font-dm transition-colors duration-200 nav-link-shimmer ${
       isActive(href) ? "text-lima" : "text-crema/70 hover:text-crema"
@@ -204,7 +241,7 @@ export default function Navbar() {
               hueco de 20 px y a 1024 se encimaba con el logo (medido con la
               fuente real). Con 14 px cabe desde ~980 px, también en Windows,
               donde la barra de scroll se come 17. Desde 1280 vuelve el de 28. */}
-          <div className={`hidden lg:flex items-center ${locale === "es" && MENU_SUSTENTABILIDAD ? "gap-3.5" : "gap-5"} xl:gap-7`}>
+          <div className={`hidden lg:flex items-center ${MENU_SUSTENTABILIDAD ? "gap-3.5" : "gap-5"} xl:gap-7`}>
             <Link href={lp("/")} className={navLinkClass(lp("/"))}>{dict.nav.tours && (locale === "en" ? "Home" : "Inicio")}</Link>
 
             <Link href={lp("/destinos")} className={navLinkClass(lp("/destinos"))}>{dict.nav.destinos}</Link>
@@ -218,16 +255,14 @@ export default function Navbar() {
                 /nosotros, en el pie solo en inglés. */}
             <Link href={lp("/info-practica")} className={navLinkClass(lp("/info-practica"))}>{dict.nav.infoPractica}</Link>
 
-            {/* Secciones solo-ES (aún sin versión en inglés) */}
-            {locale === "es" && (
-              <>
-                <Link href="/blog" className={navLinkClass("/blog")}>{dict.nav.blog}</Link>
-                {MENU_SUSTENTABILIDAD && (
-                  <Link href="/sustentabilidad-y-conservacion" className={navLinkClass("/sustentabilidad-y-conservacion")}>Sustentabilidad</Link>
-                )}
-                {/* "Contacto" vive solo en el pie (SiteFooter). El navbar tenía 9
-                    enlaces y el CTA de Reservar se perdía entre ellos. */}
-              </>
+            {/* Blog y Sustentabilidad: en los dos idiomas desde el 10 nov 2026
+                (blog en inglés en /en/blog). "Contacto" vive solo en el pie
+                (SiteFooter): con 9 enlaces el CTA de Reservar se perdía. */}
+            <Link href={lp("/blog")} className={navLinkClass(lp("/blog"))}>{dict.nav.blog}</Link>
+            {MENU_SUSTENTABILIDAD && (
+              <Link href={lp("/sustentabilidad-y-conservacion")} className={navLinkClass(lp("/sustentabilidad-y-conservacion"))}>
+                {locale === "en" ? "Sustainability" : "Sustentabilidad"}
+              </Link>
             )}
 
             {/* Selector de idioma */}
@@ -274,12 +309,15 @@ export default function Navbar() {
               <>
                 <Link href="/preguntas-frecuentes" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">Preguntas frecuentes</Link>
 
-                <Link href="/blog" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
-
-                {MENU_SUSTENTABILIDAD && (
-                  <Link href="/sustentabilidad-y-conservacion" className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/5">Sustentabilidad</Link>
-                )}
               </>
+            )}
+
+            <Link href={lp("/blog")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">{dict.nav.blog}</Link>
+
+            {MENU_SUSTENTABILIDAD && (
+              <Link href={lp("/sustentabilidad-y-conservacion")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/5">
+                {locale === "en" ? "Sustainability" : "Sustentabilidad"}
+              </Link>
             )}
 
             <Link href={switchHref} prefetch={false} className="flex items-center gap-2 py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">

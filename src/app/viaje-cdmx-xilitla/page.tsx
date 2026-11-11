@@ -39,6 +39,8 @@ import { MapaPunto } from "@/components/viajeCdmx/MapaPunto";
 import { BarraViaje } from "@/components/viajeCdmx/BarraViaje";
 import { BotonWhatsApp } from "@/components/viajeCdmx/BotonWhatsApp";
 import { AvatarResena } from "@/components/AvatarResena";
+import { ResenaOriginal } from "@/components/ResenaOriginal";
+import { resenasRealesPara } from "@/lib/i18n/resenasReales.en";
 
 /**
  * /viaje-cdmx-xilitla y /en/huasteca-potosina-from-mexico-city — la salida
@@ -100,7 +102,8 @@ export async function generateMetadata(): Promise<Metadata> {
   if (locale === "en") {
     const title = "Huasteca Potosina from Mexico City · Weekend Trip to Xilitla";
     const description =
-      `Small-group weekend trip from Mexico City, all included: transport from the Angel, a night in Xilitla, breakfasts, Las Pozas and Tamul waterfall. ` +
+      // ≤160 caracteres (auditoría 10 nov 2026: medía 180 y Google la cortaba).
+      `Small-group weekend trip from Mexico City: transport, a night in Xilitla, breakfasts, Las Pozas and Tamul waterfall. ` +
       (desde ? `From ${pesosEn(desde)} (≈${enDolares(desde, usd)}).` : `Monthly departures; book with ${ANTICIPO_PCT}%.`);
     return {
       title,
@@ -343,7 +346,7 @@ const P = {
     resenasLink: `${GOOGLE_RATING} · ${GOOGLE_RESENAS} Google reviews`,
     resenasEyebrow: "What people say on Google",
     resenasTitulo: <>{GOOGLE_RATING} stars · <em className="text-dorado">{GOOGLE_RESENAS} reviews</em></>,
-    resenasNota: "Real reviews of our tours, copied word for word (in Spanish) from the operator's Google profile. This trip is new: its first reviews come with the first departure.",
+    resenasNota: "Real reviews of our tours from the operator's Google profile, translated from Spanish (“See original” shows the exact words). This trip is new: its first reviews come with the first departure.",
     resenasTodas: "Read them all on Google",
     incluidoEyebrow: "One price", incluidoTitulo: <>All of this is <em className="text-dorado">included</em></>, incluidoSub: "Just show up at the Angel with your bag. We handle the rest.",
     badgeIncluido: "Included", listaCompleta: "The full list", aparte: "The only things you pay for",
@@ -508,10 +511,14 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
             </div>
             {/* En el celular, una fila que se desliza; en escritorio, tres columnas. */}
             <ul className="flex md:grid md:grid-cols-3 gap-3 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:overflow-visible">
-              {RESENAS_REALES.slice(0, 6).map((r) => (
+              {/* `resenasRealesPara`: en español devuelve las mismas, tal cual; en
+                  inglés, traducidas con el original a un toque (salían en
+                  español y sin `lang`, auditoría del 10 nov 2026). */}
+              {resenasRealesPara(locale, 6).map((r) => (
                 <li key={`${r.autor}-${r.fecha}`} className="snap-start shrink-0 w-[82%] sm:w-[60%] md:w-auto flex flex-col border border-white/10 bg-negro/50 p-5">
                   <p className="text-dorado text-sm mb-2" aria-label={en ? `${r.estrellas} out of 5 stars` : `${r.estrellas} de 5 estrellas`}>{"★".repeat(Math.max(1, Math.min(5, r.estrellas)))}</p>
-                  <blockquote className="text-sm font-dm text-crema/80 leading-relaxed mb-4">“{r.texto}”</blockquote>
+                  <blockquote className={r.traducida ? "text-sm font-dm text-crema/80 leading-relaxed mb-3" : "text-sm font-dm text-crema/80 leading-relaxed mb-4"}>“{r.texto}”</blockquote>
+                  <ResenaOriginal r={r} className="mb-4" />
                   <div className="mt-auto flex items-center gap-3">
                     <AvatarResena autor={r.autor} foto={r.foto} />
                     <div>
@@ -853,7 +860,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
               {RESENAS_VIAJE.map((r) => (
                 <li key={`${r.autor}-${r.fecha}`} className="border border-white/10 bg-negro/40 p-5">
                   <p className="text-dorado text-sm mb-2" aria-label={`${r.estrellas} / 5`}>{"★".repeat(Math.max(1, Math.min(5, r.estrellas)))}</p>
-                  <p className="text-sm font-dm text-crema/80 leading-relaxed mb-3">“{r.texto}”</p>
+                  <p lang={en ? "es" : undefined} className="text-sm font-dm text-crema/80 leading-relaxed mb-3">“{r.texto}”</p>
                   <p className="text-xs font-dm text-crema/50">{r.autor} · {r.fecha}{r.salida ? ` · ${r.salida}` : ""}</p>
                 </li>
               ))}

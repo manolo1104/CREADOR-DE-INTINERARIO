@@ -62,7 +62,7 @@ export default function ContactoPage() {
         "@type": "ContactPage",
         name: t.schemaName,
         url,
-        inLanguage: locale === "en" ? "en-US" : "es-MX",
+        inLanguage: locale === "en" ? "en" : "es-MX",
         mainEntity: ORG_REF,
       },
       buildOrganizationNode(locale),
@@ -188,8 +188,8 @@ export default function ContactoPage() {
           )}
           <p className="font-dm text-xs text-negro/45 mt-4">
             {t.privacidadPre}{" "}
-            {/* El aviso legal solo existe en español; el inglés lo advierte con `privacidadNota`. */}
-            <Link href="/aviso-de-privacidad" className="underline underline-offset-2 hover:text-negro/70">
+            {/* Desde el 10 nov 2026 el aviso existe en inglés (/en/aviso-de-privacidad). */}
+            <Link href={locale === "en" ? "/en/aviso-de-privacidad" : "/aviso-de-privacidad"} className="underline underline-offset-2 hover:text-negro/70">
               {t.privacidadLink}
             </Link>
             {t.privacidadNota ? ` ${t.privacidadNota}` : ""}.

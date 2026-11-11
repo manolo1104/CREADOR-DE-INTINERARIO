@@ -16,6 +16,9 @@ import { toursSimilares } from "@/lib/toursSimilares";
 import { urlComparar } from "@/lib/comparador";
 import { comparadorUI } from "@/lib/i18n/comparador";
 import { TOUR_REVIEWS, GOOGLE_MAPS_REVIEWS_URL } from "@/lib/tourReviews";
+import { resenasRealesPara } from "@/lib/i18n/resenasReales.en";
+import { AvatarResena } from "@/components/AvatarResena";
+import { ResenaOriginal } from "@/components/ResenaOriginal";
 import { TOUR_REQUISITOS, noIncluyeDe, queLlevarDe } from "@/lib/tourRequisitos";
 import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
 import { TourGallery } from "@/components/TourGallery";
@@ -134,7 +137,9 @@ function frasePrecio(min: number, max: number, t: Pick<Tour, "precioUnidad">, lo
   const unidad = `MXN ${etiquetaUnidad(t, locale === "en")}`;
   const n = (v: number) => `$${fmtNumber(v, locale)}`;
   if (max <= min) return `${n(min)} ${unidad}`;
-  return locale === "en" ? `${n(min)} to ${n(max)} ${unidad}` : `de ${n(min)} a ${n(max)} ${unidad}`;
+  // En inglés, «MXN» también en el primer extremo: en «$1,600 to $7,000 MXN»
+  // un lector de EE.UU. lee el primero en dólares (auditoría del 10 nov 2026).
+  return locale === "en" ? `${n(min)} MXN to ${n(max)} ${unidad}` : `de ${n(min)} a ${n(max)} ${unidad}`;
 }
 
 /** "9 horas" o "8–10 horas". */
@@ -454,6 +459,13 @@ export default function TourDetailPage({ params }: Props) {
 
   const dif = DIFICULTAD_CONFIG[tour.dificultad];
   const reviews = TOUR_REVIEWS[tour.id as keyof typeof TOUR_REVIEWS] ?? [];
+  // 🔴 En inglés NO se enseñan las de `tourReviews.ts`: no están en el perfil
+  // de Google y traducirlas sería ponerle palabras en la boca a gente que no
+  // existe. Salían en español, sin `lang="es"`, en 8 de las 13 fichas EN
+  // (auditoría del 10 nov 2026). En su lugar van las REALES de la operadora,
+  // traducidas y con el original a un toque. Mismas fichas que tenían bloque:
+  // se reemplaza, no se añade. El español sigue igual que antes.
+  const resenasEn = locale === "en" && reviews.length > 0 ? resenasRealesPara("en", 3) : [];
   const toursHref = localePath("/tours", locale);
   const money = (n: number) => `$${fmtNumber(n, locale)}`;
 
@@ -1016,7 +1028,7 @@ export default function TourDetailPage({ params }: Props) {
           <div className="flex flex-wrap items-center gap-3">
             {promo && (
               <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2.5 py-1 rounded-sm">
-                {locale === "en" ? `LOW SEASON · SAVE $${promo.monto}` : `TEMPORADA BAJA · −$${promo.monto}`}
+                {locale === "en" ? `LOW SEASON · SAVE $${promo.monto} MXN` : `TEMPORADA BAJA · −$${promo.monto}`}
               </span>
             )}
             <div className="flex items-baseline gap-2">
@@ -1409,8 +1421,14 @@ export default function TourDetailPage({ params }: Props) {
                             </div>
                           </div>
                         </td>
+                        {/* En inglés cada celda lleva «MXN»: el «(MXN)» del
+                            título queda lejos, y «$1,600» a secas se lee en
+                            dólares (auditoría del 10 nov 2026: 24 celdas). */}
                         {v.precios.map((p, i) => (
-                          <td key={i} className="px-3 py-3 text-dorado whitespace-nowrap">{money(p)}</td>
+                          <td key={i} className="px-3 py-3 text-dorado whitespace-nowrap">
+                            {money(p)}
+                            {locale === "en" && <span className="ml-1 font-dm text-[10px] text-crema/40">MXN</span>}
+                          </td>
                         ))}
                       </tr>
                     ))}
@@ -1454,12 +1472,55 @@ export default function TourDetailPage({ params }: Props) {
                 {"★★★★★".split("").map((s, i) => (<span key={i} className="text-dorado text-lg">{s}</span>))}
                 <span className="text-crema/40 font-dm text-sm ml-2 self-end">{resenasTexto(locale === "en")}</span>
               </div>
-              <p className="text-crema/30 font-dm text-[11px] mb-6">{t.reviewsSample(reviews.length)}</p>
+              <p className="text-crema/30 font-dm text-[11px] mb-6">
+                {/* En inglés no son de ESTE recorrido sino de la operadora: así
+                    se dice, para no venderlas como opiniones de este tour. */}
+                {locale === "en"
+                  ? `${resenasEn.length} reviews from our Google profile, about our tours in general.`
+                  : t.reviewsSample(reviews.length)}
+              </p>
               {/* Lo que se lee primero es LO QUE DIJERON, no quién lo dijo: el
                   bloque de cabecera empujaba la cita hasta la cuarta línea. La
                   comilla ancla la tarjeta y deja claro de un vistazo que es voz
                   de cliente, sin gastar una línea de texto en decirlo.
                   Las tres entran escalonadas (80 ms) — ver `.reveal-up`. */}
+              {locale === "en" ? (
+                /* Inglés: reseñas reales traducidas. La traducción va rotulada
+                   como tal y el texto literal de Google, con `lang="es"`, se
+                   abre debajo («See original»), como hace Google Maps. Misma
+                   tarjeta que la versión en español. */
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                  {resenasEn.map((r, i) => (
+                    <figure
+                      key={r.autor}
+                      className={`resena-card reveal-up ${i === 1 ? "reveal-d1" : i === 2 ? "reveal-d2" : ""} relative flex flex-col border border-white/8 bg-negro/30 p-5 pt-7 rounded-sm`}
+                    >
+                      <span aria-hidden="true"
+                        className="absolute left-4 top-1 font-cormorant text-dorado/25 text-5xl leading-none select-none">
+                        &ldquo;
+                      </span>
+                      <blockquote className="text-crema/70 font-dm text-sm leading-relaxed mb-3">
+                        {r.texto}
+                      </blockquote>
+                      <ResenaOriginal r={r} className="mb-4" />
+                      <figcaption className="mt-auto flex items-center gap-3 border-t border-white/8 pt-4">
+                        {/* La foto de perfil de Google del autor, o su inicial:
+                            nunca una de archivo (ver `resenasReales.ts`). */}
+                        <AvatarResena autor={r.autor} foto={r.foto} className="h-8 w-8" />
+                        <div className="min-w-0">
+                          <p className="text-crema/90 font-dm text-[13px] font-medium leading-none truncate">{r.autor}</p>
+                          <p className="text-crema/35 font-dm text-[10px] mt-1">
+                            Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}
+                          </p>
+                        </div>
+                        <span className="ml-auto flex gap-0.5 text-dorado text-[11px] leading-none" aria-label={`${r.estrellas} out of 5 stars`}>
+                          {"★".repeat(Math.max(1, Math.min(5, r.estrellas))).split("").map((st, j) => (<span key={j} aria-hidden="true">{st}</span>))}
+                        </span>
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                 {reviews.map((r, i) => (
                   <figure
@@ -1493,6 +1554,7 @@ export default function TourDetailPage({ params }: Props) {
                   </figure>
                 ))}
               </div>
+              )}
               <p className="mt-4 text-center">
                 <a href={GOOGLE_MAPS_REVIEWS_URL} target="_blank" rel="noopener noreferrer"
                   className="text-[10px] text-verde-vivo hover:text-lima font-dm underline underline-offset-2 transition-colors">
@@ -1766,7 +1828,7 @@ export default function TourDetailPage({ params }: Props) {
               {promo && (
                 <div className="flex items-center gap-2 mb-2">
                   <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">
-                    {locale === "en" ? `SAVE $${promo.monto}` : `−$${promo.monto}`}
+                    {locale === "en" ? `SAVE $${promo.monto} MXN` : `−$${promo.monto}`}
                   </span>
                   <span className="text-[9px] text-crema/35 font-dm">{t.specialPrice}</span>
                 </div>
@@ -1774,7 +1836,7 @@ export default function TourDetailPage({ params }: Props) {
               <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">{tcommon.desde.toLowerCase()}</p>
               {antesDe && (
                 <p className="text-[12px] text-crema/35 font-dm leading-none">
-                  <span className="line-through">{money(antesDe)}</span>
+                  <span className="line-through">{money(antesDe)}{locale === "en" ? " MXN" : ""}</span>
                   <span className="ml-1.5 text-dorado/80 no-underline">
                     {locale === "en" ? `for dates through ${PROMO_TEMPORADA.hastaTexto.en}` : `para fechas hasta el ${PROMO_TEMPORADA.hastaTexto.es}`}
                   </span>
@@ -2019,7 +2081,9 @@ export default function TourDetailPage({ params }: Props) {
             {locale === "en" ? (
               <>
                 More detail in our{" "}
-                <Link href="/politica-de-cancelacion" className="underline underline-offset-2 hover:text-negro/70">
+                {/* A la política EN INGLÉS (/en/politica-de-cancelacion): las
+                    13 fichas EN mandaban a la de español. */}
+                <Link href={localePath("/politica-de-cancelacion", locale)} className="underline underline-offset-2 hover:text-negro/70">
                   cancellation and weather policy
                 </Link>
                 .

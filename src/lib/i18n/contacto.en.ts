@@ -194,7 +194,7 @@ const EN: ContactoContent = {
 
   privacidadPre: "For how we handle your data, see our",
   privacidadLink: "Privacy Notice",
-  privacidadNota: "(in Spanish)",
+  privacidadNota: "",
 };
 
 export function getContacto(locale: Locale): ContactoContent {

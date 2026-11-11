@@ -1,26 +1,48 @@
-import { Metadata } from "next";
+import { Fragment } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { SITE } from "@/lib/i18n/config";
+import { headers } from "next/headers";
+import { asLocale, buildAlternates, localeUrl, SITE } from "@/lib/i18n/config";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { getPrivacidad, type SegAviso } from "@/lib/i18n/privacidad.en";
 
-export const metadata: Metadata = {
-  title: "Aviso de Privacidad — Tours Huasteca Potosina",
-  description:
-    "Aviso de Privacidad de Tours Huasteca Potosina conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).",
-  // Indexable, igual que /terminos y /politica-de-cancelacion. Estaba fuera del
-  // índice sin motivo declarado, y en un sitio que cobra en línea el aviso de
-  // privacidad es una de las páginas que Google busca para confiar en ti.
-  alternates: { canonical: `${SITE}/aviso-de-privacidad` },
-  robots: { index: true, follow: true },
-};
+/**
+ * Aviso de Privacidad, en español y en inglés (/en desde el 10 nov 2026: el pie
+ * del sitio inglés mandaba al español). Todo el texto vive en
+ * `src/lib/i18n/privacidad.en.ts`; manda el español y el inglés lo dice arriba.
+ */
+
+const RUTA = "/aviso-de-privacidad";
 
 // Al cambiar el aviso, cambiar también `AVISO_VERSION` de
 // `src/lib/encuestas/opciones.ts`: el check-in guarda qué versión aceptó cada quien.
-const FECHA = "21 de octubre de 2026";
-const RESPONSABLE = "Tours Huasteca Potosina";
-const RFC = "En trámite";
-const DOMICILIO = "Xilitla, San Luis Potosí, México";
-const EMAIL_ARCO = "privacidad@huasteca-potosina.com";
-const SITIO = "https://www.huasteca-potosina.com";
+// Las dos fechas son la misma, escrita en cada idioma.
+const FECHA = { es: "21 de octubre de 2026", en: "October 21, 2026" };
+
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getPrivacidad(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    // Indexable, igual que /terminos y /politica-de-cancelacion. Estaba fuera del
+    // índice sin motivo declarado, y en un sitio que cobra en línea el aviso de
+    // privacidad es una de las páginas que Google busca para confiar en ti.
+    alternates: buildAlternates(RUTA, locale),
+    robots: { index: true, follow: true },
+    // No declaraba `openGraph` y heredaba el del layout, con og:url apuntando
+    // al inicio (auditoría del 10 nov). Ahora lleva el suyo, con la foto.
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl(RUTA, locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      images: [{ url: `${SITE}/og-image.jpg`, width: 1200, height: 800, alt: t.ogImageAlt }],
+    },
+  };
+}
 
 function H2({ children }: { children: React.ReactNode }) {
   return (
@@ -43,181 +65,107 @@ function Li({ children }: { children: React.ReactNode }) {
   );
 }
 
-// Era una de las dos páginas indexables del sitio sin un solo dato
-// estructurado. Mismo patrón que /creditos y /terminos.
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@graph": [
-    {
-      "@type": "WebPage",
-      name: "Aviso de Privacidad",
-      description:
-        "Aviso de Privacidad conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP).",
-      url: `${SITE}/aviso-de-privacidad`,
-      inLanguage: "es-MX",
-      isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
-    },
-    {
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
-        { "@type": "ListItem", position: 2, name: "Aviso de Privacidad", item: `${SITE}/aviso-de-privacidad` },
-      ],
-    },
-  ],
-};
+/** Pinta un trozo del diccionario con las clases que siempre tuvo el aviso. */
+function Rico({ segs }: { segs: SegAviso[] }) {
+  return (
+    <>
+      {segs.map((s, i) => {
+        if (typeof s === "string") return <Fragment key={i}>{s}</Fragment>;
+        if ("b" in s) return <strong key={i}>{s.b}</strong>;
+        if ("em" in s) return <em key={i}>{s.em}</em>;
+        if ("br" in s) return <br key={i} />;
+        return (
+          <a
+            key={i}
+            href={s.href}
+            className={s.hover ? "text-verde-selva underline hover:text-verde-vivo transition-colors" : "text-verde-selva underline"}
+          >
+            {s.a}
+          </a>
+        );
+      })}
+    </>
+  );
+}
 
 export default function AvisoPrivacidadPage() {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getPrivacidad(locale);
+
+  // Era una de las dos páginas indexables del sitio sin un solo dato
+  // estructurado. Mismo patrón que /creditos y /terminos.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebPage",
+        name: t.webPageName,
+        description: t.webPageDescription,
+        url: localeUrl(RUTA, locale),
+        inLanguage: t.inLanguage,
+        isPartOf: { "@type": "WebSite", name: "Tours Huasteca Potosina", url: SITE },
+      },
+      buildBreadcrumbNode([{ name: t.breadcrumbActual, path: RUTA }], locale),
+    ],
+  };
+
   return (
     <main id="main-content" className="min-h-screen bg-crema">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {/* Hero */}
       <section className="bg-verde-profundo px-6 pt-36 pb-16 text-center">
-        <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">Legal</p>
+        <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">{t.eyebrow}</p>
         <h1 className="font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(32px,5vw,58px)" }}>
-          Aviso de Privacidad
+          {t.h1}
         </h1>
-        <p className="text-crema/50 font-dm text-sm">Última actualización: {FECHA}</p>
+        <p className="text-crema/50 font-dm text-sm">{t.actualizacionPre}{FECHA[locale]}</p>
       </section>
 
       {/* Contenido */}
       <article className="max-w-3xl mx-auto px-6 py-16">
 
-        <H2>I. Identidad y domicilio del Responsable</H2>
-        <P>
-          <strong>{RESPONSABLE}</strong> (en adelante "el Responsable"), con domicilio en {DOMICILIO},
-          RFC {RFC}, es el responsable del tratamiento de sus datos personales conforme a lo
-          establecido en la <em>Ley Federal de Protección de Datos Personales en Posesión de los
-          Particulares</em> (LFPDPPP) y su Reglamento.
-        </P>
-        <P>
-          Sitio web: <a href={SITIO} className="text-verde-selva underline hover:text-verde-vivo transition-colors">{SITIO}</a>
-          <br />
-          Correo electrónico ARCO: <a href={`mailto:${EMAIL_ARCO}`} className="text-verde-selva underline hover:text-verde-vivo transition-colors">{EMAIL_ARCO}</a>
-        </P>
+        {/* Solo en inglés: manda el texto español. */}
+        {t.avisoTraduccion && (
+          <p className="font-dm text-xs text-negro/55 border border-negro/10 bg-white px-4 py-3 mb-4">
+            {t.avisoTraduccion.antes}
+            <Link href={t.avisoTraduccion.href} hrefLang="es" className="underline underline-offset-2 text-verde-selva hover:text-verde-vivo">
+              {t.avisoTraduccion.enlace}
+            </Link>
+            {t.avisoTraduccion.despues}
+          </p>
+        )}
 
-        <H2>II. Datos personales que se recaban</H2>
-        <P>Para las finalidades descritas en el presente aviso, el Responsable podrá recabar las siguientes categorías de datos personales:</P>
-        <ul className="mb-4">
-          <Li><strong>Datos de identificación:</strong> nombre completo, número de personas en el grupo.</Li>
-          <Li><strong>Datos de contacto:</strong> número de teléfono (WhatsApp), correo electrónico.</Li>
-          <Li><strong>Datos de preferencias de viaje:</strong> fechas deseadas, tour de interés, número de participantes, presupuesto aproximado.</Li>
-          <Li><strong>Datos del check-in previo al tour</strong> (opcional, lo llena usted): ciudad de origen, fecha de nacimiento, con quién viaja (pareja, amigos, familia, empresa o solo), cómo nos conoció, si es su primera visita a la Huasteca Potosina y el motivo del viaje.</Li>
-          <Li><strong>Su opinión sobre el servicio:</strong> la calificación, la probabilidad de recomendarnos y los comentarios que nos deje en la encuesta de satisfacción.</Li>
-          <Li><strong>Datos financieros:</strong> información de pago procesada a través de Stripe (los datos de tarjeta son gestionados exclusivamente por Stripe y no son almacenados por el Responsable).</Li>
-          <Li><strong>Datos de navegación:</strong> dirección IP, tipo de navegador, páginas visitadas, duración de la sesión (vía cookies analíticas).</Li>
-        </ul>
-        <P>El Responsable <strong>no recaba datos personales sensibles</strong> en el sentido de la LFPDPPP. La fecha de nacimiento y la ciudad de origen no son datos sensibles.</P>
-
-        <H2>III. Finalidades del tratamiento</H2>
-        <P><strong>Finalidades primarias</strong> (necesarias para la relación jurídica):</P>
-        <ul className="mb-6">
-          <Li>Procesar y confirmar reservaciones de tours guiados.</Li>
-          <Li>Enviar información sobre el tour reservado (punto de encuentro, hora de salida, lista de qué llevar).</Li>
-          <Li>Preparar la logística de su tour con lo que nos cuente en el check-in previo.</Li>
-          <Li>Procesar pagos a través de la pasarela Stripe.</Li>
-          <Li>Emitir confirmaciones y comprobantes de pago.</Li>
-          <Li>Atender aclaraciones, cambios o cancelaciones de reservación.</Li>
-          <Li>Cumplir con obligaciones legales y fiscales aplicables.</Li>
-        </ul>
-        <P><strong>Finalidades secundarias</strong> (no necesarias para la relación jurídica — puede oponerse):</P>
-        <ul className="mb-4">
-          <Li>Enviar información sobre nuevos tours, destinos y promociones.</Li>
-          <Li>Enviarle una felicitación en su cumpleaños con un beneficio (un descuento para su siguiente tour), solo si lo autoriza con la casilla correspondiente del check-in.</Li>
-          <Li>Realizar encuestas de satisfacción post-tour.</Li>
-          <Li>Elaborar estadísticas internas sobre el perfil de nuestros visitantes y los medios por los que nos conocen, para mejorar nuestros servicios y nuestra publicidad.</Li>
-          <Li>Análisis estadístico anónimo de navegación para mejorar el sitio web.</Li>
-        </ul>
-        <P>
-          Si no desea que sus datos sean tratados para las finalidades secundarias, puede manifestarlo
-          enviando un correo a <a href={`mailto:${EMAIL_ARCO}`} className="text-verde-selva underline">{EMAIL_ARCO}</a> con
-          el asunto "Oposición a finalidades secundarias", dejando sin marcar la casilla de promociones
-          del check-in, o con la liga «Darme de baja» que viene en nuestros correos de promoción.
-        </P>
-
-        <H2>IV. Transferencias de datos personales</H2>
-        <P>El Responsable podrá transferir sus datos personales a los siguientes terceros:</P>
-        <ul className="mb-4">
-          <Li><strong>Stripe, Inc.</strong> (procesador de pagos) — para gestionar transacciones seguras. Stripe opera bajo su propia política de privacidad.</Li>
-          <Li><strong>Autoridades competentes</strong> — cuando sea requerido por ley, orden judicial o autoridad administrativa.</Li>
-          <Li><strong>Guías y operadores locales</strong> — exclusivamente para coordinar la logística de los tours reservados, con datos mínimos necesarios.</Li>
-        </ul>
-        <P>
-          Además, proveedores que nos prestan servicios tratan sus datos solo por cuenta nuestra y
-          bajo nuestras instrucciones: el envío de correos (Brevo) y el alojamiento del sitio y de la
-          base de datos (Railway).
-        </P>
-        <P>
-          El Responsable no comercializa, vende ni cede datos personales a terceros con fines de
-          mercadotecnia ajena. Todas las transferencias están sujetas a las mismas medidas de
-          seguridad descritas en este aviso.
-        </P>
-
-        <H2>V. Derechos ARCO</H2>
-        <P>
-          Usted tiene derecho a <strong>Acceder, Rectificar, Cancelar y Oponerse</strong> (derechos ARCO)
-          al tratamiento de sus datos personales, conforme a la LFPDPPP. También puede revocar en
-          cualquier momento el consentimiento que nos haya dado.
-        </P>
-        <P>Para ejercer sus derechos ARCO, envíe una solicitud a <a href={`mailto:${EMAIL_ARCO}`} className="text-verde-selva underline">{EMAIL_ARCO}</a> que contenga:</P>
-        <ul className="mb-4">
-          <Li>Nombre completo e identificación oficial (INE, pasaporte).</Li>
-          <Li>Descripción clara del derecho que desea ejercer.</Li>
-          <Li>Cualquier elemento que facilite la localización de sus datos.</Li>
-        </ul>
-        <P>
-          El Responsable dará respuesta en un plazo máximo de <strong>20 días hábiles</strong> a partir
-          de recibida la solicitud. Si la respuesta es procedente, se hará efectiva en un plazo de
-          15 días hábiles adicionales.
-        </P>
-
-        <H2>VI. Uso de cookies y tecnologías de rastreo</H2>
-        <P>
-          El sitio web utiliza cookies propias de sesión y cookies analíticas de terceros para
-          mejorar la experiencia de navegación y medir el tráfico. Puede gestionar sus preferencias
-          de cookies a través del banner que aparece en su primera visita o configurando su navegador.
-        </P>
-        <P>
-          Deshabilitar las cookies analíticas no afectará el funcionamiento esencial del sitio ni
-          su capacidad de realizar reservaciones.
-        </P>
-
-        <H2>VII. Medidas de seguridad</H2>
-        <P>
-          El Responsable ha implementado medidas de seguridad administrativas, técnicas y físicas
-          para proteger sus datos personales contra daño, pérdida, alteración o acceso no autorizado,
-          incluyendo: transmisión cifrada mediante HTTPS/TLS, acceso restringido a bases de datos
-          mediante autenticación, y proveedores de alojamiento con certificaciones de seguridad.
-        </P>
-
-        <H2>VIII. Cambios al Aviso de Privacidad</H2>
-        <P>
-          El Responsable se reserva el derecho de modificar el presente Aviso de Privacidad en
-          cualquier momento. Cualquier cambio será notificado a través de este sitio web con al menos
-          30 días de anticipación. La versión vigente siempre estará disponible en{" "}
-          <a href={`${SITIO}/aviso-de-privacidad`} className="text-verde-selva underline">{SITIO}/aviso-de-privacidad</a>.
-        </P>
-
-        <H2>IX. Contacto</H2>
-        <P>
-          Para cualquier duda, aclaración o ejercicio de derechos ARCO, contáctenos en:<br />
-          📧 <a href={`mailto:${EMAIL_ARCO}`} className="text-verde-selva underline">{EMAIL_ARCO}</a><br />
-          📍 {DOMICILIO}
-        </P>
+        {t.secciones.map((s) => (
+          <Fragment key={s.h2}>
+            <H2>{s.h2}</H2>
+            {s.bloques.map((b, i) =>
+              "ul" in b ? (
+                <ul key={i} className={b.amplio ? "mb-6" : "mb-4"}>
+                  {b.ul.map((li, j) => (
+                    <Li key={j}>
+                      <Rico segs={li} />
+                    </Li>
+                  ))}
+                </ul>
+              ) : (
+                <P key={i}>
+                  <Rico segs={b.p} />
+                </P>
+              ),
+            )}
+          </Fragment>
+        ))}
 
         <div className="mt-12 pt-8 border-t border-negro/10">
           <p className="text-negro/40 font-dm text-xs">
-            Este Aviso de Privacidad fue elaborado conforme a la{" "}
-            <em>Ley Federal de Protección de Datos Personales en Posesión de los Particulares</em>{" "}
-            publicada en el DOF el 20 de marzo de 2025. La autoridad en la materia es la Secretaría
-            Anticorrupción y Buen Gobierno, que asumió las funciones del extinto INAI.
+            <Rico segs={t.notaLegal} />
           </p>
         </div>
 
         <div className="mt-8">
-          <Link href="/" className="text-sm tracking-[2px] uppercase text-verde-selva hover:text-verde-vivo transition-colors border-b border-verde-selva/30 pb-0.5 font-dm">
-            ← Volver al inicio
+          <Link href={t.volver.href} className="text-sm tracking-[2px] uppercase text-verde-selva hover:text-verde-vivo transition-colors border-b border-verde-selva/30 pb-0.5 font-dm">
+            {t.volver.label}
           </Link>
         </div>
 

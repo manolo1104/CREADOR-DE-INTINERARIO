@@ -1,130 +1,77 @@
 import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
-import { TOURS_DB, tourDurTexto, etiquetaUnidad, fraseRecogida, partesRecogida, salidaCorta, cargoVallesDe } from "@/lib/tours";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
-import { incluyeDesayuno, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
+import { headers } from "next/headers";
+import { tourDurTexto } from "@/lib/tours";
 import { waLink } from "@/lib/whatsapp";
-import { SITE } from "@/lib/i18n/config";
+import { SITE, asLocale, buildAlternates, localePath, localeUrl } from "@/lib/i18n/config";
 import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { localizeTour } from "@/lib/i18n/localize";
+import { TOURS_CV, OTROS_CV, getToursValles } from "@/lib/i18n/toursValles.en";
 
-const URL = `${SITE}/tours-en-ciudad-valles`;
+const PATH = "/tours-en-ciudad-valles";
 
-/**
- * Los recorridos que de verdad pasan por ti en Ciudad Valles sin costo extra.
- *
- * 🔴 Filtraba con `esPorPersona` y así entraban la Gruta de Xilo, el Amanecer
- * de Nubes, la Olla de la Luz, la Travesía del Café —los cuatro recogen SOLO
- * en Xilitla— y el buceo, que es en la laguna de Rioverde. Una página que
- * promete "pasamos por ti a tu hotel de Ciudad Valles" listaba cinco que no lo
- * hacen, y anunciaba "desde $900" cuando lo más barato desde Valles cuesta
- * más. Todo lo de abajo —precios, hora, desayuno— sale de esta lista.
- */
-const TOURS_CV = recogenEnValles(TOURS_DB);
-/** Recogen en Valles, pero con el traslado cobrado aparte (la Ruta Surrealista, +$400 por reserva). */
-const CON_CARGO = TOURS_CV.filter((t) => cargoVallesDe(t) > 0);
-// Función y no constante: `t.precio` vale la promo hasta el 29 oct y el de
-// lista después; una constante de módulo (y una `metadata` estática) se
-// congelaban al arrancar el servidor y seguían anunciando la promo.
-const cvRango = () => rangoPorPersona(TOURS_CV);
-const money = (n: number) => `$${n.toLocaleString("es-MX")}`;
-/** La hora de salida si todos los de la lista la comparten ("entre 8:00 y 9:00 AM"); si no, null. */
-const CV_HORA =
-  new Set(TOURS_CV.map((t) => salidaCorta(t))).size === 1 && TOURS_CV[0]
-    ? partesRecogida(TOURS_CV[0], false).hora
-    : null;
-const CV_DESAYUNO = TOURS_CV.filter(incluyeDesayuno);
-/** Los que no recogen en Valles, para decir qué pasa con ellos en vez de callarlos. */
-const OTROS = TOURS_DB.filter((t) => !TOURS_CV.includes(t));
-const SOLO_XILITLA = OTROS.filter((t) => partesRecogida(t, false).valles);
-const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
+// Todo el texto (y las cifras, leídas del catálogo) vive en `toursValles.en.ts`.
+// El idioma llega por el header `x-locale` del middleware: /en/tours-en-ciudad-valles
+// reexporta esta misma página (10 nov 2026). El español sale idéntico al de antes.
 
 export function generateMetadata(): Metadata {
-  const CV_RANGO = cvRango();
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getToursValles(locale);
   return {
-  title: "Tours en Ciudad Valles, SLP — Salidas Diarias 2026",
-  description:
-    `Tours guiados con salida desde Ciudad Valles: Cascada de Tamul, rafting, Micos y Xilitla. Pasamos por ti a tu hotel, desde ${money(CV_RANGO.min)} MXN por persona.`,
-  keywords: [
-    "tours ciudad valles",
-    "tours ciudad valles san luis potosi",
-    "tours huasteca potosina desde ciudad valles",
-    "agencia de tours ciudad valles",
-    "que hacer en ciudad valles",
-  ],
-  alternates: { canonical: URL },
-  openGraph: {
-    title: "Tours en Ciudad Valles — Salidas Diarias",
-    description:
-      "La puerta de entrada a la Huasteca Potosina: tours guiados con pickup en tu hotel de Ciudad Valles.",
-    url: URL,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-    images: [{ url: `${SITE}/imagenes/cascadas-de-micos/hero.jpg`, width: 1600, height: 960, alt: "Cascadas de Micos, Ciudad Valles — Huasteca Potosina" }],
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Tours en Ciudad Valles — Salidas Diarias",
-    description: "Tours guiados con pickup en tu hotel de Ciudad Valles.",
-    images: [`${SITE}/imagenes/cascadas-de-micos/hero.jpg`],
-  },
+    title: t.metaTitle,
+    description: t.metaDescription,
+    keywords: t.keywords,
+    alternates: buildAlternates(PATH, locale),
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl(PATH, locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      images: [{ url: `${SITE}/imagenes/cascadas-de-micos/hero.jpg`, width: 1600, height: 960, alt: t.ogImageAlt }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: t.twitterTitle,
+      description: t.twitterDescription,
+      images: [`${SITE}/imagenes/cascadas-de-micos/hero.jpg`],
+    },
   };
 }
 
-// FAQ local: texto plano reutilizado tal cual en el FAQPage JSON-LD. Sin datos inventados.
-// Las cifras y las listas se leen de TOURS_CV: escritas a mano ya anunciaban
-// "de $900 a $1,950" con recorridos que ni recogen en Valles.
-function faqsCv(): { q: string; a: string }[] {
-const CV_RANGO = cvRango();
-return [
-  {
-    q: "¿Los tours pasan por mi hotel en Ciudad Valles?",
-    a: `Sí, los ${TOURS_CV.length} recorridos de esta página pasan por ti a tu hospedaje en Ciudad Valles (también en Xilitla)${CV_HORA ? `, todos los días ${CV_HORA}` : ", a la hora de salida de cada recorrido"}${CON_CARGO.length ? `. El traslado va incluido en todos menos ${lista(CON_CARGO.map((t) => `${t.nombreCorto}, que desde Valles cuesta $${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva (no por persona)`))}` : ", con el traslado incluido"}.${SOLO_XILITLA.length ? ` ${lista(SOLO_XILITLA.map((t) => t.nombreCorto))} recogen solo en hospedajes de Xilitla: desde Ciudad Valles se pueden hacer, pero el traslado tiene costo adicional que te cotizamos por WhatsApp.` : ""}`,
-  },
-  {
-    q: "¿Por qué Ciudad Valles es la mejor base para la Huasteca?",
-    a: "Porque es la puerta de entrada natural de la región: desde aquí, todos los destinos principales están a menos de 2 horas — la Cascada de Tamul, las cascadas de Micos, Tamasopo y el Puente de Dios, El Naranjo con Minas Viejas y El Meco, y Xilitla con Las Pozas. Además tiene la mayor oferta de hoteles, restaurantes y servicios.",
-  },
-  {
-    q: "¿Cómo llego a Ciudad Valles?",
-    a: `En autobús hay salidas nocturnas directas desde la Terminal del Norte de CDMX (${enAutobus("cdmx", "valles")}, llegas temprano y puedes tomar el tour ese mismo día). En auto son ${enAuto("cdmx", "valles")} desde CDMX y ${enAuto("monterrey", "valles")} desde Monterrey. En avión, el aeropuerto de Tampico queda a ${enAuto("tampico", "valles")} en auto.`,
-  },
-  {
-    q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
-    a: `Los ${TOURS_CV.length} tours de un día con recogida en Ciudad Valles van de ${money(CV_RANGO.min)} a ${money(CV_RANGO.max)} MXN por persona. Incluyen traslado desde tu hospedaje${CON_CARGO.length ? ` (${lista(CON_CARGO.map((t) => `${t.nombreCorto}: $${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva desde Valles`))})` : ""}, guía certificado, equipo de seguridad, seguro de viaje y las fotos del recorrido${CV_DESAYUNO.length ? `; ${CV_DESAYUNO.length === TOURS_CV.length ? "todos" : `${CV_DESAYUNO.length} de ellos (${lista(CV_DESAYUNO.map((t) => t.nombreCorto))})`} llevan además desayuno regional` : ""}. Lo que incluye cada uno, con detalle, está en su ficha.`,
-  },
-  {
-    q: "¿Puedo reservar para mañana?",
-    a: "Sí, aceptamos reservas con 24 horas de anticipación (sujeto a disponibilidad). Escríbenos por WhatsApp y te confirmamos en menos de 1 hora.",
-  },
-];
-}
-
 export default function ToursCiudadVallesPage() {
-  const toursCV = TOURS_CV;
-  const FAQS_CV = faqsCv();
+  const locale = asLocale(headers().get("x-locale"));
+  const en = locale === "en";
+  const t = getToursValles(locale);
+  // Nombre, tipo y nombre corto en el idioma de la página; precio, horario y
+  // recogida siguen saliendo del registro español (no se traducen).
+  const toursCV = TOURS_CV.map((x) => localizeTour(x, locale));
+  const otros = OTROS_CV.map((x) => localizeTour(x, locale));
+  const money = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
 
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      // Mismas migas, ahora por el ayudante compartido de `lib/jsonld`.
-      // Landing sólo en español: sin escalón de idioma.
-      buildBreadcrumbNode([{ name: "Tours en Ciudad Valles", path: "/tours-en-ciudad-valles" }]),
+      // Mismas migas, por el ayudante compartido de `lib/jsonld`; en inglés
+      // salen solas con "Home" y las URL /en.
+      buildBreadcrumbNode([{ name: t.breadcrumb, path: PATH }], locale),
       {
         "@type": "ItemList",
-        name: "Tours con salida desde Ciudad Valles",
+        name: t.schemaListName,
         numberOfItems: toursCV.length,
-        itemListElement: toursCV.map((t, i) => ({
+        itemListElement: toursCV.map((x, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          name: t.nombre,
-          url: `${SITE}/tours/${t.slug}`,
+          name: x.nombre,
+          url: localeUrl(`/tours/${x.slug}`, locale),
         })),
       },
       {
         "@type": "FAQPage",
-        mainEntity: FAQS_CV.map((f) => ({
+        ...(en ? { inLanguage: "en" } : {}),
+        mainEntity: t.faqs.map((f) => ({
           "@type": "Question",
           name: f.q,
           acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -140,24 +87,21 @@ export default function ToursCiudadVallesPage() {
       {/* ── HERO ── */}
       <section className="px-6 pt-36 pb-16 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-          ✦ Salidas diarias · Pickup en tu hotel · Guía certificado
+          {t.heroEyebrow}
         </p>
         <h1 className="font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(34px,5.5vw,62px)" }}>
-          Tours en <em className="shimmer-gold italic">Ciudad Valles</em>, San Luis Potosí
+          {t.heroH1a}<em className="shimmer-gold italic">{t.heroH1em}</em>{t.heroH1b}
         </h1>
         <p className="text-crema/70 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8">
-          Ciudad Valles es la puerta de entrada a la Huasteca Potosina: desde aquí todos los destinos principales están
-          a menos de 2 horas. Los {toursCV.length} recorridos de esta página pasan por ti a tu hotel todos los
-          días{CV_HORA ? ` ${CV_HORA}` : ""} — tú solo preocúpate por estar listo
-          {CV_DESAYUNO.length ? ` (en ${CV_DESAYUNO.length === toursCV.length ? "todos" : `${CV_DESAYUNO.length} de ellos`} hasta el desayuno va incluido)` : ""}.
+          {t.heroIntro}
         </p>
         <a
-          href={waLink("Hola, estoy en Ciudad Valles y quiero información de los tours. ¿Qué tienen disponible?")}
+          href={waLink(t.waDisponibilidad)}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
         >
-          Consultar disponibilidad
+          {t.ctaDisponibilidad}
         </a>
       </section>
 
@@ -165,44 +109,44 @@ export default function ToursCiudadVallesPage() {
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-6">
-            Tours con salida desde Ciudad Valles
+            {t.toursTitulo}
           </h2>
           <div className="grid sm:grid-cols-2 gap-4">
-            {toursCV.map((t) => (
+            {toursCV.map((x) => (
               <Link
-                key={t.slug}
-                href={`/tours/${t.slug}`}
+                key={x.slug}
+                href={localePath(`/tours/${x.slug}`, locale)}
                 className="border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
-                  {t.tipo} · {tourDurTexto(t, " h")}
+                  {x.tipo} · {tourDurTexto(x, " h")}
                 </p>
                 <h3 className="font-cormorant text-crema text-xl leading-snug mb-3 group-hover:text-dorado transition-colors flex-1">
-                  {t.nombre}
+                  {x.nombre}
                 </h3>
                 <p className="font-dm text-sm">
-                  <span className="font-cormorant text-dorado text-2xl">{money(t.precio)}</span>
+                  <span className="font-cormorant text-dorado text-2xl">{money(x.precio)}</span>
                   {/* Decía "· todo incluido" en las siete: dos no llevan desayuno y el
                       rappel no incluye entradas. Lo que sí comparten es el traslado. */}
-                  <span className="text-crema/40 text-xs"> MXN {etiquetaUnidad(t)}{cargoVallesDe(t) > 0 ? ` · traslado desde Valles +$${cargoVallesDe(t).toLocaleString("es-MX")} por reserva` : partesRecogida(t, false).incluyeTraslado ? " · traslado incluido" : ""}</span>
+                  <span className="text-crema/40 text-xs">{t.sufijoPrecio(x)}</span>
                 </p>
               </Link>
             ))}
           </div>
           {/* Los que no recogen en Valles no desaparecen: se dice cómo se
               llega a cada uno, con la frase del catálogo (`fraseRecogida`). */}
-          {OTROS.length > 0 && (
+          {otros.length > 0 && (
             <div className="mt-8 border-t border-white/10 pt-6">
               <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-crema/50 mb-3">
-                Otros recorridos, que salen de Xilitla o del destino
+                {t.otrosTitulo}
               </h3>
               <ul className="space-y-2">
-                {OTROS.map((t) => (
-                  <li key={t.slug} className="font-dm text-xs text-crema/50 leading-relaxed">
-                    <Link href={`/tours/${t.slug}`} className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2">
-                      {t.nombreCorto}
+                {otros.map((x) => (
+                  <li key={x.slug} className="font-dm text-xs text-crema/50 leading-relaxed">
+                    <Link href={localePath(`/tours/${x.slug}`, locale)} className="text-verde-vivo hover:text-dorado transition-colors underline underline-offset-2">
+                      {x.nombreCorto}
                     </Link>
-                    : {fraseRecogida(t, false)}
+                    : {t.otroFrase(x)}
                   </li>
                 ))}
               </ul>
@@ -214,48 +158,34 @@ export default function ToursCiudadVallesPage() {
       {/* ── CÓMO LLEGAR ── */}
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6">
-          <div className="border border-white/10 p-7">
-            <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En autobús</h3>
-            <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              Salidas nocturnas directas desde la Terminal del Norte de CDMX ({enAutobus("cdmx", "valles")}). Llegas temprano a
-              Ciudad Valles y puedes tomar el tour ese mismo día.
-            </p>
-          </div>
-          <div className="border border-white/10 p-7">
-            <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En auto</h3>
-            <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              {enAuto("cdmx", "valles")} desde CDMX y {enAuto("monterrey", "valles")} desde Monterrey. Recomendamos manejar
-              de día por la sierra y usar Ciudad Valles como base.
-            </p>
-          </div>
-          <div className="border border-white/10 p-7">
-            <h3 className="font-cormorant font-light text-crema text-2xl mb-3">En avión</h3>
-            <p className="font-dm text-sm text-crema/65 leading-relaxed">
-              El aeropuerto más práctico es Tampico ({enAuto("tampico", "valles")} en auto). También puedes volar a San Luis Potosí capital.
-            </p>
-          </div>
+          {t.llegar.map((b) => (
+            <div key={b.titulo} className="border border-white/10 p-7">
+              <h3 className="font-cormorant font-light text-crema text-2xl mb-3">{b.titulo}</h3>
+              <p className="font-dm text-sm text-crema/65 leading-relaxed">{b.texto}</p>
+            </div>
+          ))}
         </div>
         <p className="text-center mt-6">
           <Link
-            href="/info-practica"
+            href={localePath("/info-practica", locale)}
             className="text-verde-vivo hover:text-dorado transition-colors font-dm text-xs tracking-[1px] uppercase underline underline-offset-4"
           >
-            Guía completa: cómo llegar, dónde dormir y dónde comer →
+            {t.llegarGuia}
           </Link>
         </p>
       </section>
 
       {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
       <div className="max-w-4xl mx-auto px-6 py-10">
-        <TarjetaViajeCdmx origen="tours-en-valles" titulo="¿Sales de la CDMX? Tamul va incluido en el viaje del mes" />
+        <TarjetaViajeCdmx origen={en ? "tours-en-valles-en" : "tours-en-valles"} titulo={t.tarjetaTitulo} locale={locale} />
       </div>
 
       {/* ── FAQ ── */}
       <section className="px-6 pb-20">
         <div className="max-w-3xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-3xl mb-8">Preguntas frecuentes</h2>
+          <h2 className="font-cormorant font-light text-crema text-3xl mb-8">{t.faqTitulo}</h2>
           <div className="space-y-6">
-            {FAQS_CV.map((f) => (
+            {t.faqs.map((f) => (
               <div key={f.q} className="border-b border-white/10 pb-6">
                 <h3 className="font-dm font-medium text-crema text-sm mb-2">{f.q}</h3>
                 <p className="font-dm text-sm text-crema/65 leading-relaxed">{f.a}</p>
@@ -267,25 +197,24 @@ export default function ToursCiudadVallesPage() {
 
       {/* ── CTA ── */}
       <section className="px-6 pb-28 text-center">
-        <h2 className="font-cormorant font-light text-crema text-3xl mb-4">Reserva tu tour desde Ciudad Valles</h2>
+        <h2 className="font-cormorant font-light text-crema text-3xl mb-4">{t.ctaTitulo}</h2>
         <p className="text-crema/60 font-dm text-sm mb-8 max-w-xl mx-auto">
-          Somos guías locales certificados NOM-09 con transporte propio. Escríbenos y confirma tu lugar en menos de 1
-          hora.
+          {t.ctaTexto}
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4">
           <a
-            href={waLink("Hola, estoy en Ciudad Valles y quiero reservar un tour. ¿Tienen lugar?")}
+            href={waLink(t.waReservar)}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
           >
-            Reservar por WhatsApp
+            {t.ctaWhatsapp}
           </a>
           <Link
-            href="/precios"
+            href={localePath("/precios", locale)}
             className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
           >
-            Ver precios completos
+            {t.ctaPrecios}
           </Link>
         </div>
       </section>

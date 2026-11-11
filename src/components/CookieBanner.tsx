@@ -146,7 +146,7 @@ export function CookieBanner() {
             <h2 id={tituloId} className={piel.titulo}>{t.titulo}</h2>
             <p id={textoId} className={`mt-2 font-dm text-[13px] leading-relaxed ${piel.texto}`}>
               {t.texto}
-              <Link href="/aviso-de-privacidad" className={`underline underline-offset-2 transition-colors ${piel.enlace}`}>
+              <Link href={locale === "en" ? "/en/aviso-de-privacidad" : "/aviso-de-privacidad"} className={`underline underline-offset-2 transition-colors ${piel.enlace}`}>
                 {t.avisoPrivacidad}
               </Link>
               {t.textoCola}

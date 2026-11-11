@@ -16,6 +16,11 @@ export const metadata: Metadata = {
     "qué visitar en la huasteca potosina",
   ],
   alternates: { canonical: URL },
+  // 🔴 10 nov 2026: `noindex, follow`. El recomendador se arma en el
+  // navegador y Google ve 43 palabras: contenido delgado que compite con
+  // /tours y /comparar. Sigue enlazado y funcionando; solo deja de indexarse
+  // (y salió del sitemap).
+  robots: { index: false, follow: true },
   openGraph: {
     title: "¿Qué tour es para ti? — Recomendador IA",
     description:

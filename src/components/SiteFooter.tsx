@@ -42,6 +42,17 @@ export function SiteFooter() {
         { label: "About us", href: lp("/nosotros") },
         { label: "Travel guide", href: lp("/info-practica") },
         { label: "FAQ", href: lp("/preguntas-frecuentes") },
+        // Traducidas el 10 nov 2026.
+        { label: "Things to do in Huasteca Potosina", href: lp("/que-hacer-en-la-huasteca-potosina") },
+        { label: "Huasteca Potosina waterfalls", href: "/en/huasteca-potosina-waterfalls" },
+        { label: "Where to stay in Huasteca Potosina", href: "/en/where-to-stay-in-huasteca-potosina" },
+        { label: "Where is Huasteca Potosina?", href: lp("/sobre-la-huasteca-potosina") },
+        { label: "Tours in Xilitla", href: lp("/tours-en-xilitla") },
+        { label: "Tours in Ciudad Valles", href: lp("/tours-en-ciudad-valles") },
+        { label: "Xilitla or Ciudad Valles? Where to stay", href: lp("/xilitla-o-ciudad-valles") },
+        { label: "Group and school trips", href: lp("/grupos") },
+        { label: "Travel blog", href: lp("/blog") },
+        { label: "Sustainability", href: lp("/sustentabilidad-y-conservacion") },
       ]
     : [
         // El pie inglés enlazaba Tours y Paquetes desde el principio; el español
@@ -70,6 +81,8 @@ export function SiteFooter() {
         { label: "¿Xilitla o Ciudad Valles? Dónde hospedarte", href: "/xilitla-o-ciudad-valles" },
         { label: "Preguntas frecuentes", href: "/preguntas-frecuentes" },
         { label: "Qué hacer en la Huasteca", href: "/que-hacer-en-la-huasteca-potosina" },
+        { label: "Cascadas de la Huasteca Potosina", href: "/cascadas-de-la-huasteca-potosina" },
+        { label: "Dónde hospedarse en la Huasteca Potosina", href: "/donde-hospedarse-en-la-huasteca-potosina" },
         { label: "Tours en Ciudad Valles", href: "/tours-en-ciudad-valles" },
         { label: "Cómo llegar a la Huasteca Potosina", href: "/info-practica" },
         { label: "¿Qué tour es para mí?", href: "/recomendar" },
@@ -92,8 +105,12 @@ export function SiteFooter() {
         // donde iba a escribir.
         { label: "Contact", href: lp("/contacto") },
         { label: "Press room", href: "/en/press" },
-        // El aviso legal solo existe en español; /en/contacto lo advierte.
-        { label: "Privacy Policy", href: "/aviso-de-privacidad" },
+        // Las legales en inglés existen desde el 10 nov 2026 (traducción de
+        // cortesía; manda la versión en español, y cada una lo dice arriba).
+        { label: "Terms and conditions", href: lp("/terminos") },
+        { label: "Cancellation policy", href: lp("/politica-de-cancelacion") },
+        { label: "Privacy Policy", href: lp("/aviso-de-privacidad") },
+        { label: "Photo credits", href: lp("/creditos") },
       ]
     : [
         { label: "Contacto", href: "/contacto" },

@@ -402,7 +402,7 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
                       <Opcion
                         key={x.slug}
                         etiqueta={x.nombreCorto || x.nombre}
-                        detalle={`${tourDurTexto(x, t.horas)} · ${dinero(x.precio)}`}
+                        detalle={`${tourDurTexto(x, t.horas)} · ${dinero(x.precio)}${en ? " MXN" : ""}`}
                         activa={eleccion?.tipo === "tour" && eleccion.slug === x.slug}
                         onClick={() => elegirEnHoja({ tipo: "tour", slug: x.slug }, "hoja_recorridos")}
                       />
@@ -534,8 +534,10 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
                         {formatMXN(enFecha.precio)}
                         <span className="ml-1 font-dm text-[10px] text-crema/45">MXN {etiquetaUnidad(x, en)}</span>
                       </p>
+                      {/* En inglés el total lleva «MXN»: «Total for 2 people: $3,100»
+                          se leía en dólares (auditoría del 10 nov 2026). */}
                       {total !== null ? (
-                        <p className="mt-1 font-dm text-[12px] text-crema/80">{t.totalPara(personas)}: <strong className="font-medium text-crema">{formatMXN(total)}</strong></p>
+                        <p className="mt-1 font-dm text-[12px] text-crema/80">{t.totalPara(personas)}: <strong className="font-medium text-crema">{formatMXN(total)}{en ? " MXN" : ""}</strong></p>
                       ) : !porVehiculo && personas < x.groupMin ? (
                         <p className="mt-1 font-dm text-[12px] text-dorado/80">{t.minimo(x.groupMin)}</p>
                       ) : null}

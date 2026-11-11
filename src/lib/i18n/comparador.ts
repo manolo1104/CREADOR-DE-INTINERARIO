@@ -274,7 +274,9 @@ const EN: ComparadorUI = {
     grupoRango: (a: number, b: number) => `${a} to ${b} people`,
     grupoHasta: (n: number) => `Up to ${n} people`,
     privadoGrupo: "Already private: the rate covers the whole group",
-    privadoSi: (extra: string) => `Available: tour price + ${extra} per person`,
+    // «MXN» detrás de cada importe en inglés: llegan a secas (`dinero()`), y
+    // «$250» solo se lee en dólares (auditoría del 10 nov 2026).
+    privadoSi: (extra: string) => `Available: tour price + ${extra} MXN per person`,
     privadoNo: "Not available",
     edadMinima: (n: number) => `Ages ${n}+`,
     edadSoloAdultos: (n: number) => `Ages ${n}+, no child rate`,
@@ -283,7 +285,7 @@ const EN: ComparadorUI = {
     edadNinos: "Kids at a reduced rate",
     edadRecomendada: (n: number) => `Recommended from age ${n}`,
     apartar: "With a 30% deposit",
-    ahorro: (monto: string, pct: number) => `You save ${monto} (${pct}%)`,
+    ahorro: (monto: string, pct: number) => `You save ${monto} MXN (${pct}%)`,
     sinAhorro: "No notable savings",
     dia: (n: number, titulo: string) => `Day ${n}: ${titulo}`,
     opcional: (nombre: string, precio: string) => `${nombre}: +${precio} MXN per person`,
@@ -302,7 +304,7 @@ const EN: ComparadorUI = {
     paraTuGrupo: "for your group",
     porGrupo: "Rate for the whole group",
     habitaciones: (n: number) => (n === 1 ? "Includes 1 room" : `Includes ${n} rooms`),
-    vehiculo: (desde: string) => `From ${desde} per vehicle. You pick the route and vehicle when you book.`,
+    vehiculo: (desde: string) => `From ${desde} MXN per vehicle. You pick the route and vehicle when you book.`,
     edadMinima: (n: number) => `Ages ${n}+: not for children under 6.`,
     maximo: (n: number) => `Up to ${n} people per departure.`,
     minimo: (n: number) => `Runs from ${n} people.`,

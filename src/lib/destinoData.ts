@@ -4,7 +4,13 @@
  * y reseñas mapeadas. Se importa en la página de destino individual.
  */
 
+import type { Locale } from "./i18n/config";
+import { NARRATIVA_DESTINO_EN } from "./i18n/narrativasDestino.en";
+
 // ── Narrativas emocionales (3-4 líneas antes de Datos prácticos) ─────────────
+// 🔴 Su traducción vive en `i18n/narrativasDestino.en.ts` con las MISMAS llaves.
+// Si agregas o cambias una aquí, haz lo mismo allá: `narrativasSinPareja()`
+// (más abajo) lista las que no cuadran.
 
 export const NARRATIVA_DESTINO: Record<string, string> = {
   "las-pozas-jardin-surrealista":
@@ -14,7 +20,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "La Cascada de Tamul no te avisa cuándo aparece. Remas por el Cañón del Tampaón durante 30 minutos, con paredes de roca a cada lado y el silencio amplificado por el agua, y de repente el río dobla y ahí está: 105 metros de caída libre, tan ancha que no cabe en ninguna foto que hayas tomado antes. Es el tipo de lugar que te hace entender por qué la gente llora de emoción en los viajes.",
 
   "sotano-de-las-golondrinas":
-    "Las 5:45 AM en el borde del Sótano de las Golondrinas es una de las experiencias más extrañas que puede vivir un ser humano. Abajo: oscuridad absoluta a más de 370 metros. Luego empieza el sonido, antes de que veas nada. Después salen ellos: miles de vencejos en espiral ascendente, como un tornado de alas que dura veinte minutos. No es naturaleza. Es un ritual.",
+    "Las 5:45 AM en el borde del Sótano de las Golondrinas es una de las experiencias más extrañas que puede vivir un ser humano. Abajo: oscuridad absoluta a más de 370 metros. Luego empieza el sonido, antes de que veas nada. Después salen ellos: miles de vencejos en espiral ascendente, como un tornado de alas que dura veinte minutos. Y al atardecer, la segunda función: regresan al sótano. No es naturaleza. Es un ritual.",
 
   "cascadas-de-micos":
     "Las Cascadas de Micos son la respuesta perfecta a la pregunta '¿qué hacemos hoy?' en la Huasteca. Siete cascadas en circuito, tirolesa, kayak, bicicleta aérea y saltos a pozas de agua cristalina —todo en un solo lugar. Es el parque de aventuras más hermoso que hayas pisado, con la diferencia de que fue diseñado por la naturaleza hace millones de años.",
@@ -53,7 +59,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "El Meco tiene la reputación de ser la cascada con el agua más turquesa de la Huasteca. No es marketing: el mineral de calcio que disuelve la roca crea un color que los fotógrafos buscan específicamente. La clave es la hora: llegar entre las 9 y las 11 de la mañana, cuando la luz solar entra perpendicular al cañón. Nuestros guías saben exactamente cuándo posicionarse.",
 
   "sotano-de-las-huahuas":
-    "El Sótano de las Huahuas es el hermano menor del Sótano de las Golondrinas —y tiene algo que su famoso vecino no tiene: accesibilidad y una experiencia más íntima. Las aves salen en espiral al amanecer mientras la luz del sol apenas toca el borde del abismo. El ruido que hacen juntos, amplificado por las paredes de roca, es uno de los sonidos más extraños y hermosos que existen en la naturaleza.",
+    "El Sótano de las Huahuas es el hermano menor del Sótano de las Golondrinas —y tiene algo que su famoso vecino no tiene: accesibilidad y una experiencia más íntima. Las aves salen en espiral al amanecer, mientras la luz del sol apenas toca el borde del abismo, y regresan al atardecer. El ruido que hacen juntos, amplificado por las paredes de roca, es uno de los sonidos más extraños y hermosos que existen en la naturaleza.",
 
   "cuevas-de-mantetzulel":
     "Las Cuevas de Mantetzulel guardan un ecosistema subterráneo que muy pocos viajeros conocen: estalactitas de millones de años, murciélagos que navegan en la oscuridad y el eco de tu propia voz amplificado por cavernas de 30 metros de altura. La temperatura al interior es constante: 18°C, sin importar que afuera haga 38°C de calor.",
@@ -129,6 +135,84 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
 
   "museo-leonora-carrington-xilitla":
     "Xilitla no se entiende solo con Edward James: su amiga, la pintora surrealista Leonora Carrington, tiene aquí su propio museo en pleno centro. Entre escultura, litografía y dibujo, sus criaturas oníricas dialogan a la perfección con el jardín de Las Pozas que está a unos minutos; de hecho, verlos el mismo día es la ruta surrealista perfecta. Un remanso de arte para equilibrar tanta naturaleza.",
+};
+
+/**
+ * La narrativa de un destino en el idioma de la página.
+ *
+ * 🔴 En inglés NUNCA cae al español: si falta la traducción, la ficha EN sale
+ * sin narrativa. Hasta el 10 nov 2026 la ficha EN la escondía entera; un
+ * párrafo en español sin `lang="es"` en una página en inglés es peor que nada
+ * (lo lee mal el lector de pantalla y Google ve una página mezclada).
+ */
+export function narrativaDestino(slug: string, locale: Locale): string | undefined {
+  return locale === "en" ? NARRATIVA_DESTINO_EN[slug] : NARRATIVA_DESTINO[slug];
+}
+
+/**
+ * Llaves que están en un idioma y no en el otro (vacío = todo cuadra). Existe
+ * para que una prueba lo vigile: un destino nuevo con narrativa solo en
+ * español no rompe nada, pero se queda sin ella en /en sin que nadie lo note.
+ */
+export function narrativasSinPareja(): string[] {
+  const es = Object.keys(NARRATIVA_DESTINO);
+  const en = Object.keys(NARRATIVA_DESTINO_EN);
+  return [
+    ...es.filter((k) => !(k in NARRATIVA_DESTINO_EN)).map((k) => `falta en inglés: ${k}`),
+    ...en.filter((k) => !(k in NARRATIVA_DESTINO)).map((k) => `sobra en inglés: ${k}`),
+  ];
+}
+
+// ── Las páginas dueñas de las OTRAS búsquedas del lugar (Fase 3 SEO) ─────────
+
+/** Un enlace de la ficha a otra página nuestra que es dueña de otra búsqueda del mismo lugar. */
+export interface GuiaDeDestino {
+  /** Ruta interna: un artículo del blog (sin sufijo de año) o una página. */
+  href: string;
+  /** Rótulo pequeño encima del ancla. */
+  rotulo: string;
+  /** El ancla dice la intención de la página a la que lleva. */
+  ancla: string;
+}
+
+/**
+ * 🔴 10 nov 2026 (Fase 3 SEO). La ficha enlazaba al artículo del lugar con el
+ * ancla «Guía completa de {lugar}» (`blogDeDestino`). Donde la DUEÑA del
+ * nombre del lugar es la ficha (Xilitla, Golondrinas, Minas Viejas,
+ * Huichihuayán, Tamtoc), esa ancla le decía a Google lo contrario: que la guía
+ * del lugar era el artículo. Aquí cada enlace lleva el ancla de la intención
+ * que ese artículo sí conserva (la experiencia, la historia, el clima…).
+ * Las Pozas enlaza a sus DOS artículos: boletos (precio y horario) y la guía
+ * de la visita. Donde el dueño es el artículo (Tamul, Micos, Puente de Dios)
+ * se queda el enlace de siempre, que sí dice «Guía completa».
+ *
+ * Solo en español: los artículos del blog todavía no tienen versión en inglés
+ * (en /en la ficha sigue con su comportamiento de antes).
+ */
+export const GUIAS_BLOG_DESTINO: Record<string, GuiaDeDestino[]> = {
+  "xilitla-pueblo-magico": [
+    { rotulo: "Qué hacer", href: "/blog/hacer-guia-definitiva-para-visitar-xilitla-todo-lo-que-necesitas-saber", ancla: "Qué hacer en Xilitla: atracciones, precios y tours" },
+    { rotulo: "Clima", href: "/blog/mejor-temporada-para-ir-el-clima-en-xilitla-cual-es-la-mejor-epoca-par", ancla: "Clima en Xilitla mes a mes y mejor época para ir" },
+    { rotulo: "Las Pozas", href: "/blog/boletos-las-pozas-preguntas-frecuentes-sobre-el-jardin-de-edward-james", ancla: "Boletos de Las Pozas: precio, horario y cómo reservar" },
+    // La página la crea otra tarea de la misma fase (Fase 4).
+    { rotulo: "Dónde dormir", href: "/donde-hospedarse-en-la-huasteca-potosina", ancla: "Dónde hospedarse en la Huasteca Potosina, por zonas" },
+  ],
+  "las-pozas-jardin-surrealista": [
+    { rotulo: "Precio y horario", href: "/blog/boletos-las-pozas-preguntas-frecuentes-sobre-el-jardin-de-edward-james", ancla: "Boletos de Las Pozas: precio, horario y cómo reservar" },
+    { rotulo: "La visita", href: "/blog/las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece", ancla: "Cómo visitar Las Pozas: qué ver y cuánto tiempo" },
+  ],
+  "sotano-de-las-golondrinas": [
+    { rotulo: "La experiencia", href: "/blog/sotano-de-las-golondrinas-la-cueva-mas-profunda-de-mexico", ancla: "Así se vive el vuelo de las aves en Golondrinas" },
+  ],
+  "cascadas-minas-viejas": [
+    { rotulo: "La experiencia", href: "/blog/cascadas-de-minas-viejas-guia-completa", ancla: "Minas Viejas: rappel, pozas turquesa y consejos reales" },
+  ],
+  "nacimiento-huichihuayan": [
+    { rotulo: "La experiencia", href: "/blog/nacimiento-de-huichihuayan-la-joya-escondida-de-la-huasteca", ancla: "Cómo es nadar en el Nacimiento de Huichihuayán" },
+  ],
+  "zona-arqueologica-tamtoc": [
+    { rotulo: "La historia", href: "/blog/zona-arqueologica-tamtoc-zona-arqueologica-de-tamtoc-histori", ancla: "La historia de Tamtoc y qué ver en el sitio" },
+  ],
 };
 
 // ── Combinaciones sugeridas ("los viajeros también visitan") ─────────────────
@@ -267,7 +351,7 @@ export const REVIEWS_POR_DESTINO: Record<string, DestinoReview[]> = {
   ],
   "balneario-taninul": [
     { nombre: "Sofía Peñaloza", ciudad: "Monterrey", rating: 5, iniciales: "SP", foto: "/imagenes/reviews/reviewer-29.jpg", texto: "Taninul es el cierre perfecto para un día de cascadas. Te sumerges en el agua caliente sulfurosa y el cansancio desaparece. A las 6 PM, con el sol bajando y casi sin gente, es el spa más hermoso que he visitado en mi vida." },
-    { nombre: "Marco Leal", ciudad: "Querétaro", rating: 5, iniciales: "ML", foto: "/imagenes/reviews/reviewer-30.jpg", texto: "Las aguas termales a 36°C son tan relajantes que casi no queremos salir. El lodo terapéutico es una experiencia única. Solo hay que recordar no llevar plata — el azufre la oscurece instantáneamente. El personal muy amable y las instalaciones bien cuidadas." },
+    { nombre: "Marco Leal", ciudad: "Querétaro", rating: 5, iniciales: "ML", foto: "/imagenes/reviews/reviewer-30.jpg", texto: "Las aguas termales a 38°C son tan relajantes que casi no queremos salir. El lodo terapéutico es una experiencia única. Solo hay que recordar no llevar plata — el azufre la oscurece instantáneamente. El personal muy amable y las instalaciones bien cuidadas." },
   ],
 };
 

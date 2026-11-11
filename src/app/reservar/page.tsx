@@ -211,7 +211,9 @@ export default async function ReservarPage() {
                   </span>
                   <span className="flex-shrink-0 text-right">
                     <span className="block font-cormorant text-[18px] leading-none text-dorado">{formatMXN(precioVisible(paq))}</span>
-                    <span className="block font-dm text-[9px] uppercase tracking-[1px] text-crema/40">{paq.precioLabel}</span>
+                    {/* En inglés, «MXN» delante de la unidad: «$8,699 per couple»
+                        se leía en dólares. El español queda como estaba. */}
+                    <span className="block font-dm text-[9px] uppercase tracking-[1px] text-crema/40">{en ? `MXN ${paq.precioLabel}` : paq.precioLabel}</span>
                   </span>
                 </Link>
               </li>

@@ -4,6 +4,7 @@
 
 import { conPrecio } from "../tours";
 import { PRECIO_TOUR_RAFTING, POZAS_ACCESO } from "../destinos";
+import { enAuto, enAutobus } from "../tiemposDeViaje";
 
 export interface FaqTranslation { pregunta: string; respuesta: string }
 
@@ -98,8 +99,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
             respuesta: "The British poet Edward James, who raised the concrete structures among the waterfalls and jungle. The land used to be an orchid plantation, and he never lived inside the structures.",
           },
         ],
-      metaTitle: "Las Pozas Xilitla 2026 | Hours, Tickets & How to Get There",
-      metaDescription: "Edward James's surrealist garden in Xilitla: $180 MXN entry, open Wednesday to Monday 09:00-18:00 (closed Tuesdays). How to get there, the best hour to go and what to bring.",
+      // Fase 3 SEO (10 nov 2026): mismo papel que en español, tarjeta práctica.
+      metaTitle: "Las Pozas, Xilitla: Location, Getting There & Tours 2026",
+      metaDescription: "Las Pozas, Edward James's surrealist garden in Xilitla: getting there from Ciudad Valles (1 h 45 min), the best time to go in, what to bring and tours.",
       keywords: ["las pozas xilitla", "edward james surrealist garden", "las pozas tickets", "xilitla mexico", "surrealist garden san luis potosi"],
     },
   },
@@ -131,7 +133,8 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
             respuesta: "It drops 344 feet (105 m), the tallest in San Luis Potosí. In October the turquoise water contrasts with the orange foliage of the canyon.",
           },
         ],
-      metaTitle: "Tamul Waterfall 2026 | Price, Hours and the Boat Trip",
+      // Fase 3 SEO (10 nov 2026): como en español, la ficha se queda con entrada, panga y horario.
+      metaTitle: "Tamul Waterfall 2026: Entry Fee, Boat Ride and Hours",
       // ≤155: con 185 el corte de Google se comía "Last departures at 2 PM".
       metaDescription: "Tallest waterfall in San Luis Potosi (344 ft), by boat up the Tampaon. Entry $220 MXN + boat $300 MXN per person, cash only. Last departures at 2 PM.",
       keywords: ["tamul waterfall", "cascada de tamul", "tamul boat trip", "how to get to tamul", "huasteca potosina waterfalls"],
@@ -139,7 +142,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
   },
   "sotano-de-las-golondrinas": {
     nombre: "Sótano de las Golondrinas (Cave of Swallows)",
-    descripcion: "A 376m-freefall karst abyss (up to 512m deep). A sanctuary of swifts that spiral out at dawn.",
+    descripcion: "A 376m-freefall karst abyss (up to 512m deep). A sanctuary of swifts that spiral out at dawn and return at dusk.",
     tipo: "Extreme",
     precio_entrada: "$100 MXN",
     dias_abierto: "Monday to Sunday",
@@ -154,7 +157,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         faqPrincipales: [
           {
             pregunta: "What time do the birds fly out of the Sótano de las Golondrinas?",
-            respuesta: "The spiral flight happens at dawn: you need to be at the rim around 5:45 AM. If you arrive at 9 AM the birds have already left and you miss the spectacle.",
+            respuesta: "There are two shows: at dawn the birds spiral out, and at dusk they fly back into the abyss. For the dawn flight you need to be at the rim around 5:45 AM; if you arrive at 9 AM, the birds have already left.",
           },
           {
             pregunta: "How deep is the Sótano de las Golondrinas?",
@@ -166,7 +169,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
         ],
       metaTitle: "Cave of Swallows 2026 | What Time the Birds Fly Out",
-      metaDescription: "A 376 m free-fall abyss (up to 512 m deep) in Aquismon. $100 MXN entry. Arrive by 5:45 AM to watch the swifts spiral out. 568 steps down to the viewpoint.",
+      metaDescription: "A 376 m free-fall abyss (up to 512 m deep) in Aquismon. $100 MXN entry. The swifts spiral out at dawn (be there by 5:45 AM) and fly back in at dusk.",
       keywords: ["cave of swallows", "sotano de las golondrinas", "golondrinas bird flight time", "aquismon san luis potosi", "deepest cave in mexico"],
     },
   },
@@ -198,8 +201,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
             respuesta: "It's 20 minutes from Ciudad Valles. There are shared vans leaving every 30 minutes for around $35 MXN.",
           },
         ],
-      metaTitle: "Micos Waterfalls 2026 | Price, Cliff Jumps and How to Get There",
-      metaDescription: "Seven waterfalls with a jumping circuit, zipline, kayak and skybike, 20 min from Ciudad Valles. $100 MXN entry, open daily 08:00-18:00. Life jacket and helmet are required.",
+      // Fase 3 SEO (10 nov 2026): como en español, la ficha se queda con entrada y horario.
+      metaTitle: "Micos Waterfalls: Entry Fee and Hours 2026",
+      metaDescription: "Seven waterfalls with jumps, zipline, kayak and skybike, 20 min from Ciudad Valles. $100 MXN entry, open daily 08:00-18:00. Life jacket and helmet required.",
       keywords: ["micos waterfalls", "cascadas de micos", "micos cliff jumping", "things to do in ciudad valles", "huasteca potosina"],
     },
   },
@@ -310,7 +314,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     seo: {
       metaTitle: "Seven Waterfalls of Tamasopo 2026 | Jumps & Turquoise Pools",
       metaDescription:
-        "A natural staircase of seven turquoise waterfalls in Tamasopo where you jump from pool to pool with a life jacket, helmet and guide. Jumps for every level and clear pools for swimming.",
+        "Seven turquoise waterfalls in a natural staircase in Tamasopo: jump from pool to pool with a life jacket, helmet and guide. Jumps for every level, or just swim.",
       keywords: ["seven waterfalls tamasopo", "7 cascadas tamasopo", "cliff jumping huasteca potosina", "what to do in tamasopo"],
       faqPrincipales: [
         { pregunta: "What are the Seven Waterfalls of Tamasopo?", respuesta: "A natural staircase of seven turquoise waterfalls in a row, where you jump from pool to pool with a life jacket, helmet and guide. There are jumps for every level and clear pools for anyone who prefers to just swim." },
@@ -338,7 +342,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     errores_comunes: ["Going without confirming access and hours locally", "Forgetting water shoes"],
     seo: {
-      metaTitle: "Hacienda Los Gómez, Tamasopo 2026 | Waterfalls & Turquoise Pools",
+      metaTitle: "Hacienda Los Gómez Tamasopo 2026 | Falls & Turquoise Pools",
       metaDescription:
         "A natural spot in Tamasopo with small waterfalls, turquoise pools and huge cypress trees, part of the Puente de Dios Water Route. What it is and how to visit.",
       keywords: ["hacienda los gomez tamasopo", "tamasopo water route", "turquoise pools tamasopo", "what to do in tamasopo"],
@@ -350,7 +354,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
   },
   "balneario-taninul": {
     nombre: "Taninul Hot Springs",
-    descripcion: "Sulfurous hot springs (a constant 36°C) and therapeutic mud.",
+    descripcion: "Sulfurous hot springs (a constant 38°C) and therapeutic mud.",
     tipo: "Nature",
     precio_entrada: "$150 MXN",
     dias_abierto: "Monday to Sunday",
@@ -359,14 +363,14 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     advertencias: "Do NOT wear silver jewelry (sulfur darkens it).",
     como_llegar: "15 min from Ciudad Valles",
     que_llevar: ["swimsuit", "sandals", "towel"],
-    datos_curiosos: ["The water stays a constant 36°C all year"],
+    datos_curiosos: ["The water stays a constant 38°C all year"],
     errores_comunes: ["Wearing silver jewelry"],
     seo: {
-      metaTitle: "Taninul Hot Springs Ciudad Valles 2026 | 36°C Thermal Waters — Full Guide",
-      metaDescription: "Soak in the sulfurous thermal waters of Taninul at a constant 36°C, just 15 minutes from Ciudad Valles. Entry $150 MXN, open daily 7 AM–8 PM.",
+      metaTitle: "Taninul Hot Springs 2026 | 38°C Waters, Price & Hours",
+      metaDescription: "Soak in the sulfurous thermal waters of Taninul at a constant 38°C, just 15 minutes from Ciudad Valles. Entry $150 MXN, open daily 7 AM–8 PM.",
       keywords: ["taninul hot springs", "thermal waters ciudad valles", "taninul san luis potosi", "sulfur spa huasteca", "ciudad valles hot springs 2026"],
       faqPrincipales: [
-        { pregunta: "What temperature is the water at Taninul?", respuesta: "The thermal waters of Taninul stay a constant 36–38°C all year, thanks to their natural sulfurous origin. They're ideal for muscle relaxation and therapeutic mud treatments." },
+        { pregunta: "What temperature is the water at Taninul?", respuesta: "The thermal waters of Taninul stay a constant 38°C all year, thanks to their natural sulfurous origin. They're ideal for muscle relaxation and therapeutic mud treatments." },
         { pregunta: "Why can't you wear silver jewelry at Taninul?", respuesta: "Taninul's water contains natural sulfur that reacts with silver and permanently darkens it within minutes. We recommend leaving any silver jewelry at your hotel before visiting." },
         { pregunta: "How do I get to Taninul from Ciudad Valles?", respuesta: "Taninul is just 15 minutes from Ciudad Valles. Take Highway 85 toward Tampico — the entrance is signposted. You can also arrive by taxi or moto-taxi from downtown Valles." },
       ],
@@ -389,8 +393,9 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     errores_comunes: ["Arriving without cash", "Going in the rainy season without checking access"],
     seo: {
-      metaTitle: "Minas Viejas Waterfalls Guide 2026 | El Naranjo SLP",
-      metaDescription: "Discover the Minas Viejas Waterfalls in 2026: prices, hours, how to get there and tips for seeing the most intense turquoise in the Huasteca Potosina. Plan now!",
+      // Fase 3 SEO (10 nov 2026): con los datos de la ficha, como en español.
+      metaTitle: "Minas Viejas Waterfalls 2026: Price, Hours & Getting There",
+      metaDescription: "Minas Viejas Waterfalls, El Naranjo: twin 50 m falls and turquoise pools. $100 MXN entry, cash only; open daily 8:00–18:00, 1 h 45 min from Ciudad Valles.",
       keywords: ["minas viejas waterfalls", "el naranjo san luis potosi", "huasteca potosina waterfalls", "minas viejas 2026", "turquoise pools slp"],
       faqPrincipales: [
         { pregunta: "How much is admission to Minas Viejas in 2026?", respuesta: "It's about $100 MXN per person. Cash only — there is no ATM in the area." },
@@ -417,7 +422,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Not booking in high season (limited capacity)", "Bringing chemical sunscreen"],
     seo: {
       metaTitle: "Media Luna Lagoon Rioverde 2026 | Travel Guide",
-      metaDescription: "Visit the Media Luna Spring in 2026: diving, snorkeling and fresh, crystal-clear waters in Rioverde, San Luis Potosí. Prices, reservations and how to get there from Ciudad Valles.",
+      metaDescription: "The Media Luna Spring in Rioverde: diving, snorkeling and fresh, crystal-clear water. $150 MXN entry, open 08:00-18:30, about 2 hours from Ciudad Valles.",
       keywords: ["media luna lagoon rioverde", "spring san luis potosi", "media luna diving", "things to do in rioverde", "media luna 2026"],
       faqPrincipales: [
         { pregunta: "Is the water at Media Luna cold or warm?", respuesta: "It's a spring of fresh, crystal-clear water — not a hot thermal bath. For longer dives we recommend a wetsuit." },
@@ -444,7 +449,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Not hiring a local guide", "Going with inadequate footwear"],
     seo: {
       metaTitle: "El Aguacate Waterfall Tamasopo 2026 | Huasteca Guide",
-      metaDescription: "El Aguacate Waterfall in Tamasopo: a ~75-meter drop, jungle trail and natural pools. 2026 guide with prices, how to get there and what no one tells you. Discover it!",
+      metaDescription: "El Aguacate Waterfall in Tamasopo: a ~75-meter drop, a jungle trail and natural pools. $50 MXN entry, 75 min from Ciudad Valles. How to get there in 2026.",
       keywords: ["el aguacate waterfall tamasopo", "secret waterfalls huasteca potosina", "hiking tamasopo", "waterfalls slp 2026", "adventure tourism san luis potosi"],
       faqPrincipales: [
         { pregunta: "Is it hard to reach El Aguacate Waterfall?", respuesta: "The hike is moderate — about 45 minutes along a jungle trail. Hiking shoes and a local guide are required." },
@@ -471,7 +476,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Going expecting to see the falls without checking first", "Not bringing non-slip footwear"],
     seo: {
       metaTitle: "El Salto Waterfall El Naranjo 2026 | Complete Guide",
-      metaDescription: "Everything about El Salto Waterfall in El Naranjo, SLP: when it really flows, 2026 prices, turquoise pools and how to combine it with El Meco in one day. Read on!",
+      metaDescription: "El Salto Waterfall in El Naranjo, SLP: when it really flows, $50 MXN entry, turquoise pools and how to combine it with El Meco in a single day. 2026 guide.",
       keywords: ["el salto waterfall el naranjo", "blue pools el naranjo slp", "huasteca potosina waterfalls 2026", "el naranjo tourism san luis potosi", "el salto waterfall slp"],
       faqPrincipales: [
         { pregunta: "Why doesn't El Salto Waterfall have water?", respuesta: "The flow is diverted to a hydroelectric plant. It only falls during exceptional rains, mainly in September and October." },
@@ -498,7 +503,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Going without cash for the boat (~$150 MXN)", "Not asking whether the boat operates that day"],
     seo: {
       metaTitle: "El Meco Waterfall El Naranjo 2026 | Lookout & Boats",
-      metaDescription: "El Meco Waterfall in El Naranjo: the only permanent waterfall in the area. 2026 guide with boat prices, rappelling, restaurants with a view and how to get there. Discover it!",
+      metaDescription: "El Meco Waterfall in El Naranjo: the only permanent waterfall in the area. 2026 guide with boat prices, rappelling, restaurants with a view and directions.",
       keywords: ["el meco waterfall el naranjo", "boat ride huasteca", "el meco san luis potosi 2026", "permanent waterfalls huasteca", "things to do in el naranjo slp"],
       faqPrincipales: [
         { pregunta: "Is the El Meco Waterfall lookout free?", respuesta: "Yes, the lookout from the road is completely free. Access to the river and the boats has an extra cost (~$60 MXN entry, ~$150 MXN boat)." },
@@ -525,11 +530,11 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Arriving late without time to see the flight", "Going without a guide — the edge has no railing"],
     seo: {
       metaTitle: "Sótano de las Huahuas 2026 | Bird Spectacle",
-      metaDescription: "Sótano de las Huahuas in Aquismón: 478 m deep and thousands of birds spiraling at dusk. 2026 guide with hours, the hike and how it differs from Las Golondrinas.",
+      metaDescription: "Sótano de las Huahuas: a 478 m abyss in Aquismón where thousands of birds fly out at dawn and return at dusk. The hike and how it compares to Golondrinas.",
       keywords: ["sótano de las huahuas aquismón", "bird abyss huasteca potosina", "hiking aquismón slp", "huahuas 2026", "sotanos huasteca potosina"],
       faqPrincipales: [
         { pregunta: "What time do the birds leave Sótano de las Huahuas?", respuesta: "The birds leave at dawn (6:00–7:00 AM) and return at dusk (6:00–7:00 PM). Dusk is usually more spectacular because of the light." },
-        { pregunta: "How is Sótano de las Huahuas different from Sótano de las Golondrinas?", respuesta: "Las Golondrinas (376 m free fall) has swifts and the iconic flight is at dawn. Las Huahuas (478 m) is home to thousands of birds — green parrots and swifts — and the best show is at dusk. They're different experiences." },
+        { pregunta: "How is Sótano de las Huahuas different from Sótano de las Golondrinas?", respuesta: "At both, the birds fly out at dawn and return at dusk. Las Golondrinas (376 m free fall) is home to swifts; Las Huahuas (478 m) shelters thousands of birds, green parrots and swifts. They're different experiences." },
         { pregunta: "Is the hike to Sótano de las Huahuas difficult?", respuesta: "The uphill hike is 30–40 minutes of moderate intensity. It requires hiking shoes and is not suitable for people with serious mobility issues." },
       ],
     },
@@ -552,7 +557,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Going without a community guide", "Visiting after recent rain (dangerous trails)"],
     seo: {
       metaTitle: "Mantetzulel Caves Aquismón 2026 | Complete Guide",
-      metaDescription: "Mantetzulel Caves in Aquismón: sacred vaults with overhead light and Tének community tourism. 2026 guide with prices, the hike and the best time for the perfect photo.",
+      metaDescription: "Mantetzulel Caves in Aquismón: sacred vaults lit from above and Tének community tourism. $70 MXN entry, the hike and the best time for photos. 2026 guide.",
       keywords: ["mantetzulel caves aquismón", "caving huasteca potosina", "tének community tourism slp", "mantetzulel 2026", "sacred caves san luis potosi"],
       faqPrincipales: [
         { pregunta: "How many caves do you visit at Mantetzulel?", respuesta: "The standard tour visits 2 large caves. With time and fitness, you can explore all 4 cavities of the complex." },
@@ -578,8 +583,8 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     errores_comunes: ["Not asking in town about the Voladores dance", "Not bringing goggles to see the fish"],
     seo: {
-      metaTitle: "Huichihuayán Spring 2026 | Huehuetlán SLP",
-      metaDescription: "Huichihuayán Spring in Huehuetlán: a crystal-clear river with visible fish and the Voladores dance. The most authentic destination in the southern Huasteca. Full 2026 guide.",
+      metaTitle: "Huichihuayán Spring 2026: Entry, Hours & Getting There",
+      metaDescription: "Huichihuayán Spring in Huehuetlán: a crystal-clear river with visible fish and the Voladores dance. $30 MXN entry, 80 min from Ciudad Valles. 2026 guide.",
       keywords: ["huichihuayán spring huehuetlán", "crystal-clear river huasteca potosina", "voladores huichihuayan", "huehuetlán tourism slp 2026", "southern huasteca potosina destinations"],
       faqPrincipales: [
         { pregunta: "Is the water at Huichihuayán cold?", respuesta: "It's fresh and pleasant, not as cold as Tambaque. The area's warm climate keeps it at an ideal temperature for swimming." },
@@ -605,7 +610,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     errores_comunes: ["Not bringing water shoes (algae-covered, very slippery ground)", "Getting into the water too fast without acclimating (thermal shock)"],
     seo: {
-      metaTitle: "Tambaque Spring Aquismón 2026 | Guide, Prices & How to Get There",
+      metaTitle: "Tambaque Spring Aquismón 2026 | Prices & How to Get There",
       metaDescription: "Discover Tambaque Spring in Aquismón, SLP. A crystal-clear-water paradise ideal for families. 2026 prices, exact location and the best travel tips.",
       keywords: ["tambaque spring slp", "nacimiento de tambaque aquismón", "what to do in aquismón huasteca", "crystal-clear waters san luis potosi", "aquismón tourism 2026"],
       faqPrincipales: [
@@ -632,7 +637,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     errores_comunes: ["Arriving expecting a guaranteed flight without a prior group", "Not bringing cash"],
     seo: {
-      metaTitle: "Voladores of Tamaletón 2026 | Guide to the Sacred Tének Ritual",
+      metaTitle: "Voladores of Tamaletón 2026 | Sacred Tének Ritual Guide",
       metaDescription: "Discover the Tamaletón Ceremonial Center in Tancanhuitz. 2026 price guide, logistics from Ciudad Valles and the mystery of the Tének Hawk Dance. Visit now!",
       keywords: ["voladores of tamaletón", "huasteca potosina cultural tourism 2026", "hawk dance tancanhuitz", "tancanhuitz san luis potosi", "tének culture huasteca"],
       faqPrincipales: [
@@ -688,13 +693,29 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     ],
     errores_comunes: ["Arriving on Tuesday (Las Pozas CLOSED — a very common mistake)", "Not booking ahead in high season"],
     seo: {
-      metaTitle: "Xilitla Huasteca Potosina 2026 | Complete Travel Guide",
-      metaDescription: "Guide to Xilitla, the surrealist town of the Huasteca Potosina: 2026 hours and Las Pozas admission ($180 MXN), museums, tours and safety tips.",
+      // Fase 3 SEO (10 nov 2026): la ficha del pueblo, como en español: cómo llegar y dónde dormir.
+      metaTitle: "Xilitla, Pueblo Mágico 2026: Travel Guide & Getting There",
+      metaDescription: "Xilitla, the surrealist Pueblo Mágico of the Huasteca Potosina: Las Pozas ($180 MXN entry), museums, how to get there and where to stay.",
       keywords: ["xilitla san luis potosi 2026", "edward james sculpture garden tickets", "leonora carrington museum xilitla prices", "how to get to xilitla from ciudad valles", "magic towns huasteca potosina"],
       faqPrincipales: [
         { pregunta: "How much time do you need to tour Xilitla?", respuesta: "At least 2 days: the first for all of Las Pozas and the Los Comales Waterfall, the second for the downtown museums and the Sunday Huapango in the plaza." },
         { pregunta: "Is it safe to travel to Xilitla in 2026?", respuesta: "Yes, it's safe as long as you travel by day. The main risk isn't violence but the mountain road conditions: dense fog, sharp curves and no nighttime lighting." },
-        { pregunta: "How much is admission to Las Pozas in Xilitla in 2026?", respuesta: "Adults: $180 MXN. Children 6–12 and seniors with INAPAM: $120 MXN. Under 6: free. Required guide: an extra $30 MXN in Spanish." },
+        // «Seniors with INAPAM» no era la regla del jardín (65+): sale de `POZAS_ACCESO`.
+        { pregunta: "How much is admission to Las Pozas in Xilitla in 2026?", respuesta: `Adults: $${POZAS_ACCESO.adulto} MXN. Children 6–12 and seniors 65+: $${POZAS_ACCESO.reducida} MXN. Under 6: free. Required guide: an extra $${POZAS_ACCESO.guiaEspanol} MXN per person in Spanish.` },
+        // Las mismas dos que se sumaron en español (Fase 3, 10 nov 2026).
+        {
+          pregunta: "How do I get to Xilitla from Mexico City, Monterrey or San Luis Potosí?",
+          respuesta:
+            `By car it's about ${enAuto("cdmx", "xilitla", true)} from Mexico City, ${enAuto("monterrey", "xilitla", true)} from Monterrey, ${enAuto("tampico", "xilitla", true)} from Tampico and ${enAuto("san-luis-potosi", "xilitla", true)} from San Luis Potosí, which goes through Rioverde and Jalpan rather than Ciudad Valles. ` +
+            `From Ciudad Valles it's an hour and a half on a fully paved mountain road. By bus, Mexico City to Xilitla takes ${enAutobus("cdmx", "xilitla", true)}. ` +
+            "Arrive in daylight: after 6 PM the road is unlit and often foggy.",
+        },
+        {
+          pregunta: "Where should I stay in Xilitla?",
+          respuesta:
+            "In town or along the road to Las Pozas, so you don't drive the mountain road at night and you make it to the garden on time: it has no parking, and if you're late you lose your slot. " +
+            "Hotel Paraíso Encantado is a few minutes' walk from the Las Pozas entrance.",
+        },
       ],
     },
   },
@@ -716,7 +737,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Thinking Tamul or the caves are in the town (they're several km away)", "Not checking the market day"],
     seo: {
       metaTitle: "Aquismón Magic Town 2026 | What to See & How to Get There",
-      metaDescription: "Aquismón, the Tének Magic Town of the Huasteca Potosina and gateway to Tamul and the sótanos. What to see, its San Miguel Arcángel church and how to get there from Ciudad Valles.",
+      metaDescription: "Aquismón, the Tének Magic Town and gateway to Tamul and the sótanos. What to see, its San Miguel Arcángel church and how to get there from Ciudad Valles (~1 h).",
       keywords: ["aquismón magic town", "what to see in aquismón", "aquismón san luis potosi", "gateway to tamul", "huasteca potosina magic towns"],
       faqPrincipales: [
         { pregunta: "Why is Aquismón a Magic Town?", respuesta: "It received the designation on October 11, 2018 for its living Tének culture, its architecture, and being the gateway to natural wonders like Tamul Waterfall and the Sótano de las Golondrinas." },
@@ -740,7 +761,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Treating it as a substitute for a doctor", "Not checking the hours for cleansings and massages"],
     seo: {
       metaTitle: "Castillo de la Salud 'Beto Ramón' Axtla 2026 | Guide",
-      metaDescription: "Don Beto Ramón's Castillo de la Salud in Axtla de Terrazas: surrealist architecture, a medicinal garden and Tének herbalism. Prices, hours and how to get there in 2026.",
+      metaDescription: "Don Beto Ramón's Castillo de la Salud in Axtla: surrealist architecture, a medicinal garden and herbalism. $20 MXN entry, open 08:00-18:00. How to get there.",
       keywords: ["castillo de la salud beto ramón", "axtla de terrazas tourism", "huasteca potosina herbalism", "beto ramón healer", "what to do in axtla"],
       faqPrincipales: [
         { pregunta: "How much is admission to the Castillo de la Salud?", respuesta: "General admission is ~$20 MXN ($10 MXN for kids and seniors). A guided tour is ~$30 MXN ($20 MXN reduced). Open daily 8:00 AM–6:00 PM." },
@@ -764,7 +785,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Going on a Tuesday (Las Pozas area closures)", "Not bringing cash"],
     seo: {
       metaTitle: "Los Comales Waterfall Xilitla 2026 | Next to Las Pozas",
-      metaDescription: "Los Comales Waterfall, steps from Edward James's Las Pozas in Xilitla: swimming pools, a medicinal temazcal and tropical jungle. How to get there and tips for 2026.",
+      metaDescription: "Los Comales Waterfall, steps from Las Pozas in Xilitla: swimming holes, a medicinal temazcal and tropical jungle. How to get there and tips for 2026.",
       keywords: ["los comales waterfall xilitla", "what to do in xilitla", "las pozas xilitla waterfall", "temazcal xilitla", "huasteca potosina waterfalls"],
       faqPrincipales: [
         { pregunta: "Where is Los Comales Waterfall?", respuesta: "It's in Xilitla, about 50 meters from the entrance to Las Pozas (Edward James's garden), so it's usually visited the same day." },
@@ -788,7 +809,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     errores_comunes: ["Confusing it with Tamtoc", "Expecting to see the original 'Adolescent' on site"],
     seo: {
       metaTitle: "Tamohí / El Consuelo Archaeological Site 2026 | Tamuín SLP",
-      metaDescription: "Tamohí (El Consuelo), a Huastec city on the banks of the Tampaón River in Tamuín, where 'The Huastec Adolescent' was found. Hours, free admission and how to get there. 2026 guide.",
+      metaDescription: "Tamohí (El Consuelo), a Huastec city by the Tampaón River in Tamuín, where 'The Huastec Adolescent' was found. Free entry, open 09:00-18:00. 2026 guide.",
       keywords: ["tamohí el consuelo tamuín", "huastec adolescent", "tamuín archaeological site", "huasteca archaeology slp", "inah tamohí"],
       faqPrincipales: [
         { pregunta: "How much is admission to Tamohí / El Consuelo?", respuesta: "Admission is free according to INAH; only a video-camera fee applies (~$45 MXN). Open 9:00 AM–6:00 PM, last entry 5:00 PM." },
@@ -825,7 +846,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Nature",
       seo: {
       metaTitle: "Rio Axtla and 'el Chalan' | Free Swimming Spots in Axtla",
-      metaDescription: "Free access. A clear-water river in Axtla de Terrazas with pools for swimming and 'el chalan', the hand-pulled iron raft that has been crossing the river for over 50 years.",
+      metaDescription: "Free access. A clear river in Axtla de Terrazas with swimming holes and 'el chalán', the hand-pulled iron raft that has crossed the river for over 50 years.",
       keywords: ["rio axtla", "el chalan axtla", "things to do in axtla de terrazas", "free swimming huasteca potosina"],
     },
   },
@@ -861,7 +882,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
         ],
       metaTitle: "El Trampolin, Tamasopo | Free River with Turquoise Pools",
-      metaDescription: "A free, public stretch of the Agua Buena river in Tamasopo: turquoise water, small waterfalls, pools and rope swings. It is NOT the paid Cascadas de Tamasopo park.",
+      metaDescription: "A free, public stretch of the Agua Buena river in Tamasopo: turquoise water, small falls, pools and rope swings. Not the paid Cascadas de Tamasopo park.",
       keywords: ["el trampolin tamasopo", "agua buena river", "free waterfalls huasteca potosina", "things to do in tamasopo"],
     },
   },
@@ -890,7 +911,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Art & Culture",
       seo: {
       metaTitle: "San Juan Bautista Church, Coxcatlan | 16th-Century Convent",
-      metaDescription: "A 16th-century church and former convent facing the main square of Coxcatlan, considered one of the oldest in the Huasteca Potosina. Free entry; it is a working church, not a museum.",
+      metaDescription: "A 16th-century church and former convent on the main square of Coxcatlán, one of the oldest in the Huasteca Potosina. Free entry; it's a working church.",
       keywords: ["san juan bautista coxcatlan", "coxcatlan convent", "oldest churches huasteca potosina", "coxcatlan san luis potosi"],
     },
   },
@@ -919,7 +940,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Nature",
       seo: {
       metaTitle: "Rancho El Zapote Waterfall (Poza Azul), Coxcatlan",
-      metaDescription: "A waterfall and turquoise pool in Coxcatlan known as 'poza azul', one of the least crowded corners of the Huasteca Potosina. Little documented: confirm access and fees locally.",
+      metaDescription: "A waterfall and turquoise pool in Coxcatlán known as 'poza azul', one of the least crowded spots in the Huasteca. Little documented: check access and fees.",
       keywords: ["poza azul coxcatlan", "rancho el zapote waterfall", "coxcatlan san luis potosi", "off the beaten path huasteca potosina"],
     },
   },
@@ -949,7 +970,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Archaeology",
       seo: {
       metaTitle: "El Jopoy Ruins, Coxcatlan | Colonial Chapel in Ruins",
-      metaDescription: "The remains of a colonial chapel with stone walls and wide arches in Coxcatlan, today used as a community cemetery. Free access; it comes alive on November 1 and 2.",
+      metaDescription: "Remains of a colonial chapel with stone walls and wide arches in Coxcatlán, now a community cemetery. Free access; it comes alive on November 1 and 2.",
       keywords: ["el jopoy ruins", "el jopoy coxcatlan", "colonial ruins huasteca potosina", "things to do in coxcatlan"],
     },
   },
@@ -979,7 +1000,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Art & Culture",
       seo: {
       metaTitle: "Tancanhuitz | The 149-Step Church and Xantolo",
-      metaDescription: "A Tenek-Nahua town whose San Miguel Arcangel parish sits at the top of a long stairway, home to some of the strongest Xantolo, huapango and dance traditions in the Huasteca.",
+      metaDescription: "A Tének-Nahua town whose San Miguel Arcángel church crowns a long stairway, with some of the Huasteca's strongest Xantolo, huapango and dance traditions.",
       keywords: ["tancanhuitz", "149 steps church", "xantolo tancanhuitz", "ciudad santos san luis potosi"],
     },
   },
@@ -1009,7 +1030,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Art & Culture",
       seo: {
       metaTitle: "San Martin Chalchicuautla | The Birthplace of Xantolo",
-      metaDescription: "The municipality known as the 'cradle of Xantolo': from October 31 to November 2, Day of the Dead is lived with deep Nahua roots. Cascada del Manantial is nearby.",
+      metaDescription: "Known as the 'cradle of Xantolo': from October 31 to November 2, Day of the Dead here is lived with deep Nahua roots. Cascada del Manantial is nearby.",
       keywords: ["san martin chalchicuautla", "birthplace of xantolo", "xantolo huasteca potosina", "day of the dead san luis potosi"],
     },
   },
@@ -1039,7 +1060,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Art & Culture",
       seo: {
       metaTitle: "San Vicente Tancuayalab | Cradle of Day of the Dead in SLP",
-      metaDescription: "Free access. A Huastec town recognised as the 'cradle of Day of the Dead' in San Luis Potosi, founded by Franciscans in the 16th century near the Moctezuma river.",
+      metaDescription: "Free access. A Huastec town known as the 'cradle of Day of the Dead' in San Luis Potosí, founded by Franciscans in the 16th century near the Moctezuma River.",
       keywords: ["san vicente tancuayalab", "day of the dead san luis potosi", "xantolo huasteca potosina", "huastec towns mexico"],
     },
   },
@@ -1074,7 +1095,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
         ],
       metaTitle: "Tanlajas | The Devils' Bullfight and Tenek Cooking",
-      metaDescription: "A town with Tenek roots known for its zacahuiles, bocoles and cecina, and for the 'Toreada de los Diablos', a masked ritual held during Holy Week (not Day of the Dead).",
+      metaDescription: "A Tének town known for zacahuil, bocoles and cecina, and for the 'Toreada de los Diablos', a masked ritual held during Holy Week (not Day of the Dead).",
       keywords: ["tanlajas", "toreada de los diablos", "zacahuil huasteca potosina", "tenek culture"],
     },
   },
@@ -1110,7 +1131,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
           },
         ],
       metaTitle: "Texquitote, Matlapa | Home of the Son Huasteco Luthiers",
-      metaDescription: "A Nahua community where around 40 luthiers hand-build the jaranas, quinta huapangueras, violins and harps of son huasteco. The workshops are private: get in touch before visiting.",
+      metaDescription: "A Nahua community where around 40 luthiers hand-build the jaranas, quintas huapangueras, violins and harps of son huasteco. Workshops are private: call ahead.",
       keywords: ["texquitote", "son huasteco luthiers", "jarana huasteca", "quinta huapanguera", "mexican crafts huasteca potosina"],
     },
   },
@@ -1140,7 +1161,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     tipo: "Nature",
       seo: {
       metaTitle: "Laguna de los Suspiros, Ebano | The 200-Year-Old Fig Tree",
-      metaDescription: "A lagoon in the Plan de Iguala ejido (Ebano) whose emblem is a roughly 200-year-old fig tree, its huge roots forming two natural 'doorways'. No formal tourist services.",
+      metaDescription: "A lagoon in the Plan de Iguala ejido (Ébano) known for a roughly 200-year-old fig tree whose huge roots form two natural 'doorways'. No formal tourist services.",
       keywords: ["laguna de los suspiros", "ebano san luis potosi", "fig tree laguna de los suspiros", "things to do in ebano"],
     },
   },
@@ -1282,7 +1303,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
       ],
       metaTitle: "Cueva del Salitre Xilitla 2026 | Caving & Rappel",
-      metaDescription: "Cueva del Salitre, a hidden gem of Xilitla: ~100 m wide and 300 m deep, with caving, rappelling and five climbing routes. How to get there, $50 MXN fee and tips.",
+      metaDescription: "Cueva del Salitre in Xilitla: ~100 m wide and 300 m deep, with caving, rappelling and five climbing routes. $50 MXN entry, how to get there and tips.",
       keywords: ["cueva del salitre xilitla", "caving xilitla", "rappel xilitla", "rock climbing huasteca potosina", "what to do in xilitla"],
     },
   },
@@ -1325,7 +1346,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         },
       ],
       metaTitle: "Leonora Carrington Museum Xilitla | Hours & Prices 2026",
-      metaDescription: "Leonora Carrington Museum in downtown Xilitla: sculpture, lithography and drawing by the surrealist artist and friend of Edward James. Hours, prices and how to get there.",
+      metaDescription: "Leonora Carrington Museum in downtown Xilitla: sculpture, lithography and drawings by the surrealist friend of Edward James. $50 MXN entry, open Tue–Sun.",
       keywords: ["leonora carrington museum xilitla", "leonora carrington xilitla", "what to do in xilitla", "surrealism xilitla", "huasteca potosina museums"],
     },
   },

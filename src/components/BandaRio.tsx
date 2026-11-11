@@ -79,7 +79,7 @@ export function BandaRio() {
             precarga es un render completo en el servidor (el idioma se lee con
             headers()). La auditoría externa (oct 2026) vio 503 en
             /politica-de-cancelacion?_rsc=…, que salía de aquí. */}
-        <Link href="/politica-de-cancelacion" prefetch={false} className="underline underline-offset-2 decoration-crema/40 hover:text-crema transition-colors">
+        <Link href={en ? "/en/politica-de-cancelacion" : "/politica-de-cancelacion"} prefetch={false} className="underline underline-offset-2 decoration-crema/40 hover:text-crema transition-colors">
           {garantia}
         </Link>
         {!turquesa && aviso === "cerrado" ? (

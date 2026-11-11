@@ -261,7 +261,7 @@ const EN: ExperienciasContent = {
   twitterDescription:
     "{N} places in Mexico's waterfall country: waterfalls, sinkholes, surrealist art and hot springs.",
 
-  inLanguage: "en-US",
+  inLanguage: "en",
   schemaListName: "Things to do in the Huasteca Potosina",
   schemaListDescription: "Tours and attractions in the Huasteca Potosina, San Luis Potosí, Mexico",
   breadcrumbHome: "Home",

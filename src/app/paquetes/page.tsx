@@ -11,6 +11,9 @@ import { GOOGLE_RATING } from "@/lib/resenas";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
 import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI } from "@/lib/i18n/paquetes.en";
+import { resenasRealesPara } from "@/lib/i18n/resenasReales.en";
+import { AvatarResena } from "@/components/AvatarResena";
+import { ResenaOriginal } from "@/components/ResenaOriginal";
 
 export function generateMetadata(): Metadata {
   const locale = asLocale(headers().get("x-locale"));
@@ -40,6 +43,11 @@ export default function PaquetesPage() {
   const lp       = (path: string) => localePath(path, locale);
   const paquetes = getLocalizedPaquetes(locale);
   const faqs     = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
+  // 🔴 En inglés NO van las de `RESENAS_PAQUETES` (no están en el perfil de
+  // Google; traducirlas sería inventar): salían en español y sin `lang`. Van
+  // las tres REALES de la operadora, traducidas y con su original. El español
+  // no cambia (página congelada).
+  const resenasEn = locale === "en" ? resenasRealesPara("en", 3) : [];
   const paquetesSchema = {
     "@context": "https://schema.org",
     "@graph": [
@@ -110,7 +118,9 @@ export default function PaquetesPage() {
             tour, que visita los dos sitios; el lugar de la foto es Micos. */}
         <Image
           src="/imagenes/cascadas-minas-viejas/gallery-new-8.jpg"
-          alt="Skybike sobre las pozas turquesa de las Cascadas de Micos, Huasteca Potosina"
+          alt={locale === "en"
+            ? "Skybike over the turquoise pools of Micos Waterfalls (Cascadas de Micos), Huasteca Potosina"
+            : "Skybike sobre las pozas turquesa de las Cascadas de Micos, Huasteca Potosina"}
           fill
           className="object-cover object-center"
           priority
@@ -228,6 +238,64 @@ export default function PaquetesPage() {
           {/* Tres reseñas iguales en tres columnas se leían como una lista de
               relleno y ninguna se leía entera. Ahora una manda —tamaño de cita,
               no de tarjeta— y las otras dos la acompañan. */}
+          {locale === "en" ? (
+            /* Misma composición que en español —una manda, dos la acompañan—
+               con las reseñas reales traducidas y su original a un toque. */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+              {resenasEn.slice(0, 1).map((r) => (
+                <figure
+                  key={r.autor}
+                  className="reveal-up lg:col-span-7 rounded-2xl border border-dorado/25 bg-gradient-to-br from-verde-profundo/40 to-negro/60 p-7 flex flex-col"
+                >
+                  <div className="flex gap-0.5 mb-4" aria-label={`${r.estrellas} out of 5 stars`}>
+                    {[...Array(r.estrellas)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
+                    ))}
+                  </div>
+                  <blockquote className="font-cormorant font-light italic text-crema/90 leading-snug" style={{ fontSize: "clamp(19px,2.2vw,25px)" }}>
+                    &ldquo;{r.texto}&rdquo;
+                  </blockquote>
+                  <ResenaOriginal r={r} className="mt-4" />
+                  <figcaption className="mt-auto pt-6 flex items-center gap-3">
+                    {/* Su foto de perfil de Google o su inicial, nunca una de archivo. */}
+                    <AvatarResena autor={r.autor} foto={r.foto} className="h-11 w-11 border border-dorado/40" />
+                    <div>
+                      <p className="font-dm text-sm text-crema font-medium leading-none">{r.autor}</p>
+                      <p className="text-[10px] font-dm text-crema/45 mt-1">Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}</p>
+                    </div>
+                  </figcaption>
+                </figure>
+              ))}
+
+              <div className="lg:col-span-5 grid gap-5 content-start">
+                {resenasEn.slice(1).map((r) => (
+                  <figure
+                    key={r.autor}
+                    className="reveal-up rounded-2xl border border-white/10 bg-negro/50 p-5"
+                  >
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <AvatarResena autor={r.autor} foto={r.foto} className="h-8 w-8 border border-white/15" />
+                        <div className="min-w-0">
+                          <p className="font-dm text-xs text-crema/85 font-medium leading-none truncate">{r.autor}</p>
+                          <p className="text-[9px] font-dm text-crema/35 mt-1 truncate">Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-0.5 flex-shrink-0" aria-label={`${r.estrellas} out of 5 stars`}>
+                        {[...Array(r.estrellas)].map((_, i) => (
+                          <Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
+                        ))}
+                      </div>
+                    </div>
+                    <blockquote className="font-dm text-xs text-crema/70 leading-relaxed line-clamp-4">
+                      &ldquo;{r.texto}&rdquo;
+                    </blockquote>
+                    <ResenaOriginal r={r} className="mt-3" />
+                  </figure>
+                ))}
+              </div>
+            </div>
+          ) : (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
             {RESENAS_PAQUETES.slice(0, 1).map((r) => (
               <figure
@@ -284,6 +352,7 @@ export default function PaquetesPage() {
               ))}
             </div>
           </div>
+          )}
         </div>
       </section>
 

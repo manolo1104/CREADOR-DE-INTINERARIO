@@ -25,15 +25,19 @@ import { BlogNewsletterInline } from "@/components/BlogNewsletterInline";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { TrackedLink } from "@/components/TrackedLink";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
+import { AvatarResena } from "@/components/AvatarResena";
 import {
-  NARRATIVA_DESTINO,
+  narrativaDestino,
   COMBINACION_DESTINO,
+  GUIAS_BLOG_DESTINO,
   REVIEWS_POR_DESTINO,
 } from "@/lib/destinoData";
+import { resenasRealesPara, ROTULO_TRADUCCION } from "@/lib/i18n/resenasReales.en";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
 import { getDict, type Messages } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
+import { slugEnDe, urlBlogEn } from "@/lib/blogEn";
 
 /** Los destinos que recorre el viaje CDMX–Xilitla, con el titular de su tarjeta. */
 const DESTINOS_DEL_VIAJE_CDMX: Record<string, string> = {
@@ -207,11 +211,35 @@ export default function DestinoPage({ params }: Props) {
   const etiquetaSalida    = toursBaseIncluyen.every((t) => partesRecogida(t, locale === "en").incluyeTraslado)
     ? dd.meetingPoint
     : locale === "en" ? "Meeting point" : "Punto de encuentro";
-  const narrativa       = locale === "en" ? undefined : NARRATIVA_DESTINO[destino.slug];
+  // En inglés, su traducción (10 nov 2026; antes se escondía y la ficha EN
+  // quedaba en ~600 palabras). Si falta, sin narrativa: nunca el español.
+  const narrativa        = narrativaDestino(destino.slug, locale);
   // El blog solo existe en español; en /en no se ofrece la guía a fondo.
-  const guiaSlug         = locale === "en" ? undefined : blogDeDestino(destino.slug);
+  // La guía del blog del lugar. En inglés solo si ya está traducida
+  // (`src/content/blog-en`, 10 nov 2026); si no, no se ofrece.
+  const guiaEs           = blogDeDestino(destino.slug);
+  const guiaEn           = guiaEs ? slugEnDe(guiaEs) : undefined;
+  const guiaHref         = locale === "en"
+    ? (guiaEn ? urlBlogEn(guiaEn) : undefined)
+    : (guiaEs ? `/blog/${guiaEs}` : undefined);
+  // Fase 3 SEO (10 nov 2026): donde la ficha es la dueña del nombre del lugar,
+  // sus artículos se enlazan con el ancla de SU intención, no con «Guía
+  // completa de…» (ver `GUIAS_BLOG_DESTINO`). Solo en español: el blog aún no
+  // está en inglés.
+  const guiasBlog        = locale === "en" ? undefined : GUIAS_BLOG_DESTINO[base.slug];
   const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
   const reviewsDestino   = REVIEWS_POR_DESTINO[destino.slug] ?? [];
+  // 🔴 En inglés NO se enseñan las de `REVIEWS_POR_DESTINO`: no están en el
+  // perfil de Google (ver `resenasReales.en.ts`) y traducirlas sería darles
+  // todavía más alcance. En su lugar van tres reseñas REALES del
+  // negocio, traducidas, rotuladas como traducción y con su original en
+  // español (`lang="es"`). Se pintan en las mismas fichas que en español —las
+  // que tienen bloque de opiniones— para que las dos versiones sigan iguales.
+  // Solo las que tienen traducción: ningún texto en español sin rotular en /en.
+  const resenasEn        = locale === "en" && reviewsDestino.length > 0
+    ? resenasRealesPara("en", 3).filter((r) => r.traducida)
+    : [];
+  const hayResenas       = locale === "en" ? resenasEn.length > 0 : reviewsDestino.length > 0;
   const tourHref         = toursRelacionados[0] ? localePath(`/tours/${toursRelacionados[0].slug}`, locale) : undefined;
   const money            = (n: number) => `$${fmtNumber(n, locale)}`;
   const comboName        = (slug: string, fallback: string) => {
@@ -536,10 +564,26 @@ export default function DestinoPage({ params }: Props) {
             vez de canonicalizar (el artículo tiene el doble de texto y es el que
             Google posiciona), cada una conserva su intención y se enlazan: aquí
             los datos prácticos, allá el desarrollo largo. */}
-        {guiaSlug && (
+        {guiasBlog ? (
+          <div className="max-w-4xl mx-auto px-6 pb-12 space-y-3">
+            {guiasBlog.map((g) => (
+              <Link
+                key={g.href}
+                href={g.href}
+                className="group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
+              >
+                <span>
+                  <span className="block text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-1">{g.rotulo}</span>
+                  <span className="font-cormorant text-crema text-lg font-light group-hover:text-lima transition-colors">{g.ancla}</span>
+                </span>
+                <span className="text-verde-vivo text-xl leading-none flex-shrink-0" aria-hidden>→</span>
+              </Link>
+            ))}
+          </div>
+        ) : guiaHref && (
           <div className="max-w-4xl mx-auto px-6 pb-12">
             <Link
-              href={`/blog/${guiaSlug}`}
+              href={guiaHref}
               className="group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
             >
               <span>
@@ -558,17 +602,16 @@ export default function DestinoPage({ params }: Props) {
         )}
 
         {/* ── RESEÑAS ── */}
-        {reviewsDestino.length > 0 && (
+        {hayResenas && (
           <div className="max-w-4xl mx-auto px-6 pb-12">
             <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-5">
               <h2 className="font-cormorant text-crema text-xl">
                 {dd.travelersSay}
-                {/* En inglés se avisa de que el testimonio va en español: son
-                    viajeros con nombre y ciudad, y traducirles las palabras
-                    sin decirlo sería ponerles en la boca algo que no dijeron. */}
-                {dd.resenasEnEspanol && (
-                  <span className="block font-dm text-[11px] text-crema/40 italic mt-1">{dd.resenasEnEspanol}</span>
-                )}
+                {/* Aquí iba `dd.resenasEnEspanol` («In their own words
+                    (Spanish).»), que solo tenía texto en inglés. Ya no aplica:
+                    en /en cada tarjeta trae su traducción rotulada y el
+                    original a un clic. En español la cadena es vacía, así que
+                    quitarla no cambia nada allá. */}
               </h2>
               {/* La cifra es de la OPERADORA, no del lugar, y se dice con su
                   nombre: junto al nombre del destino se leía como la nota de
@@ -589,6 +632,36 @@ export default function DestinoPage({ params }: Props) {
                 </span>
               </a>
             </div>
+            {locale === "en" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {resenasEn.map((r) => (
+                  <div key={r.autor} className="border border-white/10 bg-negro/30 p-4">
+                    <div className="flex gap-0.5 mb-2">{[...Array(r.estrellas)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
+                    <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-2">&ldquo;{r.texto}&rdquo;</p>
+                    {/* Rotulada como traducción y con el texto literal de
+                        Google a un clic, como hace Google Maps. */}
+                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm mb-1">{ROTULO_TRADUCCION.traducida}</p>
+                    <details className="mb-3">
+                      <summary className="cursor-pointer text-[10px] font-dm text-verde-vivo hover:text-lima transition-colors">
+                        {ROTULO_TRADUCCION.verOriginal}
+                      </summary>
+                      <p lang="es" className="mt-2 text-crema/50 font-dm text-xs leading-relaxed italic">&ldquo;{r.original}&rdquo;</p>
+                    </details>
+                    <div className="flex items-center gap-2">
+                      {/* Foto de perfil de Google o su inicial. Decorativa: el
+                          nombre va justo al lado. */}
+                      <span aria-hidden="true" className="flex-shrink-0">
+                        <AvatarResena autor={r.autor} foto={r.foto} className="w-7 h-7" />
+                      </span>
+                      <div>
+                        <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.autor}</p>
+                        <p className="text-[9px] text-crema/35 font-dm">{r.recorrido ? `${r.fecha} · ${r.recorrido}` : r.fecha}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {reviewsDestino.map((r) => (
                 <div key={r.nombre} className="border border-white/10 bg-negro/30 p-4">
@@ -605,6 +678,7 @@ export default function DestinoPage({ params }: Props) {
                 </div>
               ))}
             </div>
+            )}
           </div>
         )}
 
@@ -626,8 +700,11 @@ export default function DestinoPage({ params }: Props) {
                         dónde. Foto, tipo y nombre son UN solo enlace a la ficha
                         (medido): con la foto como enlace aparte, sin medir, se
                         perdían los clics en la zona más grande de la tarjeta.
-                        La foto va con alt vacío porque el nombre ya nombra el
-                        enlace. El botón de reservar se queda tal cual. */}
+                        🔴 10 nov 2026: la foto iba con alt vacío («el nombre ya
+                        nombra el enlace») y la auditoría la contó como imagen
+                        de contenido sin texto en las 17 fichas que tienen tour.
+                        Ahora dice qué es —la foto del recorrido—, sin inventar
+                        qué se ve en ella. El botón de reservar se queda tal cual. */}
                     <TrackedLink
                       href={localePath(`/tours/${tour.slug}`, locale)}
                       event="DESTINO_TOUR_CLICK"
@@ -636,7 +713,13 @@ export default function DestinoPage({ params }: Props) {
                     >
                       {tour.imagen_hero && (
                         <div className="relative aspect-video overflow-hidden">
-                          <Image src={tour.imagen_hero} alt="" fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
+                          <Image
+                            src={tour.imagen_hero}
+                            alt={locale === "en" ? `Tour photo: ${tour.nombre}` : `Foto del recorrido: ${tour.nombre}`}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 100vw, 50vw"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-negro/70 to-transparent" />
                         </div>
                       )}

@@ -257,7 +257,9 @@ function tablaRecorridos(tours: Tour[], locale: Locale, ui: ComparadorUI) {
     href: localePath(`/tours/${t.slug}`, locale),
     imagen: t.imagenTarjeta ?? t.imagen_hero,
     alt: sinRaya(loc[i].nombreCorto),
-    precioCorto: `${esPorPersona(t) ? "" : `${ui.valores.desde} `}${dinero(t.precio)} ${etiquetaUnidad(t, en)}`,
+    // En inglés con «MXN»: la cabecera fija decía «Tamul Expedition $1,550 per
+    // person» y un lector de EE.UU. lo lee en dólares (auditoría del 10 nov 2026).
+    precioCorto: `${esPorPersona(t) ? "" : `${ui.valores.desde} `}${dinero(t.precio)}${en ? " MXN" : ""} ${etiquetaUnidad(t, en)}`,
     nuevo: t.reviewCount === 0,
   }));
 
@@ -265,7 +267,7 @@ function tablaRecorridos(tours: Tour[], locale: Locale, ui: ComparadorUI) {
     const tachado = precioTachado(t);
     const promo = promoDe(t);
     return texto(`${esPorPersona(t) ? "" : `${ui.valores.desde} `}${dinero(t.precio)} MXN ${etiquetaUnidad(t, en)}`, {
-      ...(tachado ? { tachado: dinero(tachado) } : {}),
+      ...(tachado ? { tachado: `${dinero(tachado)}${en ? " MXN" : ""}` } : {}),
       ...(promo ? { nota: ui.valores.promo(promo.hastaTexto[locale]) } : {}),
     });
   });
@@ -391,14 +393,14 @@ function tablaPaquetes(paquetes: Paquete[], locale: Locale, ui: ComparadorUI) {
     alt: sinRaya(loc[i].nombre),
     // `precioVisible`, nunca `p.precio`: ese es el total de la pareja que cobra
     // el motor y, junto a "por persona", anunciaría el doble.
-    precioCorto: `${dinero(precioVisible(p))} ${unidadPaquete(p, ui)}`,
+    precioCorto: `${dinero(precioVisible(p))}${locale === "en" ? " MXN" : ""} ${unidadPaquete(p, ui)}`,
     nuevo: false,
   }));
 
   const precio = paquetes.map((p) => {
     const tachado = precioVisibleTachado(p);
     return texto(`${dinero(precioVisible(p))} MXN ${unidadPaquete(p, ui)}`, {
-      ...(tachado ? { tachado: dinero(tachado), nota: ui.valores.promo(PROMO_TEMPORADA.hastaTexto[locale]) } : {}),
+      ...(tachado ? { tachado: `${dinero(tachado)}${locale === "en" ? " MXN" : ""}`, nota: ui.valores.promo(PROMO_TEMPORADA.hastaTexto[locale]) } : {}),
     });
   });
 

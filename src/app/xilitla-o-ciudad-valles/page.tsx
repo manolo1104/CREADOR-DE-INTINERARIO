@@ -1,119 +1,63 @@
 import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { TOURS_DB, cargoVallesDe, partesRecogida, recogidaDeTour } from "@/lib/tours";
-import { rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { waLink } from "@/lib/whatsapp";
-import { SITE } from "@/lib/i18n/config";
+import { SITE, asLocale, buildAlternates, localePath, localeUrl } from "@/lib/i18n/config";
+import { buildBreadcrumbNode } from "@/lib/jsonld";
+import { localizeDestino } from "@/lib/i18n/localize";
+import { COMPARATIVA, getXilitlaOValles } from "@/lib/i18n/xilitlaOValles.en";
 
-const URL = `${SITE}/xilitla-o-ciudad-valles`;
+const PATH = "/xilitla-o-ciudad-valles";
 
-/**
- * Quién recoge dónde, leído del catálogo.
- *
- * 🔴 La página decía "pasamos por ti a tu hospedaje en las dos ciudades, sin
- * costo extra" de todos los recorridos. Es cierto para los de tipo
- * `hospedaje`; los que recogen solo en Xilitla (Gruta, Amanecer, Olla, Edén,
- * Travesía) cobran aparte el traslado desde Valles, el RZR sale de nuestra base
- * y el buceo es en la laguna. En una comparativa Xilitla/Valles es justo lo que
- * decide dónde dormir.
- */
-const EN_LAS_DOS = recogenEnValles(TOURS_DB);
-/** Recogen en las dos, pero desde Valles cobran el traslado (la Ruta Surrealista, $400 por reserva). */
-const CON_CARGO = EN_LAS_DOS.filter((t) => cargoVallesDe(t) > 0);
-const cargoTexto = (t: (typeof TOURS_DB)[number]) =>
-  `$${cargoVallesDe(t).toLocaleString("es-MX")} más por reserva (no por persona)`;
-const SOLO_XILITLA = TOURS_DB.filter((t) => partesRecogida(t, false).valles);
-const OTROS = TOURS_DB.filter((t) => !EN_LAS_DOS.includes(t) && !SOLO_XILITLA.includes(t));
-const lista = (xs: string[]) => new Intl.ListFormat("es-MX", { type: "conjunction" }).format(xs);
+// Todo el texto (y las listas de quién recoge dónde, leídas del catálogo) vive
+// en `xilitlaOValles.en.ts`. El idioma llega por el header `x-locale`:
+// /en/xilitla-o-ciudad-valles reexporta esta página (10 nov 2026).
 
-export const metadata: Metadata = {
-  // ≤60: con el "2026" salía de 62 y Google lo cortaba.
-  title: "¿Xilitla o Ciudad Valles? Dónde Hospedarte en la Huasteca",
-  description:
-    `Tiempos reales desde cada base. Ciudad Valles conviene para cubrir toda la región; Xilitla, si vienes por Las Pozas. ${EN_LAS_DOS.length} tours recogen en las dos.`,
-  keywords: [
-    "xilitla o ciudad valles",
-    "donde hospedarse huasteca potosina",
-    "mejor base huasteca potosina",
-    "xilitla vs ciudad valles",
-    "donde quedarse huasteca potosina",
-  ],
-  alternates: { canonical: URL },
-  openGraph: {
-    title: "¿Xilitla o Ciudad Valles? Dónde hospedarte en la Huasteca",
-    description:
-      "Los tiempos reales de traslado desde cada base, y cuándo conviene cada una. Sin vendértela.",
-    url: URL,
-    siteName: "Tours Huasteca Potosina",
-    locale: "es_MX",
-    type: "website",
-    images: [{ url: `${SITE}/imagenes/las-pozas-jardin-surrealista/hero.jpg`, width: 1600, height: 960, alt: "Las Pozas, Xilitla — Huasteca Potosina" }],
-  },
-};
-
-/**
- * Tiempos desde Ciudad Valles: NO son estimados nuestros, salen del campo
- * `como_llegar` de cada ficha en DESTINOS_DB. Si un dato cambia ahí, cambia
- * aquí. Los de Xilitla solo se declaran donde la ficha lo respalda.
- */
-const COMPARATIVA: { slug: string; desdeValles: string; desdeXilitla: string }[] = [
-  { slug: "cascadas-de-micos",            desdeValles: "20 min",      desdeXilitla: "~2 h" },
-  { slug: "cascada-de-tamul",             desdeValles: "45 min",      desdeXilitla: "~1 h 15 min" },
-  { slug: "puente-de-dios-tamasopo",      desdeValles: "1 h",         desdeXilitla: "~2 h 30 min" },
-  { slug: "sotano-de-las-golondrinas",    desdeValles: "1 h 15 min",  desdeXilitla: "~1 h" },
-  { slug: "las-pozas-jardin-surrealista", desdeValles: "1 h 45 min",  desdeXilitla: "en el pueblo" },
-  { slug: "cascada-los-comales",          desdeValles: "1 h 45 min",  desdeXilitla: "~15 min" },
-  { slug: "nacimiento-huichihuayan",      desdeValles: "1 h 20 min",  desdeXilitla: "~40 min" },
-];
-
-const FAQS: { q: string; a: string }[] = [
-  {
-    q: "¿Xilitla o Ciudad Valles: cuál conviene más?",
-    a: "Depende de a qué vengas. Si quieres cubrir la mayor cantidad de cascadas en pocos días, Ciudad Valles gana: Micos queda a 20 minutos, Tamul a 45 y el Puente de Dios a una hora. Si vienes principalmente por Las Pozas de Edward James y el Pueblo Mágico, Xilitla te ahorra casi dos horas de carretera al día, porque el jardín está en el pueblo.",
-  },
-  {
-    q: "¿Puedo quedarme en Xilitla y aun así hacer el tour a Tamul?",
-    a: "Sí. Pasamos por ti a tu hospedaje tanto en Xilitla como en Ciudad Valles, sin costo extra. Desde Xilitla, Tamul queda a poco más de una hora.",
-  },
-  ...CON_CARGO.map((t) => ({
-    q: `¿Puedo hacer la ${t.nombreCorto} si me quedo en Ciudad Valles?`,
-    a: `Sí. Pasamos por ti a tu hospedaje en Ciudad Valles, pero desde ahí el traslado cuesta ${cargoTexto(t)}; desde Xilitla va incluido. Las Pozas queda a 1 h 45 min de Valles y en el pueblo si duermes en Xilitla.`,
-  })),
-  {
-    q: "¿Cuántos días necesito para la Huasteca Potosina?",
-    a: "Con 3 días alcanzas para tres recorridos completos si te quedas en una sola base. Con 4 o 5 puedes combinar el lado de Xilitla (Las Pozas, Comales, Huichihuayán) con el lado de Valles (Tamul, Micos, Tamasopo) sin manejar de más.",
-  },
-  {
-    q: "¿La carretera entre Xilitla y Ciudad Valles es difícil?",
-    a: "Son unos 100 km de carretera de sierra por la 120, con curvas continuas. Se recomienda manejar de día. En los tours que pasan por ti en las dos ciudades no tienes que manejarla: el traslado va incluido.",
-  },
-];
+export function generateMetadata(): Metadata {
+  const locale = asLocale(headers().get("x-locale"));
+  const t = getXilitlaOValles(locale);
+  return {
+    title: t.metaTitle,
+    description: t.metaDescription,
+    keywords: t.keywords,
+    alternates: buildAlternates(PATH, locale),
+    openGraph: {
+      title: t.ogTitle,
+      description: t.ogDescription,
+      url: localeUrl(PATH, locale),
+      siteName: "Tours Huasteca Potosina",
+      locale: locale === "en" ? "en_US" : "es_MX",
+      type: "website",
+      images: [{ url: `${SITE}/imagenes/las-pozas-jardin-surrealista/hero.jpg`, width: 1600, height: 960, alt: t.ogImageAlt }],
+    },
+  };
+}
 
 export default function XilitlaOCiudadVallesPage() {
-  const fichas = COMPARATIVA.map((c) => ({
-    ...c,
-    destino: DESTINOS_DB.find((d) => d.slug === c.slug),
-  })).filter((c) => c.destino);
+  const locale = asLocale(headers().get("x-locale"));
+  const en = locale === "en";
+  const t = getXilitlaOValles(locale);
 
-  const desde = rangoPorPersona().min;
+  const fichas = COMPARATIVA.flatMap((c) => {
+    const d = DESTINOS_DB.find((x) => x.slug === c.slug);
+    return d ? [{ ...c, destino: localizeDestino(d, locale) }] : [];
+  });
+
   const paqueteBase = PAQUETES_DB[0];
 
   const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      {
-        "@type": "BreadcrumbList",
-        itemListElement: [
-          { "@type": "ListItem", position: 1, name: "Inicio", item: SITE },
-          { "@type": "ListItem", position: 2, name: "Xilitla o Ciudad Valles", item: URL },
-        ],
-      },
+      // Las migas, ahora por el ayudante compartido (antes, a mano): mismo
+      // "Inicio" y mismas URL en español; "Home" y /en en inglés.
+      buildBreadcrumbNode([{ name: t.breadcrumb, path: PATH }], locale),
       {
         "@type": "FAQPage",
-        mainEntity: FAQS.map((f) => ({
+        ...(en ? { inLanguage: "en" } : {}),
+        mainEntity: t.faqs.map((f) => ({
           "@type": "Question",
           name: f.q,
           acceptedAnswer: { "@type": "Answer", text: f.a },
@@ -129,49 +73,46 @@ export default function XilitlaOCiudadVallesPage() {
       {/* ── HERO ── */}
       <section className="px-6 pt-36 pb-14 text-center">
         <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-          ✦ Comparación honesta · Tiempos reales de traslado
+          {t.heroEyebrow}
         </p>
         <h1 className="font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(34px,5.5vw,62px)" }}>
-          ¿<em className="shimmer-gold italic">Xilitla</em> o <em className="shimmer-gold italic">Ciudad Valles</em>?
+          {t.h1Pre}<em className="shimmer-gold italic">{t.h1A}</em>{t.h1Medio}<em className="shimmer-gold italic">{t.h1B}</em>{t.h1Post}
         </h1>
         <p className="text-crema/70 font-dm text-sm leading-relaxed max-w-2xl mx-auto">
-          Es la primera duda de casi todo el que planea este viaje, y la respuesta honesta es que
-          depende de a qué vengas. Aquí están los tiempos reales desde cada base — incluyendo cuándo
-          Ciudad Valles es la mejor opción, aunque nosotros seamos de Xilitla.
+          {t.heroIntro}
         </p>
       </section>
 
       {/* ── TABLA ── */}
       <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-2xl mb-6">Cuánto tardas en llegar a cada lugar</h2>
+          <h2 className="font-cormorant font-light text-crema text-2xl mb-6">{t.tablaTitulo}</h2>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-white/15">
-                  <th className="py-3 pr-4 font-dm text-[10px] tracking-[2px] uppercase text-lima/70">Destino</th>
-                  <th className="py-3 px-4 font-dm text-[10px] tracking-[2px] uppercase text-lima/70 whitespace-nowrap">Desde Cd. Valles</th>
-                  <th className="py-3 pl-4 font-dm text-[10px] tracking-[2px] uppercase text-lima/70 whitespace-nowrap">Desde Xilitla</th>
+                  <th className="py-3 pr-4 font-dm text-[10px] tracking-[2px] uppercase text-lima/70">{t.colDestino}</th>
+                  <th className="py-3 px-4 font-dm text-[10px] tracking-[2px] uppercase text-lima/70 whitespace-nowrap">{t.colValles}</th>
+                  <th className="py-3 pl-4 font-dm text-[10px] tracking-[2px] uppercase text-lima/70 whitespace-nowrap">{t.colXilitla}</th>
                 </tr>
               </thead>
               <tbody>
                 {fichas.map((f) => (
                   <tr key={f.slug} className="border-b border-white/8">
                     <td className="py-3 pr-4">
-                      <Link href={`/destinos/${f.slug}`} className="font-dm text-sm text-crema/85 hover:text-lima transition-colors">
-                        {f.destino!.nombre}
+                      <Link href={localePath(`/destinos/${f.slug}`, locale)} className="font-dm text-sm text-crema/85 hover:text-lima transition-colors">
+                        {f.destino.nombre}
                       </Link>
                     </td>
-                    <td className="py-3 px-4 font-dm text-sm text-crema/60 whitespace-nowrap">{f.desdeValles}</td>
-                    <td className="py-3 pl-4 font-dm text-sm text-crema/60 whitespace-nowrap">{f.desdeXilitla}</td>
+                    <td className="py-3 px-4 font-dm text-sm text-crema/60 whitespace-nowrap">{t.tiempo(f.desdeValles)}</td>
+                    <td className="py-3 pl-4 font-dm text-sm text-crema/60 whitespace-nowrap">{t.tiempo(f.desdeXilitla)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
           <p className="mt-4 text-crema/40 font-dm text-xs">
-            Los tiempos desde Ciudad Valles vienen de la ficha de cada destino. Los de Xilitla son
-            aproximados por carretera de sierra y pueden variar con el clima.
+            {t.tablaNota}
           </p>
         </div>
       </section>
@@ -180,22 +121,19 @@ export default function XilitlaOCiudadVallesPage() {
       <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="border border-white/10 bg-verde-profundo/30 p-6">
-            <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">Quédate en Ciudad Valles si…</p>
+            <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">{t.vallesSi}</p>
             <ul className="space-y-2 text-crema/70 font-dm text-sm leading-relaxed">
-              <li>· Vienes por las cascadas y quieres ver el mayor número posible en 3 días.</li>
-              <li>· Tienes poco tiempo: Micos, Tamul y Tamasopo están todos a menos de una hora.</li>
-              <li>· Llegas en avión por Tampico o en autobús, y quieres la mayor oferta de hoteles y restaurantes.</li>
+              {t.vallesBullets.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
             </ul>
           </div>
           <div className="border border-lima/25 bg-verde-profundo/40 p-6">
-            <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">Quédate en Xilitla si…</p>
+            <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">{t.xilitlaSi}</p>
             <ul className="space-y-2 text-crema/70 font-dm text-sm leading-relaxed">
-              <li>
-                · Vienes principalmente por Las Pozas de Edward James: el jardín está en el pueblo
-                {CON_CARGO[0] ? ` y la ${CON_CARGO[0].nombreCorto} pasa por ti sin costo; desde Valles son $${cargoVallesDe(CON_CARGO[0]).toLocaleString("es-MX")} más por reserva.` : "."}
-              </li>
-              <li>· Quieres el Pueblo Mágico, el café de altura y la sierra, no solo las cascadas.</li>
-              <li>· Prefieres hospedaje con carácter a la oferta de ciudad.</li>
+              {t.xilitlaBullets.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
             </ul>
           </div>
         </div>
@@ -204,58 +142,44 @@ export default function XilitlaOCiudadVallesPage() {
       {/* ── DÓNDE ENTRAMOS NOSOTROS ── */}
       <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto border border-white/10 bg-negro/40 p-7">
-          <h2 className="font-cormorant font-light text-crema text-2xl mb-4">Con nosotros no tienes que elegir</h2>
+          <h2 className="font-cormorant font-light text-crema text-2xl mb-4">{t.nosotrosTitulo}</h2>
           {/* SEO-10 (19 oct 2026): el hotel se nombra y enlaza a su sitio, con
               www y sin nofollow; antes era «nuestro hotel» a secas. */}
           <p className="text-crema/70 font-dm text-sm leading-relaxed mb-5">
-            Somos de Xilitla y aquí tenemos nuestro hotel, el{" "}
+            {t.nosotrosA}{" "}
             <a
               href="https://www.paraisoencantado.com/"
               className="text-lima underline underline-offset-2 hover:text-crema transition-colors"
             >
-              Paraíso Encantado
+              {t.nosotrosHotel}
             </a>
-            , y nuestro restaurante, pero en {EN_LAS_DOS.length - CON_CARGO.length} de
-            nuestros {TOURS_DB.length} recorridos{" "}
-            <strong className="text-crema">pasamos por ti a tu hospedaje en las dos ciudades</strong>, sin costo
-            extra. Si te quedas en Ciudad Valles, te recogemos ahí. Si te quedas con nosotros en Xilitla, sales
-            al tour desde la puerta.
-            {CON_CARGO.map((t) => ` ${t.articulo ? `${t.articulo.charAt(0).toUpperCase()}${t.articulo.slice(1)} ` : ""}${t.nombreCorto} también pasa por ti en Ciudad Valles, con ${cargoTexto(t)}.`)}
+            {t.nosotrosB}{" "}
+            <strong className="text-crema">{t.nosotrosFuerte}</strong>
+            {t.nosotrosC}
           </p>
-          {SOLO_XILITLA.length > 0 && (
+          {t.soloXilitla && (
             <p className="text-crema/60 font-dm text-sm leading-relaxed mb-5">
-              {lista(SOLO_XILITLA.map((t) => t.nombreCorto))} recogen solo en hospedajes de Xilitla: si
-              duermes en Ciudad Valles se pueden hacer, pero el traslado desde Valles tiene costo adicional que te
-              cotizamos por WhatsApp.
-              {OTROS.map((t) => {
-                const tipo = recogidaDeTour(t).tipo;
-                const p = partesRecogida(t, false);
-                // Con su artículo ("El Recorrido en RZR…"): sin él se lee cojo.
-                const art = t.articulo ? `${t.articulo.charAt(0).toUpperCase()}${t.articulo.slice(1)} ` : "";
-                return tipo === "base-xilitla"
-                  ? ` ${art}${t.nombreCorto} sale de ${p.lugar}; el transporte hasta Xilitla no va incluido.`
-                  : ` ${art}${t.nombreCorto} es en ${p.lugar}: llegas por tu cuenta.`;
-              })}
+              {t.soloXilitla}
             </p>
           )}
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/tours"
+              href={localePath("/tours", locale)}
               className="inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
             >
-              Ver los {TOURS_DB.length} tours · desde ${desde.toLocaleString("es-MX")}
+              {t.btnTours}
             </Link>
             <Link
-              href={`/paquetes/${paqueteBase.slug}`}
+              href={localePath(`/paquetes/${paqueteBase.slug}`, locale)}
               className="inline-flex items-center gap-2 border border-white/15 text-crema/80 font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:border-lima/40 hover:text-lima transition-colors"
             >
-              Paquete con hospedaje en Xilitla
+              {t.btnPaquete}
             </Link>
             <Link
-              href="/tours-en-ciudad-valles"
+              href={localePath("/tours-en-ciudad-valles", locale)}
               className="inline-flex items-center gap-2 border border-white/15 text-crema/80 font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:border-lima/40 hover:text-lima transition-colors"
             >
-              Tours desde Ciudad Valles
+              {t.btnValles}
             </Link>
           </div>
         </div>
@@ -263,15 +187,15 @@ export default function XilitlaOCiudadVallesPage() {
 
       {/* El viaje de cada mes desde la CDMX (17 oct 2026): CTA donde se habla de viajes de varios días. */}
       <div className="max-w-4xl mx-auto px-6 py-10">
-        <TarjetaViajeCdmx origen="xilitla-o-valles" titulo="¿Sales de la CDMX? El viaje del mes duerme en Xilitla y te lleva a Tamul" />
+        <TarjetaViajeCdmx origen={en ? "xilitla-o-valles-en" : "xilitla-o-valles"} titulo={t.tarjetaTitulo} locale={locale} />
       </div>
 
       {/* ── FAQ ── */}
       <section className="px-6 pb-24">
         <div className="max-w-4xl mx-auto">
-          <h2 className="font-cormorant font-light text-crema text-2xl mb-5">Preguntas frecuentes</h2>
+          <h2 className="font-cormorant font-light text-crema text-2xl mb-5">{t.faqTitulo}</h2>
           <div className="space-y-3">
-            {FAQS.map((f) => (
+            {t.faqs.map((f) => (
               <details key={f.q} className="border border-white/10 bg-negro/30 group">
                 <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
                   {f.q}
@@ -285,12 +209,12 @@ export default function XilitlaOCiudadVallesPage() {
           </div>
           <div className="mt-8 text-center">
             <a
-              href={waLink("Hola, estoy decidiendo entre hospedarme en Xilitla o en Ciudad Valles. ¿Me ayudan?")}
+              href={waLink(t.waTexto)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
             >
-              Pregúntanos por WhatsApp
+              {t.waBoton}
             </a>
           </div>
         </div>

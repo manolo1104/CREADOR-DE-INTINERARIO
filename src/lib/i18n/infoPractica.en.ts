@@ -6,6 +6,23 @@ import { fechaInicioTexto } from "@/lib/temporada";
 import { HOTEL_PROPIO, horarioRestaurante } from "@/lib/hotelPropio";
 import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
+import { getTraslado, precioBase } from "@/lib/traslados";
+
+/**
+ * «Vuelos a Xilitla» / «aeropuerto más cercano» (10 nov 2026): 330 impresiones
+ * en 6 meses y 0 clics. La guía ya decía Tampico y San Luis Potosí, pero solo
+ * con el tiempo a Ciudad Valles; quien busca vuelos a Xilitla no encontraba
+ * que Xilitla no tiene aeropuerto ni cuánto hay de Tampico al pueblo. Se SUMA
+ * (un renglón en «En avión» y una pregunta al final de Logística) sin tocar lo
+ * que ya estaba. El traslado sale de `traslados.ts`, como en /desde.
+ */
+const TRASLADO_TAMPICO = getTraslado("tampico");
+const TRASLADO_TAMPICO_ES = TRASLADO_TAMPICO
+  ? `; desde Tampico tenemos traslado redondo a Xilitla desde $${precioBase(TRASLADO_TAMPICO).toLocaleString("es-MX")} MXN por vehículo`
+  : "";
+const TRASLADO_TAMPICO_EN = TRASLADO_TAMPICO
+  ? `; from Tampico we run a round-trip private transfer to Xilitla from $${precioBase(TRASLADO_TAMPICO).toLocaleString("en-US")} MXN per vehicle`
+  : "";
 
 // 🔴 Lo del hotel sale de `hotelPropio.ts` y de las tarifas del catálogo (7 oct
 // 2026). Este texto decía «a 50 metros» del jardín (son 400 m), «desde $1,200»
@@ -343,6 +360,7 @@ const ES: InfoPracticaContent = {
         `Alternativa: San Luis Potosí (SLP) — ${enAuto("san-luis-potosi", "valles")} en coche`,
         "Desde CDMX: ~1h de vuelo + renta de auto recomendada",
         "Aeroméxico y VivaAerobus operan rutas directas",
+        `Xilitla no tiene aeropuerto: desde Tampico son ${enAuto("tampico")} en coche y desde San Luis Potosí, ${enAuto("san-luis-potosi")}`,
       ],
     },
     {
@@ -832,7 +850,7 @@ const ES: InfoPracticaContent = {
           q: "¿Desde dónde salen los tours?",
           // Faltaban los que recogen SOLO en Xilitla (decisión de Manolo, 28
           // sep: desde Ciudad Valles sí se va, con costo adicional y sin monto).
-          a: "No hay un punto de salida único: en la mayoría de los recorridos pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar. No necesitas hospedarte con nosotros. Los que salen de Xilitla con horario propio, como la Gruta de Xilo, el Amanecer de Nubes o la Olla de la Luz, recogen en tu hospedaje de Xilitla; desde Ciudad Valles también vamos por ti, con un costo adicional que te cotizamos por WhatsApp. El recorrido en RZR empieza en nuestra base de Xilitla y el buceo en Media Luna, en la laguna, en Rioverde.",
+          a: "No hay un punto de salida único: en la mayoría de los recorridos pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar. No necesitas hospedarte con nosotros. Los que salen de Xilitla con horario propio, como la Gruta de Xilo, el Amanecer de Nubes o la Olla de la Luz, recogen en tu hospedaje de Xilitla; desde Ciudad Valles también vamos por ti, con un costo adicional que te cotizamos por WhatsApp. El recorrido en RZR empieza en nuestra base de Xilitla.",
         },
         {
           q: "¿A qué hora es la salida?",
@@ -843,6 +861,10 @@ const ES: InfoPracticaContent = {
         {
           q: "¿Qué debo llevar?",
           a: "Ropa cómoda y que puedas mojar, zapatos con agarre (no sandalias de playa), bloqueador solar biodegradable, agua, identificación oficial y ganas de aventura. Todo lo demás lo ponemos nosotros.",
+        },
+        {
+          q: "¿Cuál es el aeropuerto más cercano a la Huasteca Potosina?",
+          a: `Tampico (TAM): está a ${enAuto("tampico", "valles")} en coche de Ciudad Valles y a ${enAuto("tampico")} de Xilitla, que no tiene aeropuerto. La otra opción es volar a San Luis Potosí (SLP), a ${enAuto("san-luis-potosi", "valles")} de Ciudad Valles y ${enAuto("san-luis-potosi")} de Xilitla. Del aeropuerto conviene rentar auto o pedir un traslado privado, porque los autobuses salen de las centrales de la ciudad, no del aeropuerto${TRASLADO_TAMPICO_ES}.`,
         },
       ],
     },
@@ -974,6 +996,7 @@ const EN: InfoPracticaContent = {
         `Alternative: San Luis Potosí (SLP) — ${enAuto("san-luis-potosi", "valles", true)} by car`,
         "From Mexico City: ~1h flight + a rental car is recommended",
         "Aeroméxico and VivaAerobus run direct routes",
+        `Xilitla has no airport: it's ${enAuto("tampico", "xilitla", true)} by car from Tampico and ${enAuto("san-luis-potosi", "xilitla", true)} from San Luis Potosí`,
       ],
     },
     {
@@ -1437,7 +1460,7 @@ const EN: InfoPracticaContent = {
       items: [
         {
           q: "Where do the tours leave from?",
-          a: "There's no single meeting point: on most tours we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end. You don't need to stay with us. The ones that leave from Xilitla on their own schedule, like the Xilo Cave, the Sea of Clouds Sunrise or Olla de la Luz, pick you up at your lodging in Xilitla; we can also come for you in Ciudad Valles, at an additional cost we'll quote on WhatsApp. The RZR ride starts at our base in Xilitla and the Media Luna dive at the lagoon, in Rioverde.",
+          a: "There's no single meeting point: on most tours we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end. You don't need to stay with us. The ones that leave from Xilitla on their own schedule, like the Xilo Cave, the Sea of Clouds Sunrise or Olla de la Luz, pick you up at your lodging in Xilitla; we can also come for you in Ciudad Valles, at an additional cost we'll quote on WhatsApp. The RZR ride starts at our base in Xilitla.",
         },
         {
           q: "What time do they leave?",
@@ -1446,6 +1469,10 @@ const EN: InfoPracticaContent = {
         {
           q: "What should I bring?",
           a: "Comfortable clothes you don't mind getting wet, shoes with grip (not beach sandals), biodegradable sunscreen, water, official ID and a sense of adventure. We provide everything else.",
+        },
+        {
+          q: "What's the closest airport to the Huasteca Potosina?",
+          a: `Tampico (TAM): it's ${enAuto("tampico", "valles", true)} by car to Ciudad Valles and ${enAuto("tampico", "xilitla", true)} to Xilitla, which has no airport. The other option is flying into San Luis Potosí (SLP), ${enAuto("san-luis-potosi", "valles", true)} from Ciudad Valles and ${enAuto("san-luis-potosi", "xilitla", true)} from Xilitla. From the airport it's best to rent a car or book a private transfer, since buses leave from the city terminals, not the airport${TRASLADO_TAMPICO_EN}.`,
         },
       ],
     },

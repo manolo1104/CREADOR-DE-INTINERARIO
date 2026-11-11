@@ -4,6 +4,7 @@ import { DESTINOS_DB } from "@/lib/destinos";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB, paginasDeEventoALaVenta } from "@/lib/paquetes";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
+import { listPostsEn, slugEnDe, urlBlogEn } from "@/lib/blogEn";
 import { fechaActualizado, seoDeBlog } from "@/lib/blogSeo";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { CIUDADES_ORIGEN_EN } from "@/lib/ciudadesOrigenEn";
@@ -89,6 +90,19 @@ function bilingual(
   ];
 }
 
+/** Gemelas con slug DISTINTO en cada idioma: dos entradas con el mismo par hreflang. */
+function parDeSlugs(
+  es: string,
+  en: string,
+  opts: { changeFrequency: MetadataRoute.Sitemap[number]["changeFrequency"]; priority: number; lastModified?: Date | string },
+): MetadataRoute.Sitemap {
+  const languages = { "es-MX": `${BASE}${es}`, en: `${BASE}${en}`, "x-default": `${BASE}${es}` };
+  return [
+    { url: `${BASE}${es}`, ...opts, alternates: { languages } },
+    { url: `${BASE}${en}`, ...opts, alternates: { languages } },
+  ];
+}
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const blogPosts = await getBlogPosts();
 
@@ -123,6 +137,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...bilingual("/preguntas-frecuentes", { changeFrequency: "monthly", priority: 0.7 }),
     ...bilingual("/experiencias",         { changeFrequency: "monthly", priority: 0.6, ...CAT }),
     ...bilingual("/contacto",             { changeFrequency: "yearly",  priority: 0.6 }),
+    // Traducidas el 10 nov 2026 (antes en `esOnlyStatic`).
+    ...bilingual("/grupos",                       { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    ...bilingual("/politica-de-cancelacion",      { changeFrequency: "yearly",  priority: 0.6 }),
+    ...bilingual("/sustentabilidad-y-conservacion", { changeFrequency: "yearly", priority: 0.4 }),
+    ...bilingual("/terminos",                     { changeFrequency: "yearly",  priority: 0.3 }),
+    ...bilingual("/aviso-de-privacidad",          { changeFrequency: "yearly",  priority: 0.3 }),
+    ...bilingual("/creditos",                     { changeFrequency: "yearly",  priority: 0.2 }),
+    ...bilingual("/que-hacer-en-la-huasteca-potosina", { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    ...bilingual("/sobre-la-huasteca-potosina",        { changeFrequency: "monthly", priority: 0.7 }),
+    ...bilingual("/tours-en-xilitla",                  { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    ...bilingual("/tours-en-ciudad-valles",            { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    ...bilingual("/xilitla-o-ciudad-valles",           { changeFrequency: "monthly", priority: 0.8, ...CAT }),
   ];
 
   // Páginas SOLO en inglés, sin equivalente español (ni previsto).
@@ -152,25 +178,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return !max || f > max ? f : max;
   }, undefined);
 
+  // El índice del blog en inglés solo entra cuando tiene artículos (vacío va
+  // en `noindex`, ver `src/app/en/blog/page.tsx`).
+  const hayBlogEn = listPostsEn().length > 0;
+  const blogIndices: MetadataRoute.Sitemap = hayBlogEn
+    ? bilingual("/blog", { changeFrequency: "daily", priority: 0.8, ...(blogMasReciente ? { lastModified: blogMasReciente } : {}) })
+    : [{ url: `${BASE}/blog`, changeFrequency: "daily", priority: 0.8, ...(blogMasReciente ? { lastModified: blogMasReciente } : {}) }];
+
   const esOnlyStatic: MetadataRoute.Sitemap = [
-    {
-      url: `${BASE}/blog`,
-      changeFrequency: "daily",
-      priority: 0.8,
-      ...(blogMasReciente ? { lastModified: blogMasReciente } : {}),
-    },
-    { url: `${BASE}/creditos`,              changeFrequency: "yearly",  priority: 0.2 },
-    { url: `${BASE}/recomendar`,    changeFrequency: "monthly", priority: 0.7 },
+    ...blogIndices,
+    // /recomendar salió el 10 nov 2026: 43 palabras visibles (el recomendador
+    // se arma en el navegador) = contenido delgado; ahora va en `noindex`.
     // /precios y /en/precios pasaron a `bilingualStatic` (28 sep 2026).
     // 🔴 /en/precios se creó en la fase 2 y se quedó fuera del sitemap y sin
     // un solo enlace entrante: 0 impresiones en 117 días. Una página que nadie
     // declara y nadie enlaza no existe para Google.
     { url: `${BASE}/guia`,          changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/sobre-la-huasteca-potosina`,        changeFrequency: "monthly", priority: 0.7 },
-    { url: `${BASE}/sustentabilidad-y-conservacion`,    changeFrequency: "yearly",  priority: 0.4 },
-    { url: `${BASE}/que-hacer-en-la-huasteca-potosina`, changeFrequency: "monthly", priority: 0.8, ...CAT },
-    { url: `${BASE}/tours-en-ciudad-valles`,            changeFrequency: "monthly", priority: 0.8, ...CAT },
-    { url: `${BASE}/grupos`,                            changeFrequency: "monthly", priority: 0.8, ...CAT },
     // El viaje mensual CDMX–Xilitla (15 oct 2026). Sin `CAT`: sus precios y
     // lugares cambian en cada visita, no con el catálogo.
     // Con su gemela en inglés (16 oct 2026), con otro slug: se declaran juntas.
@@ -182,11 +205,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: `${BASE}/en/huasteca-potosina-from-mexico-city`, changeFrequency: "daily", priority: 0.8,
       alternates: { languages: { "es-MX": `${BASE}/viaje-cdmx-xilitla`, en: `${BASE}/en/huasteca-potosina-from-mexico-city`, "x-default": `${BASE}/viaje-cdmx-xilitla` } },
     },
-    { url: `${BASE}/tours-en-xilitla`,                  changeFrequency: "monthly", priority: 0.8, ...CAT },
-    { url: `${BASE}/politica-de-cancelacion`, changeFrequency: "yearly",  priority: 0.6 },
-    { url: `${BASE}/terminos`,                changeFrequency: "yearly",  priority: 0.3 },
-    { url: `${BASE}/aviso-de-privacidad`,     changeFrequency: "yearly",  priority: 0.3 },
-    { url: `${BASE}/xilitla-o-ciudad-valles`,           changeFrequency: "monthly", priority: 0.8, ...CAT },
+    // Guías nuevas del 10 nov 2026 (Search Console: búsquedas de hoteles y de
+    // «cascadas de la huasteca» sin página propia). Slug distinto en cada idioma.
+    ...parDeSlugs("/donde-hospedarse-en-la-huasteca-potosina", "/en/where-to-stay-in-huasteca-potosina", { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    ...parDeSlugs("/cascadas-de-la-huasteca-potosina", "/en/huasteca-potosina-waterfalls", { changeFrequency: "monthly", priority: 0.8, ...CAT }),
     ...CIUDADES_ORIGEN.map((c) => ({
       url: `${BASE}/desde/${c.slug}`,
       changeFrequency: "monthly" as const,
@@ -217,13 +239,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // los redirige (308) a la versión sin año. Publicarlos tal cual mandaba a
   // Google a rastrear URLs que redirigen; se listan ya normalizados.
   // `lastmod`: ver `fechaDeBlog`. Blog NO usa `CATALOGO_ACTUALIZADO`.
-  const blogPages: MetadataRoute.Sitemap = blogPosts.map((p) => ({
-    url: `${BASE}/blog/${normalizaSlugBlog(p.slug)}`,
-    lastModified: fechaDeBlog(p),
-    changeFrequency: "monthly" as const,
-    priority: 0.8,
-    images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
-  }));
+  // Con traducción (`src/content/blog-en`, desde el 10 nov 2026) el artículo
+  // sale dos veces, cada una con el par explícito: el slug en inglés es OTRO,
+  // así que `bilingual()` (misma ruta en los dos idiomas) no sirve.
+  const blogPages: MetadataRoute.Sitemap = blogPosts.flatMap((p) => {
+    const es = `${BASE}/blog/${normalizaSlugBlog(p.slug)}`;
+    const slugEn = slugEnDe(p.slug);
+    const comun = {
+      lastModified: fechaDeBlog(p),
+      changeFrequency: "monthly" as const,
+      priority: 0.8,
+      images: p.coverImageUrl ? [absImg(p.coverImageUrl)] : undefined,
+    };
+    if (!slugEn) return [{ url: es, ...comun }];
+    const en = `${BASE}${urlBlogEn(slugEn)}`;
+    const languages = { "es-MX": es, en, "x-default": es };
+    return [
+      { url: es, ...comun, alternates: { languages } },
+      { url: en, ...comun, priority: 0.7, alternates: { languages } },
+    ];
+  });
 
   const paquetePages: MetadataRoute.Sitemap = PAQUETES_DB.flatMap((p) =>
     bilingual(`/paquetes/${p.slug}`, {
