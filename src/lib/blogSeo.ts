@@ -52,6 +52,7 @@ import { enAuto, horasEnPalabras, MINUTOS_VALLES_XILITLA } from "@/lib/tiemposDe
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { calcTourTotal } from "@/lib/tourBooking";
 import { NOCHE_XANTOLO } from "@/lib/nocheXantolo";
+import { aplicaErratas } from "@/lib/blogErratas";
 
 export interface BlogSeoOverride {
   /**
@@ -2240,6 +2241,12 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // en el artículo dice cuota local de ~$20, que cierra en martes y que precio
   // y horario no están publicados.
   "cascada-los-comales-mas-alla-del-castillo-3-cascadas-secretas-cerca-de": {
+    // El título prometía «3 cascadas» y el artículo describe dos lugares (Los
+    // Comales y las pozas de Los Tepales): fe de erratas del 11 nov 2026.
+    title: "Más allá del Castillo: cascadas secretas cerca de Xilitla (incluye Los Comales)",
+    metaTitle: "Cascada Los Comales y pozas secretas cerca de Xilitla 2026",
+    metaDescription:
+      "Cascada Los Comales y otras pozas poco conocidas cerca de Xilitla: entrada, cómo llegar y consejos para visitarlas en la Huasteca Potosina.",
     contentReplace: [
       {
         from: "accesible todos los días con entrada de <strong>$75 pesos</strong> por persona",
@@ -2521,6 +2528,8 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // El combo de $1,459 (dos veces, una en el FAQPage), precios de Viator en
   // dólares y "paquetes de 5 días desde $5,570 con 20 % de descuento".
   "itinerario-xilitla-itinerario-perfecto-de-3-dias-en-xilitla": {
+    // El título prometía una «guía descargable» que el artículo no trae (fe de erratas, 11 nov 2026).
+    title: "Itinerario Xilitla: el plan perfecto de 3 días (2026)",
     contentReplace: [
       {
         from:
@@ -3266,7 +3275,8 @@ export function aplicaBlogSeo<
   },
 >(post: T): T {
   const o = seoDeBlog(post.slug);
-  if (!o) return post;
+  // La fe de erratas (`blogErratas.ts`) va al final, también en los artículos sin override.
+  if (!o) return aplicaErratas(post);
 
   const next: T = { ...post };
   // Solo si la fila trae título: las parciales que no lo piden no lo ganan.
@@ -3292,5 +3302,5 @@ export function aplicaBlogSeo<
     if (o.faqs?.length) c = insertaFaqs(c, o.faqs);
     next.content = c;
   }
-  return next;
+  return aplicaErratas(next);
 }

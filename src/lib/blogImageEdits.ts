@@ -24,6 +24,13 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── 11 nov 2026 (fe de erratas) ───────────────────────────────────────────
+  // Tamohi El Consuelo llevaba de portada las Cuevas de Mantetzulel (otro lugar,
+  // en Aquismón). Va la foto de su propia ficha de destino.
+  "zona-arqueologica-de-tamohi-el-consuelo-guia-2026": {
+    coverImageUrl: "/imagenes/zona-arqueologica-tamohi-el-consuelo/hero.jpg",
+    coverImageAlt: "Zona arqueológica de Tamohi El Consuelo, en Tamuín, San Luis Potosí",
+  },
   // ── Lote 1-oct-2026 ───────────────────────────────────────────────────────
   // Olla de la Luz y Cueva del Salitre — el agente le puso de portada la
   // LAGUNA MEDIA LUNA (Rioverde) y de foto interior LAS POZAS: ninguna es de

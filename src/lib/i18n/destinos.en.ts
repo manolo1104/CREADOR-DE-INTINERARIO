@@ -385,7 +385,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     mejor_hora: "08:00–10:00",
     temporada_ideal: "Oct–May",
     advertencias: "Respect the marked swimming zones — there are strong currents in the central channel. The access road can be muddy in the rainy season. Cash only.",
-    como_llegar: "105 min from Ciudad Valles · Highway 70 north → El Naranjo turnoff via Hwy 80",
+    como_llegar: "105 min from Ciudad Valles · Highway 85 north → El Naranjo turnoff via Hwy 80",
     que_llevar: ["water shoes or sneakers that can get wet", "biodegradable sunscreen (required)", "a dry change of clothes", "cash (no ATM in the area)", "natural repellent"],
     datos_curiosos: [
       "Considered to have some of the bluest water in the whole region, due to a high concentration of karst minerals.",
@@ -400,7 +400,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
       faqPrincipales: [
         { pregunta: "How much is admission to Minas Viejas in 2026?", respuesta: "It's about $100 MXN per person. Cash only — there is no ATM in the area." },
         { pregunta: "Can you swim at the Minas Viejas Waterfalls?", respuesta: "Yes, there are designated pools with calm water for swimming. Biodegradable sunscreen is mandatory." },
-        { pregunta: "How do I get to Minas Viejas from Ciudad Valles?", respuesta: "Take Highway 70 north and turn off toward El Naranjo on Hwy 80. It's about 95 km and 1 hour 45 minutes by car." },
+        { pregunta: "How do I get to Minas Viejas from Ciudad Valles?", respuesta: "Take Highway 85 north and turn off toward El Naranjo on Hwy 80. It's about 95 km and 1 hour 45 minutes by car." },
       ],
     },
   },

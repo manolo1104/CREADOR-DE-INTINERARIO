@@ -494,7 +494,7 @@ export const DESTINOS_DB: Destino[] = [
     mejor_hora: "08:00–10:00",
     temporada_ideal: "Oct–May",
     advertencias: "Respetar las zonas de nado señalizadas — hay corrientes fuertes en el canal central. El camino de acceso puede ser lodoso en temporada de lluvias. Solo efectivo.",
-    como_llegar: "105 min desde Valles · Carretera 70 norte → desvío El Naranjo por Carr. 80",
+    como_llegar: "105 min desde Valles · Carretera 85 norte → desvío a El Naranjo por la 80",
     que_llevar: ["calzado acuático o tenis que puedan mojarse", "bloqueador solar biodegradable (obligatorio)", "cambio de ropa seca", "efectivo (sin cajero en la zona)", "repelente natural"],
     datos_curiosos: [
       "Consideradas de las cascadas con el agua más azul de toda la región por alta concentración de minerales kársticos.",
@@ -523,7 +523,7 @@ export const DESTINOS_DB: Destino[] = [
       faqPrincipales: [
         { pregunta: "¿Cuánto cuesta la entrada a Minas Viejas en 2026?", respuesta: "El costo aproximado es de $100 MXN por persona. Solo efectivo, no hay cajero en la zona." },
         { pregunta: "¿Se puede nadar en las Cascadas de Minas Viejas?", respuesta: "Sí, hay pozas designadas con aguas tranquilas para nadar. Usa bloqueador biodegradable obligatoriamente." },
-        { pregunta: "¿Cómo llegar a Minas Viejas desde Ciudad Valles?", respuesta: "Toma la carretera 70 norte y desvíate hacia El Naranjo por la 80. Son aproximadamente 95 km y 1 hora 45 minutos en auto." },
+        { pregunta: "¿Cómo llegar a Minas Viejas desde Ciudad Valles?", respuesta: "Toma la carretera 85 hacia el norte y desvíate hacia El Naranjo por la 80. Son aproximadamente 95 km y 1 hora 45 minutos en auto." },
       ],
     },
   },
