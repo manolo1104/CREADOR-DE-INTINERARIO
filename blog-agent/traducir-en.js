@@ -82,10 +82,17 @@ export async function extraerArticulo(slugEs) {
 
   // El cuerpo vive en los dos bloques `prose` de la plantilla (va partido a la
   // mitad para meter la tarjeta del tour en el teléfono).
+  // Desde el 11 nov 2026 la plantilla marca el final de cada mitad con
+  // `<!--fin-cuerpo-->`: se corta ahí. Sin la marca (páginas de antes), se
+  // cuentan `<div>`, que falla si una mitad trae un recuadro sin cerrar.
   const cuerpos = [];
   const reProse = /<div class="prose prose-lg/g;
   let m;
-  while ((m = reProse.exec(html)) !== null) cuerpos.push(interior(divCompleto(html, m.index)));
+  while ((m = reProse.exec(html)) !== null) {
+    const desde = html.indexOf(">", m.index) + 1;
+    const fin = html.indexOf("<!--fin-cuerpo-->", desde);
+    cuerpos.push(fin !== -1 ? html.slice(desde, fin) : interior(divCompleto(html, m.index)));
+  }
   if (cuerpos.length === 0) throw new Error(`${url}: no encontré el cuerpo del artículo`);
 
   // JSON-LD del artículo (fechas, sección, palabras clave).
@@ -178,19 +185,61 @@ function guardarPares(pares) {
 }
 
 /** Revisiones que, si fallan, impiden guardar (mejor sin inglés que un inglés roto). */
-function validar(fuente, t) {
+export function validar(fuente, t) {
   const errores = [];
   const cuenta = (html, re) => (html.match(re) || []).length;
   if (cuenta(t.contentHtml, /<h2\b/g) !== cuenta(fuente.contenido, /<h2\b/g)) errores.push("cambió el número de <h2>");
   if (Math.abs(cuenta(t.contentHtml, /<a\s/g) - cuenta(fuente.contenido, /<a\s/g)) > 1) errores.push("cambió el número de enlaces");
   if (cuenta(t.contentHtml, /<details\b/g) !== cuenta(fuente.contenido, /<details\b/g)) errores.push("cambió el número de preguntas (<details>)");
   const texto = t.contentHtml.replace(/<[^>]+>/g, " ");
-  const espanol = cuenta(texto, /\b(?:para|también|porque|está|puedes|nuestro|nuestros|además)\b/gi);
+  // Fronteras Unicode: con `\b` de JS, «Paraíso» contaba como «para» (la í no es \w).
+  const espanol = cuenta(texto, /(?<!\p{L})(?:para|también|porque|está|puedes|nuestro|nuestros|además)(?!\p{L})/giu);
   if (espanol > 6) errores.push(`quedan ${espanol} palabras en español`);
   if (t.metaTitle.length > 60) errores.push(`metaTitle de ${t.metaTitle.length} caracteres`);
   if (t.metaDescription.length < 110 || t.metaDescription.length > 165) errores.push(`metaDescription de ${t.metaDescription.length} caracteres`);
   if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(t.slug) || t.slug.length > 70) errores.push(`slug inválido: ${t.slug}`);
   return errores;
+}
+
+/**
+ * Valida una traducción y la guarda (archivo del artículo + `pares.json`).
+ * La comparten la vía automática (API, el robot) y la tanda hecha a mano en
+ * una sesión (11 nov 2026): las dos pasan por las mismas revisiones.
+ * Lanza si la traducción no pasa; devuelve el slug en inglés.
+ */
+export function guardarPostEn(fuente, t) {
+  const slugEs = fuente.slugEs;
+  const pares = leerPares();
+  const errores = validar(fuente, t);
+  if (errores.length) throw new Error(`${slugEs}: no se guardó — ${errores.join("; ")}`);
+  const ocupado = Object.entries(pares).find(([es, en]) => en === t.slug && es !== slugEs);
+  if (ocupado) t.slug = `${t.slug}-${slugEs.split("-")[0]}`;
+  const palabras = fuente.contenido.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+
+  const post = {
+    slugEs,
+    slug: t.slug,
+    title: t.title,
+    metaTitle: t.metaTitle,
+    metaDescription: t.metaDescription,
+    excerpt: t.excerpt,
+    contentHtml: enlacesAIngles(t.contentHtml, { ...pares, [slugEs]: t.slug }),
+    coverImageUrl: fuente.portada,
+    coverImageAlt: t.coverImageAlt,
+    seccion: t.seccion,
+    keywords: t.keywords,
+    tours: fuente.tours,
+    datePublished: fuente.datePublished,
+    dateModified: fuente.dateModified,
+    readingTime: Math.max(1, Math.round(palabras / 220)),
+    traducidoEl: new Date().toISOString(),
+    fuenteModificada: fuente.dateModified,
+  };
+
+  fs.mkdirSync(DIR_POSTS, { recursive: true });
+  fs.writeFileSync(path.join(DIR_POSTS, `${slugEs}.json`), `${JSON.stringify(post, null, 2)}\n`, "utf-8");
+  guardarPares({ ...leerPares(), [slugEs]: t.slug });
+  return t.slug;
 }
 
 /**
@@ -240,39 +289,12 @@ export async function traducirArticulo(slugCrudo, opciones = {}) {
   const texto = respuesta.content.filter((b) => b.type === "text").map((b) => b.text).join("");
   const t = JSON.parse(texto);
 
-  const errores = validar(fuente, t);
-  if (errores.length) throw new Error(`${slugEs}: no se guardó — ${errores.join("; ")}`);
-  const ocupado = Object.entries(pares).find(([es, en]) => en === t.slug && es !== slugEs);
-  if (ocupado) t.slug = `${t.slug}-${slugEs.split("-")[0]}`;
-
-  const post = {
-    slugEs,
-    slug: t.slug,
-    title: t.title,
-    metaTitle: t.metaTitle,
-    metaDescription: t.metaDescription,
-    excerpt: t.excerpt,
-    contentHtml: enlacesAIngles(t.contentHtml, { ...pares, [slugEs]: t.slug }),
-    coverImageUrl: fuente.portada,
-    coverImageAlt: t.coverImageAlt,
-    seccion: t.seccion,
-    keywords: t.keywords,
-    tours: fuente.tours,
-    datePublished: fuente.datePublished,
-    dateModified: fuente.dateModified,
-    readingTime: Math.max(1, Math.round(palabras / 220)),
-    traducidoEl: new Date().toISOString(),
-    fuenteModificada: fuente.dateModified,
-  };
-
-  fs.mkdirSync(DIR_POSTS, { recursive: true });
-  fs.writeFileSync(path.join(DIR_POSTS, `${slugEs}.json`), `${JSON.stringify(post, null, 2)}\n`, "utf-8");
-  guardarPares({ ...pares, [slugEs]: t.slug });
+  const slugEn = guardarPostEn(fuente, t);
 
   const u = respuesta.usage;
   const usd = (u.input_tokens * 4 + u.output_tokens * 20) / 1e6;
-  console.log(`   🇺🇸 ${slugEs} → /en/blog/${t.slug} (${u.input_tokens} entrada / ${u.output_tokens} salida ≈ US$${usd.toFixed(2)})`);
-  return t.slug;
+  console.log(`   🇺🇸 ${slugEs} → /en/blog/${slugEn} (${u.input_tokens} entrada / ${u.output_tokens} salida ≈ US$${usd.toFixed(2)})`);
+  return slugEn;
 }
 
 // ── Uso a mano ──────────────────────────────────────────────────────────────
