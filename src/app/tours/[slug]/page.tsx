@@ -41,7 +41,7 @@ import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { ReservaDirecto } from "@/components/ReservaDirecto";
 import { BloqueCasaPropia } from "@/components/BloqueCasaPropia";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
-import { guiasDeTour } from "@/lib/guias";
+import { guiasDeTour, ACUATICOS_ECOTURISMO } from "@/lib/guias";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
@@ -1576,17 +1576,19 @@ export default function TourDetailPage({ params }: Props) {
               <h2 id="guias-tour" className="font-cormorant text-crema text-2xl mb-2">
                 {locale === "en" ? "Who guides you" : "Quién te guía"}
               </h2>
-              {/* «Certificados… en estos ríos» es de Alex y Ángel (acuáticos).
-                  Erick (Olla de la Luz, Gruta de Xilo; 11 nov 2026) va sin
-                  certificación confirmada y no es de río: frase neutra. */}
+              {/* «En estos ríos» solo en los acuáticos de Alex y Ángel. Erick
+                  (Olla de la Luz, Gruta de Xilo; 11 nov 2026) es de montaña y
+                  cueva. Un guía sin certificación confirmada: frase neutra. */}
               <p className="text-sm text-crema/55 font-dm mb-5">
-                {guiasDeTour(tour.slug).every((g) => g.certificaciones.es.length > 0)
-                  ? (locale === "en"
-                    ? "Local certified guides, on these rivers all year round."
-                    : "Guías locales certificados, en estos ríos todo el año.")
-                  : (locale === "en"
-                    ? "One of our own guides, not a subcontractor."
-                    : "Un guía de la casa, no subcontratado.")}
+                {!guiasDeTour(tour.slug).every((g) => g.certificaciones.es.length > 0)
+                  ? (locale === "en" ? "One of our own guides, not a subcontractor." : "Un guía de la casa, no subcontratado.")
+                  : ACUATICOS_ECOTURISMO.includes(tour.slug)
+                    ? (locale === "en"
+                      ? "Local certified guides, on these rivers all year round."
+                      : "Guías locales certificados, en estos ríos todo el año.")
+                    : (locale === "en"
+                      ? "A certified local guide who knows this sierra by heart."
+                      : "Guía local certificado, que se sabe esta sierra de memoria.")}
               </p>
               {/* Retrato editorial: la foto 3:4 entera (por eso el contenedor
                   es 3:4, sin recorte), el nombre sobre un degradado al pie y

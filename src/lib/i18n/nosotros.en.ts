@@ -192,7 +192,7 @@ const ES: NosotrosContent = {
   historiaH2a: "De guías locales a ",
   historiaH2b: "referentes de la región",
   historiaP1:
-    `Tours Huasteca Potosina nació formalmente en 2019, cuando Manolo Covarrubias la fundó. En el río te acompañan guías que crecieron aquí: ${ALEX.apodo} (${ALEX.nombre}), que guía desde ${ALEX.desde}, y ${ANGEL.nombre}, desde ${ANGEL.desde}. Los dos son de ${ALEX.origen} y están certificados por SECTUR en la norma NOM-09. En la montaña y en la cueva te lleva ${ERICK.nombre}, guía desde ${ERICK.desde}.`,
+    `Tours Huasteca Potosina nació formalmente en 2019, cuando Manolo Covarrubias la fundó. En el río te acompañan guías que crecieron aquí: ${ALEX.apodo} (${ALEX.nombre}), que guía desde ${ALEX.desde}, y ${ANGEL.nombre}, desde ${ANGEL.desde}; en la montaña y en la cueva, ${ERICK.nombre}, desde ${ERICK.desde}. Los tres son de ${ALEX.origen} y están certificados por SECTUR en la norma NOM-09.`,
   historiaP2:
     "Eso es lo que ninguna agencia puede comprar: conocer los ríos porque se creció junto a ellos, y a los ejidatarios que custodian el acceso a los sitios más espectaculares. En 2019, Manolo — nacido en Xilitla y convencido de que la Huasteca merece ser conocida por el mundo — juntó ese talento local bajo una misma empresa y una misma misión.",
   historiaCita: ANGEL.frase.es,
@@ -369,7 +369,7 @@ const EN: NosotrosContent = {
   historiaH2a: "From local guides to ",
   historiaH2b: "a name in the region",
   historiaP1:
-    `Huasteca Potosina Tours was formally founded in 2019 by Manolo Covarrubias. On the river you're guided by people who grew up here: ${ALEX.apodo} (${ALEX.nombre}), guiding since ${ALEX.desde}, and ${ANGEL.nombre}, since ${ANGEL.desde}. Both are from ${ALEX.origen} and certified by SECTUR under the NOM-09 standard. In the mountains and the cave, ${ERICK.nombre} has been guiding since ${ERICK.desde}.`,
+    `Huasteca Potosina Tours was formally founded in 2019 by Manolo Covarrubias. On the river you're guided by people who grew up here: ${ALEX.apodo} (${ALEX.nombre}), guiding since ${ALEX.desde}, and ${ANGEL.nombre}, since ${ANGEL.desde}; in the mountains and the cave, ${ERICK.nombre}, since ${ERICK.desde}. All three are from ${ALEX.origen} and certified by SECTUR under the NOM-09 standard.`,
   historiaP2:
     "That's something no agency can buy: knowing the rivers because you grew up beside them, and knowing the ejidatarios who guard access to the most spectacular sites. In 2019 Manolo — born in Xilitla and convinced the Huasteca deserves to be known worldwide — brought that local talent under one company and one mission.",
   historiaCita: ANGEL.frase.en,

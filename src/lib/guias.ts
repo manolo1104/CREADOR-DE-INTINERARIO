@@ -17,10 +17,11 @@
  * porque las reseñas reales lo nombran ahí («la hoya de la luz… nuestro guía
  * erick», Ram; «el último tour con el guía Erick hacía la cueva», Karina).
  * Su frase es redacción nuestra, como las de los otros dos.
- * 🔴 Faltan su apellido, de dónde es y sus certificaciones: sin el dato no se
- * promete. Por eso `origen` es opcional y los textos que hablan de TODOS
- * («certificados NOM-09», «de Xilitla») salen de `TODOS_NOM09` y
- * `TODOS_DE_XILITLA`: cuando Manolo lo confirme, basta llenarlo aquí.
+ * El mismo día confirmó: apellido Azuara, de Xilitla y con la NOM-09 (solo
+ * esa: rescate o primeros auxilios no se le ponen sin que lo diga).
+ * Los textos que hablan de TODOS («certificados NOM-09», «de Xilitla») salen
+ * de `TODOS_NOM09` y `TODOS_DE_XILITLA`: un guía nuevo sin esos datos los
+ * apaga solo, en vez de prometer en su nombre.
  */
 
 export interface Guia {
@@ -44,7 +45,7 @@ export interface Guia {
   tours: string[];
 }
 
-const ACUATICOS_ECOTURISMO = [
+export const ACUATICOS_ECOTURISMO = [
   "expedicion-tamul",
   "cascadas-del-meco",
   "paraiso-escalonado-minas-micos",
@@ -98,17 +99,20 @@ export const GUIAS: Guia[] = [
     tours: ACUATICOS_ECOTURISMO,
   },
   {
-    nombre: "Erick",
+    nombre: "Erick Azuara",
     foto: "/guias/erick.jpg",
     fotoCara: "/guias/erick-cara.jpg",
     fotoPos: "47% 40%",
     fotoAlt: {
-      es: "Erick, guía de Tours Huasteca Potosina, sobre las rocas de la sierra con un sótano detrás",
-      en: "Erick, Tours Huasteca Potosina guide, on the rocks of the sierra with a sinkhole behind him",
+      es: "Erick Azuara, guía certificado de Tours Huasteca Potosina, sobre las rocas de la sierra con un sótano detrás",
+      en: "Erick Azuara, certified Tours Huasteca Potosina guide, on the rocks of the sierra with a sinkhole behind him",
     },
     desde: 2020,
-    // Sin origen ni certificaciones hasta que Manolo los confirme (11 nov 2026).
-    certificaciones: { es: [], en: [] },
+    origen: "Xilitla, S.L.P.",
+    certificaciones: {
+      es: ["Guía NOM-09 SECTUR"],
+      en: ["NOM-09 SECTUR guide"],
+    },
     idiomas: { es: "Español · inglés básico", en: "Spanish · basic English" },
     frase: {
       es: "Cada grupo trae su propio ritmo. Yo me acomodo al de ustedes, no al revés: así se disfruta de verdad.",
