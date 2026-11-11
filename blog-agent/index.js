@@ -18,6 +18,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { getDailyTopic, inferCategoryByKeyword } from "./content-strategy.js";
 import { generateSlug, validateSlug } from "./slug.js";
+import { traducirArticulo } from "./traducir-en.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -1197,6 +1198,19 @@ async function main() {
   // Si `publishPost` lanza, aquí no se llega y no hay nada que revertir.
   if (topicId && !DRY_RUN) {
     markTopicAsPublished(topicId, post.slug);
+  }
+
+  // ── Paso 11b: La versión en inglés (10 nov 2026, decisión de Manolo) ──
+  // Se traduce la página YA publicada (con los arreglos de la plantilla) y se
+  // guarda como archivo del repo; el workflow la commitea con topics.json.
+  // Si falla, el español ya está publicado y NO se revierte nada: solo avisa.
+  // `TRADUCIR_EN=0` lo apaga sin tocar código.
+  if (!DRY_RUN && process.env.TRADUCIR_EN !== "0") {
+    try {
+      await traducirArticulo(post.slug);
+    } catch (e) {
+      console.warn(`   ⚠️  Publicado en español, pero la versión en inglés falló: ${e.message}`);
+    }
   }
 
   // ── Paso 12: Verificar schema (ya ocurre dentro de publishPost) ──

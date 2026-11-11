@@ -27,7 +27,11 @@ export async function POST(req: NextRequest) {
     console.log(`[cron/blog-post] ejecutando: node ${args.join(" ")}`);
     const output = execFileSync("node", args, {
       cwd:      blogAgentDir,
-      env:      { ...process.env },
+      // Sin versión en inglés por esta vía: aquí el archivo se escribiría en el
+      // disco del servidor, que se borra en el siguiente despliegue (pagaría la
+      // traducción para perderla). El inglés lo hace el workflow de GitHub,
+      // que sí lo commitea (`.github/workflows/blog-agent.yml`).
+      env:      { ...process.env, TRADUCIR_EN: "0" },
       timeout:  270_000, // 4.5 min
       encoding: "utf-8",
     });

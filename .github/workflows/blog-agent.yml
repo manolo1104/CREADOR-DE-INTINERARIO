@@ -26,7 +26,7 @@ permissions:
 jobs:
   generate-post:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
@@ -73,10 +73,11 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git diff --quiet -- blog-agent/topics.json; then
-            echo "topics.json sin cambios — nada que guardar."
+          # La versión en inglés (src/content/blog-en) viaja en el mismo commit.
+          git add blog-agent/topics.json src/content/blog-en
+          if git diff --cached --quiet; then
+            echo "topics.json y blog en inglés sin cambios — nada que guardar."
             exit 0
           fi
-          git add blog-agent/topics.json
-          git commit -m "chore(blog): marcar tema publicado en el calendario"
+          git commit -m "chore(blog): marcar tema publicado en el calendario (+ versión en inglés)"
           git push origin HEAD:${{ github.ref_name }}
