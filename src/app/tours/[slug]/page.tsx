@@ -1812,7 +1812,14 @@ export default function TourDetailPage({ params }: Props) {
                 vehículo y unidades (`RzrBookingForm`, 10 nov 2026): antes se
                 quedaban con un enlace al carrito sin fecha y ahí se perdían. */}
             {esVehiculo ? (
-              <RzrBookingForm slug={tour.slug} tourId={tour.id} nombre={localizeTour(tour, locale).nombre} />
+              <RzrBookingForm
+                slug={tour.slug}
+                tourId={tour.id}
+                nombre={localizeTour(tour, locale).nombre}
+                // `tour` ya viene traducido (`localizeTour`, arriba).
+                rutasTexto={tour.rutas?.map((r) => r.nombre)}
+                flotaTexto={tour.flota?.map((v) => ({ nombre: v.nombre, capacidad: v.capacidad }))}
+              />
             ) : (
               <ReservaFichaTour
                 slug={tour.slug}

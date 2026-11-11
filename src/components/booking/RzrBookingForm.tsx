@@ -44,10 +44,19 @@ export function RzrBookingForm({
   slug,
   nombre,
   tourId,
+  rutasTexto,
+  flotaTexto,
 }: {
   slug: string;
   nombre: string;
   tourId: string;
+  /**
+   * Lo que se LEE de cada ruta y vehículo, ya traducido (`localizeTour`, en el
+   * mismo orden que el catálogo). El VALOR sigue siendo el nombre en español:
+   * es el que entienden el carrito y `computeVehiculoCharge`.
+   */
+  rutasTexto?: string[];
+  flotaTexto?: { nombre: string; capacidad: string }[];
 }) {
   const router = useRouter();
   const { locale, lp } = useLocale();
@@ -137,8 +146,8 @@ export function RzrBookingForm({
         <label className="block">
           <span className={`${ETIQUETA} block mb-1.5`}>{tf.queRuta}</span>
           <select value={ruta} onChange={(e) => setRuta(e.target.value)} className={SELECT}>
-            {rutas.map((r) => (
-              <option key={r.nombre} value={r.nombre}>{r.nombre} · {tf.horas(r.duracion_hrs)}</option>
+            {rutas.map((r, i) => (
+              <option key={r.nombre} value={r.nombre}>{rutasTexto?.[i] ?? r.nombre} · {tf.horas(r.duracion_hrs)}</option>
             ))}
           </select>
         </label>
@@ -147,9 +156,9 @@ export function RzrBookingForm({
           {/* Cada vehículo con su precio EN LA RUTA ELEGIDA: es justo lo que
               la gente buscaba moviendo los menús del carrito. */}
           <select value={vehiculo} onChange={(e) => setVehiculo(e.target.value)} className={SELECT}>
-            {flota.map((v) => (
+            {flota.map((v, i) => (
               <option key={v.nombre} value={v.nombre}>
-                {v.nombre} · {v.capacidad} · {dinero(v.precios[idxRuta] ?? 0)}
+                {flotaTexto?.[i]?.nombre ?? v.nombre} · {flotaTexto?.[i]?.capacidad ?? v.capacidad} · {dinero(v.precios[idxRuta] ?? 0)}
               </option>
             ))}
           </select>
