@@ -41,8 +41,9 @@ export async function POST(req: NextRequest) {
 
   // El último aviso de Stripe que llegó (lote 9, 10 nov 2026): «Metas →
   // Fuentes» lo compara con la última reserva web para saber si el webhook
-  // sigue vivo. Nunca frena el aviso.
-  await prisma.config.upsert({
+  // sigue vivo. Nunca frena el aviso: sin `await` (revisión del lote 9), ni
+  // una base lenta retrasa el registro del cobro, y si falla no pasa nada.
+  void prisma.config.upsert({
     where: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE },
     update: { value: JSON.stringify({ en: new Date().toISOString(), tipo: event.type }) },
     create: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE, value: JSON.stringify({ en: new Date().toISOString(), tipo: event.type }) },

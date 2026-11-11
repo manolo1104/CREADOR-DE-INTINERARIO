@@ -13,10 +13,10 @@ import { registrarEtapa, sincronizarProximoPaso } from "../crmDatos";
 import { fechaLimite } from "../../vencimientoCotizacion";
 import { usuariosAdmin } from "../usuarios";
 import { RESPONSABLE_COBROS } from "../automatizaciones";
-import { ErrorAgente, pedirJson } from "./claude";
+import { ErrorAgente, configAgente, pedirJson } from "./claude";
 import { MODELO_EXTRAER, MODELO_RESPONDER } from "./costos";
 import {
-  aplicarExtraccion, mensajeResponder, mismoTexto, schemaExtraer, SCHEMA_RESPUESTA, systemExtraer, systemResponder, transcripcion,
+  aplicarExtraccion, mensajeResponder, mismoTexto, motivoParaNoLeerChats, schemaExtraer, SCHEMA_RESPUESTA, systemExtraer, systemResponder, transcripcion,
   type Extraccion,
 } from "./copilotoReglas";
 
@@ -80,16 +80,40 @@ export async function extraerDeChat(conversacionId: string): Promise<{ cambios: 
  * mensajes nuevos del cliente de hace más de 45 s (para leer la ráfaga entera)
  * y de los últimos 3 días. Si se llega al tope o está apagado, se detiene.
  */
-export async function vueltaAgente(): Promise<{ leidos: number; llenados: number; detenido?: string }> {
+export async function vueltaAgente(): Promise<{ leidos: number; llenados: number; detenido?: string; omitido?: string }> {
+  // Revisión del lote 9 (10 nov 2026): el cron no pasa por los candados del
+  // reloj. Con RECORDATORIOS_INTERNOS=0, sin llave o apagado, no toca nada.
+  const omitido = motivoParaNoLeerChats(process.env, (await configAgente()).encendido);
+  if (omitido) return { leidos: 0, llenados: 0, omitido };
   // Una vuelta a la vez (lote 9, 10 nov 2026): ahora también la llama el cron
   // horario, y una vuelta larga del reloj se encimaba con la siguiente; las dos
-  // leían el mismo chat y lo pagaban dos veces en Claude.
+  // leían el mismo chat y lo pagaban dos veces en Claude. Esto cuida el mismo
+  // proceso; entre dos servidores (p. ej. el viejo y el nuevo durante un
+  // despliegue) cuida el reclamo de cada chat (`reclamarChat`).
   if (enCurso.agente) return { leidos: 0, llenados: 0 };
   enCurso.agente = true;
   try { return await unaVueltaAgente(); } finally { enCurso.agente = false; }
 }
 
 const enCurso = globalThis as unknown as { agente?: boolean };
+
+type ChatPendiente = { id: string; agenteLeyoHasta: Date | null; ultimoEntranteEn: Date | null };
+
+/**
+ * Reclama un chat para esta vuelta (revisión del lote 9, 10 nov 2026): lo marca
+ * leído SOLO si nadie lo marcó desde que se listó. Si otra vuelta (otro
+ * proceso, o el cron y el reloj a la vez) ya lo tomó, esta lo salta: un chat
+ * se le paga a Claude una sola vez. Atómico en la base.
+ */
+export async function reclamarChat(c: ChatPendiente): Promise<boolean> {
+  const r = await prisma.conversacion.updateMany({ where: { id: c.id, agenteLeyoHasta: c.agenteLeyoHasta }, data: { agenteLeyoHasta: c.ultimoEntranteEn } });
+  return r.count === 1;
+}
+
+/** Suelta el reclamo (tope o apagado a media vuelta): el chat se retoma cuando haya presupuesto. */
+export async function soltarChat(c: ChatPendiente): Promise<void> {
+  await prisma.conversacion.updateMany({ where: { id: c.id, agenteLeyoHasta: c.ultimoEntranteEn }, data: { agenteLeyoHasta: c.agenteLeyoHasta } }).catch(() => {});
+}
 
 async function unaVueltaAgente(): Promise<{ leidos: number; llenados: number; detenido?: string }> {
   const ahora = Date.now();
@@ -103,12 +127,14 @@ async function unaVueltaAgente(): Promise<{ leidos: number; llenados: number; de
   const pendientes = convs.filter(c => !c.agenteLeyoHasta || (c.ultimoEntranteEn && c.agenteLeyoHasta < c.ultimoEntranteEn)).slice(0, 5);
   let leidos = 0, llenados = 0;
   for (const c of pendientes) {
+    // Otra vuelta ya lo tomó: no se paga dos veces (revisión del lote 9).
+    if (!(await reclamarChat(c))) continue;
     try {
       const r = await extraerDeChat(c.id);
       leidos++; if (r?.cambios.length) llenados++;
     } catch (e) {
       // Tope o apagado: no se marca leído, se retoma cuando haya presupuesto.
-      if (e instanceof ErrorAgente && /tope|apagado|llave/.test(e.message)) return { leidos, llenados, detenido: e.message };
+      if (e instanceof ErrorAgente && /tope|apagado|llave/.test(e.message)) { await soltarChat(c); return { leidos, llenados, detenido: e.message }; }
       console.error("agente (extraer):", (e as Error)?.message);
       await prisma.conversacion.update({ where: { id: c.id }, data: { agenteLeyoHasta: c.ultimoEntranteEn } }).catch(() => {});
     }

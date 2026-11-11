@@ -271,10 +271,11 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
                 <Fila k={`Costo fijo de la salida`} v={n.conCostos ? `− ${fmx(n.costoFijo)}` : "—"} />
                 <Fila k={`Costo por persona × ${n.pax}`} v={n.conCostos ? `− ${fmx(n.costoPorPax * n.pax)}` : "—"} />
               </>}
-              <div className="flex justify-between border-t border-[var(--panel-borde)] pt-1.5 font-medium text-[var(--panel-tinta)]"><dt>Margen de contribución</dt><dd className="panel-cifra">{n.conCostos ? `${fmx(n.margen)} · ${n.margenPct} %` : "Faltan costos"}</dd></div>
+              {/* Revisión del lote 9 (10 nov 2026): es el estimado, sin meta; el oficial es el del corte. */}
+              <div className="flex justify-between border-t border-[var(--panel-borde)] pt-1.5 font-medium text-[var(--panel-tinta)]"><dt>Margen estimado por salida</dt><dd className="panel-cifra">{n.conCostos ? `${fmx(n.margen)} · ${n.margenPct} %` : "Faltan costos"}</dd></div>
               {n.conCostos && <Fila k="Parte de cada socio (50/50)" v={fmx(n.parteSocio)} />}
             </dl>
-            <p className="mt-2 text-[11px] font-dm text-[var(--panel-tinta-suave)]">Antes de Stripe, Railway y hotel: esos se descuentan en el corte semanal.</p>
+            <p className="mt-2 text-[11px] font-dm text-[var(--panel-tinta-suave)]">Estimado: antes de Stripe, Railway y hotel, que se descuentan en el corte semanal (ahí sale el «Margen del corte», el oficial con meta de 35 %).</p>
           </section>}
 
           {verDinero && simulacion.length > 0 && (

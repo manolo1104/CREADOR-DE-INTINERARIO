@@ -152,3 +152,18 @@ export function mensajeResponder(chat: string, c: ContextoRespuesta, hoy: string
 
 /** ¿El texto que se mandó es el mismo que propuso el agente? (para medir «aprobadas sin cambios»). */
 export const mismoTexto = (a: string, b: string) => a.replace(/\s+/g, " ").trim() === b.replace(/\s+/g, " ").trim();
+
+/**
+ * ¿Por qué NO debe correr una vuelta del agente de los chats? Null = puede
+ * (revisión del lote 9, 10 nov 2026). Desde el lote 9 también la llama el
+ * cron horario, que no pasa por los candados del reloj (`instrumentation.ts`):
+ * sin esto, un servidor de pruebas con RECORDATORIOS_INTERNOS=0 y la llave de
+ * Claude puesta gastaba en la base que tuviera conectada. Sin llave o apagado
+ * tampoco se toca nada (antes marcaba como leídos los chats sin lead).
+ */
+export function motivoParaNoLeerChats(env: Record<string, string | undefined>, encendido: boolean): string | null {
+  if (env.RECORDATORIOS_INTERNOS === "0") return "apagado en este servidor (RECORDATORIOS_INTERNOS=0)";
+  if (!env.ANTHROPIC_API_KEY?.trim()) return "falta la llave de Claude (ANTHROPIC_API_KEY)";
+  if (!encendido) return "el agente está apagado (se enciende en Agente)";
+  return null;
+}

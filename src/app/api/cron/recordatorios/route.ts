@@ -31,7 +31,9 @@ export async function POST(req: NextRequest) {
   // Viaje ya pasado → Operado (lote 9). No lanza: devuelve cuántos movió.
   const operados = await paso("operados", () => operarViajesPasados());
   // El agente de los chats (lote 9): respeta el tope y el apagado, y no corre
-  // dos veces a la vez con el reloj del servidor.
+  // dos veces a la vez con el reloj del servidor. Revisión (10 nov 2026): cada
+  // chat se reclama en la base (dos vueltas a la vez nunca pagan el mismo) y
+  // con RECORDATORIOS_INTERNOS=0 o sin la llave de Claude no hace nada.
   const agente = await paso("agente", () => import("@/lib/admin/agente/copiloto").then(m => m.vueltaAgente()));
   return NextResponse.json({ ok: fallos.length === 0, ...(avisos ?? {}), operados, agente, ...(fallos.length ? { fallos } : {}) }, { status: fallos.length ? 500 : 200 });
 }

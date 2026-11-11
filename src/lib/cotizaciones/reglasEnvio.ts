@@ -283,6 +283,29 @@ export function puedeRegresarAEnviada(
 }
 
 /**
+ * ¿Se anota la fecha de envío al marcarla «Enviada» a mano? (revisión del lote
+ * 9, 10 nov 2026). Solo la PRIMERA vez que un BORRADOR pasa a Enviada. 🔴 Los
+ * únicos caminos del panel que la marcan así son «Reactivar» una vencida y
+ * «Regresar a Enviada» una aceptada: ya habían salido antes, y anotarles HOY
+ * metía cotizaciones de octubre en «Cotización → reserva» de noviembre como si
+ * acabaran de salir. Sin la fecha (las de antes del 10 nov), el KPI la estima.
+ */
+export function anotarEnvioAlMarcar(antes: { status: string; enviadaEn?: Date | null }, nuevoStatus: unknown): boolean {
+  return nuevoStatus === "enviada" && esPrimerEnvio(antes);
+}
+
+/**
+ * ¿Es la primera vez que esta cotización sale al cliente? (revisión del lote 9,
+ * 10 nov 2026) Solo un BORRADOR sin fecha de envío. Lo usan el correo, el
+ * WhatsApp y el PDF: una vencida, enviada o aceptada de antes del 10 nov que se
+ * reenvía o se vuelve a bajar ya había salido, y anotarle HOY la sacaba de su
+ * semana en «Cotización → reserva».
+ */
+export function esPrimerEnvio(q: { status: string; enviadaEn?: Date | null }): boolean {
+  return q.status === "borrador" && !q.enviadaEn;
+}
+
+/**
  * El aviso de una cotización que ya no se edita (lote 4, 5 nov 2026): la
  * aceptada. null si se puede editar. 🔴 Antes «Editar» la reabría: el PATCH
  * le pasaba al lead fecha, tours y monto nuevos y la reserva —lo que se

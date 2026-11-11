@@ -92,7 +92,9 @@ describe("noviembre de la línea base: 20 reservas → 31 días de tour → 27 s
   it("8 salidas regulares con 2 personas o menos; RZR y a medida no cuentan", () => {
     expect(r.regularesBajoMinimo).toBe(8);
     expect(r.regulares).toBe(19);
-    expect(r.paxPorSalida).toBe(3.1);
+    // Revisión del lote 9 (10 nov 2026): personas por salida solo de las
+    // regulares, como Ocupación e Inicio (antes 3.1 con RZR y a medida).
+    expect(r.paxPorSalida).toBe(3.6);
   });
   it("Janet dos veces el mismo día es una salida de 4 con 2 reservas", () => {
     const s = agruparSalidas(dias).find(x => x.fecha === "2026-11-07" && x.slug === T.TAM);

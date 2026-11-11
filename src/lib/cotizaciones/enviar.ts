@@ -18,7 +18,7 @@ import { calcularVencimiento, vigenciaDe } from "@/lib/vencimientoCotizacion";
 import { hoyMX } from "@/lib/dates";
 import { registrarEnBitacora, pesos, type Actor } from "@/lib/admin/bitacora";
 import type { ResultadoEnvio } from "./tipos";
-import { modoDeEnvio } from "./reglasEnvio";
+import { esPrimerEnvio, modoDeEnvio } from "./reglasEnvio";
 import { ligaVivaDeCotizacion, reservaVivaDeCotizacion } from "./estadoCotizacion";
 
 const esYMD = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -133,10 +133,11 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
       ...(venceEl !== previa ? { recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
     });
     // La primera vez que sale al cliente (lote 9, 10 nov 2026): «Cotización →
-    // reserva» cuenta desde aquí. Un reenvío no la mueve.
+    // reserva» cuenta desde aquí. Un reenvío no la mueve, ni le pone fecha a
+    // una de antes del lote 9 que ya había salido (revisión: `esPrimerEnvio`).
     await prisma.tourQuote.update({
       where: { id: quoteId },
-      data:  { status: "enviada", lineItems: lineItems as never, ...(q.enviadaEn ? {} : { enviadaEn: new Date() }) },
+      data:  { status: "enviada", lineItems: lineItems as never, ...(esPrimerEnvio(q) ? { enviadaEn: new Date() } : {}) },
     });
     await registrarEnBitacora({
       accion:     "envió",
@@ -198,7 +199,7 @@ export async function marcarEnviadaPorWhatsapp(
     await prisma.tourQuote.update({
       where: { id: q.id },
       // La primera vez que sale al cliente (lote 9): un reenvío no la mueve.
-      data:  { status: "enviada", lineItems: lineItems as never, ...(q.enviadaEn ? {} : { enviadaEn: new Date() }) },
+      data:  { status: "enviada", lineItems: lineItems as never, ...(esPrimerEnvio(q) ? { enviadaEn: new Date() } : {}) },
     });
     await registrarEnBitacora({
       accion:     "envió",

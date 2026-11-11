@@ -142,7 +142,7 @@ export interface ResumenSalidas {
   reservas: number;
   diasDeTour: number;
   salidas: number;
-  /** Personas ÷ salidas, con un decimal. */
+  /** Personas ÷ salidas, con un decimal; solo las regulares (sin a medida, revisión del lote 9). */
   paxPorSalida: number;
   /** Salidas regulares (con meta) de `MINIMO_RENTABLE − 1` personas o menos. */
   regularesBajoMinimo: number;
@@ -154,12 +154,16 @@ export function resumirSalidas(dias: DiaDeTour[]): ResumenSalidas {
   const salidas = agruparSalidas(dias);
   // El Edén (privada de catálogo) tampoco lleva meta de personas (lote 6, 10 nov 2026).
   const regulares = salidas.filter(s => !s.aMedida && !esPrivadaDeCatalogo(s.slug));
-  const personas = salidas.reduce((t, s) => t + s.personas, 0);
+  // «Personas por salida» con la fórmula de Ocupación, Inicio y Rentabilidad
+  // (revisión del lote 9, 10 nov 2026): sin viaje CDMX, RZR, buceo, salidas a
+  // medida ni conceptos. Antes el Calendario las promediaba todas.
+  const paraPax = salidas.filter(s => !s.aMedida);
+  const personas = paraPax.reduce((t, s) => t + s.personas, 0);
   return {
     reservas: new Set(dias.map(d => d.folio)).size,
     diasDeTour: dias.length,
     salidas: salidas.length,
-    paxPorSalida: salidas.length ? Math.round((personas / salidas.length) * 10) / 10 : 0,
+    paxPorSalida: paraPax.length ? Math.round((personas / paraPax.length) * 10) / 10 : 0,
     regularesBajoMinimo: regulares.filter(s => s.personas < MINIMO_RENTABLE).length,
     regulares: regulares.length,
   };

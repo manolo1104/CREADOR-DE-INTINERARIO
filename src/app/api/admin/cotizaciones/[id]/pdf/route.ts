@@ -16,8 +16,10 @@ export async function POST(_req: NextRequest, { params }: { params: { id: string
   if (!q) return NextResponse.json({ error: "Esa cotización no existe." }, { status: 404 });
   const quien = (await sesionActual())?.nombre ?? "Desconocido";
   // Bajar el PDF es para mandarlo: si es la primera vez que sale, queda la
-  // fecha de envío (lote 9, 10 nov 2026). No cambia su estado.
-  await prisma.tourQuote.updateMany({ where: { id: q.id, enviadaEn: null }, data: { enviadaEn: new Date() } }).catch(() => {});
+  // fecha de envío (lote 9, 10 nov 2026). No cambia su estado. Solo a un
+  // borrador (revisión: `esPrimerEnvio`): volver a bajar el de una enviada de
+  // antes del lote 9 no es su primer envío.
+  await prisma.tourQuote.updateMany({ where: { id: q.id, enviadaEn: null, status: "borrador" }, data: { enviadaEn: new Date() } }).catch(() => {});
   const oportunidadId = await leadDesdeCotizacion(q.id, "cotizado", quien, `PDF de la cotización ${q.quoteNumber} descargado`);
   await registrarEnBitacora({ accion: "envió", entidad: "cotización", referencia: q.quoteNumber, resumen: `Descargó el PDF de la cotización ${q.quoteNumber}` });
   return NextResponse.json({ ok: true, oportunidadId });
