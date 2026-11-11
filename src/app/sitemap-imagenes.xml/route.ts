@@ -1,7 +1,9 @@
 import { TOURS_DB } from "@/lib/tours";
-import { localizeTour } from "@/lib/i18n/localize";
+import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { PAQUETES_DB } from "@/lib/paquetes";
+import { localizePaquete } from "@/lib/i18n/paquetes.en";
+import { listPostsEn, urlBlogEn } from "@/lib/blogEn";
 import { altsGaleriaDestino } from "@/lib/altImagenes";
 import { urlBlog } from "@/lib/blogDestinoMap";
 import { prisma } from "@/lib/prisma";
@@ -117,7 +119,30 @@ export async function GET() {
     imagenes: p.imagen ? [{ url: abs(p.imagen), titulo: p.nombre }] : [],
   }));
 
-  const entradas = [...tours, ...toursEn, ...destinos, ...paquetes, ...(await blogEntradas())].filter(
+  // 🔴 10–11 nov 2026: la mitad inglesa solo tenía las fichas de tour. La
+  // auditoría vio fuera las 41 fichas de destino y los paquetes en inglés; y
+  // el blog en inglés (archivos de `src/content/blog-en`) es nuevo.
+  const destinosEn: Entrada[] = DESTINOS_DB.map((base) => {
+    const d = localizeDestino(base, "en");
+    const fotos = [d.imagen_hero, ...(d.imagen_galeria ?? [])].filter(Boolean);
+    const alts = altsGaleriaDestino(d, fotos, "en");
+    return {
+      loc: `${BASE}/en/destinos/${d.slug}`,
+      imagenes: fotos.map((src, i) => ({ url: abs(src), titulo: alts[i] })),
+    };
+  });
+
+  const paquetesEn: Entrada[] = PAQUETES_DB.map((base) => {
+    const p = localizePaquete(base, "en");
+    return { loc: `${BASE}/en/paquetes/${p.slug}`, imagenes: p.imagen ? [{ url: abs(p.imagen), titulo: p.nombre }] : [] };
+  });
+
+  const blogEn: Entrada[] = listPostsEn().map((p) => ({
+    loc: `${BASE}${urlBlogEn(p.slug)}`,
+    imagenes: p.coverImageUrl ? [{ url: abs(p.coverImageUrl), titulo: p.coverImageAlt || p.title }] : [],
+  }));
+
+  const entradas = [...tours, ...toursEn, ...destinos, ...destinosEn, ...paquetes, ...paquetesEn, ...(await blogEntradas()), ...blogEn].filter(
     (e) => e.imagenes.length > 0,
   );
 
