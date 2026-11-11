@@ -6,7 +6,7 @@ import type { Locale } from "@/lib/i18n/config";
 import type { ApartadoCarrito } from "./useApartado";
 
 /**
- * El aviso del apartado de 15 minutos (`useApartado`), EN LÍNEA con la página.
+ * El aviso del apartado de 45 minutos (`useApartado`), EN LÍNEA con la página.
  * Nada de otra barra fija: en el celular ya hay una sola abajo y la regla es no
  * encimar flotantes.
  *

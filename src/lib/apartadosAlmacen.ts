@@ -5,7 +5,10 @@ import { prisma } from "./prisma";
 /**
  * Los APARTADOS: los lugares que un carrito tiene tomados mientras su dueño
  * termina de pagar (Manolo, 7 oct 2026: «que aparte los lugares por 15
- * minutos»).
+ * minutos»). Desde el 10 nov 2026 son 45: en Clarity, a un cliente de
+ * Alemania se le venció el apartado mientras leía el carrito (volvió y pagó
+ * al día siguiente). Con ~1 carrito al día y 12 lugares por salida, 45
+ * minutos no le quitan lugar a nadie.
  *
  * Hasta el 4 oct el carrito enseñaba un reloj de 15 minutos que no apartaba
  * nada, y se quitó por engañoso. Este sí aparta: mientras corre, `cupoTour`
@@ -26,7 +29,7 @@ import { prisma } from "./prisma";
  */
 
 /** Lo que dura un apartado desde la última vez que se guardó o se renovó. */
-export const APARTADO_MINUTOS = 15;
+export const APARTADO_MINUTOS = 45;
 const APARTADO_MS = APARTADO_MINUTOS * 60_000;
 
 const PREFIJO = "apartado:";

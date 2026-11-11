@@ -7,7 +7,7 @@ import type { Locale } from "@/lib/i18n/config";
 /**
  * El apartado de los lugares del carrito, del lado del navegador (el servidor:
  * `lib/apartados.ts`). Con los recorridos que ya tienen fecha y gente, le pide
- * al servidor que los aparte 15 minutos; si cambian la fecha, la gente o los
+ * al servidor que los aparte 45 minutos (`APARTADO_MINUTOS`); si cambian la fecha, la gente o los
  * renglones, lo vuelve a pedir con el MISMO id, y si el carrito se queda sin
  * nada que apartar, lo suelta.
  *
@@ -96,7 +96,9 @@ export function useApartado(lineas: LineaParaApartar[], { activo, locale }: { ac
   const [estado, setEstado] = useState<EstadoApartado>("inactivo");
   /** Cuándo vence, ya en la hora de ESTE dispositivo (corregida con la del servidor). */
   const [vence, setVence] = useState<number | null>(null);
-  const [minutos, setMinutos] = useState(15);
+  // El servidor manda los minutos de verdad (`APARTADO_MINUTOS`); esto solo
+  // pinta antes de su respuesta.
+  const [minutos, setMinutos] = useState(45);
   /** Lo que dijo el servidor cuando algo no cabe, con los días que sí tienen lugar. */
   const [mensajes, setMensajes] = useState<string[]>([]);
   /** Qué recorrido y qué fecha no cupieron: para llevar al cliente a ese renglón. */

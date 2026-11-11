@@ -11,7 +11,7 @@ const SIN_CACHE = { "Cache-Control": "no-store" };
 
 /**
  * POST /api/tours/apartar   { id?, lineas: [{ slug, fecha: "AAAA-MM-DD", personas }], locale }
- *   200 { ok: true, id, vence, minutos, ahora }       apartado (o reemplazado) por 15 minutos
+ *   200 { ok: true, id, vence, minutos, ahora }       apartado (o reemplazado) por 45 minutos
  *   409 { ok: false, sinCupo, mensajes, ahora }       algo ya no cabe: no queda NADA apartado
  *   4xx/5xx { ok: false, error, ahora }               sin apartado (y sin reloj en la pantalla)
  *

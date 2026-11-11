@@ -9,7 +9,7 @@ import {
 } from "./apartadosAlmacen";
 
 /**
- * Apartar los lugares de un carrito por 15 minutos (el almacén y el porqué:
+ * Apartar los lugares de un carrito por 45 minutos (el almacén y el porqué:
  * `lib/apartadosAlmacen.ts`). Lo llama `/api/tours/apartar` cada vez que el
  * carrito cambia de fecha, de gente o de recorridos, con el mismo id.
  *
