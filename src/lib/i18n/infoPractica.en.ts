@@ -140,6 +140,12 @@ export interface InfoPracticaContent {
    * Los dos mensajes de WhatsApp del hotel. 🔴 Iban escritos a mano EN ESPAÑOL
    * dentro del JSX, así que quien pulsaba «Check availability» desde `/en`
    * abría WhatsApp con un mensaje en español.
+   *
+   * `waHospedaje` deja los renglones de fechas y personas VACÍOS para que los
+   * llene quien escribe (10 nov 2026): en Clarity, 6 de los 47 clics a
+   * WhatsApp salían de aquí y el mensaje no decía cuándo, así que la primera
+   * respuesta siempre era «¿para qué fechas?». Mismo estilo que
+   * `WA_MESSAGES.tourConFecha` («Me hospedo en: »).
    */
   waHospedaje: string;
   waTarifaTour: string;
@@ -467,7 +473,7 @@ const ES: InfoPracticaContent = {
     `Desde $${NOCHE_DESDE.toLocaleString("es-MX")} MXN/noche (habitación doble)`,
   ],
   consultarDisponibilidad: "Consultar disponibilidad →",
-  waHospedaje: "Hola, me interesa hospedarme en el Hotel Paraíso Encantado Xilitla.",
+  waHospedaje: "Hola, me interesa hospedarme en el Hotel Paraíso Encantado Xilitla.\nLlegada: \nSalida: \nPersonas: \n¿Me recomiendan tours para esos días?",
   waTarifaTour: "Hola, quiero reservar el Hotel Paraíso Encantado con la tarifa especial de tour.",
   otrasOpciones: "Otras opciones",
   xilitlaOtras: [
@@ -1089,7 +1095,7 @@ const EN: InfoPracticaContent = {
     `From $${NOCHE_DESDE.toLocaleString("en-US")} MXN/night (double room)`,
   ],
   consultarDisponibilidad: "Check availability →",
-  waHospedaje: "Hi! I'd like to stay at Hotel Paraíso Encantado in Xilitla.",
+  waHospedaje: "Hi! I'd like to stay at Hotel Paraíso Encantado in Xilitla.\nCheck-in: \nCheck-out: \nGuests: \nCould you recommend tours for those days?",
   waTarifaTour: "Hi! I'd like to book Hotel Paraíso Encantado with the special tour rate.",
   otrasOpciones: "Other options",
   xilitlaOtras: [
