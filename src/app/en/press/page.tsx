@@ -215,7 +215,7 @@ export default function PressPage() {
               ["Group size", `${GRUPO_MAX} people maximum — larger groups by arrangement with the team`],
               ["Catalogue", `${nTours} guided day tours across ${nDestinos} documented sites`],
               ["Certification", "NOM-09 SECTUR certified guides"],
-              ["Reviews", "4.7 average across 161 Google reviews · 10,000+ travelers"],
+              ["Reviews", "4.7 average across 168 Google reviews · 10,000+ travelers"],
             ].map(([k, v]) => (
               <div key={k} className="border-b border-negro/8 pb-4">
                 <dt className="font-dm text-[10px] tracking-[2px] uppercase text-verde-selva mb-1.5">{k}</dt>

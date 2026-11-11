@@ -24,6 +24,30 @@ import type { Locale } from "@/lib/i18n/config";
 
 /** Traducción por autor (el autor es único en la lista). */
 const TRADUCCION_EN: Record<string, { texto: string; fecha: string; recorrido?: string }> = {
+  "Javier Fernández": {
+    fecha: "November 2026",
+    texto:
+      "They gave me good recommendations based on my preferences and timing. Always quick to respond, and it felt like a local experience, away from commercial, mass-market tours. Many thanks to our guides, Angel and Alex, who were great and taught us a lot.",
+  },
+  "Ram Martinez Gutierrez": {
+    fecha: "November 2026",
+    texto:
+      "We recommend Huasteca Potosina Tours — honestly, the service is excellent and the view of the Hoya de la Luz is really good. Our guide Erick did a great job; my mom is very grateful to him because he was so patient with her. His experience impressed us, and you can tell he loves his work. We'll definitely be back to Xilitla.",
+  },
+  "Giovana Jimenez": {
+    fecha: "October 2026",
+    texto:
+      "I highly recommend them. The guides are professional and kind, especially Ángel, who looked after us. The Huasteca Potosina is beautiful. They took us to traditional places to eat — very good. Everything went great.",
+  },
+  // Otra persona que «Erika Martínez» (2021, con acento): otra cuenta y otra foto.
+  "Erika Martinez": {
+    fecha: "October 2026",
+    texto: "Incredible views and the contact you have with nature. Without a doubt one of the best trips I've ever taken.",
+  },
+  "David Diaz": {
+    fecha: "October 2026",
+    texto: "Excellent tour, highly recommended, one of the best experiences.",
+  },
   "jetsay martinez": {
     fecha: "September 2026",
     texto:

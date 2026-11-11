@@ -63,8 +63,49 @@ export interface ResenaReal {
  * atención, logística). Las dos primeras son las únicas recientes con texto; la
  * mayoría del perfil es de 2019. Se dejó fuera la del propio Manolo (2018): una
  * reseña del dueño a su negocio no es prueba de nada.
+ *
+ * 🟢 11 nov 2026: +5 nuevas (Maps → Opiniones → Más recientes; perfil en
+ * 4.7 · 168). Van ARRIBA porque el inicio enseña las 6 primeras y el inglés
+ * las 3 primeras. Fuera: «Óscar» (solo estrellas, sin texto) y «Karina
+ * Hernandez Mtz» (5 estrellas, pero dice que los guías de los primeros tours
+ * fueron «algo frios»; recortarle esa parte sería reescribirla).
  */
 export const RESENAS_REALES: ResenaReal[] = [
+  {
+    autor: "Javier Fernández",
+    fecha: "Noviembre 2026",
+    texto: "Me dieron buenas recomendaciones tomando en cuenta mis preferencias y tiempos. Siempre ágiles y rápidos para respuesta, se sintió la experiencia local dejando de lado tours comerciales y de masa. Muchas gracias a nuestros guías que fueron geniales y nos enseñaron mucho Angel y Alex.",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a/ACg8ocIJ1XX-QzS021kdebhpbc_XU9cuFfyV8ZQAGC7CnHWMI9PgPQ",
+  },
+  {
+    autor: "Ram Martinez Gutierrez",
+    fecha: "Noviembre 2026",
+    texto: "Recomendamos a Huasteca Potosina Tours la verdad es que es un excelente servicio la vista de la hoya de la luz es muy buena El servicio de nuestro guía erick fue muy bueno mi mamá está súper agradecida con el ya que le tuvo mucha paciencia, nos dejó impresionado con su experiencia se nota que le gusta su trabajo Sin duda volveremos a xilitla",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a/ACg8ocJIQMdK5f9JzzMzpILSM6rOzarkBfVlV0hufilGAbgu0y2IEg",
+  },
+  {
+    autor: "Giovana Jimenez",
+    fecha: "Octubre 2026",
+    texto: "Los recomiendo ampliamente. Los guías profesionales y amables. En especial Ángel que nos atendió. La huasteca potosina es preciosa. Nos llevaron a lugares típicos para comer, muy rico.  Todo muy bien.",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjVFKptP2001JCDAK2fUX9wiYkeVg-XLICKOAgvoxs0qDE0vZI1N",
+  },
+  {
+    autor: "Erika Martinez",
+    fecha: "Octubre 2026",
+    texto: "Increíble las vistas y el contacto que se tiene con la naturaleza Sin duda uno de los mejores viajes que he realizado",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a-/ALV-UjXRwLteU5gQ_oK7Z1RHIU-g1eGDjU_Pk2fkJQH_C1qFK6qz0c4",
+  },
+  {
+    autor: "David Diaz",
+    fecha: "Octubre 2026",
+    texto: "Excelente tour, muy recomendable una de las mejores experiencias",
+    estrellas: 5,
+    foto: "https://lh3.googleusercontent.com/a/ACg8ocL5mdlMxcYMGZUWQALCiJ96SXCQsHwrn5eRNKESbmk9XOMR_w",
+  },
   {
     autor: "jetsay martinez",
     fecha: "Septiembre 2026",

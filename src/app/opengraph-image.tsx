@@ -14,6 +14,6 @@ export default function Image() {
     titulo: "Huasteca Potosina",
     subtitulo: "Cascadas, sótanos y selva",
     pills: ["Cascadas turquesas", "Jardín surrealista", "Guías NOM-09", "Todo incluido"],
-    estrellas: "4.7 · 161 reseñas de Google · +10,000 viajeros",
+    estrellas: "4.7 · 168 reseñas de Google · +10,000 viajeros",
   });
 }

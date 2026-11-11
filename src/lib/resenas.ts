@@ -27,7 +27,7 @@
 export const GOOGLE_RATING = 4.7;
 
 /** Número de reseñas en Google. Se actualiza mirando el perfil real. */
-export const GOOGLE_RESENAS = 161;
+export const GOOGLE_RESENAS = 168;
 
 /**
  * El perfil de Google donde se leen ESAS reseñas (el de la operadora).

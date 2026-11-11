@@ -15,7 +15,7 @@ export default function Image() {
     subtitulo: "Certificados NOM-09",
     cifras: [
       ["4.7/5", "Google"],
-      ["161", "Reseñas"],
+      ["168", "Reseñas"],
       ["6+", "Años"],
       ["0", "Incidentes"],
     ],
