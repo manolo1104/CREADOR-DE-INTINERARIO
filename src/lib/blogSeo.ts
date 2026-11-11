@@ -48,12 +48,19 @@ import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { toursCercaDe } from "@/lib/tourMapping";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
 import { temporadaDe, fechaInicioTexto } from "@/lib/temporada";
-import { enAuto } from "@/lib/tiemposDeViaje";
+import { enAuto, horasEnPalabras, MINUTOS_VALLES_XILITLA } from "@/lib/tiemposDeViaje";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { calcTourTotal } from "@/lib/tourBooking";
 import { NOCHE_XANTOLO } from "@/lib/nocheXantolo";
 
 export interface BlogSeoOverride {
+  /**
+   * El título del artículo: su `<h1>`, el `headline` del BlogPosting y el de
+   * las tarjetas de relacionados. Fase 3 SEO (10 nov 2026): en los artículos
+   * que dejan de ser dueños del nombre del lugar, el H1 de la base seguía
+   * pidiendo la misma búsqueda que la ficha.
+   */
+  title?: string;
   metaTitle?: string;
   /** Meta completa, ≤155 caracteres y terminada en frase. */
   metaDescription?: string;
@@ -67,6 +74,14 @@ export interface BlogSeoOverride {
   excerpt?: string;
   /** Reemplazos literales dentro del HTML guardado. */
   contentReplace?: { from: string; to: string }[];
+  /**
+   * HTML que entra justo DESPUÉS del primer párrafo del cuerpo (Fase 3, 10 nov
+   * 2026): los «Datos rápidos» de la página dueña de una búsqueda, o la nota
+   * que manda a la dueña. Después y no antes: el primer párrafo es la
+   * definición que Google suele citar. Se inserta tras los `contentReplace`,
+   * así que ningún `from` puede pisarlo.
+   */
+  bloqueInicial?: string;
   /**
    * Preguntas frecuentes VISIBLES. Se pintan como `<details>` para que
    * `extractFAQs` de la plantilla las recoja en el FAQPage igual que las que
@@ -161,6 +176,17 @@ function minutosDesdeValles(d: Destino): number | null {
   return m ? Number(m[1]) : null;
 }
 
+/**
+ * Como `minutosDesdeValles`, pero también lee "1h", "1h 15min" y "1h 45min"
+ * (Puente de Dios, Golondrinas, Las Pozas), que aquella no entiende. La usan
+ * los «Datos rápidos» de la Fase 3: sin dato en la ficha, no hay fila.
+ */
+function minutosDeValles(d: Destino): number | null {
+  const m = /^~?\s*(?:(\d+)\s*h(?:\s*(\d+)\s*min)?|(\d+)\s*min)\s+desde Valles/.exec(d.como_llegar);
+  if (!m) return null;
+  return m[3] ? Number(m[3]) : Number(m[1]) * 60 + Number(m[2] ?? 0);
+}
+
 /** 105 → "1 h 45 min" · 20 → "20 min". */
 function duracionMin(min: number): string {
   const h = Math.floor(min / 60);
@@ -193,9 +219,12 @@ function si(from: string, to: string | null): { from: string; to: string }[] {
 /** "08:00–17:00" → "de 08:00 a 17:00". */
 const horarioDe = (d: Destino) => `de ${d.horario.replace("–", " a ")}`;
 
-/** "Lunes a Domingo" → "todos los días" · "Solo domingos" → "solo domingos". */
+/**
+ * "Lunes a Domingo" → "todos los días" · "Solo domingos" → "solo domingos".
+ * También "Lun-Dom" (la ficha de Tamul), que salía tal cual: "lun-dom".
+ */
 const diasDe = (d: Destino) =>
-  /^lunes a domingo$/i.test(d.dias_abierto) ? "todos los días" : d.dias_abierto.toLowerCase();
+  /^(lunes a domingo|lun\s*-\s*dom)$/i.test(d.dias_abierto) ? "todos los días" : d.dias_abierto.toLowerCase();
 
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
@@ -492,6 +521,196 @@ const alDia = (antes: string, hoy: string = HOY) => ({
   to: `<em>Última actualización: ${mesAnio(hoy)}.</em>`,
 });
 
+// ── Fase 3 SEO (10 nov 2026): una página dueña por búsqueda ───────────────────
+//
+// Search Console (9 ago–8 nov): en Tamul, Puente de Dios, Micos, Xilitla,
+// Golondrinas, Minas Viejas, Las Pozas, Huichihuayán y Tamtoc rankeaban DOS
+// páginas nuestras —el artículo y la ficha— para el nombre del lugar, y ninguna
+// pasaba del puesto 8–10 (CTR de 0.2 a 1 %). Decisión del coordinador:
+// reversible primero, sin 301 y sin borrar nada. Cada búsqueda tiene UNA
+// dueña; la otra página se queda con una intención distinta y enlaza a la
+// dueña con el nombre del lugar como ancla.
+//   · Dueño = artículo: Tamul, Puente de Dios (la guía; la ficha conserva
+//     «precio y horario»), Micos, «qué hacer en Xilitla», «clima en Xilitla»,
+//     boletos de Las Pozas (precio y horario) y la guía de Las Pozas (la visita).
+//   · Dueño = ficha: Xilitla, Golondrinas, Minas Viejas, Huichihuayán y Tamtoc;
+//     su artículo se queda con la experiencia o la historia.
+// El dueño lleva arriba «Datos rápidos». Todo número sale del catálogo: si una
+// ficha no trae el dato, la fila no sale (nada de "undefined" ni cifras a ojo).
+// 🔴 El tiempo DESDE XILITLA a cada lugar no está en el código (solo hay
+// tiempos desde Ciudad Valles): por eso no hay esa fila.
+
+const HOY_F3 = "2026-11-10";
+
+/** Una fila de «Datos rápidos»: sin dato no hay fila. */
+type FilaDato = [string, string | null];
+
+/** El recuadro: un `<h2>` (entra en el índice «En este artículo») y una tabla de dos columnas. */
+const datosRapidos = (titulo: string, filas: FilaDato[], pie = ""): string => {
+  const trs = filas
+    .filter((f): f is [string, string] => Boolean(f[1]))
+    .map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`)
+    .join("\n");
+  return `<h2 id="datos-rapidos">${titulo}</h2>\n<table>\n<tbody>\n${trs}\n</tbody>\n</table>${pie ? `\n<p>${pie}</p>` : ""}`;
+};
+
+/** «Todos los días de 08:00 a 17:00». */
+const abreDe = (d: Destino) => `${mayusculaInicial(diasDe(d))} ${horarioDe(d)}`;
+
+/** «45 min desde Ciudad Valles» o null si la ficha no da el tiempo. */
+const desdeValles = (d: Destino, cola = ""): string | null => {
+  const m = minutosDeValles(d);
+  return m === null ? null : `${duracionMin(m)} en auto desde Ciudad Valles${cola}`;
+};
+
+/** «<a>Expedición Tamul</a>: desde <strong>$1,550 MXN por persona</strong>, 12 a 13 h, con traslado desde …». */
+const filaTour = (t: Tour) =>
+  `<a href="/tours/${t.slug}">${t.nombreCorto}</a>: desde <strong>${precioDe(t)}</strong>, ${horas(t)} h, con ${trasladoDe(t)}`;
+
+/** «<a>la ficha del Sótano de las Golondrinas</a>»: el enlace de la página que ya no es dueña. */
+const fichaDe = (d: Destino, ancla: string) => `<a href="/destinos/${d.slug}">${ancla}</a>`;
+
+const URL_QUE_HACER_XILITLA = "/blog/hacer-guia-definitiva-para-visitar-xilitla-todo-lo-que-necesitas-saber";
+const URL_CLIMA_XILITLA = "/blog/mejor-temporada-para-ir-el-clima-en-xilitla-cual-es-la-mejor-epoca-par";
+const URL_BOLETOS_POZAS = "/blog/boletos-las-pozas-preguntas-frecuentes-sobre-el-jardin-de-edward-james";
+const URL_GUIA_POZAS = "/blog/las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece";
+
+// "$220 MXN + $300 MXN panga p/p" → "300". Sin esa forma, la meta usa la frase entera.
+const TAMUL_PANGA = /\+\s*\$([\d,]+) MXN panga/.exec(D_TAMUL.precio_entrada)?.[1] ?? null;
+
+const DATOS_TAMUL = datosRapidos("Cascada de Tamul: datos rápidos", [
+  ["Entrada", `${TAMUL_PRECIO_FRASE}. Solo efectivo: no hay cajero en el embarcadero.`],
+  ["Horario", `${abreDe(D_TAMUL)}. ${TAMUL_ULTIMA_PANGA}`],
+  ["Cómo llegar", desdeValles(D_TAMUL, " hasta Tanchachín; de ahí, en panga por el río Tampaón")],
+  ["Mejor época", `${mayusculaInicial(TAMUL_TEMPORADA)}, cuando el agua baja clara; llega a las ${D_TAMUL.mejor_hora}`],
+  ["Tour", filaTour(TAMUL)],
+]);
+
+const DATOS_PUENTE = datosRapidos("Puente de Dios: datos rápidos", [
+  ["Entrada", `<strong>${D_PUENTE.precio_entrada}</strong> por persona, solo efectivo`],
+  ["Horario", abreDe(D_PUENTE)],
+  ["La luz en la cueva", `De ${D_PUENTE.mejor_hora.replace("–", " a ")}`],
+  ["Cómo llegar", desdeValles(D_PUENTE, ", por la autopista a San Luis Potosí")],
+  ["Mejor época", mayusculaInicial(mesesDe(D_PUENTE.temporada_ideal))],
+  ["Tour", filaTour(ACUATICA)],
+]);
+
+const DATOS_MICOS = datosRapidos("Cascadas de Micos: datos rápidos", [
+  ["Entrada", `<strong>${D_MICOS.precio_entrada}</strong> por persona; saltos, tirolesa, kayak y skybike se pagan aparte en el lugar`],
+  ["Horario", abreDe(D_MICOS)],
+  ["Cómo llegar", respuestaFicha(D_MICOS, 2)],
+  ["Seguridad", "Chaleco y casco obligatorios"],
+  ["Mejor época", D_MICOS.temporada_ideal],
+  ["Tour", `${filaTour(ESCALONADO)}; suma las Cascadas de Minas Viejas el mismo día`],
+]);
+
+/** Los recorridos que solo salen de Xilitla, enlazados: «la Gruta de Xilo, la Travesía del Café…». */
+const TOURS_SOLO_XILITLA = lista(
+  SOLO_XILITLA.map((t) => `${t.articulo ? `${t.articulo} ` : ""}<a href="/tours/${t.slug}">${t.nombreCorto}</a>`),
+);
+
+const DATOS_XILITLA = datosRapidos("Xilitla: datos rápidos", [
+  ["Las Pozas", `<strong>$${PA.adulto} MXN</strong> por adulto más <strong>$${PA.guiaEspanol} MXN</strong> de guía obligatoria. ${POZAS_HORARIO}`],
+  ["Cómo llegar", (() => {
+    const m = minutosDeValles(D_XILITLA);
+    return m === null
+      ? null
+      : `En auto: ${duracionMin(m)} desde Ciudad Valles, ${enAuto("cdmx")} desde la Ciudad de México, ${enAuto("san-luis-potosi")} desde San Luis Potosí y ${enAuto("monterrey")} desde Monterrey`;
+  })()],
+  ["Mejor época", `${mayusculaInicial(mesesDe(D_XILITLA.temporada_ideal))}. Mes por mes, en el <a href="${URL_CLIMA_XILITLA}">clima de Xilitla</a>`],
+  ["Tour a Las Pozas", filaTour(SURREALISTA)],
+  ["Otros tours desde Xilitla", SOLO_XILITLA.length ? mayusculaInicial(TOURS_SOLO_XILITLA) : null],
+  ["Lo práctico", `Mapa, cómo llegar y qué llevar, en la ficha de <a href="/destinos/${D_XILITLA.slug}">Xilitla, Pueblo Mágico</a>`],
+]);
+
+// Clima mes a mes (dueño de «clima en Xilitla», 3,393 impresiones al mes y 0
+// clics en la posición 9.5). 🔴 En el código NO hay temperaturas de Xilitla
+// por mes: las de abajo son las de la tabla de temporadas del PROPIO artículo
+// (ya corregida arriba: mayo va con marzo y abril, junio con las lluvias). Las
+// lluvias son las que el artículo describe; el estado del agua sale de
+// `temporada.ts`, la regla que usa todo el sitio.
+const TEMP_XILITLA: Record<number, string> = {
+  1: "18–26 °C", 2: "18–26 °C", 3: "22–30 °C", 4: "22–30 °C", 5: "22–30 °C", 6: "24–32 °C",
+  7: "24–32 °C", 8: "24–32 °C", 9: "24–32 °C", 10: "24–32 °C", 11: "18–26 °C", 12: "18–26 °C",
+};
+const LLUVIA_XILITLA: Record<number, string> = {
+  1: "Escasas", 2: "Escasas", 3: "Escasas", 4: "Escasas",
+  5: "Aún no llegan",
+  6: "Llegan las primeras",
+  7: "Súbitas, de varias horas", 8: "Súbitas, de varias horas",
+  9: "Las más intensas", 10: "Las más intensas; aflojan a fin de mes",
+  11: "Escasas", 12: "Escasas",
+};
+/** El agua de ríos y cascadas en ese mes, según la ventana de `temporada.ts`. */
+const aguaDelMes = (m: number): string => {
+  const n = temporadaDe(m, 15).nombre;
+  const texto =
+    /turquesa/i.test(n) ? "En su turquesa más intenso" :
+    /lluvias/i.test(n) ? "A todo caudal; puede bajar con sedimento" :
+    /mejor temporada/i.test(n) ? "Se está aclarando" :
+    /agua clara/i.test(n) ? "Clara" :
+    null;
+  if (!texto) {
+    aviso(`temporada.ts cambió el nombre de la ventana del mes ${m} ("${n}"): revisa la tabla del clima de Xilitla`);
+    return n;
+  }
+  // Octubre se parte en dos (ver MEJOR_TEMPORADA): lluvias hasta el 29.
+  return m === 10 ? `${texto} hasta el 29; desde el ${INICIO_CLARA}, se aclara` : texto;
+};
+const CLIMA_MES_A_MES =
+  `<h2 id="clima-mes-a-mes">Clima en Xilitla mes a mes</h2>\n` +
+  "<table>\n<thead><tr><th>Mes</th><th>Temperatura</th><th>Lluvias</th><th>Ríos y cascadas</th></tr></thead>\n<tbody>\n" +
+  MESES.map((mes, i) =>
+    `<tr><td>${mayusculaInicial(mes)}</td><td>${TEMP_XILITLA[i + 1]}</td><td>${LLUVIA_XILITLA[i + 1]}</td><td>${aguaDelMes(i + 1)}</td></tr>`,
+  ).join("\n") +
+  "\n</tbody>\n</table>\n" +
+  `<p>La mejor época para Las Pozas y el pueblo va de <strong>${mesesDe(D_XILITLA.temporada_ideal)}</strong>; ` +
+  `el agua más turquesa, de ${MESES_TURQUESA}, que es también cuando más gente hay. ` +
+  `Lo práctico —cómo llegar y qué llevar— está en la ficha de <a href="/destinos/${D_XILITLA.slug}">Xilitla</a>, ` +
+  `y los planes día por día, en <a href="${URL_QUE_HACER_XILITLA}">qué hacer en Xilitla</a>.</p>`;
+
+const DATOS_BOLETOS_POZAS = datosRapidos("Boletos de Las Pozas: datos rápidos", [
+  ["Entrada", `<strong>$${PA.adulto} MXN</strong> por adulto; <strong>$${PA.reducida} MXN</strong> niños de 6 a 12 años y mayores de 65; menores de 6, gratis`],
+  ["Guía obligatoria", `$${PA.guiaEspanol} MXN por persona en español; $${PA.guiaOtroIdioma} MXN en otro idioma`],
+  ["Horario", POZAS_HORARIO],
+  ["Cómo se paga", `Reservas tu turno sin costo en el ${POZAS_SISTEMA} (hasta ${PA.reservaHastaDias} días antes) y pagas en la taquilla el día de tu visita, en efectivo o con tarjeta. ${POZAS_PUNTUAL}`],
+  ["Cómo llegar", desdeValles(D_POZAS, "; el jardín está en Xilitla")],
+  ["Tour", filaTour(SURREALISTA)],
+  ["Para recorrerlo", `Qué ver y cuánto tiempo, en la <a href="${URL_GUIA_POZAS}">guía para visitar Las Pozas</a>`],
+]);
+
+const DATOS_GUIA_POZAS = datosRapidos("Las Pozas: lo básico antes de ir", [
+  ["Dónde", `En Xilitla, San Luis Potosí${desdeValles(D_POZAS) ? `: ${desdeValles(D_POZAS)}` : ""}`],
+  ["Cuánto tiempo", `Unas ${D_POZAS.duracion_hrs} horas; la mejor hora para entrar es de ${D_POZAS.mejor_hora.replace("–", " a ")}`],
+  ["Días", `De ${D_POZAS.dias_abierto.toLowerCase()}`],
+  ["Entrada", `$${PA.adulto} MXN por adulto más la guía obligatoria; todas las tarifas y cómo reservar tu turno, en <a href="${URL_BOLETOS_POZAS}">boletos de Las Pozas</a>`],
+  ["¿Se puede nadar?", "No: el reglamento prohíbe nadar y entrar con traje de baño"],
+  ["Mejor época", mayusculaInicial(mesesDe(D_POZAS.temporada_ideal))],
+  ["Tour", filaTour(SURREALISTA)],
+]);
+
+/**
+ * La nota de arriba de los artículos que ya NO son dueños del nombre del lugar:
+ * dice qué cuenta el artículo y manda a la ficha (el dueño) con su nombre.
+ */
+const notaFicha = (queCuenta: string, d: Destino, ancla: string) =>
+  `<p><em>${queCuenta} La entrada, el horario y cómo llegar, al día, están en ${fichaDe(d, ancla)}.</em></p>`;
+
+// ¿Tienes 4 o 5 días? (itinerario de 3 días). 🔴 Precios con `precioPaq`, el
+// que enseña el sitio: hoy los cuatro paquetes se anuncian «por pareja» y
+// `p.precio` es ese total; dividirlo entre dos anunciaría un precio que el
+// sitio no publica.
+const PAQ_LARGOS = PAQUETES_DB.filter((p) => p.dias >= 4).sort((a, b) => a.dias - b.dias);
+const SECCION_4_5_DIAS = PAQ_LARGOS.length
+  ? `<h2 id="tienes-4-o-5-dias">¿Tienes 4 o 5 días?</h2>\n` +
+    `<p>Con más días la ruta no se aprieta: un recorrido por día y el hotel en Xilitla como base. Nuestros paquetes ${PAQ_INCLUYE}:</p>\n<ul>\n` +
+    PAQ_LARGOS.map((p) =>
+      `  <li><a href="/paquetes/${p.slug}">${p.nombre}</a> (${p.dias} días y ${p.noches} noches): <strong>${precioPaq(p)}</strong>. ` +
+      `${lista(p.tours.map((t) => t.split(" — ")[0].replace(/\s*\(Día \d+\)$/, "")))}.</li>`,
+    ).join("\n") +
+    "\n</ul>\n"
+  : "";
+
 // ── Correcciones por artículo ─────────────────────────────────────────────────
 
 const BLOG_SEO: Record<string, BlogSeoOverride> = {
@@ -502,9 +721,16 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // Expedición Tamul dura 12–13 h y cuesta otra cosa. La ficha del lugar, que
   // se pinta a mitad del mismo artículo, lo contradecía a la vista.
   "cascada-de-tamul-la-guia-definitiva-para-visitarla": {
-    // La anterior se cortaba en "Actualizada con datos".
-    metaDescription:
-      "Cascada de Tamul, la más alta de San Luis Potosí: cuánto cuestan la entrada y la panga, a qué hora llegar, cómo ir en canoa y qué tour la incluye.",
+    // Fase 3 (10 nov 2026): DUEÑO de «cascada de tamul» (28,166 impresiones en
+    // la posición 9.2 contra 907 de la ficha). «cascada de tamul precio» tiene
+    // 3.4 % de CTR: el precio en el resultado funciona, así que va en la meta.
+    // Era "Cascada de Tamul: Guía Definitiva 2026".
+    metaTitle: "Cascada de Tamul: guía 2026, precios y cómo llegar",
+    // La anterior se cortaba en "Actualizada con datos"; la del 29 sep no daba cifras.
+    metaDescription: TAMUL_PANGA
+      ? `Cascada de Tamul, la más alta de San Luis Potosí: entrada $${D_TAMUL.precio_entrada_mxn} y panga $${TAMUL_PANGA} MXN, horario, cómo llegar en canoa y la ${TAMUL.nombreCorto} desde ${dinero(TAMUL.precio)}.`
+      : "Cascada de Tamul, la más alta de San Luis Potosí: cuánto cuestan la entrada y la panga, a qué hora llegar, cómo ir en canoa y qué tour la incluye.",
+    bloqueInicial: DATOS_TAMUL,
     // Era "cascada de tamul Cascada de Tamul cayendo… 2026": palabra clave repetida.
     coverImageAlt:
       "La cascada de Tamul al fondo del cañón, vista desde el río turquesa entre paredes de roca, en Aquismón, San Luis Potosí",
@@ -558,7 +784,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         // La cabecera dice "Actualizado el …" con la fecha de `actualizado`;
         // el cuerpo no puede decir otra.
         from: "<em>Última actualización: mayo de 2026.</em>",
-        to: `<em>Última actualización: ${mesAnio(HOY)}.</em>`,
+        to: `<em>Última actualización: ${mesAnio(HOY_F3)}.</em>`,
       },
       {
         from:
@@ -654,7 +880,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       "nacimiento-de-tambaque-guia-completa",
       "la-huasteca-potosina-en-octubre-clima-rios-y-que-esperar",
     ],
-    actualizado: "2026-09-29",
+    actualizado: HOY_F3,
   },
 
   // ── ¿Cuánto cuesta la Huasteca Potosina? ────────────────────────────────────
@@ -1032,10 +1258,31 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // Viejas desde $1,589" cuando el nuestro es justo ese; el río Tampaón
   // pasando por El Naranjo; y Micos "a menos de 45 min" de El Naranjo.
   "cascadas-de-minas-viejas-guia-completa": {
+    // Fase 3 (10 nov 2026): la DUEÑA de «minas viejas» es la ficha (precio,
+    // horario y cómo llegar). El artículo se queda con lo que la ficha no
+    // cuenta: nadar en las pozas, el rappel y los consejos de quien ya fue.
+    // Era "Cascadas de Minas Viejas: guía completa 2026 — precios, cómo llegar y consejos reales".
+    title: "Cascadas de Minas Viejas: rappel, pozas turquesa y consejos reales",
+    // Era "Cascadas de Minas Viejas: guía completa 2026".
+    metaTitle: "Minas Viejas: rappel, pozas turquesa y consejos reales",
+    metaDescription:
+      "Lo que se vive en las Cascadas de Minas Viejas: nadar en sus pozas turquesa, el rappel, qué llevar y los errores que arruinan la visita a El Naranjo.",
+    bloqueInicial: notaFicha(
+      "Aquí va la experiencia: las pozas, el rappel y lo que conviene saber antes de ir.",
+      D_MINAS,
+      "la ficha de las Cascadas de Minas Viejas",
+    ),
     // Era "…joya escondida de la Huasteca Potosina Huasteca Potosina 2026".
     coverImageAlt:
       "Vista aérea de las cascadas de Minas Viejas cayendo sobre su poza turquesa entre la selva, en El Naranjo, San Luis Potosí",
     contentReplace: [
+      {
+        // Fase 3: cifra sin fuente.
+        from:
+          " Según operadores locales de El Naranjo SLP, durante los meses de julio y agosto las cascadas reciben en promedio más de <strong>9,500 visitantes mensuales</strong>, lo que convierte el acceso temprano en una necesidad, no en una sugerencia.",
+        to: "",
+      },
+      alDia("septiembre de 2026", HOY_F3),
       {
         from: "el sonido constante del río Tampaón hacen",
         to: "el sonido constante del agua hacen",
@@ -1096,7 +1343,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       "siete-cascadas-de-tamasopo-guia-completa",
       "puente-de-dios-tamasopo-el-portal-de-luz-de-la-huasteca",
     ],
-    actualizado: HOY,
+    actualizado: HOY_F3,
   },
 
   // ── Xantolo ────────────────────────────────────────────────────────────────
@@ -1442,16 +1689,62 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to:
           `Nuestros paquetes con hotel, ${PAQ_RANGO}, ${PAQ_INCLUYE}, lo que simplifica la logística.`,
       },
+      // Fase 3 (10 nov 2026): «¿Tienes 4 o 5 días?» antes de los consejos, con
+      // los paquetes largos del catálogo; y las entradas del día 3, que no eran
+      // las de las fichas (Puente de Dios «$70», Tamasopo «$150» y «8 a 18 h»).
+      ...si(
+        "<h2>Consejos prácticos para tu viaje a la Huasteca Potosina</h2>",
+        SECCION_4_5_DIAS ? `${SECCION_4_5_DIAS}\n<h2>Consejos prácticos para tu viaje a la Huasteca Potosina</h2>` : null,
+      ),
+      {
+        from:
+          "Las <strong>Cascadas de Tamasopo</strong> abren de <strong>8:00 a 18:00 hrs</strong> y la entrada cuesta <strong>$150 MXN</strong> para adultos; menores de 3 años entran gratis.",
+        to:
+          `Las <strong>Cascadas de Tamasopo</strong> abren ${diasDe(D_TAMASOPO)} <strong>${horarioDe(D_TAMASOPO)}</strong> y la entrada cuesta <strong>${D_TAMASOPO.precio_entrada}</strong> por persona.`,
+      },
+      {
+        from:
+          "A pocos minutos de Tamasopo se encuentra el <strong>Puente de Dios</strong>, con una entrada de <strong>$70 MXN</strong> por adulto y gratuita para menores de 3 años.",
+        to:
+          'A pocos minutos de Tamasopo se encuentra el <a href="/blog/puente-de-dios-tamasopo-el-portal-de-luz-de-la-huasteca">Puente de Dios</a>, ' +
+          `con una entrada de <strong>${D_PUENTE.precio_entrada}</strong> por persona.`,
+      },
     ],
     tours: [TAMUL.slug],
-    actualizado: HOY,
+    actualizado: HOY_F3,
   },
 
   // ── Mejor temporada para ir a Xilitla ──────────────────────────────────────
   // Los mismos "$8,890 por persona" y un "$3,245 fuera de temporada" que no es
   // ningún paquete; el segundo, dentro de la respuesta del FAQPage.
   "mejor-temporada-para-ir-el-clima-en-xilitla-cual-es-la-mejor-epoca-par": {
+    // Fase 3 (10 nov 2026): DUEÑO de «clima en Xilitla» (3,393 impresiones en
+    // la posición 9.5 y CERO clics). La meta prometía «clima mes a mes» y el
+    // artículo no lo tenía: ahora la tabla va arriba (`CLIMA_MES_A_MES`).
+    // Era "Clima en Xilitla: mejor temporada para ir 2026".
+    metaTitle: "Clima en Xilitla mes a mes y mejor época para ir (2026)",
+    metaDescription:
+      "Clima en Xilitla mes a mes: temperatura, lluvias y cómo bajan ríos y cascadas en cada temporada, cuándo hay menos gente y qué ropa llevar en 2026.",
+    bloqueInicial: CLIMA_MES_A_MES,
     contentReplace: [
+      // Fase 3: tres cifras de afluencia sin fuente. La de «menos gente» se
+      // dice con `temporada.ts` (y marzo NO es de poca gente: es de la más).
+      {
+        from:
+          " Como dato concreto: según operadores locales, más de <strong>12,000 visitantes</strong> recorren la ruta de Xilitla cada mes de julio de 2026, lo que convierte a esa fecha en la más concurrida y también en la más impredecible por las precipitaciones.",
+        to: "",
+      },
+      {
+        from:
+          "Los meses de noviembre, febrero y marzo concentran la menor afluencia del año, con días en que Las Pozas reciben menos de <strong>200 visitantes</strong> diarios frente a los más de <strong>800</strong> que se registran en julio y agosto de 2026.",
+        to:
+          `De noviembre a febrero hay menos gente que de ${MESES_TURQUESA}, cuando el agua está más turquesa y llegan más viajeros; en diciembre, las fechas de fin de año se llenan primero.`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from: " Febrero es el mes con menor afluencia turística de todo el año 2026.",
+        to: "",
+      },
       {
         from:
           "Los paquetes de 3 días y 2 noches parten desde <strong>$8,890 MXN</strong> por persona en temporada alta y desde <strong>$3,245 MXN</strong> fuera de temporada.",
@@ -1462,7 +1755,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "Los paquetes completos de 3 días y 2 noches en la Huasteca Potosina arrancan desde <strong>$8,890 MXN</strong> por persona en temporada alta.",
         to: `${mayusculaInicial(PAQ_CORTO_FRASE)}.`,
       },
-      alDia("mayo de 2026", HOY_POZAS),
+      alDia("mayo de 2026", HOY_F3),
       // 🔴 Temporada (7 oct 2026): decía «seca de noviembre a abril» y
       // «lluvias de mayo a octubre», con mayo en lluvias cuando es mes del
       // turquesa más intenso. Va con `temporada.ts`, como «Mejor época». El
@@ -1512,7 +1805,10 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: POZAS_PARRAFO,
       },
     ],
-    actualizado: HOY_POZAS,
+    // Sin `tours`, la tarjeta la elegía `inferTour` por palabras: el clima de
+    // Xilitla se lee para planear Las Pozas, que va en la Ruta Surrealista.
+    tours: [SURREALISTA.slug],
+    actualizado: HOY_F3,
   },
 
   // ── Equipaje para la selva ─────────────────────────────────────────────────
@@ -1581,7 +1877,22 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // comida": no es ninguno de los nuestros (el hotel es en Xilitla y el precio
   // es por pareja). También en el FAQPage.
   "xilitla-con-ninos-actividades-para-ninos-en-xilitla-viajando": {
+    // Fase 3 (10 nov 2026): peleaba «qué hacer en Xilitla» (posición 9.8) con
+    // la guía general, que es la dueña. Se queda con viajar en familia y le
+    // pasa la búsqueda general con un enlace arriba.
+    // Era "Xilitla con niños: actividades familiares 2026".
+    metaTitle: "Xilitla con niños 2026: planes en familia y precios",
+    bloqueInicial:
+      `<p><em>Esta guía es para viajar con niños. Si viajas sin ellos, la general es <a href="${URL_QUE_HACER_XILITLA}">qué hacer en Xilitla</a>, ` +
+      `y lo práctico del pueblo —cómo llegar y qué llevar— está en la ficha de <a href="/destinos/${D_XILITLA.slug}">Xilitla</a>.</em></p>`,
     contentReplace: [
+      ...si(
+        // Va dentro del FAQPage: «100 km y 2 horas»; la ficha del pueblo dice 90 min.
+        "Xilitla se ubica a aproximadamente <strong>100 km de Ciudad Valles</strong> por carretera, con un trayecto de alrededor de <strong>2 horas</strong>.",
+        MIN_XILITLA === null
+          ? null
+          : `Xilitla está a <strong>${duracionMin(MIN_XILITLA)}</strong> de Ciudad Valles por carretera.`,
+      ),
       {
         from:
           "Los grupos familiares que llevamos cada temporada prefieren los paquetes de <strong>5 días desde Ciudad Valles</strong>, que incluyen <strong>4 noches de alojamiento en hoteles de categoría 3 estrellas o superior</strong>, desayunos, <strong>5 excursiones con comida</strong>, guías especializados y entradas a todos los sitios. Estos tours están diseñados para niños a partir de <strong>6 años</strong>.",
@@ -1632,7 +1943,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: `<p>No hay que esperar a los 6 años: los menores de 6 entran sin costo y los niños de 6 a 12 pagan <strong>$${PA.reducida} pesos</strong> en 2026. La entrada ${POZAS_SE_PAGA}.</p>`,
       },
     ],
-    actualizado: HOY_POZAS,
+    actualizado: HOY_F3,
   },
 
   // ── Tamtoc ─────────────────────────────────────────────────────────────────
@@ -1640,6 +1951,18 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // extranjeros ~$95"; el artículo, "$75 general". Y vendía un "tour combinado
   // Tamtoc + Taninul desde $3,245 con alojamiento" que no existe.
   "zona-arqueologica-tamtoc-zona-arqueologica-de-tamtoc-histori": {
+    // Fase 3 (10 nov 2026): la DUEÑA de «zona arqueológica tamtoc» es la ficha
+    // (días, entrada y cómo llegar). El artículo se queda con la historia y
+    // qué ver, que es lo que su H1 ya promete.
+    // Era "Zona Arqueológica de Tamtoc: Guía Completa 2026".
+    metaTitle: "Tamtoc: historia huasteca y qué ver en la zona arqueológica",
+    metaDescription:
+      "La historia de Tamtoc, el asentamiento más importante de la cultura huasteca: el Petroglifo de la Mujer, sus plataformas ceremoniales y qué ver al ir.",
+    bloqueInicial: notaFicha(
+      "Aquí va la historia del sitio y qué ver en él.",
+      D_TAMTOC,
+      "la ficha de la Zona Arqueológica Tamtoc",
+    ),
     contentReplace: [
       {
         from: "La entrada general cuesta <strong>$75 MXN</strong> y los domingos es completamente gratuita para todos los mexicanos.",
@@ -1663,7 +1986,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: "",
       },
     ],
-    actualizado: HOY,
+    actualizado: HOY_F3,
   },
 
   // ── Boletos de Las Pozas ───────────────────────────────────────────────────
@@ -1671,8 +1994,14 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // meta repetía "desde $125". Y una "excursión desde Ciudad Valles desde
   // $1,532" que es el combo inventado.
   "boletos-las-pozas-preguntas-frecuentes-sobre-el-jardin-de-edward-james": {
+    // Fase 3 (10 nov 2026): DUEÑO de precio, boletos y horario de Las Pozas
+    // (posición 5.6–7.3 en «boletos para las pozas»). La visita en sí es de la
+    // guía de Las Pozas, y la ficha del jardín queda como tarjeta práctica.
+    // Era "Boletos Las Pozas 2026: Horarios y Tips de Entrada".
+    metaTitle: "Boletos Las Pozas 2026: precio, horario y cómo reservar",
     metaDescription:
-      `Todo sobre boletos las pozas en 2026: entrada de ${D_POZAS.precio_entrada} por adulto, horarios, tips de entrada y cómo llegar al Jardín de Edward James.`,
+      `Boletos de Las Pozas 2026: $${PA.adulto} MXN adulto, $${PA.reducida} niños y mayores de 65, guía $${PA.guiaEspanol}. Abre de miércoles a lunes de ${PA.abre} a ${PA.cierra}. Cómo reservar tu turno.`,
+    bloqueInicial: DATOS_BOLETOS_POZAS,
     contentReplace: [
       {
         from:
@@ -1752,10 +2081,10 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "La guía obligatoria cuesta <strong>$30 MXN</strong> adicionales por persona, o <strong>$250 MXN</strong> para grupos de hasta 10 personas.",
         to: `La guía obligatoria cuesta <strong>$${PA.guiaEspanol} MXN</strong> adicionales por persona en español, o <strong>$${PA.guiaOtroIdioma} MXN</strong> en otro idioma. ${POZAS_RESERVA}`,
       },
-      alDia("mayo de 2026", HOY_POZAS),
+      alDia("mayo de 2026", HOY_F3),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY_POZAS,
+    actualizado: HOY_F3,
   },
 
   // ── Las Pozas ──────────────────────────────────────────────────────────────
@@ -1767,6 +2096,14 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // (el reglamento lo prohíbe), recomendaba sandalias «si planeas bañarte» y
   // nombraba estructuras sin fuente («Paraguas Abiertos»).
   "las-pozas-xilitla-las-pozas-de-edward-james-todo-lo-que-nece": {
+    // Fase 3 (10 nov 2026): DUEÑO de la VISITA (qué ver, cuánto tiempo, la
+    // mejor hora). Precio y boletos son del artículo de boletos, que rankea
+    // mejor para eso; «jardín surrealista costo» se repartía entre los dos.
+    // Era "Las Pozas Xilitla: Guía Completa 2026".
+    metaTitle: "Las Pozas Xilitla: cómo visitar el jardín surrealista",
+    metaDescription:
+      "Cómo visitar Las Pozas de Edward James en Xilitla: qué ver en el jardín surrealista, cuánto tiempo recorrerlo, la mejor hora, qué llevar y dónde dormir.",
+    bloqueInicial: DATOS_GUIA_POZAS,
     contentReplace: [
       {
         from:
@@ -1815,12 +2152,20 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       },
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY_POZAS,
+    actualizado: HOY_F3,
   },
 
   // ── Puente de Dios ─────────────────────────────────────────────────────────
   // "Menos de $50" y "$40–$50" contra la ficha del mismo artículo.
   "puente-de-dios-tamasopo-el-portal-de-luz-de-la-huasteca": {
+    // Fase 3 (10 nov 2026): DUEÑO de la guía del Puente de Dios. La ficha se
+    // queda con «precio y horario» (gana la cola larga con «Precio $150 MXN y
+    // Horarios»), así que aquí el gancho es la luz y cómo llegar, no el precio.
+    // Era "Puente de Dios Tamasopo: guía completa 2026".
+    metaTitle: "Puente de Dios Tamasopo: guía 2026 y cómo llegar",
+    metaDescription:
+      `Guía del Puente de Dios en Tamasopo: la poza azul bajo el arco de roca, a qué hora entra la luz, cómo llegar desde Ciudad Valles y el tour de un día.`,
+    bloqueInicial: DATOS_PUENTE,
     contentReplace: [
       {
         from: "El acceso tiene un costo de entrada menor a <strong>$50 MXN</strong> por persona en 2026",
@@ -1834,9 +2179,60 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "La entrada cuesta entre <strong>$40 y $50 MXN</strong> por persona.",
         to: `La entrada cuesta <strong>${D_PUENTE.precio_entrada}</strong> por persona.`,
       },
-      alDia("mayo de 2026"),
+      alDia("mayo de 2026", HOY_F3),
     ],
-    actualizado: HOY,
+    // Sin `tours`, la tarjeta la elegía `inferTour` por palabras.
+    tours: [ACUATICA.slug],
+    actualizado: HOY_F3,
+  },
+
+  // ── Cascadas de Micos ──────────────────────────────────────────────────────
+  // Fase 3 (10 nov 2026): DUEÑO de «cascadas de micos». No tenía ninguna
+  // corrección y contradecía a la ficha que se pinta a media página: «abre de
+  // 6:00 am a 11:00 pm» (la ficha: 08:00–18:00), «no hay transporte público»
+  // (hay combis cada 30 min) y «15 minutos» desde Valles (la ficha: 20). Y unos
+  // «10,000 visitantes por mes» que no salen de ningún dato.
+  "cascadas-de-micos-guia-completa-para-tu-visita": {
+    // Era "Cascadas de Micos: Guía Completa 2026 | Huasteca Potosina".
+    metaTitle: "Cascadas de Micos 2026: guía de saltos y cómo llegar",
+    metaDescription:
+      `Guía de las Cascadas de Micos, a 20 min de Ciudad Valles: saltos, tirolesa y skybike, entrada ${D_MICOS.precio_entrada}, horario y el tour que suma Minas Viejas.`,
+    bloqueInicial: DATOS_MICOS,
+    contentReplace: [
+      {
+        from:
+          " Según operadores locales de la región, el paraje recibe más de <strong>10,000 visitantes por mes durante la temporada alta de julio y agosto de 2026</strong>, lo que convierte la planificación anticipada en algo esencial.",
+        to: "",
+      },
+      {
+        from: "El paraje opera <strong>todos los días de 6:00 am a 11:00 pm</strong>.",
+        to: `El paraje abre <strong>${diasDe(D_MICOS)} ${horarioDe(D_MICOS)}</strong>.`,
+      },
+      {
+        from:
+          '<a href="https://www.huasteca-potosina.com/tours" title="tours cascadas de micos Huasteca Potosina">reserva el tour a cascadas de micos</a> con anticipación.',
+        to: `reserva el <a href="/tours/${ESCALONADO.slug}">${ESCALONADO.nombreCorto}</a>, que suma Micos y Minas Viejas en un día, con anticipación.`,
+      },
+      {
+        from:
+          "no existe transporte público directo a <strong>micos huasteca potosina</strong>; la mejor opción es auto propio o traslado privado desde Ciudad Valles hacia El Naranjo.",
+        to: `${minuscula(respuestaFicha(D_MICOS, 2))} También se llega a <strong>micos huasteca potosina</strong> en auto propio, desde Ciudad Valles rumbo a El Naranjo.`,
+      },
+      {
+        // Va dentro del FAQPage.
+        from:
+          "No hay transporte público directo. La ruta en auto toma la dirección hacia El Naranjo desde Ciudad Valles. El trayecto dura aproximadamente <strong>15 minutos</strong> en condiciones normales de tráfico.",
+        to: `${respuestaFicha(D_MICOS, 2)} En auto, desde Ciudad Valles se toma la dirección hacia El Naranjo.`,
+      },
+      alDia("mayo de 2026", HOY_F3),
+    ],
+    tours: [ESCALONADO.slug],
+    relacionados: [
+      "cascadas-de-minas-viejas-guia-completa",
+      "puente-de-dios-tamasopo-el-portal-de-luz-de-la-huasteca",
+      "cascada-de-tamul-la-guia-definitiva-para-visitarla",
+    ],
+    actualizado: HOY_F3,
   },
 
   // ── Cascada Los Comales ────────────────────────────────────────────────────
@@ -1880,7 +2276,46 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // "Guía comunitario desde $250" contra la ficha ($100), y "tours de $100 a
   // $1,500" que no son de nadie. No lo operamos (ver `temporada.ts`).
   "sotano-de-las-golondrinas-la-cueva-mas-profunda-de-mexico": {
+    // Fase 3 (10 nov 2026): la DUEÑA de «sótano de las golondrinas» es la
+    // ficha (posición 7.7 contra 9.6 de este artículo). El artículo se queda
+    // con la experiencia: cómo se vive el vuelo de las aves. Manolo confirmó
+    // (10 nov) que hay función doble: salen al amanecer y regresan al
+    // atardecer; el artículo solo hablaba del amanecer.
+    // Era "Sótano de las Golondrinas: La Cueva más Profunda de México".
+    title: "Sótano de las Golondrinas: así se vive el vuelo de las aves",
+    // Era "Sótano de las Golondrinas: Guía Completa 2026".
+    metaTitle: "Sótano de las Golondrinas: así se vive el vuelo de las aves",
+    metaDescription:
+      "Cómo se vive el Sótano de las Golondrinas: la salida de los vencejos al amanecer, su regreso al atardecer, el borde del abismo de 512 m y qué llevar.",
+    bloqueInicial: notaFicha(
+      "Aquí te contamos cómo se vive el sótano: las aves salen al amanecer y regresan al atardecer.",
+      D_GOLONDRINAS,
+      "la ficha del Sótano de las Golondrinas",
+    ),
     contentReplace: [
+      {
+        from: "<h3>Los vencejos golondrinas: el espectáculo del amanecer</h3>",
+        to: "<h3>Los vencejos golondrinas: el espectáculo del amanecer y del atardecer</h3>",
+      },
+      {
+        from:
+          "Si llueve o hay demasiado frío, las aves no salen, por lo que vale la pena consultar el clima antes de madrugar.</p>",
+        to:
+          "Si llueve o hay demasiado frío, las aves no salen, por lo que vale la pena consultar el clima antes de madrugar. " +
+          "Y el espectáculo tiene segunda función: al atardecer las aves regresan al sótano.</p>",
+      },
+      {
+        // Va dentro del FAQPage.
+        from: "<p>El vuelo masivo ocurre al amanecer. En verano",
+        to: "<p>Hay dos momentos: al amanecer, cuando las aves salen, y al atardecer, cuando regresan al sótano. Para la salida, en verano",
+      },
+      ...si(
+        // Va dentro del FAQPage. «1 h 45 min» era otro lugar: la ficha dice 1 h 15 min.
+        "El trayecto en auto tarda aproximadamente <strong>1 hora 45 minutos</strong>.",
+        minutosDeValles(D_GOLONDRINAS) === null
+          ? null
+          : `El trayecto en auto tarda aproximadamente <strong>${duracionMin(minutosDeValles(D_GOLONDRINAS)!)}</strong>.`,
+      ),
       {
         from:
           "El acceso con guía comunitario parte desde <strong>$250 MXN</strong> por persona, y los tours completos van de <strong>$100 a $1,500 MXN</strong> según lo que incluyan.",
@@ -1898,7 +2333,10 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: `La entrada cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona.`,
       },
     ],
-    actualizado: HOY,
+    // No operamos Golondrinas (ver `temporada.ts`): la tarjeta ofrece el tour
+    // que sí va al sótano vecino, el de las Huahuas, como ya dice el texto.
+    tours: [TAMUL.slug],
+    actualizado: HOY_F3,
   },
 
   // ── Golondrinas vs Huahuas ─────────────────────────────────────────────────
@@ -2314,7 +2752,41 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // El combo, esta vez a $1,532 "con impuestos", tres veces (una en el
   // FAQPage) y en la tabla.
   "hacer-guia-definitiva-para-visitar-xilitla-todo-lo-que-necesitas-saber": {
+    // Fase 3 (10 nov 2026): DUEÑO de «qué hacer en Xilitla» (posición 8.6–10.1,
+    // repartida con el de niños). «xilitla» a secas es de la ficha del pueblo y
+    // «clima en Xilitla», del artículo del clima: aquí se enlazan los dos.
+    // Era "Qué hacer en Xilitla: guía completa 2026".
+    metaTitle: "Qué hacer en Xilitla 2026: guía con precios y tours",
+    metaDescription:
+      `Qué hacer en Xilitla en 2026: Las Pozas ($${PA.adulto} MXN, cierra los martes), museos, cascadas y tours desde el pueblo, con horarios y precios al día.`,
+    bloqueInicial: DATOS_XILITLA,
     contentReplace: [
+      // Fase 3: los tiempos de carretera salen de `tiemposDeViaje.ts` (los de
+      // Manolo). Decía «poco más de dos horas» y «2 h 30 min» desde Valles,
+      // «5 h 30 min» desde Monterrey y «4 horas pasando por Ciudad Valles»
+      // desde San Luis Potosí, que va por otra ruta.
+      {
+        from: "a poco más de dos horas de Ciudad Valles,",
+        to: `a ${horasEnPalabras(MINUTOS_VALLES_XILITLA)} de Ciudad Valles,`,
+      },
+      {
+        from: "toma alrededor de <strong>2 horas y 30 minutos</strong> por carretera de montaña",
+        to: `toma alrededor de <strong>${horasEnPalabras(MINUTOS_VALLES_XILITLA)}</strong> por carretera de montaña`,
+      },
+      ...si(
+        "el tiempo estimado en carretera es de <strong>6 a 7 horas</strong> sin escalas.",
+        enAuto("cdmx") ? `el tiempo estimado en carretera es de unas <strong>${enAuto("cdmx").replace(/^~\s*/, "")}</strong> sin escalas.` : null,
+      ),
+      ...si(
+        "baja por la sierra en aproximadamente <strong>5 horas y 30 minutos</strong>.",
+        enAuto("monterrey") ? `baja por la sierra en unas <strong>${enAuto("monterrey").replace(/^~\s*/, "")}</strong>.` : null,
+      ),
+      ...si(
+        "el recorrido toma cerca de <strong>4 horas</strong> pasando por Ciudad Valles.",
+        enAuto("san-luis-potosi")
+          ? `el recorrido toma unas <strong>${enAuto("san-luis-potosi").replace(/^~\s*/, "")}</strong>, por Rioverde y Jalpan: esa ruta no pasa por Ciudad Valles.`
+          : null,
+      ),
       {
         from:
           "Si prefieres un paquete organizado desde Ciudad Valles que incluya el jardín y el Sótano de las Huahuas, el costo es de <strong>$1,532 MXN por persona con impuestos</strong> en 2026. Este precio contempla transporte, guía bilingüe y acceso a ambas atracciones, lo que resulta competitivo para quienes viajan sin vehículo propio.",
@@ -2375,10 +2847,10 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           "La entrada en taquilla cuesta <strong>$180 MXN adultos</strong> y <strong>$120 MXN niños</strong> (6–12 años). Comprando en línea el precio baja a <strong>$170 MXN</strong> y <strong>$115 MXN</strong>.",
         to: `La entrada cuesta <strong>$${PA.adulto} MXN adultos</strong> y <strong>$${PA.reducida} MXN niños</strong> (6–12 años) y mayores de 65, y ${POZAS_SE_PAGA}: por ahora no hay venta en línea.`,
       },
-      alDia("septiembre de 2026", HOY_POZAS),
+      alDia("septiembre de 2026", HOY_F3),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY_POZAS,
+    actualizado: HOY_F3,
   },
 
   // ── Rafting en el Tampaón ──────────────────────────────────────────────────
@@ -2424,8 +2896,19 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
   // "Paquetes desde $1,800" (también en el FAQPage): el tour que pasa por ahí
   // es la Ruta Surrealista. Y "$20 a $30" contra la ficha del artículo.
   "nacimiento-de-huichihuayan-la-joya-escondida-de-la-huasteca": {
+    // Fase 3 (10 nov 2026): la DUEÑA del nombre del lugar es la ficha
+    // (posición 2.9 contra 10.3 de este artículo). El artículo se queda con
+    // la experiencia de nadar ahí. Huichihuayán es de Huehuetlán, cerca de
+    // Xilitla (confirmado por Manolo el 10 nov).
+    // Era "Nacimiento de Huichihuayan 2026 | Guía Completa"; ahora repite su H1.
+    metaTitle: "Nacimiento de Huichihuayán: la joya escondida de la Huasteca",
     metaDescription:
-      `Nacimiento de Huichihuayan en 2026: cómo llegar, entrada de ${D_HUICHI.precio_entrada}, horarios y consejos para disfrutar este ojo de agua azul.`,
+      "Cómo es nadar en el Nacimiento de Huichihuayán, el ojo de agua azul de Huehuetlán, cerca de Xilitla: qué esperar, consejos y la ruta que pasa por ahí.",
+    bloqueInicial: notaFicha(
+      "Aquí te contamos cómo es nadar en el nacimiento y qué esperar.",
+      D_HUICHI,
+      "la ficha del Nacimiento de Huichihuayán",
+    ),
     contentReplace: [
       {
         from:
@@ -2449,10 +2932,10 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from: "Los tours desde Ciudad Valles que incluyen el sitio parten desde <strong>$1,800 MXN por persona</strong> con impuestos incluidos.",
         to: `Nuestra ${SURREALISTA.nombreCorto}, que pasa por el nacimiento, cuesta <strong>${precioDe(SURREALISTA)}</strong> con ${trasladoDe(SURREALISTA)}.`,
       },
-      alDia("abril de 2026"),
+      alDia("abril de 2026", HOY_F3),
     ],
     tours: [SURREALISTA.slug],
-    actualizado: HOY,
+    actualizado: HOY_F3,
   },
 
   // ── Historia de Xilitla ────────────────────────────────────────────────────
@@ -2755,6 +3238,14 @@ function insertaFaqs(html: string, faqs: { q: string; a: string }[]): string {
   return `${html.slice(0, corte)}\n${bloque}${html.slice(corte)}`;
 }
 
+/** Mete `bloque` tras el primer `</p>` del cuerpo (o al principio si no hay párrafos). */
+function insertaTrasPrimerParrafo(html: string, bloque: string): string {
+  const fin = html.indexOf("</p>");
+  if (fin === -1) return `${bloque}\n${html}`;
+  const corte = fin + "</p>".length;
+  return `${html.slice(0, corte)}\n\n${bloque}\n${html.slice(corte)}`;
+}
+
 // ── Aplicación ────────────────────────────────────────────────────────────────
 
 /**
@@ -2766,6 +3257,7 @@ export function aplicaBlogSeo<
   T extends {
     slug: string;
     content?: string | null;
+    title?: string | null;
     metaTitle?: string | null;
     metaDescription?: string | null;
     coverImageAlt?: string | null;
@@ -2777,6 +3269,8 @@ export function aplicaBlogSeo<
   if (!o) return post;
 
   const next: T = { ...post };
+  // Solo si la fila trae título: las parciales que no lo piden no lo ganan.
+  if (o.title !== undefined && typeof next.title === "string") next.title = o.title;
   if (o.metaTitle !== undefined) next.metaTitle = o.metaTitle;
   if (o.metaDescription !== undefined) next.metaDescription = o.metaDescription;
   if (o.coverImageAlt !== undefined) next.coverImageAlt = o.coverImageAlt;
@@ -2794,6 +3288,7 @@ export function aplicaBlogSeo<
       }
       c = c.split(from).join(to);
     }
+    if (o.bloqueInicial) c = insertaTrasPrimerParrafo(c, o.bloqueInicial);
     if (o.faqs?.length) c = insertaFaqs(c, o.faqs);
     next.content = c;
   }
