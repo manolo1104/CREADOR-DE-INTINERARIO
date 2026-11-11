@@ -34,11 +34,11 @@ const INCLUIDO: { Icon: LucideIcon; text: string }[] = [
   { Icon: Zap,           text: "Notas del guía y lo que NO hacer en cada lugar" },
 ];
 
-const TESTIMONIOS = [
-  { nombre: "Ana R.", ciudad: "CDMX", texto: "Viajé sin haber planeado nada antes. La guía me ahorró 3 días de investigación y no cometí ningún error clásico.", estrellas: 5 },
-  { nombre: "Carlos M.", ciudad: "Monterrey", texto: "Los tips de la hora exacta para Tamul y el Sótano de Golondrinas hicieron la diferencia. Fotos que no hubiera conseguido por mi cuenta.", estrellas: 5 },
-  { nombre: "Familia Soto", ciudad: "Guadalajara", texto: "Viajamos con tres niños. El itinerario de 5 días fue perfecto — ritmo ideal, sin agotarnos.", estrellas: 5 },
-];
+// 🔴 Aquí vivían tres «testimonios» (Ana R., Carlos M., Familia Soto) que no
+// salen de ninguna fuente: no están en el perfil de Google ni en ningún correo.
+// Se QUITARON el 11 nov 2026 (regla de Manolo del 26 oct: lo inventado se
+// quita, no se maquilla). Si un día hay comentarios reales de la guía, van aquí
+// literales, con permiso de quien los escribió.
 
 // Las MISMAS que el FAQPage de layout.tsx (Google exige que el schema se vea).
 const FAQS = [
@@ -157,26 +157,6 @@ export default function GuiaPage() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Testimonios */}
-      <section className="max-w-4xl mx-auto px-6 py-20">
-        <h2 className="font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(24px,3.5vw,40px)" }}>
-          Viajeros que ya la usaron
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {TESTIMONIOS.map((t) => (
-            <div key={t.nombre} className="border border-white/6 p-6 bg-white/2">
-              <div className="flex gap-0.5 mb-4">
-                {Array.from({ length: t.estrellas }).map((_, i) => (
-                  <span key={i} className="text-dorado text-sm">★</span>
-                ))}
-              </div>
-              <p className="text-sm text-crema/65 leading-relaxed mb-4 italic">"{t.texto}"</p>
-              <p className="text-[10px] tracking-[2px] uppercase text-crema/35">{t.nombre} · {t.ciudad}</p>
-            </div>
-          ))}
         </div>
       </section>
 

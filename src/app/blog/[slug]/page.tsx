@@ -21,6 +21,14 @@ import { slugEnDe, urlBlogEn } from "@/lib/blogEn";
 export const dynamic = "force-dynamic";
 
 const SITE = "https://www.huasteca-potosina.com";
+
+/**
+ * Marca invisible al final de cada mitad del cuerpo. El traductor del robot
+ * (`blog-agent/traducir-en.js`) corta ahí en vez de contar `<div>`: contar
+ * fallaba en cuanto una mitad traía un recuadro sin cerrar y se llevaba la
+ * plantilla entera (11 nov 2026).
+ */
+const FIN_CUERPO = "<!--fin-cuerpo-->";
 const RAILWAY_REGEX = /https:\/\/creador-de-intinerario-production\.up\.railway\.app/gi;
 
 /**
@@ -365,12 +373,28 @@ function extractFAQs(html: string): { question: string; answer: string }[] {
   return results;
 }
 
-/** Split HTML at approximately the midpoint on a clean tag boundary */
+/**
+ * Parte el HTML cerca de la mitad, en un cierre limpio Y fuera de cualquier
+ * `<div>` del artículo.
+ *
+ * 🔴 11 nov 2026: cortaba en el primer `</p>` pasada la mitad aunque cayera
+ * DENTRO de un recuadro (`<div class="cta-block cta-tours">` en la guía de
+ * Tamul): el navegador cerraba el recuadro a la fuerza, la tarjeta del tour y
+ * el formulario quedaban metidos entre su título y su botón, y el botón salía
+ * huérfano en la segunda mitad. Ahora solo corta donde los `<div>` abiertos y
+ * cerrados cuadran.
+ */
 function splitAtMidpoint(html: string): [string, string] {
   const mid = Math.floor(html.length / 2);
-  for (const marker of ["</p>", "</h2>", "</h3>", "</ul>", "</ol>"]) {
-    const idx = html.indexOf(marker, mid);
-    if (idx !== -1) return [html.slice(0, idx + marker.length), html.slice(idx + marker.length)];
+  const nivel = (hasta: number) =>
+    (html.slice(0, hasta).match(/<div\b/gi)?.length ?? 0) - (html.slice(0, hasta).match(/<\/div>/gi)?.length ?? 0);
+  for (const marker of ["</p>", "</h2>", "</h3>", "</ul>", "</ol>", "</div>", "</table>"]) {
+    let idx = html.indexOf(marker, mid);
+    while (idx !== -1) {
+      const corte = idx + marker.length;
+      if (nivel(corte) === 0) return [html.slice(0, corte), html.slice(corte)];
+      idx = html.indexOf(marker, corte);
+    }
   }
   return [html, ""];
 }
@@ -817,7 +841,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               {tarjetaViaje === "arriba" && <TarjetaViajeCdmx origen={`blog-${post.slug}`} className="mb-10" />}
 
               {/* Content first half */}
-              <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentFirst }} />
+              <div className={proseClass} dangerouslySetInnerHTML={{ __html: `${contentFirst}${FIN_CUERPO}` }} />
 
               {/* El MISMO tour de la barra lateral, dentro del artículo. La
                   barra está oculta por CSS bajo 1024 px y el 88 % del tráfico
@@ -839,7 +863,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
 
               {/* Content second half */}
               {contentSecond && (
-                <div className={proseClass} dangerouslySetInnerHTML={{ __html: contentSecond }} />
+                <div className={proseClass} dangerouslySetInnerHTML={{ __html: `${contentSecond}${FIN_CUERPO}` }} />
               )}
 
               {/* Los recorridos que `blogSeo.ts` fija para este artículo, con
