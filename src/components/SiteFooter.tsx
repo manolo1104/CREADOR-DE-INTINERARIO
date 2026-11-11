@@ -132,10 +132,10 @@ export function SiteFooter() {
       <div className="relative z-10 max-w-6xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
           <div>
-            <div className="mb-4">
-              <div className="font-cormorant text-crema text-2xl font-light tracking-[4px] uppercase">HUASTECA</div>
-              <div className="text-[9px] tracking-[3px] uppercase text-lima font-dm mt-0.5">Potosina</div>
-            </div>
+            {/* Logo «versión E» apilado, reverso (fondo verde), 11 nov 2026. Antes
+                era el nombre escrito con la fuente. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logos/huasteca-potosina-tours-reverso.svg" alt="Huasteca Potosina Tours" width={516} height={382} loading="lazy" className="mb-5 w-40 h-auto" />
             <p className="text-crema/75 text-xs font-dm leading-relaxed mb-4">
               {en
                 ? "Local tour operator based in Xilitla, San Luis Potosí. Our own hotel and restaurant, NOM-09 certified guides, daily departures."

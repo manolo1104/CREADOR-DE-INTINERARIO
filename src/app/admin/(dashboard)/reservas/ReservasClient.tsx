@@ -527,7 +527,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 .hero::after{content:'';position:absolute;inset:0;background-image:repeating-linear-gradient(135deg,rgba(244,237,216,.04) 0 2px,transparent 2px 14px);pointer-events:none;}
 .hero>*{position:relative;z-index:1;}
 .hero .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:5mm;}
-.brand{display:flex;align-items:baseline;gap:4mm;}.wordmark{font-family:var(--display);font-size:14pt;letter-spacing:5px;text-transform:uppercase;color:var(--crema);line-height:1;}
+.brand{display:flex;align-items:baseline;gap:4mm;}.brand .logo{height:11mm;width:auto;display:block;}.stamp .ave{width:9mm;height:auto;display:block;}.wordmark{font-family:var(--display);font-size:14pt;letter-spacing:5px;text-transform:uppercase;color:var(--crema);line-height:1;}
 .stamp{width:16mm;height:16mm;border-radius:50%;border:1px solid rgba(244,237,216,.4);display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
 .h{font-family:var(--display);font-style:italic;font-size:15pt;color:var(--dorado);}
 .hero-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:7mm;align-items:end;}
@@ -589,14 +589,14 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 <section class="page">
   <div class="hero">
     <div class="top">
-      <div class="brand"><span class="wordmark">HUASTECA POTOSINA TOURS</span></div>
+      <div class="brand"><img class="logo" src="${window.location.origin}/logos/huasteca-potosina-tours-horizontal-reverso.svg" alt="Huasteca Potosina Tours"/></div>
       <div class="stamp">
         <svg viewBox="0 0 100 100" style="position:absolute;inset:0;width:100%;height:100%;">
           <circle cx="50" cy="50" r="46" fill="none" stroke="rgba(244,237,216,0.4)" stroke-width="0.8"/>
           <defs><path id="arcCv" d="M 50,50 m -36,0 a 36,36 0 1,1 72,0 a 36,36 0 1,1 -72,0" fill="none"/></defs>
           <text font-family="DM Sans" font-size="6" letter-spacing="2.2" fill="rgba(244,237,216,0.75)"><textPath href="#arcCv" startOffset="0%">★ HUASTECA · POTOSINA · TOURS ·</textPath></text>
         </svg>
-        <div class="h">H</div>
+        <img class="ave" src="${window.location.origin}/logos/golondrina-reverso.svg" alt=""/>
       </div>
     </div>
     <div class="hero-grid">

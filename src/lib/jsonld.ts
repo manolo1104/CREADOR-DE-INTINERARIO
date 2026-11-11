@@ -51,7 +51,7 @@ export function buildOrganizationNode(locale: Locale = "es", description?: strin
       (locale === "en"
         ? "Certified tour operator based in Xilitla, San Luis Potosí. Guided day tours across the Huasteca Potosina with NOM-09 certified guides, transport and insurance included."
         : "Operadora de tours certificada con base en Xilitla, San Luis Potosí. Tours guiados de un día por la Huasteca Potosina con guías certificados NOM-09, transporte y seguro incluidos."),
-    logo: { "@type": "ImageObject", url: `${BASE_URL}/logos/huasteca-logo-light.svg`, width: 600, height: 600 },
+    logo: { "@type": "ImageObject", url: `${BASE_URL}/logos/huasteca-potosina-tours-color.png`, width: 1296, height: 985 },
     image: `${BASE_URL}/og-image.jpg`,
     telephone: CONTACTO.telefonoE164,
     email: CONTACTO.email,

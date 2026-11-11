@@ -855,7 +855,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 .compacta2 .terms{font-size:6.3pt;line-height:1.3;}
 .compacta2 .note{font-size:6.3pt;}
 .head{display:grid;grid-template-columns:1fr auto;align-items:flex-start;padding-bottom:4mm;border-bottom:1px solid rgba(14,23,16,.18);}
-.brand{display:flex;align-items:baseline;gap:5mm;}.wordmark{font-family:var(--display);font-size:15pt;letter-spacing:4px;text-transform:uppercase;line-height:1;color:var(--negro);}
+.brand{display:flex;align-items:baseline;gap:5mm;}.brand .logo{height:12mm;width:auto;display:block;}.stamp .ave{width:10mm;height:auto;display:block;}.compacta2 .stamp .ave{width:8mm;}.wordmark{font-family:var(--display);font-size:15pt;letter-spacing:4px;text-transform:uppercase;line-height:1;color:var(--negro);}
 .contact{font-size:7.5pt;line-height:1.5;color:rgba(14,23,16,.65);margin-top:2mm;font-family:ui-monospace,monospace;}
 .stamp{width:18mm;height:18mm;border-radius:50%;border:1px solid rgba(14,23,16,.4);display:flex;align-items:center;justify-content:center;position:relative;}
 .h{font-family:var(--display);font-style:italic;font-size:16pt;color:var(--dorado);}
@@ -904,7 +904,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 <section class="page">
   <header class="head">
     <div>
-      <div class="brand"><span class="wordmark">HUASTECA POTOSINA TOURS</span></div>
+      <div class="brand"><img class="logo" src="${window.location.origin}/logos/huasteca-potosina-tours-horizontal-color.svg" alt="Huasteca Potosina Tours"/></div>
       <div class="contact">Manolo Covarrubias · guía local&#10;hola@huasteca-potosina.com · WhatsApp +52 489 109 0388&#10;Xilitla, San Luis Potosí, México · Operador SECTUR</div>
     </div>
     <div class="stamp">
@@ -913,7 +913,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         <defs><path id="arcC" d="M 50,50 m -36,0 a 36,36 0 1,1 72,0 a 36,36 0 1,1 -72,0" fill="none"/></defs>
         <text font-family="DM Sans" font-size="6" letter-spacing="2.2" fill="rgba(14,23,16,0.55)"><textPath href="#arcC" startOffset="0%">★ HUASTECA · POTOSINA · TOURS ·</textPath></text>
       </svg>
-      <div class="h">H</div>
+      <img class="ave" src="${window.location.origin}/logos/golondrina-color.svg" alt=""/>
     </div>
   </header>
 

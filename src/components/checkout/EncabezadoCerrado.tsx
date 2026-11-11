@@ -24,7 +24,7 @@ export function EncabezadoCerrado() {
       <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
         <Link href={lp("/")} aria-label="Tours Huasteca Potosina" className="flex-shrink-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logos/huasteca-logo.svg" alt="Tours Huasteca Potosina" width={942} height={267} className="h-8 w-auto" />
+          <img src="/logos/huasteca-potosina-tours-horizontal-reverso.svg" alt="Huasteca Potosina Tours" width={916} height={199} className="h-7 sm:h-8 w-auto" />
         </Link>
         <span className="inline-flex items-center gap-1.5 font-dm text-[10px] sm:text-[11px] tracking-[1.5px] uppercase text-crema/75">
           <Lock className="w-3.5 h-3.5 text-lima" aria-hidden="true" />

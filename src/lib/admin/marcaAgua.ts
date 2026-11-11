@@ -5,7 +5,7 @@
 // servidor. Por eso no hay nada que borrar después ni espacio que pagar, y
 // por eso funciona con la señal a medias que hay de regreso de un tour.
 
-import { AVE, CAJA, HUASTECA, POTOSINA_TOURS, WEB } from "./logoMarca";
+import { CAJA, PIEZAS, WEB } from "./logoMarca";
 
 export type Posicion = "centro" | "derecha" | "izquierda";
 export type Tamano = "chico" | "mediano" | "grande";
@@ -82,14 +82,12 @@ export function cajaDeMarca(ancho: number, alto: number, op: OpcionesMarca) {
 
 // ── El logo ─────────────────────────────────────────────────────────────────
 
-let trazos: { letras: Path2D[]; web: Path2D; ave: Path2D[] } | null = null;
+type Grupo = { matriz: (typeof WEB)["matriz"]; trazos: Path2D[] };
+let trazos: { logo: Grupo[]; web: Grupo } | null = null;
 
 function trazosDelLogo() {
-  trazos ??= {
-    letras: [new Path2D(HUASTECA), new Path2D(POTOSINA_TOURS)],
-    web:    new Path2D(WEB),
-    ave:    AVE.trazos.map(d => new Path2D(d)),
-  };
+  const aPath = (g: typeof WEB): Grupo => ({ matriz: g.matriz, trazos: g.trazos.map(d => new Path2D(d)) });
+  trazos ??= { logo: PIEZAS.map(aPath), web: aPath(WEB) };
   return trazos;
 }
 
@@ -111,16 +109,13 @@ function logoAlTamano(ancho: number, alto: number, conWeb: boolean): HTMLCanvasE
   const ctx = lienzo.getContext("2d");
   if (!ctx) throw new Error("Este navegador no puede editar fotos");
   const k = ancho / caja.ancho;
-  ctx.setTransform(k, 0, 0, k, -caja.x * k, -caja.y * k);
   ctx.fillStyle = "#fff";
-  for (const p of t.letras) ctx.fill(p);
-  if (conWeb) ctx.fill(t.web);
-  ctx.translate(AVE.x, AVE.y);
-  ctx.strokeStyle = "#fff";
-  ctx.lineWidth = AVE.grosor;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
-  for (const p of t.ave) ctx.stroke(p);
+  // Logo nuevo (11 nov 2026): todo son rellenos, ya no hay trazos con grosor.
+  for (const g of conWeb ? [...t.logo, t.web] : t.logo) {
+    ctx.setTransform(k, 0, 0, k, -caja.x * k, -caja.y * k);
+    ctx.transform(...g.matriz);
+    for (const p of g.trazos) ctx.fill(p);
+  }
   return lienzo;
 }
 

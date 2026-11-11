@@ -133,7 +133,8 @@ export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [
       <aside className={`hidden md:flex ${sidebarClass}`}>
         <div className="px-4 pt-5 pb-4">
           <Link href="/admin" className="block panel-foco rounded-[7px]">
-            <div className="font-cormorant text-[#16362a] text-[19px] leading-none tracking-[3px] uppercase">Huasteca</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logos/huasteca-potosina-tours-horizontal-color.svg" alt="Huasteca Potosina Tours" width={916} height={199} className="h-9 w-auto" />
             <div className="panel-eyebrow mt-1.5">Panel interno</div>
           </Link>
         </div>
@@ -171,7 +172,8 @@ export default function AdminSidebar({ rol = "dueno", nombre = "", secciones = [
 
       {/* Mobile header */}
       <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-[#1B4332]/10 flex items-center justify-between px-4 h-14 shadow-sm">
-        <div className="font-cormorant text-[#1B4332] text-lg tracking-[3px] uppercase">HUASTECA</div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/logos/huasteca-potosina-tours-horizontal-color.svg" alt="Huasteca Potosina Tours" width={916} height={199} className="h-8 w-auto" />
         <button onClick={() => setOpen(!open)} className="text-[#1B4332]/60 hover:text-[#1B4332] p-1">
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>

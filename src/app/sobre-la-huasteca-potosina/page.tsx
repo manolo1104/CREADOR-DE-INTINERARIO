@@ -64,7 +64,7 @@ export default function SobreLaHuastecaPage() {
           "@type": "Organization",
           name: "Tours Huasteca Potosina",
           url: SITE,
-          logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo.svg` },
+          logo: { "@type": "ImageObject", url: `${SITE}/logos/huasteca-potosina-tours-color.png`, width: 1296, height: 985 },
         },
         about: {
           "@type": "Place",

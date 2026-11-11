@@ -235,7 +235,11 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={lp("/")} className="flex-shrink-0 group" aria-label="Tours Huasteca Potosina">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/logos/huasteca-logo.svg" alt="Tours Huasteca Potosina" width={942} height={267} className="h-11 w-auto transition-opacity duration-200 group-hover:opacity-85" />
+            {/* Logo «versión E» (11 nov 2026). El kit solo trae el apilado, que a
+                64 px de barra mediría 76 de ancho (la guía pide 120 mínimo): aquí
+                va el horizontal armado con las MISMAS piezas del kit. Entre 1024
+                y 1279 baja a 36 px para que el menú no lo toque. */}
+            <img src="/logos/huasteca-potosina-tours-horizontal-reverso.svg" alt="Huasteca Potosina Tours" width={916} height={199} className="h-10 lg:h-9 xl:h-11 w-auto transition-opacity duration-200 group-hover:opacity-85" />
           </Link>
 
           {/* Desktop Nav

@@ -637,7 +637,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
       "@type": "Organization",
       name:    "Tours Huasteca Potosina",
       url:     SITE,
-      logo:    { "@type": "ImageObject", url: `${SITE}/logos/huasteca-logo.png`, width: 600, height: 600 },
+      logo:    { "@type": "ImageObject", url: `${SITE}/logos/huasteca-potosina-tours-color.png`, width: 1296, height: 985 },
     },
     description:    post.metaDescription || post.excerpt || "",
     image: post.coverImageUrl ? {

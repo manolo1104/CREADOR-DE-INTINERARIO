@@ -38,11 +38,10 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="text-center mb-8">
-          <div className="font-cormorant text-[#FAFAF8] text-3xl font-light tracking-[4px] uppercase mb-1">
-            HUASTECA
-          </div>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logos/huasteca-potosina-tours-reverso.svg" alt="Huasteca Potosina Tours" width={516} height={382} className="mx-auto mb-3 w-40 h-auto" />
           <div className="text-[10px] tracking-[3px] uppercase text-[#52B788] font-dm">
-            Potosina · Panel Admin
+            Panel Admin
           </div>
         </div>
 
