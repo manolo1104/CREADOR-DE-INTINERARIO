@@ -27,7 +27,7 @@ import { ItinerarioLinea } from "@/components/ItinerarioLinea";
 import { MobileBookingBar } from "@/components/MobileBookingBar";
 import { TourPageTracker } from "@/components/TourPageTracker";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones, ChevronDown, Award, MapPin, Gauge, Baby, CreditCard, AlarmClock } from "lucide-react";
+import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones, ChevronDown, Award, MapPin, Gauge, Baby, CreditCard, AlarmClock, Languages } from "lucide-react";
 import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour } from "@/components/booking/ReservaFichaTour";
 import { WhatsAppFicha } from "@/components/booking/WhatsAppFicha";
@@ -42,6 +42,7 @@ import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
 import { fmtNumber } from "@/lib/i18n/format";
+import { PrecioAproximado } from "@/components/PrecioAproximado";
 
 /** Los recorridos que van dentro del viaje CDMX–Xilitla (`lib/viajeCdmx/config.ts`). */
 const TOURS_DEL_VIAJE_CDMX = ["expedicion-tamul", "ruta-surrealista-edward-james"];
@@ -1025,6 +1026,10 @@ export default function TourDetailPage({ params }: Props) {
                 {money(tour.precio)}
               </span>
               <span className="text-crema/50 font-dm text-xs">{priceUnitHero}</span>
+              {/* En inglés, el mismo precio en dólares y euros (aproximado; se
+                  cobra en pesos). 2 de las 4 compras del 29 oct–10 nov fueron
+                  de extranjeros que piensan en euros. */}
+              {locale === "en" && <PrecioAproximado mxn={tour.precio} className="text-crema/45 font-dm text-xs" />}
             </div>
             {/* 🔴 La primera pantalla no tenía NI UN elemento en el que hacer
                 clic: ni el hero, ni la banda de datos, ni la columna de
@@ -1705,6 +1710,13 @@ export default function TourDetailPage({ params }: Props) {
                   <Headphones className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.support247}</p><p className="text-[10px] font-dm text-crema/40">{t.support247Sub}</p></div>
                 </li>
+                {/* Guía en inglés: estaba en el inicio y en una casilla del
+                    checkout, o sea después de decidir. Mismo texto honesto que
+                    `guiaInglesAyuda` (si ese día no hay, se avisa antes). */}
+                <li className="flex items-start gap-3">
+                  <Languages className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{locale === "en" ? "English-speaking guide · no extra cost" : "Guía en inglés · sin costo"}</p><p className="text-[10px] font-dm text-crema/40">{locale === "en" ? "Ask for it when you book. If we don't have one that day, we'll tell you beforehand." : "Pídelo al reservar. Si ese día no lo tenemos, te avisamos antes."}</p></div>
+                </li>
                 {/* Cómo se paga. Estaba SOLO en la pantalla de checkout, o sea
                     después de decidir: quien dudaba de si podía pagar con
                     tarjeta —o de a quién le estaba dando el número— no tenía
@@ -1769,6 +1781,11 @@ export default function TourDetailPage({ params }: Props) {
               )}
               <p className="font-cormorant text-dorado leading-none" style={{ fontSize: "clamp(32px,4vw,48px)" }}>{money(tour.precio)}</p>
               <p className="text-[11px] text-crema/40 font-dm mt-1">{priceUnitShort}</p>
+              {locale === "en" && (
+                <p className="text-[11px] text-crema/40 font-dm mt-0.5">
+                  <PrecioAproximado mxn={tour.precio} conNota />
+                </p>
+              )}
               {/* Justo debajo del precio, "4.7 · 161 reseñas" a secas se leía
                   como la nota de ESTE recorrido. Es la de la operadora (regla
                   de `resenas.ts`), y así se dice. */}
@@ -1930,6 +1947,13 @@ export default function TourDetailPage({ params }: Props) {
                 <li className="flex items-start gap-3">
                   <Headphones className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
                   <div><p className="text-[11px] font-dm font-medium text-crema/85">{t.support247}</p><p className="text-[10px] font-dm text-crema/40">{t.support247Sub}</p></div>
+                </li>
+                {/* Guía en inglés: estaba en el inicio y en una casilla del
+                    checkout, o sea después de decidir. Mismo texto honesto que
+                    `guiaInglesAyuda` (si ese día no hay, se avisa antes). */}
+                <li className="flex items-start gap-3">
+                  <Languages className="w-4 h-4 text-verde-vivo flex-shrink-0 mt-0.5" aria-hidden="true" />
+                  <div><p className="text-[11px] font-dm font-medium text-crema/85">{locale === "en" ? "English-speaking guide · no extra cost" : "Guía en inglés · sin costo"}</p><p className="text-[10px] font-dm text-crema/40">{locale === "en" ? "Ask for it when you book. If we don't have one that day, we'll tell you beforehand." : "Pídelo al reservar. Si ese día no lo tenemos, te avisamos antes."}</p></div>
                 </li>
                 {/* Cómo se paga. Estaba SOLO en la pantalla de checkout, o sea
                     después de decidir: quien dudaba de si podía pagar con
