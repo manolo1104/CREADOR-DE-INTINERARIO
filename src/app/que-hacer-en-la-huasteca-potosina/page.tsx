@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { waLink } from "@/lib/whatsapp";
 import { SITE, asLocale, buildAlternates, localePath, localeUrl } from "@/lib/i18n/config";
 import { buildBreadcrumbNode } from "@/lib/jsonld";
-import { getQueHacer } from "@/lib/i18n/queHacer.en";
+import { FOTOS_QUE_HACER, getQueHacer } from "@/lib/i18n/queHacer.en";
 
 const PATH = "/que-hacer-en-la-huasteca-potosina";
 
@@ -113,20 +113,44 @@ export default function QueHacerPage() {
       {/* ── LISTA DE EXPERIENCIAS ── */}
       <section className="px-6 pb-20">
         <div className="max-w-3xl mx-auto space-y-10">
-          {t.experiencias.map((e, i) => (
-            <article key={e.href} className="border-b border-white/10 pb-10">
-              <h2 className="font-cormorant font-light text-crema text-2xl md:text-3xl mb-3 leading-snug">
-                <span className="text-dorado">{i + 1}.</span> {e.titulo}
-              </h2>
-              <p className="font-dm text-sm text-crema/70 leading-relaxed mb-4">{e.descripcion}</p>
-              <Link
-                href={localePath(e.href, locale)}
-                className="inline-flex items-center gap-1.5 text-verde-vivo hover:text-dorado transition-colors font-dm text-xs tracking-[1px] uppercase"
-              >
-                {e.cta} →
-              </Link>
-            </article>
-          ))}
+          {t.experiencias.map((e, i) => {
+            // Una foto real por actividad (11 nov 2026): `FOTOS_QUE_HACER`.
+            // Arriba en el celular; a la izquierda en pantalla grande.
+            const foto = FOTOS_QUE_HACER[e.href];
+            return (
+              <article key={e.href} className="border-b border-white/10 pb-10 md:flex md:items-start md:gap-8">
+                {foto && (
+                  <Link
+                    href={localePath(e.href, locale)}
+                    aria-label={e.cta}
+                    tabIndex={-1}
+                    className="group relative block aspect-[16/9] md:aspect-[4/3] md:w-[42%] md:shrink-0 overflow-hidden mb-5 md:mb-0 bg-verde-profundo/40"
+                  >
+                    <Image
+                      src={foto.src}
+                      alt={en ? foto.alt.en : foto.alt.es}
+                      fill
+                      sizes="(min-width: 768px) 330px, 100vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      style={foto.pos ? { objectPosition: foto.pos } : undefined}
+                    />
+                  </Link>
+                )}
+                <div className="min-w-0">
+                  <h2 className="font-cormorant font-light text-crema text-2xl md:text-3xl mb-3 leading-snug">
+                    <span className="text-dorado">{i + 1}.</span> {e.titulo}
+                  </h2>
+                  <p className="font-dm text-sm text-crema/70 leading-relaxed mb-4">{e.descripcion}</p>
+                  <Link
+                    href={localePath(e.href, locale)}
+                    className="inline-flex items-center gap-1.5 text-verde-vivo hover:text-dorado transition-colors font-dm text-xs tracking-[1px] uppercase"
+                  >
+                    {e.cta} →
+                  </Link>
+                </div>
+              </article>
+            );
+          })}
         </div>
       </section>
 

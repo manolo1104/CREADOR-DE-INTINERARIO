@@ -49,6 +49,157 @@ export type Experiencia = {
   cta: string;
 };
 
+/**
+ * Una foto por actividad, por el `href` de la experiencia (es el mismo en
+ * español y en inglés). 🟢 11 nov 2026 (Manolo: «agrega imágenes a la página
+ * de imperdibles»). Todas son fotos que el sitio YA usa del mismo lugar, una
+ * por actividad y sin repetir la del hero (Tamul).
+ *
+ * 🔴 Fuera, por traer la estrella de Gemini (hechas o retocadas con IA):
+ * `tours/edward-james/hero.jpg` y `gallery-*` (la primera foto del tour
+ * Surrealista) y `las-pozas-jardin-surrealista/hero.jpg` (la del Edén). Fuera
+ * también `puerta-luna.jpg` (firma de otro fotógrafo) y las que llevan el sello
+ * «H» del logo viejo. Micos usa su propia carpeta: la primera foto del tour
+ * Paraíso Escalonado es de Minas Viejas, que sale más abajo.
+ */
+export const FOTOS_QUE_HACER: Record<string, { src: string; alt: { es: string; en: string }; pos?: string }> = {
+  "/tours/expedicion-tamul": {
+    src: "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg",
+    alt: {
+      es: "Grupo remando en canoa por el río Tampaón con la Cascada de Tamul al fondo",
+      en: "Group paddling a canoe up the Tampaón River with Tamul Waterfall in the background",
+    },
+  },
+  "/tours/ruta-surrealista-edward-james": {
+    src: "/imagenes/tours/edward-james/las-pozas-escalera-al-cielo.jpg",
+    alt: {
+      es: "Escalera al Cielo, estructura de concreto que se eleva entre la selva en Las Pozas de Edward James, Xilitla",
+      en: "The Stairway to Heaven, a concrete structure rising out of the jungle at Edward James's Las Pozas, Xilitla",
+    },
+  },
+  "/tours/eden-en-el-jardin": {
+    src: "/imagenes/las-pozas-jardin-surrealista/gallery-2.jpg",
+    alt: {
+      es: "Columnas, plataformas y escaleras de concreto entre la vegetación de Las Pozas, en Xilitla",
+      en: "Concrete columns, platforms and stairways among the greenery at Las Pozas, Xilitla",
+    },
+  },
+  "/tours/rafting-rio-tampaon": {
+    src: "/imagenes/rio-tampaon-rafting/tour-1.jpg",
+    alt: {
+      es: "Balsa de rafting con el grupo remando y con casco a través de un rápido del río Tampaón",
+      en: "Rafting crew in helmets paddling through a rapid on the Tampaón River",
+    },
+  },
+  "/destinos/sotano-de-las-golondrinas": {
+    src: "/imagenes/sotano-de-las-golondrinas/hero.jpg",
+    alt: {
+      es: "Aves volando sobre la boca del Sótano de las Golondrinas, en Aquismón",
+      en: "Birds flying over the mouth of the Sótano de las Golondrinas sinkhole in Aquismón",
+    },
+  },
+  "/tours/olla-de-la-luz": {
+    src: "/imagenes/tours/olla-de-la-luz/hero.jpg",
+    alt: {
+      es: "Paredes de roca del sótano de la Olla de la Luz, rodeadas de bosque de niebla",
+      en: "Rock walls of the Olla de la Luz sinkhole, ringed by cloud forest",
+    },
+  },
+  "/tours/paraiso-escalonado-minas-micos": {
+    src: "/imagenes/cascadas-de-micos/gallery-3.jpg",
+    alt: {
+      es: "Grupo con casco y chaleco saltando al mismo tiempo desde una de las cascadas de Micos",
+      en: "Group in helmets and life jackets jumping together off one of the Micos waterfalls",
+    },
+  },
+  "/tours/ruta-acuatica-puente-de-dios": {
+    src: "/imagenes/puente-de-dios-tamasopo/gallery-4.jpg",
+    alt: {
+      es: "Rayos de sol que entran a la cueva del Puente de Dios, con una cascada y tres personas sobre las rocas",
+      en: "Sunbeams pouring into the Puente de Dios cave, with a waterfall and three people on the rocks",
+    },
+  },
+  "/tours/rappel-tamul": {
+    src: "/imagenes/tours/rappel-tamul/hero.jpg",
+    alt: {
+      es: "Persona con casco descendiendo a rappel junto a una cascada",
+      en: "Person in a helmet rappelling beside a waterfall",
+    },
+    pos: "50% 30%",
+  },
+  "/tours/rzr-xilitla": {
+    src: "/imagenes/tours/rzr-xilitla/hero.jpg",
+    alt: {
+      es: "Vehículo RZR en un mirador de la sierra de Xilitla, con montañas y valle al fondo",
+      en: "RZR side-by-side at a lookout in the Xilitla highlands, with mountains and valley behind",
+    },
+  },
+  "/tours/gruta-de-xilo": {
+    src: "/imagenes/tours/gruta-de-xilo/hero.jpg",
+    alt: {
+      es: "Grupo con lámparas dentro del agua en la Gruta de Xilo, entre formaciones de roca",
+      en: "Group with headlamps wading inside the Xilo cave among rock formations",
+    },
+  },
+  "/tours/amanecer-de-nubes": {
+    src: "/imagenes/tours/amanecer-de-nubes/hero.jpg",
+    alt: {
+      es: "Amanecer sobre un mar de nubes visto desde lo alto de la sierra, con un excursionista en la roca",
+      en: "Sunrise over a sea of clouds seen from high in the mountains, with a hiker on the rock",
+    },
+  },
+  "/destinos/cascadas-minas-viejas": {
+    src: "/imagenes/cascadas-minas-viejas/hero.jpg",
+    alt: {
+      es: "Vista aérea de las Cascadas de Minas Viejas cayendo a pozas turquesa entre la selva",
+      en: "Aerial view of the Minas Viejas waterfalls dropping into turquoise pools in the jungle",
+    },
+  },
+  "/tours/cascadas-del-meco": {
+    src: "/imagenes/cascada-el-meco/hero.jpg",
+    alt: {
+      es: "Persona en tabla de remo frente a la Cascada El Meco, con kayaks detrás",
+      en: "Paddleboarder in front of El Meco Waterfall, with kayaks behind",
+    },
+  },
+  "/destinos/nacimiento-huichihuayan": {
+    src: "/imagenes/nacimiento-huichihuayan/hero.jpg",
+    alt: {
+      es: "Persona sentada en las rocas junto al agua azul del Nacimiento de Huichihuayán",
+      en: "Person sitting on the rocks beside the blue spring water of Nacimiento de Huichihuayán",
+    },
+  },
+  "/destinos/zona-arqueologica-tamtoc": {
+    src: "/imagenes/zona-arqueologica-tamtoc/hero.jpg",
+    alt: {
+      es: "Muros de piedra escalonados de la zona arqueológica de Tamtoc",
+      en: "Terraced stone walls at the Tamtoc archaeological site",
+    },
+  },
+  "/destinos/xilitla-pueblo-magico": {
+    src: "/imagenes/xilitla-pueblo-magico/gallery-2.jpg",
+    alt: {
+      es: "Vista aérea del centro de Xilitla, con la plaza, la iglesia y la sierra al fondo",
+      en: "Aerial view of downtown Xilitla, with the main square, the church and the mountains behind",
+    },
+  },
+  "/destinos/voladores-tamaleton": {
+    src: "/imagenes/voladores-tamaleton/hero.jpg",
+    alt: {
+      es: "Voladores girando de cabeza alrededor del mástil, con sus trajes de colores",
+      en: "Voladores spinning upside down around the pole in their colorful costumes",
+    },
+    pos: "50% 30%",
+  },
+  "/info-practica": {
+    src: "/imagenes/blog/zacahuil/hero.jpg",
+    alt: {
+      es: "Zacahuil recién sacado del horno, servido sobre hojas de plátano",
+      en: "Zacahuil fresh out of the oven, served on banana leaves",
+    },
+  },
+};
+
 export interface QueHacerContent {
   metaTitle: string;
   metaDescription: string;
