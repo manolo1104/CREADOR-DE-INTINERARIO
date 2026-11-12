@@ -84,7 +84,14 @@ export default function QueHacerPage() {
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-negro/75 via-negro/60 to-negro" />
+        {/* Degradado escrito a mano, no con from-/to- de Tailwind: una extensión
+            de Chrome hecha con Tailwind 4 (estilo `wxt-shadow-root-document-styles`)
+            registra --tw-gradient-from/to como <color> y anula el from/to de
+            Tailwind 3 → la foto terminaba en una raya dura (11 nov 2026). */}
+        <div
+          className="absolute inset-0"
+          style={{ backgroundImage: "linear-gradient(to bottom, rgb(14 23 16 / 0.75), rgb(14 23 16 / 0.6) 50%, #0e1710)" }}
+        />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
           <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             {t.heroEyebrow}
@@ -111,7 +118,9 @@ export default function QueHacerPage() {
       </section>
 
       {/* ── LISTA DE EXPERIENCIAS ── */}
-      <section className="px-6 pb-20">
+      {/* pt: sin aire arriba, la foto de la 1.ª actividad quedaba pegada al
+          borde del hero y se veía cortada (Manolo, 11 nov 2026). */}
+      <section className="px-6 pt-14 md:pt-16 pb-20">
         <div className="max-w-3xl mx-auto space-y-10">
           {t.experiencias.map((e, i) => {
             // Una foto real por actividad (11 nov 2026): `FOTOS_QUE_HACER`.

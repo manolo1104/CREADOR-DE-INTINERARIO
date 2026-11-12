@@ -69,6 +69,8 @@ export const FOTOS_QUE_HACER: Record<string, { src: string; alt: { es: string; e
       es: "Grupo remando en canoa por el río Tampaón con la Cascada de Tamul al fondo",
       en: "Group paddling a canoe up the Tampaón River with Tamul Waterfall in the background",
     },
+    // En el celular el recorte es 16:9: arriba, para no cortarle más la cascada.
+    pos: "50% 20%",
   },
   "/tours/ruta-surrealista-edward-james": {
     src: "/imagenes/tours/edward-james/las-pozas-escalera-al-cielo.jpg",
