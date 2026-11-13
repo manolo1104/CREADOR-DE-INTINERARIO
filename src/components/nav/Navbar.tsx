@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Globe } from "lucide-react";
+import { Globe, ChevronDown } from "lucide-react";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
 import { BandaRio } from "@/components/BandaRio";
@@ -41,7 +41,29 @@ const SOLO_EN = /^\/en\/(?:press|from)(?:\/|$)/;
 // 7 oct 2026: «súbelo, si no me gusta lo bajamos»). Desde el 10 nov 2026 también
 // en inglés (/en/sustentabilidad-y-conservacion). Para BAJARLO basta con poner `false` aquí; con él se va
 // también el espaciado más corto que necesita el menú de escritorio.
-const MENU_SUSTENTABILIDAD = true;
+// 🔴 13 nov 2026 (auditoría, «contenido escondido»): su lugar lo toma «Planea
+// tu viaje», que agrupa lo que solo se alcanzaba desde el pie. Sustentabilidad
+// sigue en el pie (SiteFooter). Para volver a ponerla: `true`.
+const MENU_SUSTENTABILIDAD = false;
+
+/**
+ * «Planea tu viaje» (13 nov 2026): qué hacer, presupuesto diario, itinerarios,
+ * la guía gratuita y «¿Xilitla o Ciudad Valles?» vivían solo en el pie de
+ * página. Info práctica entra aquí también para no repetirla en la barra.
+ * La guía gratuita (/guia) solo existe en español.
+ */
+function enlacesPlanea(locale: Locale): { href: string; texto: string; detalle: string }[] {
+  const lp = (p: string) => localePath(p, locale);
+  const en = locale === "en";
+  return [
+    { href: lp("/que-hacer-en-la-huasteca-potosina"), texto: en ? "What to do" : "Qué hacer", detalle: en ? "The must-dos, one by one" : "Los imperdibles, uno por uno" },
+    { href: `${lp("/info-practica")}#presupuesto`, texto: en ? "Daily budget" : "Presupuesto diario", detalle: en ? "What a day really costs" : "Cuánto cuesta un día de verdad" },
+    { href: `${lp("/info-practica")}#itinerarios`, texto: en ? "Itineraries" : "Itinerarios", detalle: en ? "2, 3 and 4 days, ready to go" : "De 2, 3 y 4 días, ya armados" },
+    ...(en ? [] : [{ href: "/guia", texto: "Guía gratuita", detalle: "La guía de la Huasteca, en PDF" }]),
+    { href: lp("/xilitla-o-ciudad-valles"), texto: en ? "Xilitla or Ciudad Valles?" : "¿Xilitla o Ciudad Valles?", detalle: en ? "Where to stay, and why" : "Dónde quedarte, y por qué" },
+    { href: lp("/info-practica"), texto: en ? "Travel info" : "Info práctica", detalle: en ? "Getting here, weather, what to pack" : "Cómo llegar, clima, qué llevar" },
+  ];
+}
 
 // Contraparte de idioma para el selector (sin pareja → inicio del otro idioma,
 // nunca un 404).
@@ -265,7 +287,28 @@ export default function Navbar() {
             {/* "Precios" salió de la barra (Manolo, 1 oct 2026) y vive en el pie
                 (SiteFooter). "Nosotros" salió ese día y volvió el 26 oct 2026
                 (Manolo), en los dos idiomas: /en/nosotros existe. */}
-            <Link href={lp("/info-practica")} className={navLinkClass(lp("/info-practica"))}>{dict.nav.infoPractica}</Link>
+            <div ref={destinosRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setDestinosOpen((v) => !v)}
+                aria-expanded={destinosOpen}
+                aria-haspopup="true"
+                className={`${navLinkClass(lp("/info-practica"))} inline-flex items-center gap-1`}
+              >
+                {locale === "en" ? "Plan your trip" : "Planea tu viaje"}
+                <ChevronDown className={`w-3 h-3 transition-transform ${destinosOpen ? "rotate-180" : ""}`} aria-hidden="true" />
+              </button>
+              {destinosOpen && (
+                <div className="absolute left-1/2 top-full z-50 mt-4 w-72 -translate-x-1/2 border border-white/10 bg-negro/98 p-2 shadow-2xl">
+                  {enlacesPlanea(locale).map((e) => (
+                    <Link key={e.href} href={e.href} onClick={() => setDestinosOpen(false)} className="block px-3 py-2.5 hover:bg-white/5 transition-colors">
+                      <span className="block font-dm text-[12px] text-crema">{e.texto}</span>
+                      <span className="block font-dm text-[11px] text-crema/45">{e.detalle}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
 
             <Link href={lp("/nosotros")} className={navLinkClass(lp("/nosotros"))}>{dict.nav.nosotros}</Link>
 
@@ -312,9 +355,15 @@ export default function Navbar() {
             <Link href={lp("/paquetes")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.paquetes}
             </Link>
-            <Link href={lp("/info-practica")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
-              {dict.nav.infoPractica}
-            </Link>
+            {/* «Planea tu viaje», como grupo (13 nov 2026). */}
+            <div className="py-3 border-b border-white/6">
+              <p className="text-[11px] tracking-[3px] uppercase font-dm text-crema/70">{locale === "en" ? "Plan your trip" : "Planea tu viaje"}</p>
+              <div className="mt-2 grid grid-cols-2 gap-x-4">
+                {enlacesPlanea(locale).map((e) => (
+                  <Link key={e.href} href={e.href} className="block py-2 font-dm text-[13px] text-crema/60 hover:text-crema">{e.texto}</Link>
+                ))}
+              </div>
+            </div>
             <Link href={lp("/tours")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {dict.nav.tours}
             </Link>

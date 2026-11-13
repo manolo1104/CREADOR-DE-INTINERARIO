@@ -466,7 +466,8 @@ export default async function HomePage() {
                 <Image
                   key={g.nombre}
                   src={g.fotoCara}
-                  alt=""
+                  // Con nombre (13 nov 2026, auditoría de textos alternativos).
+                  alt={locale === "en" ? `${g.nombre}, Huasteca Potosina Tours guide` : `${g.nombre}, guía de Huasteca Potosina Tours`}
                   width={96}
                   height={96}
                   className="h-12 w-12 rounded-full object-cover ring-2 ring-crema"

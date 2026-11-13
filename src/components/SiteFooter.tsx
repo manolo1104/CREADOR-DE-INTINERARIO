@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AtSign, Share2, Music2 } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { localizeDestino } from "@/lib/i18n/localize";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
@@ -233,26 +232,10 @@ export function SiteFooter() {
                 </button>
               </li>
             </ul>
-            <div className="flex gap-4 mb-3">
-              <a
-                href={CONTACTO.facebook}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                className="w-10 h-10 border border-white/20 hover:border-verde-vivo/60 flex items-center justify-center text-crema/75 hover:text-lima transition-all"
-              >
-                <Share2 className="w-4 h-4" aria-hidden="true" />
-              </a>
-              <span className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed">
-                <AtSign className="w-4 h-4" aria-hidden="true" />
-              </span>
-              <span className="w-10 h-10 border border-white/8 flex items-center justify-center opacity-35 cursor-not-allowed">
-                <Music2 className="w-4 h-4" aria-hidden="true" />
-              </span>
-            </div>
-            <p className="text-[10px] tracking-[1px] text-crema/70 font-dm">
-              {en ? "14K followers on Facebook" : "14K seguidores en Facebook"}
-            </p>
+            {/* Sin botones a redes (13 nov 2026, auditoría): sacaban al visitante
+                del sitio y dos ni siquiera eran enlaces. El perfil de Facebook
+                sigue en el `sameAs` del JSON-LD (lib/jsonld.ts), que es lo que
+                lee Google. */}
           </div>
         </div>
 

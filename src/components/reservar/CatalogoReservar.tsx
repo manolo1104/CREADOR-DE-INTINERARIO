@@ -1,5 +1,6 @@
 "use client";
 
+import type { Distintivo } from "@/lib/distintivosTour";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -65,6 +66,7 @@ const UI = {
     ordenar: "Ordenar",
     orden: { recomendados: "Más reservados", precioAsc: "Precio: menor a mayor", precioDesc: "Precio: mayor a menor", duracion: "Duración" },
     masReservado: "El más reservado",
+    distintivo: { masReservado: "El más reservado", primeraVez: "Ideal para tu primera vez", conNinos: "Para ir con niños", aventura: "Aventura extrema" },
     garantia: "Garantía Huasteca",
     salidasDiarias: "Salidas diarias",
     visitas: "Visitas",
@@ -89,6 +91,7 @@ const UI = {
     ordenar: "Sort",
     orden: { recomendados: "Most booked", precioAsc: "Price: low to high", precioDesc: "Price: high to low", duracion: "Duration" },
     masReservado: "Most booked",
+    distintivo: { masReservado: "Most booked", primeraVez: "Great for your first time", conNinos: "Good with kids", aventura: "Extreme adventure" },
     garantia: "Huasteca Guarantee",
     salidasDiarias: "Daily departures",
     visitas: "Visits",
@@ -124,7 +127,15 @@ function normaliza(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masReservado: string | null }) {
+/** El color de cada distintivo: dorado = lo más vendido; verde, agua y terracota el resto. */
+const COLOR_DISTINTIVO: Record<Distintivo, string> = {
+  masReservado: "bg-dorado text-negro font-bold",
+  primeraVez:   "bg-verde-vivo text-negro font-semibold",
+  conNinos:     "bg-agua text-negro font-semibold",
+  aventura:     "bg-terracota text-crema font-semibold",
+};
+
+export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; distintivos?: Record<string, Distintivo[]> }) {
   const { locale, en, lp } = useLocale();
   const t = en ? UI.en : UI.es;
   const ui = buscadorUI(locale);
@@ -502,9 +513,10 @@ export function CatalogoReservar({ tours, masReservado }: { tours: Tour[]; masRe
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-negro/70 via-transparent to-transparent" aria-hidden="true" />
                   <div className="absolute left-2 top-2 flex flex-col items-start gap-1 sm:left-3 sm:top-3 sm:flex-row sm:flex-wrap">
-                    {x.slug === masReservado && (
-                      <span className="rounded-full bg-dorado px-2 py-0.5 font-dm text-[8px] font-bold uppercase tracking-[1px] text-negro sm:px-2.5 sm:py-1 sm:text-[9px] sm:tracking-[1.5px]">{t.masReservado}</span>
-                    )}
+                    {/* Sacados de datos (`distintivosTour.ts`, 13 nov 2026). */}
+                    {(distintivos[x.slug] ?? []).map((d) => (
+                      <span key={d} className={`rounded-full px-2 py-0.5 font-dm text-[8px] uppercase tracking-[1px] sm:px-2.5 sm:py-1 sm:text-[9px] sm:tracking-[1.5px] ${COLOR_DISTINTIVO[d]}`}>{t.distintivo[d]}</span>
+                    ))}
                     {x.garantiaHuasteca && (
                       <span className="rounded-full bg-negro/70 px-2 py-0.5 font-dm text-[8px] uppercase tracking-[1px] text-crema backdrop-blur sm:px-2.5 sm:py-1 sm:text-[9px] sm:tracking-[1.5px]">✦ {t.garantia}</span>
                     )}

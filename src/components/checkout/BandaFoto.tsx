@@ -48,7 +48,7 @@ export function BandaFoto({ items, locale }: { items: CarritoItem[]; locale: Loc
   return (
     <section className="relative bg-negro text-crema overflow-hidden">
       <div className="absolute inset-0">
-        <Image src={imagen} alt="" fill priority sizes="100vw" className="object-cover opacity-60" />
+        <Image src={imagen} alt={varios ? tc.tuViajeHuasteca : titulo} fill priority sizes="100vw" className="object-cover opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/55 to-negro/10" aria-hidden="true" />
       </div>
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6 pt-20 sm:pt-28 pb-5 sm:pb-7">

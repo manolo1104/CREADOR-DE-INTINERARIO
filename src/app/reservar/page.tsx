@@ -11,6 +11,7 @@ import { GOOGLE_PERFIL_URL, GOOGLE_RATING } from "@/lib/resenas";
 import { getLocalizedPaquetes } from "@/lib/i18n/paquetes.en";
 import { precioVisible } from "@/lib/paquetes";
 import { CatalogoReservar } from "@/components/reservar/CatalogoReservar";
+import { distintivosDeTours } from "@/lib/distintivosTour";
 import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
 import { buildOrganizationNode, buildTourOffer, ORG_REF } from "@/lib/jsonld";
@@ -191,7 +192,10 @@ export default async function ReservarPage() {
       <section id="catalogo" className="mx-auto max-w-6xl px-6 py-8 sm:py-10">
         {/* «El más reservado» solo cuando la cifra vale algo (`vale`): con 2
             reservas de diferencia el sello mentiría. */}
-        <CatalogoReservar tours={tours} masReservado={stats && vale(stats.total) ? stats.masReservado : null} />
+        <CatalogoReservar
+          tours={tours}
+          distintivos={distintivosDeTours(TOURS_DB, stats?.porTour ?? null, stats && vale(stats.total) ? stats.masReservado : null)}
+        />
       </section>
 
       {/* ── PAQUETES (compacto) ────────────────────────────────────────── */}

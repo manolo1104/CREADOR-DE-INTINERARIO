@@ -33,7 +33,7 @@ export function GuiaHeroMockup() {
         <div className="relative bg-gradient-to-b from-verde-profundo to-negro">
           {/* Portada con foto real */}
           <div className="relative h-36">
-            <Image src="/imagenes/sotano-de-las-golondrinas/hero.jpg" alt="" fill className="object-cover opacity-85" sizes="290px" />
+            <Image src="/imagenes/sotano-de-las-golondrinas/hero.jpg" alt="Portada de la guía gratuita: el Sótano de las Golondrinas" fill className="object-cover opacity-85" sizes="290px" />
             <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/40 to-transparent" />
             <div className="absolute bottom-3 left-4 right-4">
               <p className="text-[7px] tracking-[2.5px] uppercase text-verde-vivo mb-1 font-dm">Guía gratis · 2026</p>

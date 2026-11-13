@@ -713,7 +713,8 @@ const es: BookingMessages = {
       "Aparta con el 30 % y liquida el resto el día del tour. Cancela gratis hasta 48 h antes. Guía NOM-09, entradas y seguro incluidos.",
     ogTitle: "Reservar tour en la Huasteca Potosina",
     ogDescription: "Aparta con el 30 % y liquida el resto el día del tour. Cancelación gratuita hasta 48 h antes.",
-    eyebrow: "Motor de reservas",
+    // «Motor de reservas» era lenguaje interno (auditoría del 13 nov 2026).
+    eyebrow: "Reserva tu recorrido",
     h1: "Elige tu recorrido",
     h1Acento: "y aparta tu lugar",
     introApartas: "No pagas todo hoy: ",
@@ -1344,7 +1345,7 @@ const en: BookingMessages = {
       "Pay 30 % today and settle the rest on tour day. Free cancellation up to 48 h before. NOM-09 guide, entrance fees and insurance included.",
     ogTitle: "Book a Huasteca Potosina tour",
     ogDescription: "A 30 % deposit holds your spot. Free cancellation up to 48 h before.",
-    eyebrow: "Booking engine",
+    eyebrow: "Book your tour",
     h1: "Pick your tour",
     h1Acento: "and hold your spot",
     introApartas: "You don't pay it all today: ",

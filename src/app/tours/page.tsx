@@ -120,7 +120,7 @@ const BADGES_EN: { Icon: LucideIcon; title: string; sub: string }[] = [
 // Los dos canales pesan igual a propósito: reservar en línea es tan válido como
 // escribir por WhatsApp, y antes el paso 01 solo ofrecía WhatsApp.
 const COMO_FUNCIONA_ES = [
-  { num: "01", titulo: "Reserva en línea o por WhatsApp", detalle: "Aparta tu lugar tú mismo en el motor de reservas, o escríbenos por WhatsApp con cuántos son, sus fechas y qué tours les interesan. Las dos formas valen igual; por WhatsApp respondemos en menos de una hora." },
+  { num: "01", titulo: "Reserva en línea o por WhatsApp", detalle: "Aparta tu lugar tú mismo en línea, o escríbenos por WhatsApp con cuántos son, sus fechas y qué tours les interesan. Las dos formas valen igual; por WhatsApp respondemos en menos de una hora." },
   { num: "02", titulo: "Confirmamos y apartamos tu lugar", detalle: "Te enviamos los detalles del tour: dónde y a qué hora pasamos por ti, la lista de qué llevar y cómo pagar — link de pago, transferencia bancaria o depósito en OXXO." },
   // 🔴 Decía "estar listo en el lobby de tu hotel en Xilitla o Ciudad Valles…
   // transporte, entradas, desayuno, guía": ni todos recogen en Valles (cinco
@@ -129,7 +129,7 @@ const COMO_FUNCIONA_ES = [
   { num: "03", titulo: "Disfruta sin preocupaciones", detalle: "El día del tour solo preocúpate por estar listo a la hora que te confirmamos: en casi todos los recorridos pasamos por ti a tu hospedaje. Lo que incluye cada uno —transporte, entradas, guía y, según el recorrido, desayuno— ya va en el precio." },
 ];
 const COMO_FUNCIONA_EN = [
-  { num: "01", titulo: "Book online or on WhatsApp", detalle: "Reserve your spot yourself in our booking engine, or message us on WhatsApp with your group size, your dates and the tours you're interested in. Either way works; on WhatsApp we reply in under an hour." },
+  { num: "01", titulo: "Book online or on WhatsApp", detalle: "Reserve your spot yourself online, or message us on WhatsApp with your group size, your dates and the tours you're interested in. Either way works; on WhatsApp we reply in under an hour." },
   { num: "02", titulo: "We confirm and reserve your spot", detalle: "We send you the tour details: meeting point, departure time, a what-to-bring list and how to pay — payment link, bank transfer or cash deposit at OXXO." },
   { num: "03", titulo: "Enjoy, worry-free", detalle: "On tour day, just be ready at the time we confirm: on almost every tour we pick you up at your lodging. Whatever each tour includes — transport, entrance fees, a guide and, depending on the tour, breakfast — is already in the price." },
 ];

@@ -788,7 +788,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/imagenes/guias/manolo-covarrubias.jpg"
-                    alt=""
+                    alt="Manolo Covarrubias, autor"
                     className="h-8 w-8 flex-shrink-0 rounded-full border border-negro/10 object-cover object-top"
                   />
                   <span className="font-medium text-negro/75 transition-colors group-hover:text-verde-selva">Manolo Covarrubias</span>
@@ -993,7 +993,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                         {r.coverImageUrl && (
                           <div className="h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl bg-negro/5">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={r.coverImageUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+                            <img src={r.coverImageUrl} alt={r.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
                           </div>
                         )}
                         <div className="min-w-0">
@@ -1024,7 +1024,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                     {p.coverImageUrl && (
                       <div className="mb-3 aspect-video overflow-hidden rounded-2xl bg-negro/5">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={p.coverImageUrl} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                        <img src={p.coverImageUrl} alt={p.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
                       </div>
                     )}
                     <h3 className="font-cormorant text-xl leading-snug text-verde-profundo transition-colors group-hover:text-verde-selva">{p.title}</h3>

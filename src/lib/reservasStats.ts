@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NO_CUENTAN } from "@/lib/cupoTour";
+import { contarReservasPorTour } from "@/lib/distintivosTour";
 
 /**
  * Prueba social del motor de reservas, sacada de reservas REALES.
@@ -53,18 +54,14 @@ export async function getReservasStats(): Promise<ReservasStats | null> {
     // algún día se crearan reservas antes de cobrar, ESTE número deja de ser
     // honesto y hay que volver a filtrar.
 
-    const [total, ultimos30, agrupado] = await Promise.all([
+    const [total, ultimos30, vendidas] = await Promise.all([
       prisma.tourBooking.count({ where: esVenta }),
       prisma.tourBooking.count({ where: { ...esVenta, createdAt: { gte: hace30 } } }),
-      prisma.tourBooking.groupBy({
-        by: ["tourSlug"],
-        where: esVenta,
-        _count: { _all: true },
-      }),
+      prisma.tourBooking.findMany({ where: esVenta, select: { tourSlug: true, lineItems: true } }),
     ]);
 
-    const porTour: Record<string, number> = {};
-    for (const g of agrupado) porTour[g.tourSlug] = g._count._all;
+    // 🔴 Cada recorrido del carrito cuenta, no solo el primero (13 nov 2026).
+    const porTour = contarReservasPorTour(vendidas);
 
     // "El más reservado" solo si de verdad lo es: al menos 5 reservas y el
     // doble que el segundo. Con números parejos la etiqueta no dice nada.
