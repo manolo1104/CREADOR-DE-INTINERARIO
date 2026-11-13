@@ -464,6 +464,26 @@ export interface CobroVisible {
   motivoAnulacion: string | null;
   creadoPor: string | null;
   comprobantes: { id: string; nombreArchivo: string; tipoMime: string }[];
+  /** Verificación contra el banco (12 nov 2026): vacío = sin verificar. */
+  verificacion: VerificacionVisible | null;
+  claveRastreo: string | null;
+  bancoEmisor: string | null;
+}
+
+export interface VerificacionVisible {
+  /** banxico | manual */
+  via: string;
+  por: string | null;
+  en: string;
+}
+
+/** Los métodos en los que tiene sentido verificar contra el banco. */
+export const METODOS_VERIFICABLES = ["transferencia", "deposito"] as const;
+export const esVerificable = (metodo: string | null | undefined) =>
+  (METODOS_VERIFICABLES as readonly string[]).includes(metodo ?? "");
+
+function verificacionDe(m: { verificadoEn: Date | null; verificadoPor: string | null; verificacion: string | null }): VerificacionVisible | null {
+  return m.verificadoEn ? { via: m.verificacion ?? "manual", por: m.verificadoPor, en: m.verificadoEn.toISOString() } : null;
 }
 
 /** Los cobros de una reserva, con sus comprobantes. */
@@ -493,7 +513,72 @@ export async function cobrosDeReserva(reservaId: string): Promise<CobroVisible[]
     comprobantes: archivos
       .filter(a => a.movimientoId === m.id)
       .map(a => ({ id: a.id, nombreArchivo: a.nombreArchivo, tipoMime: a.tipoMime })),
+    verificacion: verificacionDe(m),
+    claveRastreo: m.claveRastreo,
+    bancoEmisor: m.bancoEmisor,
   }));
+}
+
+// ── Verificación contra el banco (12 nov 2026) ──────────────────────────────
+
+export interface TransferenciaPorVerificar {
+  id: string;
+  fecha: string;
+  monto: number;
+  metodo: string;
+  metodoLabel: string;
+  referencia: string | null;
+  claveRastreo: string | null;
+  bancoEmisor: string | null;
+  creadoPor: string | null;
+  reservaId: string | null;
+  folio: string | null;
+  cliente: string | null;
+  comprobantes: { id: string; nombreArchivo: string }[];
+}
+
+/**
+ * Transferencias y depósitos vivos de los últimos `dias` que nadie ha
+ * verificado contra el banco. Es la lista de la pestaña Cobros.
+ */
+export async function transferenciasSinVerificar(dias = 60): Promise<TransferenciaPorVerificar[]> {
+  const desde = new Date(Date.now() - dias * 86_400_000).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const movs = await prisma.movimiento.findMany({
+    where: {
+      tipo: "cobro",
+      anulado: false,
+      verificadoEn: null,
+      metodoPago: { in: [...METODOS_VERIFICABLES] },
+      fecha: { gte: desde },
+    },
+    orderBy: [{ fecha: "desc" }, { createdAt: "desc" }],
+    take: 100,
+  });
+  const ids = movs.map(m => m.reservaId).filter((x): x is string => !!x);
+  const reservas = ids.length
+    ? await prisma.tourBooking.findMany({ where: { id: { in: ids } }, select: { id: true, confirmationNumber: true, customerName: true } })
+    : [];
+  const archivos = movs.length
+    ? await prisma.evidencia.findMany({ where: { movimientoId: { in: movs.map(m => m.id) } }, select: { id: true, movimientoId: true, nombreArchivo: true } })
+    : [];
+  return movs.map(m => {
+    const r = reservas.find(x => x.id === m.reservaId);
+    return {
+      id: m.id,
+      fecha: m.fecha,
+      monto: m.monto,
+      metodo: m.metodoPago ?? "otro",
+      metodoLabel: etiquetaMetodo(m.metodoPago),
+      referencia: m.referencia ?? referenciaDeConcepto(m.concepto),
+      claveRastreo: m.claveRastreo,
+      bancoEmisor: m.bancoEmisor,
+      creadoPor: m.creadoPor,
+      reservaId: m.reservaId,
+      folio: r?.confirmationNumber ?? null,
+      cliente: r?.customerName ?? m.proveedor ?? null,
+      comprobantes: archivos.filter(a => a.movimientoId === m.id).map(a => ({ id: a.id, nombreArchivo: a.nombreArchivo })),
+    };
+  });
 }
 
 // ── Efectivo sin entregar ───────────────────────────────────────────────────

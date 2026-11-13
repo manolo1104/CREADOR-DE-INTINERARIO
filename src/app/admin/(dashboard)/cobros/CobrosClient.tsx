@@ -1,5 +1,6 @@
 "use client";
 
+import VerificarPagos from "./VerificarPagos";
 import { useEffect, useState } from "react";
 import { Link2, Copy, Check, Ban, ExternalLink, Loader2, MessageCircle, Search } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
@@ -269,6 +270,9 @@ export default function CobrosClient(
       <p className="text-[rgba(22,54,42,0.66)] font-dm text-sm mb-6">
         Una liga de pago para mandar por WhatsApp. El cliente paga con tarjeta y aquí ves cuándo lo hizo.
       </p>
+
+      {/* ── Verificar pagos (12 nov 2026): transferencias con Banxico y Stripe ── */}
+      <VerificarPagos />
 
       {/* ── Crear ────────────────────────────────────────────────────────── */}
       <div className="panel-card panel-card-alta p-5 mb-6">

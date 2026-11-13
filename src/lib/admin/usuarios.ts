@@ -182,16 +182,21 @@ export function primeraPagina(secciones: SeccionAdmin[]): string | null {
 export type AccionFinanciera =
   | "registrarCobro"          // el dinero que entra por una reserva
   | "marcarEntregaEfectivo"   // dar por recibido el efectivo que trae alguien
-  | "anularMovimiento";       // deshacer un cobro (queda el rastro)
+  | "anularMovimiento"        // deshacer un cobro (queda el rastro)
+  // 12 nov 2026 (Manolo: «que Erick verifique los pagos desde el panel»):
+  | "verificarCobro"          // preguntarle a Banxico (CEP) si una transferencia llegó
+  | "verificarCobroManual";   // darla por vista en la cuenta, sin Banxico (Inbursa→Inbursa, ventanilla)
 
 // 🔴 Quien VENDE tiene que poder registrar el cobro: es quien recibe el dinero
 // y el único que sabe si llegó en efectivo o por transferencia. Lo que NO puede
 // es dar por entregado ese efectivo — eso lo confirma quien lo recibe.
 const PERMISOS_FINANCIEROS: Record<RolAdmin, AccionFinanciera[]> = {
   guia:      [],
-  operacion: ["registrarCobro"],
-  socio:     ["registrarCobro", "marcarEntregaEfectivo", "anularMovimiento"],
-  dueno:     ["registrarCobro", "marcarEntregaEfectivo", "anularMovimiento"],
+  // Erick verifica CON Banxico (queda la prueba del banco central); dar por
+  // vista una transferencia sin esa prueba solo lo hace quien ve la cuenta.
+  operacion: ["registrarCobro", "verificarCobro"],
+  socio:     ["registrarCobro", "marcarEntregaEfectivo", "anularMovimiento", "verificarCobro", "verificarCobroManual"],
+  dueno:     ["registrarCobro", "marcarEntregaEfectivo", "anularMovimiento", "verificarCobro", "verificarCobroManual"],
 };
 
 export function puedeHacer(rol: RolAdmin, accion: AccionFinanciera): boolean {
@@ -275,6 +280,11 @@ const RUTAS_RESTRINGIDAS: { prefijo: string; seccion: SeccionAdmin; exacto?: boo
   { prefijo: "/api/admin/analisis", seccion: "analisis" },
   { prefijo: "/admin/cobros",                seccion: "cobros"   },
   { prefijo: "/api/admin/links-pago",        seccion: "cobros"   },
+  // Verificar pagos (12 nov 2026): la lista «por verificar» y lo que dice Stripe
+  // son de la pestaña Cobros. Verificar UN cobro y el catálogo de bancos de
+  // Banxico se usan desde el cuadro de cobros de varias pestañas (compartidas).
+  { prefijo: "/api/admin/cobros/sin-verificar", seccion: "cobros" },
+  { prefijo: "/api/admin/stripe",            seccion: "cobros"   },
   // El corte semanal enseña costos, utilidad y el reparto entre socios.
   { prefijo: "/admin/cortes",                seccion: "cortes"   },
   { prefijo: "/api/admin/cortes",            seccion: "cortes"   },
@@ -336,23 +346,26 @@ export function seccionRestringida(pathname: string): SeccionAdmin | null {
 type ApiDePestana = string | RegExp;
 const COBROS_DE_RESERVA = /^\/api\/admin\/reservas\/[^/]+\/(cobros|evidencia)$/;
 const CHECKIN_DE_RESERVA = /^\/api\/admin\/reservas\/[^/]+\/checkin$/;
+/** Verificar un cobro contra el banco y el catálogo de bancos: el cuadro de cobros (12 nov 2026). */
+const VERIFICAR_COBRO = /^\/api\/admin\/cobros\/[^/]+\/verificar$/;
+const BANCOS_BANXICO = "/api/admin/banxico";
 
 /** Las APIs que llama la página de cada pestaña (lo compartido va en cada una que lo usa). */
 export const APIS_POR_SECCION: Record<SeccionAdmin, ApiDePestana[]> = {
   inicio:        ["/api/admin/permisos", "/api/admin/revision-semanal", "/api/admin/cupo-paquete", "/api/admin/rio-estado", "/api/admin/migrate-images"],
-  reservas:      ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple"],
-  calendario:    ["/api/admin/fechas-cerradas", COBROS_DE_RESERVA, CHECKIN_DE_RESERVA, "/api/admin/evidencia"],
-  cotizaciones:  ["/api/admin/cotizaciones", "/api/admin/codigos-cumple", COBROS_DE_RESERVA, "/api/admin/evidencia"],
+  reservas:      ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple", VERIFICAR_COBRO, BANCOS_BANXICO],
+  calendario:    ["/api/admin/fechas-cerradas", COBROS_DE_RESERVA, CHECKIN_DE_RESERVA, "/api/admin/evidencia", VERIFICAR_COBRO, BANCOS_BANXICO],
+  cotizaciones:  ["/api/admin/cotizaciones", "/api/admin/codigos-cumple", COBROS_DE_RESERVA, "/api/admin/evidencia", VERIFICAR_COBRO, BANCOS_BANXICO],
   cotizador:     ["/api/admin/costos", "/api/admin/precios-extras", "/api/admin/tarifas-proveedor"],
   clientes:      ["/api/admin/clientes"],
   ingresos:      ["/api/admin/kpis"],
   curso:         ["/api/admin/curso"],
   bitacora:      ["/api/admin/bitacora"],
   cortes:        ["/api/admin/cortes"],
-  cobros:        ["/api/admin/links-pago"],
+  cobros:        ["/api/admin/links-pago", "/api/admin/cobros", "/api/admin/stripe", BANCOS_BANXICO],
   fotos:         [],
   resenas:       ["/api/admin/resenas", /^\/api\/admin\/reservas\/[^/]+\/resena-whatsapp$/],
-  salidas:       ["/api/admin/salidas", COBROS_DE_RESERVA, "/api/admin/evidencia"],
+  salidas:       ["/api/admin/salidas", COBROS_DE_RESERVA, "/api/admin/evidencia", VERIFICAR_COBRO, BANCOS_BANXICO],
   analisis:      ["/api/admin/analisis"],
   bandeja:       ["/api/admin/bandeja", "/api/admin/leads", "/api/admin/tareas"],
   leads:         ["/api/admin/leads", "/api/admin/tareas"],

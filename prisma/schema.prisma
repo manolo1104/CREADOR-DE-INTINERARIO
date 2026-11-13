@@ -603,6 +603,20 @@ model Movimiento {
   /// aunque la primera vez haya fallado a la mitad (5 nov 2026).
   stripeRef  String?   @unique
 
+  /// Sólo en transferencias: la clave de rastreo SPEI del comprobante y el banco
+  /// que la mandó (código de Banxico: 40012 = BBVA). Con las dos se pregunta al
+  /// CEP de Banxico si el dinero llegó a la cuenta (12 nov 2026).
+  claveRastreo String?
+  bancoEmisor  String?
+  /// Verificado contra el banco: cuándo, quién y cómo («banxico» = lo confirmó
+  /// el CEP; «manual» = Manolo o Martín lo vieron en la cuenta). Vacío = sin
+  /// verificar. NO cambia lo cobrado: el dinero cuenta igual que antes.
+  verificadoEn        DateTime?
+  verificadoPor       String?
+  verificacion        String?
+  /// Lo último que contestó Banxico (estado y texto), para revisarlo después.
+  verificacionDetalle Json?
+
   creadoPor String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

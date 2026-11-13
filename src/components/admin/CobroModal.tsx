@@ -8,6 +8,7 @@ import { METODOS_COBRO, avisoDeCobro, requiereComprobante, type AccionCobro, typ
 import { RECEPTORES } from "@/lib/admin/corteSemanal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import Comprobantes, { type ArchivoComprobante } from "./Comprobantes";
+import VerificarCobro from "./VerificarCobro";
 
 const fmx = (n: number) => `$${n.toLocaleString("es-MX")}`;
 const hoy = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
@@ -33,7 +34,14 @@ export interface CobroFila {
   motivoAnulacion: string | null;
   creadoPor: string | null;
   comprobantes: { id: string; nombreArchivo: string; tipoMime: string }[];
+  /** Verificado contra el banco (12 nov 2026). */
+  verificacion?: { via: string; por: string | null; en: string } | null;
+  claveRastreo?: string | null;
+  bancoEmisor?: string | null;
 }
+
+/** Transferencias y depósitos: lo que se puede verificar contra el banco. */
+const VERIFICABLES = ["transferencia", "deposito"];
 
 export interface ReservaCobrable {
   id: string;
@@ -378,6 +386,7 @@ export default function CobroModal({
                   key={c.id} cobro={c} reservaId={reserva.id}
                   onAnular={() => anular(c)}
                   onCambio={lista => { setCobros(lista); flash(avisoDeCobro("corregido")); }}
+                  onVerificado={lista => { if (lista) setCobros(lista as CobroFila[]); playSuccess(); flash("✅ Verificado con el banco"); }}
                   flash={flash}
                 />
               ))}
@@ -430,12 +439,14 @@ export default function CobroModal({
  * el desglose del corte mentía para siempre. El importe no se toca aquí: para
  * eso se anula y se vuelve a registrar, y queda el rastro.
  */
-function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
+function Renglon({ cobro: c, reservaId, onAnular, onCambio, onVerificado, flash }: {
   cobro: CobroFila;
   reservaId: string;
   onAnular: () => void;
   /** Solo la lista: corregir no mueve el dinero. */
   onCambio: (cobros: CobroFila[]) => void;
+  /** Quedó verificado contra el banco (trae la lista nueva de la reserva). */
+  onVerificado: (lista?: unknown[]) => void;
   flash: (m: string) => void;
 }) {
   const [editando, setEditando] = useState(false);
@@ -529,7 +540,7 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
   }
 
   return (
-    <li className={`flex items-center gap-2 text-xs font-dm ${c.anulado ? "opacity-45 line-through" : ""}`}>
+    <li className={`flex flex-wrap items-center gap-2 text-xs font-dm ${c.anulado ? "opacity-45 line-through" : ""}`}>
       <span className="panel-cifra text-[#1B4332] font-medium w-20 shrink-0">{fmx(c.monto)}</span>
       <span className="text-[#1B4332]/60 truncate flex-1">
         {c.metodoLabel} · {c.fecha}
@@ -540,6 +551,11 @@ function Renglon({ cobro: c, reservaId, onAnular, onCambio, flash }: {
         <a key={a.id} href={`/api/admin/evidencia/${a.id}`} target="_blank" rel="noopener noreferrer"
            title={a.nombreArchivo} className="text-[#52B788] hover:underline shrink-0">📎</a>
       ))}
+      {/* Verificar contra el banco (12 nov 2026): Banxico para transferencias.
+          «Lo vi en Inbursa» va solo en la pestaña Cobros, que sabe quién mira. */}
+      {!c.anulado && VERIFICABLES.includes(c.metodo) && (
+        <VerificarCobro cobro={c} onListo={lista => onVerificado(lista)} />
+      )}
       {!c.anulado && (
         <>
           <button type="button" onClick={() => { playClick(); setEditando(true); }} title="Cambiar el método o quién lo recibió"
