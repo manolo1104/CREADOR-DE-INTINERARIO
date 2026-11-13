@@ -6,6 +6,7 @@ import { HABITACIONES_HOTEL, vistaHabitacion } from "@/lib/habitaciones";
 import { formatMXN } from "@/lib/tourBooking";
 import { precioHotelDesde } from "@/components/carrito/carritoComun";
 import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
+import { BOTON_CONTADOR } from "@/components/checkout/estilos";
 
 /** Hospedaje opcional en el Hotel Paraíso Encantado, dentro del carrito. */
 export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
@@ -30,7 +31,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
           multiplicador del ticket detrás de un clic a ciegas era caro.
           Ahora la oferta se ve sin abrir nada, y "ya tengo hospedaje"
           sigue siendo un camino explícito, no una omisión. */}
-      <section className="mt-8 border border-negro/10 bg-white p-5">
+      <section className="mt-8 rounded-xl border border-negro/10 bg-white p-5">
         <div>
           <p className="font-cormorant text-verde-profundo text-xl">
             {t.hospedajeTitulo}
@@ -50,7 +51,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                   key={h.id}
                   type="button"
                   onClick={() => { setConHotel(true); setCobro(null); }}
-                  className="group text-left border border-negro/10 hover:border-verde-selva overflow-hidden transition-colors"
+                  className="group text-left rounded-xl border border-negro/10 hover:border-verde-selva overflow-hidden transition-colors"
                 >
                   <span className="relative block h-20">
                     <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 33vw, 180px" />
@@ -66,7 +67,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
               <button
                 type="button"
                 onClick={() => { setConHotel(true); setCobro(null); }}
-                className="bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+                className="rounded-xl bg-verde-selva hover:bg-[#2e5714] text-crema px-5 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
               >
                 {t.hospedajeVerHabitaciones}
               </button>
@@ -92,7 +93,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                 const idx    = habs.findIndex((x) => x.habitacionId === h.id);
                 const activa = idx >= 0;
                 return (
-                  <div key={h.id} className={`border overflow-hidden transition-colors ${activa ? "border-verde-selva" : "border-negro/12"}`}>
+                  <div key={h.id} className={`rounded-xl border overflow-hidden transition-colors ${activa ? "border-verde-selva" : "border-negro/12"}`}>
                     <button
                       type="button"
                       onClick={() => {
@@ -135,12 +136,12 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                         <span className="flex items-center gap-2">
                           <button type="button" aria-label={t.menosHuespedes(h.nombre)}
                             onClick={() => { setCobro(null); setHabs((prev) => prev.map((x) => x.habitacionId === h.id ? { ...x, huespedes: Math.max(1, x.huespedes - 1) } : x)); }}
-                            className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                            className={BOTON_CONTADOR}>−</button>
                           <span className="font-dm text-[12px] text-negro/80 w-4 text-center">{habs[idx].huespedes}</span>
                           <button type="button" aria-label={t.masHuespedes(h.nombre)}
                             onClick={() => { setCobro(null); setHabs((prev) => prev.map((x) => x.habitacionId === h.id ? { ...x, huespedes: Math.min(h.maxHuespedes, x.huespedes + 1) } : x)); }}
                             disabled={habs[idx].huespedes >= h.maxHuespedes}
-                            className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm disabled:opacity-30">+</button>
+                            className={BOTON_CONTADOR}>+</button>
                         </span>
                       </div>
                     )}
@@ -173,7 +174,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                 <input
                   type="date" value={checkin} min={minDate}
                   onChange={(e) => { setCheckin(e.target.value); setCobro(null); }}
-                  className="w-full border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
+                  className="w-full rounded-xl border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
                 />
               </div>
               <div>
@@ -183,7 +184,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                 <input
                   type="date" value={checkout} min={checkin || minDate}
                   onChange={(e) => { setCheckout(e.target.value); setCobro(null); }}
-                  className="w-full border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
+                  className="w-full rounded-xl border border-negro/15 bg-white px-3 py-2.5 font-dm text-sm text-negro focus:border-verde-selva outline-none"
                 />
               </div>
             </div>
@@ -222,7 +223,7 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                   </span>
                 </p>
                 {(hotelQuote.nochesGratis ?? 0) > 0 && (
-                  <p className="font-dm text-[12px] text-verde-selva bg-verde-selva/8 border border-verde-selva/25 px-2.5 py-1.5">
+                  <p className="rounded-lg font-dm text-[12px] text-verde-selva bg-verde-selva/8 border border-verde-selva/25 px-2.5 py-1.5">
                     {t.nochesGratis(hotelQuote.nochesGratis ?? 0, formatMXN(hotelQuote.ahorro ?? 0))}
                   </p>
                 )}

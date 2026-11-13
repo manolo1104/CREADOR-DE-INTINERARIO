@@ -9,6 +9,7 @@ import { localizeTour } from "@/lib/i18n/localize";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { trackTourEvent } from "@/lib/tourTracker";
 import { nombreCorto } from "@/components/carrito/carritoComun";
+import { BOTON_CONTADOR } from "@/components/checkout/estilos";
 import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 
 /** Un recorrido del carrito: fecha, personas o vehículo, elección, extras y qué incluye. */
@@ -25,7 +26,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
     // se sacrificó; el calendario no.
     <div
       ref={(el) => { renglonRefs.current[i.uid] = el; }}
-      className={`animate-slide-up flex gap-3 sm:gap-4 border bg-white p-3 sm:p-4 transition-colors duration-500 ${
+      className={`animate-slide-up flex gap-3 sm:gap-4 rounded-xl border bg-white p-3 sm:p-4 transition-[border-color,box-shadow] duration-500 ${
         resaltado === i.uid
           ? "border-terracota ring-2 ring-terracota/25"
           : recienLlegado === i.uid
@@ -33,7 +34,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
             : "border-negro/10"
       }`}
     >
-                  <div className="relative w-16 h-14 sm:w-24 sm:h-20 flex-shrink-0 overflow-hidden">
+                  <div className="relative w-16 h-14 sm:w-24 sm:h-20 flex-shrink-0 overflow-hidden rounded-lg">
                     <Image src={i.tourImage} alt={i.tourName} fill className="object-cover" sizes="(max-width: 640px) 64px, 96px" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -61,7 +62,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                                 {formatMXN(Math.round(i.total * (100 - resumen.descuentoPorItem[i.uid]) / 100))}
                               </span>
                             </span>
-                            <span className="mt-1 font-dm text-[9px] tracking-[1px] uppercase text-verde-selva bg-verde-selva/10 px-1.5 py-0.5">
+                            <span className="mt-1 rounded-full font-dm text-[9px] tracking-[1px] uppercase text-verde-selva bg-verde-selva/10 px-1.5 py-0.5">
                               −{resumen.descuentoPorItem[i.uid]} %
                             </span>
                           </span>
@@ -71,7 +72,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                         <button
                           onClick={() => quitar(i.uid)}
                           aria-label={t.quitar(nombreCorto(i.tourSlug, i.tourName, locale))}
-                          className="w-8 h-8 -mr-1.5 flex items-center justify-center text-negro/30 hover:text-terracota transition-colors"
+                          className="w-9 h-9 -mr-2 flex items-center justify-center rounded-full text-negro/30 hover:bg-terracota/8 hover:text-terracota transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -126,7 +127,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                             value={i.ruta}
                             onChange={(e) => cambiarVehiculo(i, { ruta: e.target.value })}
                             aria-label={t.rutaDe(nombreCorto(i.tourSlug, i.tourName, locale))}
-                            className="border border-negro/15 bg-white px-2 py-1.5 font-dm text-[12px] text-negro"
+                            className="rounded-lg border border-negro/15 bg-white px-2.5 py-2 font-dm text-[12px] text-negro"
                           >
                             {(TOURS_DB.find((t) => t.slug === i.tourSlug)?.rutas ?? []).map((r) => (
                               <option key={r.nombre} value={r.nombre}>{r.nombre}</option>
@@ -136,7 +137,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                             value={i.vehiculo}
                             onChange={(e) => cambiarVehiculo(i, { vehiculo: e.target.value })}
                             aria-label={t.vehiculoDe(nombreCorto(i.tourSlug, i.tourName, locale))}
-                            className="border border-negro/15 bg-white px-2 py-1.5 font-dm text-[12px] text-negro"
+                            className="rounded-lg border border-negro/15 bg-white px-2.5 py-2 font-dm text-[12px] text-negro"
                           >
                             {(TOURS_DB.find((t) => t.slug === i.tourSlug)?.flota ?? []).map((v) => (
                               <option key={v.nombre} value={v.nombre}>{v.nombre}</option>
@@ -145,11 +146,11 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                           <span className="flex items-center gap-2">
                             <button type="button" aria-label={t.menosUnidades}
                               onClick={() => cambiarVehiculo(i, { unidades: Math.max(1, (i.unidades ?? 1) - 1) })}
-                              className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                              className={BOTON_CONTADOR}>−</button>
                             <span className="font-dm text-[12px] text-negro/70">{t.unidades(i.unidades ?? 1)}</span>
                             <button type="button" aria-label={t.masUnidades}
                               onClick={() => cambiarVehiculo(i, { unidades: (i.unidades ?? 1) + 1 })}
-                              className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                              className={BOTON_CONTADOR}>+</button>
                           </span>
                         </span>
                       ) : (
@@ -174,17 +175,17 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                             // con un error genérico.
                             .filter(({ campo }) => campo === "adults" || !TOURS_DB.find((t) => t.slug === i.tourSlug)?.soloAdultos)
                             .map(({ campo, etiqueta, singular, nota }) => (
-                            <span key={campo} className="flex items-center gap-1.5">
+                            <span key={campo} className="flex items-center gap-1.5 rounded-full bg-negro/[0.03] p-0.5 pr-0.5">
                               <button type="button" aria-label={t.menos(etiqueta, nombreCorto(i.tourSlug, i.tourName, locale))}
                                 onClick={() => cambiarPersonas(i, campo, -1)}
-                                className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
-                              <span className="font-dm text-[11px] text-negro/65 whitespace-nowrap">
-                                {i[campo] ?? 0} {(i[campo] ?? 0) === 1 ? singular : etiqueta}
+                                className={BOTON_CONTADOR}>−</button>
+                              <span className="px-1 font-dm text-[12px] text-negro/75 whitespace-nowrap">
+                                <strong className="font-medium tabular-nums text-negro">{i[campo] ?? 0}</strong> {(i[campo] ?? 0) === 1 ? singular : etiqueta}
                                 {nota && <span className="text-negro/35"> ({nota})</span>}
                               </span>
                               <button type="button" aria-label={t.mas(etiqueta, nombreCorto(i.tourSlug, i.tourName, locale))}
                                 onClick={() => cambiarPersonas(i, campo, 1)}
-                                className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
+                                className={BOTON_CONTADOR}>+</button>
                             </span>
                           ))}
                         </span>
@@ -219,7 +220,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                       const tour = base ? localizeTour(base, locale) : undefined;
                       if (!tour?.eleccion) return null;
                       return (
-                        <div className={`mt-2.5 border p-2.5 ${i.eleccion ? "border-negro/10" : "border-terracota/40 bg-terracota/5"}`}>
+                        <div className={`mt-2.5 rounded-xl border p-2.5 ${i.eleccion ? "border-negro/10" : "border-terracota/40 bg-terracota/5"}`}>
                           <p className="font-dm text-[11px] text-negro/70 mb-2">{tour.eleccion.titulo}</p>
                           <div className="space-y-1.5">
                             {tour.eleccion.opciones.map((o) => {
@@ -234,7 +235,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                                   type="button"
                                   onClick={() => cambiar(i.uid, { eleccion: o.id })}
                                   aria-pressed={activa}
-                                  className={`w-full text-left border p-2 transition-colors ${
+                                  className={`w-full text-left rounded-lg border p-2 transition-colors ${
                                     activa ? "border-verde-selva bg-verde-selva/8" : "border-negro/15 hover:border-verde-selva/50"
                                   }`}
                                 >
@@ -274,7 +275,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                       const tour = TOURS_DB.find((x) => x.slug === i.tourSlug);
                       if (!tour || i.unidades || !esViajeroSolo(tour, i.adults, i.childrenMid, i.childrenSmall)) return null;
                       return (
-                        <div className="mt-2 border border-verde-selva/35 bg-verde-selva/5 p-2.5">
+                        <div className="mt-2 rounded-xl border border-verde-selva/35 bg-verde-selva/5 p-2.5">
                           <p className="font-dm text-[11px] text-negro/70 leading-snug">
                             <strong>{t.viajeroSoloTitulo}</strong> {t.viajeroSolo(CONFIRMA_SALIDA_DIAS)}
                           </p>
@@ -304,7 +305,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                       const puestos = i.addOns?.find((x) => x.id === a.id)?.cantidad ?? 0;
                       const activo  = puestos > 0;
                       return (
-                        <div key={a.id} className={`mt-2 border p-2.5 ${activo ? "border-verde-selva/50 bg-verde-selva/5" : "border-negro/10"}`}>
+                        <div key={a.id} className={`mt-2 rounded-xl border p-2.5 ${activo ? "border-verde-selva/50 bg-verde-selva/5" : "border-negro/10"}`}>
                           <div className="flex items-start justify-between gap-2">
                             <div className="min-w-0">
                               <p className="font-dm text-[12px] text-negro/80">{a.nombre}</p>
@@ -314,7 +315,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                             <button
                               type="button"
                               onClick={() => cambiarAddOn(i, a.id, activo ? 0 : pax)}
-                              className={`flex-shrink-0 text-[9px] tracking-[1.5px] uppercase font-dm px-2.5 py-1.5 border transition-colors ${
+                              className={`flex-shrink-0 rounded-full text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 border transition-colors ${
                                 activo ? "border-verde-selva bg-verde-selva text-crema" : "border-negro/25 text-negro/60 hover:border-verde-selva"
                               }`}
                             >
@@ -326,10 +327,10 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                               <span className="font-dm text-[11px] text-negro/55">{t.cuantosLoHacen}</span>
                               <span className="flex items-center gap-2">
                                 <button type="button" aria-label={t.menosUnidades} onClick={() => cambiarAddOn(i, a.id, Math.max(0, puestos - 1))}
-                                  className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">−</button>
+                                  className={BOTON_CONTADOR}>−</button>
                                 <span className="font-dm text-[12px] text-negro/70 w-4 text-center">{puestos}</span>
                                 <button type="button" aria-label={t.masUnidades} onClick={() => cambiarAddOn(i, a.id, Math.min(pax, puestos + 1))}
-                                  className="w-7 h-7 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm">+</button>
+                                  className={BOTON_CONTADOR}>+</button>
                               </span>
                             </div>
                           )}

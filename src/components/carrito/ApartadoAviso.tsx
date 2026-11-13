@@ -119,7 +119,7 @@ export function ApartadoAviso({ a, locale, className = "", anunciar = true, onCa
   let caja: ReactNode = null;
   if (conReloj) {
     caja = (
-      <div className="flex items-start gap-2.5 border border-verde-selva/25 bg-verde-selva/5 px-3 py-2.5">
+      <div className="flex items-start gap-2.5 rounded-xl border border-verde-selva/25 bg-verde-selva/5 px-3.5 py-3">
         <Clock className="w-4 h-4 mt-px flex-shrink-0 text-verde-selva" aria-hidden="true" />
         <div className="min-w-0">
           <p className="font-dm text-[13px] leading-snug text-negro/80">
@@ -135,7 +135,7 @@ export function ApartadoAviso({ a, locale, className = "", anunciar = true, onCa
     );
   } else if (a.estado === "vencido") {
     caja = (
-      <div className="flex items-start gap-2.5 border border-terracota/40 bg-terracota/5 px-3 py-2.5">
+      <div className="flex items-start gap-2.5 rounded-xl border border-terracota/40 bg-terracota/5 px-3.5 py-3">
         <TriangleAlert className="w-4 h-4 mt-px flex-shrink-0 text-terracota" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="font-dm text-[13px] font-medium leading-snug text-terracota">{tx.vencidoTitulo}</p>
@@ -144,7 +144,7 @@ export function ApartadoAviso({ a, locale, className = "", anunciar = true, onCa
             type="button"
             onClick={a.reapartar}
             disabled={a.ocupado}
-            className="mt-2 min-h-[44px] px-4 border border-verde-selva font-dm text-[11px] tracking-[1.5px] uppercase text-verde-selva transition-[transform,background-color] duration-150 ease-out active:scale-[0.97] [@media(hover:hover)]:hover:bg-verde-selva/10 disabled:opacity-50 disabled:cursor-wait disabled:active:scale-100"
+            className="mt-2 min-h-[44px] rounded-xl px-4 border border-verde-selva font-dm text-[11px] tracking-[1.5px] uppercase text-verde-selva transition-[transform,background-color] duration-150 ease-out active:scale-[0.97] [@media(hover:hover)]:hover:bg-verde-selva/10 disabled:opacity-50 disabled:cursor-wait disabled:active:scale-100"
           >
             {a.ocupado ? tx.apartando : tx.volver}
           </button>
@@ -154,7 +154,7 @@ export function ApartadoAviso({ a, locale, className = "", anunciar = true, onCa
   } else if (a.estado === "sinLugar" && a.mensajes.length > 0) {
     caja = (
       // Atenuado mientras se vuelve a pedir con la fecha nueva.
-      <div className={`flex items-start gap-2.5 border border-terracota/40 bg-terracota/5 px-3 py-2.5 transition-opacity duration-200 ${a.ocupado ? "opacity-60" : ""}`}>
+      <div className={`flex items-start gap-2.5 rounded-xl border border-terracota/40 bg-terracota/5 px-3.5 py-3 transition-opacity duration-200 ${a.ocupado ? "opacity-60" : ""}`}>
         <TriangleAlert className="w-4 h-4 mt-px flex-shrink-0 text-terracota" aria-hidden="true" />
         <div className="min-w-0 flex-1">
           <p className="font-dm text-[13px] font-medium leading-snug text-terracota">{tx.sinLugarTitulo}</p>

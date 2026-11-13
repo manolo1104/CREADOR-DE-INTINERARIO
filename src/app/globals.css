@@ -883,6 +883,34 @@ html[data-checkout-cerrado] {
      es el color, es el tachado y la leyenda. */
   --cal-apagado: rgb(14 23 16 / 0.55);
   --cal-tenue:   rgb(14 23 16 / 0.70);
+  /* El día elegido, el foco y el paso del ratón (13 nov 2026). En claro, el
+     verde de los botones (verde-selva) con texto crema: 5.6:1. */
+  --cal-acento:       58 107 26;
+  --cal-sobre-acento: 244 237 216;
+  /* El triángulo de «casi lleno». */
+  --cal-lleno: #c8372d;
+}
+
+/* ── El calendario en OSCURO (13 nov 2026) ──────────────────────────────────
+   La ficha del tour es oscura y el calendario abierto iba en una tarjeta crema:
+   un recuadro de otro color en medio de la columna («se ve raro», Manolo).
+   Esta clase lo pinta con los colores del sitio, y la usan también la hoja del
+   buscador del inicio y la del RZR.
+   - Días y títulos en crema (más de 14:1 sobre #0e1710).
+   - Etiquetas al 60 % (7:1) y días sin cupo al 40 % (4.3:1): más claros que un
+     día elegible a propósito; lo que los distingue es el tachado y la leyenda.
+   - El elegido en verde-vivo con texto NEGRO: con crema daba 2.8:1, con negro 5.5:1.
+   - El rojo de «casi lleno» se aclara: el de siempre da 2.8:1 sobre negro y un
+     triángulo de 8 px se perdía. */
+.cal-oscuro {
+  --cal-fg:     244 237 216;
+  --cal-titulo: 244 237 216;
+  --cal-aviso:  224 138 90;
+  --cal-apagado: rgb(244 237 216 / 0.4);
+  --cal-tenue:   rgb(244 237 216 / 0.6);
+  --cal-acento:       90 158 42;
+  --cal-sobre-acento: 14 23 16;
+  --cal-lleno: #e8685c;
 }
 
 /* ── La hoja del calendario en VIDRIO (ficha del tour, 8 oct 2026) ──────────

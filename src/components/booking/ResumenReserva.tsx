@@ -96,7 +96,7 @@ export function ResumenReserva({
   const cancelResto   = items.some((i) => !i.cancelacion);
 
   return (
-    <div className="border border-negro/10 bg-white p-5">
+    <div className="rounded-2xl border border-negro/[0.08] bg-white p-5 sm:p-6">
       <p className="text-[9px] tracking-[2px] uppercase text-negro/35 font-dm mb-4">
         {t.titulo}
       </p>

@@ -4,6 +4,7 @@ import { TRASLADOS, precioBase } from "@/lib/traslados";
 import { formatMXN } from "@/lib/tourBooking";
 import { trackTourEvent } from "@/lib/tourTracker";
 import type { CarritoCheckout } from "@/components/carrito/useCarritoCheckout";
+import { BOTON_CONTADOR } from "@/components/checkout/estilos";
 
 /** Traslado privado desde la ciudad de origen, dentro del carrito. */
 export function TrasladoCarrito({ c }: { c: CarritoCheckout }) {
@@ -18,7 +19,7 @@ export function TrasladoCarrito({ c }: { c: CarritoCheckout }) {
           curvas y neblina, y era el motivo por el que había gente que no
           venía. Va apagado por defecto, como el hotel: quien llega en su
           coche no tiene por qué ver un cargo que no pidió. */}
-      <section className="mt-8 border border-negro/10 bg-white p-5">
+      <section className="mt-8 rounded-xl border border-negro/10 bg-white p-5">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
@@ -59,7 +60,7 @@ export function TrasladoCarrito({ c }: { c: CarritoCheckout }) {
                     key={r.slug}
                     type="button"
                     onClick={() => { setCiudadTraslado(r.slug); setCobro(null); }}
-                    className={`text-left border p-3 transition-colors ${
+                    className={`text-left rounded-xl border p-3 transition-colors ${
                       activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-verde-selva/50"
                     }`}
                   >
@@ -79,11 +80,11 @@ export function TrasladoCarrito({ c }: { c: CarritoCheckout }) {
                   <span className="flex items-center gap-2">
                     <button type="button" aria-label={t.menosPasajeros}
                       onClick={() => { setPaxTraslado((n) => Math.max(1, n - 1)); setCobro(null); }}
-                      className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
+                      className={BOTON_CONTADOR}>−</button>
                     <span className="font-dm text-[13px] text-negro/80 w-6 text-center tabular-nums">{paxTraslado}</span>
                     <button type="button" aria-label={t.masPasajeros}
                       onClick={() => { setPaxTraslado((n) => Math.min(20, n + 1)); setCobro(null); }}
-                      className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
+                      className={BOTON_CONTADOR}>+</button>
                   </span>
                 </div>
 

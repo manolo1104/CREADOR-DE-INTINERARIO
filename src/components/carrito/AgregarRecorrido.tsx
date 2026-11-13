@@ -25,7 +25,7 @@ export function AgregarRecorrido({ c }: { c: CarritoCheckout }) {
            —fondo verde claro, borde sólido, el ＋ en un disco— y el gancho se
            lee antes que la acción, porque el gancho es el argumento. Sigue sin
            ser dorado a propósito: el dorado es «pagar», y esto no lo es. */
-        className="flex w-full items-center gap-3 border border-verde-selva/35 bg-verde-selva/[0.07] px-4 py-4 text-left transition-colors hover:border-verde-selva/60 hover:bg-verde-selva/10"
+        className="flex w-full items-center gap-3 rounded-xl border border-dashed border-verde-selva/45 bg-verde-selva/[0.05] px-4 py-4 text-left transition-colors hover:border-verde-selva hover:bg-verde-selva/[0.08]"
       >
         <span
           aria-hidden="true"
@@ -48,7 +48,7 @@ export function AgregarRecorrido({ c }: { c: CarritoCheckout }) {
       </button>
 
       {mostrarLista && (
-        <div className="mt-3 border border-negro/10 bg-white divide-y divide-negro/8 max-h-80 overflow-y-auto">
+        <div className="mt-3 rounded-xl border border-negro/10 bg-white divide-y divide-negro/8 max-h-80 overflow-y-auto">
           {TOURS_DB.filter((x) => !items.some((i) => i.tourSlug === x.slug))
             .map((x) => localizeTour(x, locale))
             .map((x) => (
@@ -65,7 +65,7 @@ export function AgregarRecorrido({ c }: { c: CarritoCheckout }) {
               }}
               className="w-full flex items-center gap-3 p-3 hover:bg-verde-selva/5 text-left transition-colors"
             >
-              <span className="relative w-14 h-11 flex-shrink-0 overflow-hidden">
+              <span className="relative w-14 h-11 flex-shrink-0 overflow-hidden rounded-lg">
                 <Image src={x.imagen_hero} alt="" fill className="object-cover" sizes="56px" />
               </span>
               <span className="min-w-0 flex-1">

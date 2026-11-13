@@ -4,7 +4,7 @@ import { EVENTO_ABRIR_CALENDARIO } from "@/lib/anclas";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
-import { ChevronLeft, ChevronRight, Clock, Hourglass, TriangleAlert, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Hourglass, TriangleAlert, X } from "lucide-react";
 import { minBookingDate } from "@/lib/tourBooking";
 import { bloquearScroll } from "@/lib/scrollLock";
 import { useLocale } from "@/lib/i18n/useLocale";
@@ -171,7 +171,7 @@ function etiquetaEstado(e: EstadoDia, personas: number, tc: TextosCupo): string 
  */
 function Marca({ estado, cargando = false }: { estado?: EstadoDia; cargando?: boolean }) {
   if (cargando) {
-    return <span aria-hidden="true" className="block w-1.5 h-1.5 my-px rounded-full bg-negro/15 motion-safe:animate-pulse" />;
+    return <span aria-hidden="true" className="block w-1.5 h-1.5 my-px rounded-full bg-[rgb(var(--cal-fg)/0.15)] motion-safe:animate-pulse" />;
   }
   if (estado === "libre") {
     return (
@@ -191,7 +191,7 @@ function Marca({ estado, cargando = false }: { estado?: EstadoDia; cargando?: bo
   if (estado === "casi-lleno") {
     return (
       <svg aria-hidden="true" viewBox="0 0 8 8" className="block w-2 h-2">
-        <path d="M4 .4 7.7 7.4H.3z" fill="#c8372d" />
+        <path d="M4 .4 7.7 7.4H.3z" style={{ fill: "var(--cal-lleno)" }} />
       </svg>
     );
   }
@@ -348,7 +348,7 @@ function MonthGrid({ year, month, ...p }: { year: number; month: number } & DiaP
                 className="flex flex-col items-center justify-center gap-[3px] h-11 sm:h-10 select-none"
               >
                 <span className={`w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-[13px] sm:text-[12px] font-dm tabular-nums ${
-                  esHoy ? "ring-1 ring-inset ring-negro/25 text-[rgb(var(--cal-fg)/0.6)] font-medium" : "text-[color:var(--cal-apagado)]"
+                  esHoy ? "ring-1 ring-inset ring-[rgb(var(--cal-fg)/0.3)] text-[rgb(var(--cal-fg)/0.7)] font-medium" : "text-[color:var(--cal-apagado)]"
                 }`}>
                   {date.getDate()}
                 </span>
@@ -374,18 +374,18 @@ function MonthGrid({ year, month, ...p }: { year: number; month: number } & DiaP
               aria-disabled={gris || undefined}
               aria-label={`${formatDisplay(ymd, p.locale)}${motivo ? `. ${motivo}` : ""}`}
               title={gris ? motivo : undefined}
-              className={`group flex flex-col items-center justify-center gap-[3px] h-11 sm:h-10 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-verde-selva/40 transition-transform duration-150 ease-out ${
+              className={`group flex flex-col items-center justify-center gap-[3px] h-11 sm:h-10 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[rgb(var(--cal-acento)/0.5)] transition-transform duration-150 ease-out ${
                 gris ? "cursor-not-allowed" : "active:scale-[0.94]"
               }`}
             >
               <span className={`w-8 h-8 sm:w-7 sm:h-7 flex items-center justify-center rounded-full text-[13px] sm:text-[12px] font-dm tabular-nums transition-colors duration-150 ${
                 isSelected
-                  ? "bg-verde-selva text-crema font-semibold animate-date-pop"
+                  ? "bg-[rgb(var(--cal-acento))] text-[rgb(var(--cal-sobre-acento))] font-semibold shadow-[0_0_0_3px_rgb(var(--cal-acento)/0.18)] animate-date-pop"
                   : gris
                     ? delCarrito
                       ? "text-[color:var(--cal-apagado)] line-through decoration-terracota/60"
-                      : "text-[color:var(--cal-apagado)] line-through decoration-negro/35"
-                    : "text-[rgb(var(--cal-fg)/0.85)] [@media(hover:hover)]:group-hover:bg-verde-selva/10 [@media(hover:hover)]:group-hover:text-verde-selva"
+                      : "text-[color:var(--cal-apagado)] line-through decoration-[rgb(var(--cal-fg)/0.35)]"
+                    : "text-[rgb(var(--cal-fg)/0.9)] [@media(hover:hover)]:group-hover:bg-[rgb(var(--cal-acento)/0.14)] [@media(hover:hover)]:group-hover:text-[rgb(var(--cal-acento))]"
               }`}>
                 {date.getDate()}
               </span>
@@ -443,7 +443,7 @@ function CalendarInner({
   const botonMes =
     "w-11 h-11 sm:w-9 sm:h-9 flex-shrink-0 flex items-center justify-center rounded-full border border-[rgb(var(--cal-fg)/0.1)] text-[rgb(var(--cal-fg)/0.6)] " +
     "transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.94] " +
-    "[@media(hover:hover)]:hover:bg-verde-selva/10 [@media(hover:hover)]:hover:text-verde-selva [@media(hover:hover)]:hover:border-verde-selva/30 " +
+    "[@media(hover:hover)]:hover:bg-[rgb(var(--cal-acento)/0.12)] [@media(hover:hover)]:hover:text-[rgb(var(--cal-acento))] [@media(hover:hover)]:hover:border-[rgb(var(--cal-acento)/0.35)] " +
     "disabled:opacity-25 disabled:cursor-not-allowed disabled:active:scale-100";
 
   // Atajo de los próximos 14 días: elegir fecha en un clic en lugar de navegar
@@ -483,17 +483,17 @@ function CalendarInner({
                 title={gris ? motivo : undefined}
                 className={`flex-shrink-0 w-12 flex flex-col items-center pt-1.5 pb-1 border text-center transition-[transform,border-color,background-color] duration-150 ease-out ${
                   activo
-                    ? "border-verde-selva bg-verde-selva text-crema"
+                    ? "border-[rgb(var(--cal-acento))] bg-[rgb(var(--cal-acento))] text-[rgb(var(--cal-sobre-acento))]"
                     : gris
                       ? "border-[rgb(var(--cal-fg)/0.1)] text-[color:var(--cal-apagado)] cursor-not-allowed"
-                      : "border-[rgb(var(--cal-fg)/0.15)] text-[rgb(var(--cal-fg))] active:scale-[0.96] [@media(hover:hover)]:hover:border-verde-selva/50"
+                      : "border-[rgb(var(--cal-fg)/0.15)] text-[rgb(var(--cal-fg))] active:scale-[0.96] [@media(hover:hover)]:hover:border-[rgb(var(--cal-acento)/0.5)]"
                 }`}
               >
-                <span className={`block text-[9px] font-dm uppercase tracking-[1px] ${activo ? "text-crema/70" : "text-[color:var(--cal-tenue)]"}`}>
+                <span className={`block text-[9px] font-dm uppercase tracking-[1px] ${activo ? "opacity-70" : "text-[color:var(--cal-tenue)]"}`}>
                   {d.dia}
                 </span>
                 <span className={`block text-sm font-dm leading-tight tabular-nums ${gris && !activo ? "line-through" : ""}`}>{d.num}</span>
-                <span className={`block text-[9px] font-dm ${activo ? "text-crema/70" : "text-[color:var(--cal-tenue)]"}`}>
+                <span className={`block text-[9px] font-dm ${activo ? "opacity-70" : "text-[color:var(--cal-tenue)]"}`}>
                   {d.mes}
                 </span>
                 {/* Sobre el verde de la elegida la marca no se leería: ahí el
@@ -598,8 +598,8 @@ interface Props {
    * lista dejaba de ser una lista.
    * `abierto` = la rejilla con los lugares de cada día, a la vista en TODOS los
    * tamaños, sin botón (auditoría del 13 nov 2026: «muestra el calendario con
-   * disponibilidad sin tener que hacer clic»). Es el de la ficha del tour. Sobre
-   * el tema oscuro va en su propia tarjeta clara, como la hoja.
+   * disponibilidad sin tener que hacer clic»). Es el de la ficha del tour. Con
+   * `tema="oscuro"` se pinta en oscuro (`.cal-oscuro`), no en una tarjeta crema.
    */
   modo?: "inline" | "compact" | "abierto";
   /** Días que ya ocupa otro recorrido del carrito. */
@@ -896,13 +896,22 @@ export function TourCalendar({
                 ? value
                   ? "border-verde-vivo/60 bg-verde-vivo/10 text-crema"
                   : "border-crema/20 bg-negro/40 text-crema/70 hover:border-crema/40"
+                // Claro (el carrito), 13 nov 2026: sin fecha era un recuadro
+                // terracota, que se leía como error antes de tocar nada. Ahora
+                // invita (borde punteado verde, ícono de calendario); el error
+                // de verdad lo pinta el renglón al intentar continuar.
                 : value
-                  ? "border-verde-selva bg-verde-selva/5 text-negro/80"
-                  : "border-terracota/60 bg-crema text-terracota"
+                  ? "rounded-xl border-verde-selva/40 bg-white text-negro/85 hover:border-verde-selva"
+                  : "rounded-xl border-dashed border-verde-selva/60 bg-verde-selva/[0.05] text-verde-profundo font-medium hover:border-verde-selva hover:bg-verde-selva/[0.08]"
             }`
       }
     >
-      <span className="truncate text-left">{value ? formatDisplay(value, locale) : textoPlaceholder}</span>
+      <span className="flex min-w-0 items-center gap-2">
+        {!disparadorSinCaja && tema === "claro" && (
+          <CalendarDays className="w-4 h-4 flex-shrink-0 text-verde-selva" aria-hidden="true" />
+        )}
+        <span className="truncate text-left">{value ? formatDisplay(value, locale) : textoPlaceholder}</span>
+      </span>
       <ChevronRight className="w-4 h-4 flex-shrink-0 opacity-40" />
     </button>
   );
@@ -925,17 +934,8 @@ export function TourCalendar({
    * crema (que da más de 14:1 sobre #0e1710) y el aviso pasa a un terracota
    * aclarado; el rojo original da 2.5:1 sobre negro y se perdía.
    */
-  const colores = oscura
-    ? ({
-        "--cal-fg": "244 237 216",
-        "--cal-titulo": "244 237 216",
-        "--cal-aviso": "224 138 90",
-        // Crema al 40 % sobre #0e1710 da 4.3:1 y al 60 %, 7:1. Con los 0.25 y
-        // 0.45 del tema claro se quedaban en 2.6:1 y no se leía «sin cupo».
-        "--cal-apagado": "rgb(244 237 216 / 0.4)",
-        "--cal-tenue": "rgb(244 237 216 / 0.6)",
-      } as React.CSSProperties)
-    : undefined;
+  // Los colores oscuros viven en `.cal-oscuro` (globals.css), la misma clase
+  // del calendario abierto de la ficha.
 
   // Centrada en todos los tamaños, o pegada abajo en el teléfono (lo de siempre).
   const sitio = hojaPosicion === "centro"
@@ -953,8 +953,7 @@ export function TourCalendar({
             onClick={() => setAbierto(false)}
           />
           <div
-            style={colores}
-            className={`absolute p-6 pb-8 max-h-[88vh] overflow-y-auto ${sitio} ${
+            className={`absolute p-6 pb-8 max-h-[88vh] overflow-y-auto ${sitio} ${oscura ? "cal-oscuro " : ""}${
               vidrio
                 ? "cal-hoja-vidrio"
                 : `shadow-2xl ${oscura ? "bg-negro border border-crema/15" : "bg-crema"}`
@@ -1013,7 +1012,10 @@ export function TourCalendar({
   if (modo === "abierto") {
     return (
       <div ref={cajaRef} className="scroll-mt-24">
-        <div className={tema === "oscuro" ? "bg-crema text-negro p-3 sm:p-4" : ""}>{inner}</div>
+        {/* En la ficha (oscura) el calendario es del mismo material que el
+            módulo de reserva: antes iba en una tarjeta crema y se veía como un
+            recuadro de otro color (Manolo, 13 nov 2026). */}
+        <div className={tema === "oscuro" ? "cal-oscuro bg-white/[0.035] px-2.5 pt-2.5 pb-3 sm:px-3" : ""}>{inner}</div>
         {value && lineaHora && (
           <p className={`mt-2 flex items-start gap-1.5 font-dm text-[11px] leading-snug ${
             tema === "oscuro" ? "text-crema/60" : "text-negro/50"

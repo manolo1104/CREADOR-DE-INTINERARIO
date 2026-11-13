@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { createPortal } from "react-dom";
-import { Check, ChevronDown, Clock, Search, X } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, Clock, Search, X } from "lucide-react";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { SelectorPersonas } from "@/components/buscador/SelectorPersonas";
 import { CELDA_BUSCADOR, ETIQUETA_BUSCADOR, FILA_BUSCADOR, SEPARADOR_BUSCADOR } from "@/components/buscador/estilos";
@@ -539,12 +539,17 @@ export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; d
                     <p className="mt-1.5 hidden font-dm text-[11px] text-verde-vivo/80 sm:mt-2 sm:block">✦ {t.salidasDiarias}</p>
                   )}
 
-                  <div className="mt-3 flex flex-col items-start gap-2 border-t border-white/8 pt-3 sm:mt-auto sm:flex-row sm:items-end sm:justify-between sm:gap-3 sm:pt-4">
+                  {/* Precio arriba y botón a todo lo ancho abajo (13 nov 2026). Iban
+                      lado a lado y, en tarjetas angostas (3 columnas a ~1100 px),
+                      «Ver fechas y reservar» se montaba sobre «MXN por persona»
+                      (Rafting, visto por Manolo). Apilados no chocan en ningún
+                      ancho ni idioma, y el botón queda del mismo tamaño en todas. */}
+                  <div className="mt-3 flex flex-col items-start gap-2 border-t border-white/8 pt-3 sm:mt-auto sm:items-stretch sm:gap-3.5 sm:pt-4">
                     <div className="min-w-0">
                       <p className="font-dm text-[10px] uppercase tracking-[1.5px] text-crema/40">{t.desde}</p>
-                      <p className="whitespace-nowrap font-cormorant text-[24px] font-light leading-none text-dorado sm:text-[28px]">
-                        {formatMXN(enFecha.precio)}
-                        <span className="ml-1 font-dm text-[10px] text-crema/45">MXN {etiquetaUnidad(x, en)}</span>
+                      <p className="font-cormorant text-[24px] font-light leading-none text-dorado sm:text-[28px]">
+                        <span className="whitespace-nowrap">{formatMXN(enFecha.precio)}</span>
+                        <span className="ml-1 whitespace-nowrap font-dm text-[10px] text-crema/45">MXN {etiquetaUnidad(x, en)}</span>
                       </p>
                       {/* En inglés el total lleva «MXN»: «Total for 2 people: $3,100»
                           se leía en dólares (auditoría del 10 nov 2026). */}
@@ -554,8 +559,9 @@ export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; d
                         <p className="mt-1 font-dm text-[12px] text-dorado/80">{t.minimo(x.groupMin)}</p>
                       ) : null}
                     </div>
-                    <span className="hidden shrink-0 rounded-full bg-verde-selva px-4 py-2.5 font-dm text-[11px] font-medium uppercase tracking-[1.5px] text-crema transition-colors group-hover:bg-verde-vivo sm:inline-block">
+                    <span className="hidden min-h-[44px] items-center justify-center gap-2 rounded-full bg-verde-selva px-4 py-2.5 text-center font-dm text-[11px] font-medium uppercase tracking-[1.5px] text-crema transition-colors group-hover:bg-verde-vivo sm:flex">
                       {t.verFechas}
+                      <ArrowRight className="h-3.5 w-3.5 transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true" />
                     </span>
                     <span className="shrink-0 font-dm text-[11px] font-medium text-dorado sm:hidden" aria-hidden="true">{t.verFechas} →</span>
                   </div>

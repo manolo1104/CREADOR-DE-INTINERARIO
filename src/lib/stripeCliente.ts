@@ -31,15 +31,16 @@ export const stripePromise = loadStripe(
  * el flujo por el que pasa casi toda la venta era el que peor se veía.
  *
  * Los valores son los del sitio (`tailwind.config.ts`): verde-selva, crema,
- * verde-profundo y DM Sans, con esquinas rectas como todo lo demás.
+ * verde-profundo y DM Sans. Desde el 13 nov 2026 los campos son blancos y con
+ * esquinas de 12 px, como los del checkout (`components/checkout/estilos.ts`).
  */
 export const APARIENCIA_STRIPE = {
   theme: "stripe" as const,
   variables: {
     colorPrimary:    "#3a6b1a",
-    colorBackground: "#f4edd8",
+    colorBackground: "#ffffff",
     colorText:       "#1a2e1a",
     fontFamily:      "DM Sans, sans-serif",
-    borderRadius:    "0px",
+    borderRadius:    "12px",
   },
 };

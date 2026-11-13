@@ -3,6 +3,7 @@
 import type { BookingMessages } from "@/lib/i18n/booking";
 import type { CampoContacto, ErroresContacto } from "@/lib/checkout/validarContacto";
 import { PreguntaRecogida } from "@/components/carrito/PreguntaRecogida";
+import { claseCampo } from "./estilos";
 import type { ZonaHospedaje } from "@/lib/tourPricing";
 
 interface Campo {
@@ -84,9 +85,7 @@ export function DatosContacto({
               spellCheck={c.tipo === "email" ? false : undefined}
               aria-invalid={!!error}
               aria-describedby={error ? `${id}-error` : c.ayuda ? `${id}-ayuda` : undefined}
-              className={`w-full border bg-white px-3 py-3 font-dm text-[15px] text-negro placeholder:text-negro/30 outline-none transition-colors ${
-                error ? "border-terracota focus:border-terracota" : "border-negro/20 focus:border-verde-selva"
-              }`}
+              className={claseCampo(!!error)}
             />
             {error ? (
               <p id={`${id}-error`} className="mt-1.5 font-dm text-[12px] text-terracota">{error}</p>
@@ -102,7 +101,7 @@ export function DatosContacto({
           por WhatsApp o no lo pedía. Esta casilla escribe `idiomaTour` en la
           reserva, que el panel y el calendario ya pintan desde hace semanas.
           Sin costo (Manolo, 8 oct 2026). */}
-      <label className="flex cursor-pointer items-start gap-2.5 border border-negro/15 bg-white p-3.5">
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-negro/15 bg-white p-3.5 transition-colors hover:border-verde-selva/50 has-[:checked]:border-verde-selva has-[:checked]:bg-verde-selva/[0.04]">
         <input
           type="checkbox"
           checked={guiaIngles}

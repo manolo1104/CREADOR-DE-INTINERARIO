@@ -11,7 +11,7 @@ import { trackTourEvent } from "@/lib/tourTracker";
 export function RespuestasRapidas({ titulo, respuestas }: { titulo: string; respuestas: RespuestaRapida[] }) {
   if (!respuestas.length) return null;
   return (
-    <div className="mt-5 border border-verde-selva/20 bg-verde-selva/[0.04]">
+    <div className="mt-5 overflow-hidden rounded-xl border border-verde-selva/20 bg-verde-selva/[0.04]">
       <p className="px-4 pt-3.5 pb-1 font-dm text-[10px] tracking-[2px] uppercase text-verde-selva">{titulo}</p>
       <div className="divide-y divide-verde-selva/15">
         {respuestas.map((r) => (

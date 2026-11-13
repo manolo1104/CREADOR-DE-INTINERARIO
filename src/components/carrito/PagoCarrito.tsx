@@ -126,7 +126,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId, conservarCarrito = 
           tarjeta, así que aquí solo se anuncia que existen: si no, nadie llega
           a verlos. Solo cuando el importe de hoy los habilita. */}
       {hayMsi(cobro.amount) && (
-        <p className="flex items-start gap-2 border border-verde-selva/30 bg-verde-selva/5 p-3 font-dm text-[12px] leading-relaxed text-verde-profundo">
+        <p className="flex items-start gap-2 rounded-xl border border-verde-selva/30 bg-verde-selva/5 p-3 font-dm text-[12px] leading-relaxed text-verde-profundo">
           <CreditCard className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-verde-selva" aria-hidden="true" />
           <span>
             <strong className="font-medium">{t.msiTitulo(MSI_PLAZOS.join(", "))}</strong>
@@ -135,9 +135,9 @@ export function PagoCarrito({ cobro, datos, onListo, formId, conservarCarrito = 
           </span>
         </p>
       )}
-      {error && <p className="text-sm font-dm text-terracota bg-terracota/10 border border-terracota/30 p-3">{error}</p>}
+      {error && <p className="rounded-xl text-sm font-dm text-terracota bg-terracota/10 border border-terracota/30 p-3">{error}</p>}
       {rechazada && (
-        <div className="border border-[#25D366]/50 bg-[#25D366]/8 p-3.5">
+        <div className="rounded-xl border border-[#25D366]/50 bg-[#25D366]/8 p-3.5">
           <p className="font-dm text-[12px] leading-snug text-negro/75">{t.tarjetaRechazadaAyuda}</p>
           <a
             href={waPagoAlterno}
@@ -145,7 +145,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId, conservarCarrito = 
             rel="noopener noreferrer"
             data-wa-manual="1"
             onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_tarjeta_rechazada", amount: cobro.amount, recorridos: cobro.lineItems.length })}
-            className="mt-3 flex w-full items-center justify-center gap-2.5 bg-[#25D366] py-3.5 font-dm text-[11px] uppercase tracking-[2px] text-white transition-[filter] hover:brightness-110"
+            className="mt-3 flex w-full items-center justify-center gap-2.5 rounded-xl bg-[#25D366] py-3.5 font-dm text-[11px] uppercase tracking-[2px] text-white transition-[filter] hover:brightness-110"
           >
             <MessageCircle className="w-4 h-4" aria-hidden="true" />
             {t.apartarPorWhatsapp}
@@ -155,7 +155,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId, conservarCarrito = 
       <button
         type="submit"
         disabled={!stripe || loading}
-        className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+        className="w-full rounded-xl bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm font-medium shadow-[0_10px_24px_-14px_rgba(58,107,26,0.9)] transition-[background-color,transform] duration-150 hover:bg-[#2e5714] active:scale-[0.99] disabled:opacity-40 flex items-center justify-center gap-2"
       >
         <Lock className="w-3.5 h-3.5" />
         {loading ? t.procesando : t.pagar(formatMXN(cobro.amount))}
@@ -188,7 +188,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId, conservarCarrito = 
           rel="noopener noreferrer"
           data-wa-manual="1"
           onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "carrito_pago_alterno", amount: cobro.amount, recorridos: cobro.lineItems.length })}
-          className="flex items-center justify-center gap-2.5 w-full border border-[#25D366]/60 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+          className="flex items-center justify-center gap-2.5 w-full rounded-xl border border-[#25D366]/60 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
         >
           <MessageCircle className="w-4 h-4" aria-hidden="true" />
           {t.apartarPorWhatsapp}

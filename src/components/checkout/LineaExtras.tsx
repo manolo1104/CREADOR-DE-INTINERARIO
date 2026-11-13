@@ -44,9 +44,9 @@ export function LineaExtras({ c }: { c: CarritoCheckout }) {
         trackTourEvent("EXTRAS_ABIERTO", { recorridos: items.length });
       }}
       aria-expanded={false}
-      className="mt-5 w-full flex items-center gap-3 border border-negro/10 bg-white hover:border-verde-selva/50 p-3 text-left transition-colors"
+      className="mt-5 w-full flex items-center gap-3 rounded-xl border border-negro/10 bg-white hover:border-verde-selva/50 p-3 text-left transition-colors"
     >
-      <span className="relative w-14 h-12 flex-shrink-0 overflow-hidden bg-verde-selva/10 flex items-center justify-center">
+      <span className="relative w-14 h-12 flex-shrink-0 overflow-hidden rounded-lg bg-verde-selva/10 flex items-center justify-center">
         {foto ? (
           <Image src={foto} alt="" fill sizes="56px" className="object-cover" />
         ) : (
@@ -57,7 +57,7 @@ export function LineaExtras({ c }: { c: CarritoCheckout }) {
         <span className="block font-dm text-[13px] text-negro/85">{textos.extrasTitulo}</span>
         <span className="block font-dm text-[11px] text-negro/50 leading-snug">{textos.extrasSub(formatMXN(precioHotelDesde))}</span>
       </span>
-      <span className="flex-shrink-0 text-verde-selva font-dm text-lg" aria-hidden="true">+</span>
+      <span className="grid h-8 w-8 flex-shrink-0 place-items-center rounded-full bg-verde-selva/10 text-verde-selva font-dm text-lg leading-none" aria-hidden="true">+</span>
     </button>
   );
 }

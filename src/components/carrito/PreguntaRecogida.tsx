@@ -124,7 +124,7 @@ export function PreguntaRecogida({
   const pideZona = !!cambiarZona && conCargo.length > 0;
 
   return (
-    <div className="border border-verde-selva/30 bg-verde-selva/5 p-4">
+    <div className="rounded-xl border border-verde-selva/30 bg-verde-selva/5 p-4">
       <label htmlFor={id} className="flex items-center gap-2 font-cormorant text-[22px] leading-tight text-verde-profundo">
         <MapPin className="h-5 w-5 flex-shrink-0 text-verde-selva" aria-hidden="true" />
         {modo === "sin-recogida" ? t.tituloSinRecogida : t.titulo}
@@ -148,7 +148,7 @@ export function PreguntaRecogida({
                   role="radio"
                   aria-checked={activo}
                   onClick={() => cambiarZona!(z)}
-                  className={`border px-3 py-3 text-left transition-colors ${
+                  className={`rounded-xl border px-3 py-3 text-left transition-colors ${
                     activo
                       ? "border-verde-selva bg-verde-selva text-white"
                       : errorZona
@@ -181,7 +181,7 @@ export function PreguntaRecogida({
         placeholder={t.placeholder}
         autoComplete="off"
         aria-describedby={`${id}-ayuda ${id}-vacio`}
-        className="mt-3 w-full border border-negro/20 bg-white px-3 py-3 font-dm text-base text-negro placeholder:text-negro/40 outline-none focus:border-verde-selva"
+        className="mt-3 w-full rounded-xl border border-negro/15 bg-white px-3.5 py-3 font-dm text-base text-negro placeholder:text-negro/40 outline-none transition-[border-color,box-shadow] focus:border-verde-selva focus:ring-4 focus:ring-verde-selva/10"
       />
       <p id={`${id}-vacio`} className="mt-2 font-dm text-[12px] leading-snug text-negro/55">
         {t.vacio}

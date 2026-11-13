@@ -1,6 +1,7 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, Lock } from "lucide-react";
+import { SOMBRA_ACTIVA, TARJETA } from "./estilos";
 
 export type EstadoPaso = "abierto" | "hecho" | "bloqueado";
 
@@ -37,25 +38,27 @@ export function PasoAcordeon({
     <section
       id={id}
       aria-labelledby={`${id}-titulo`}
-      className={`bg-white border scroll-mt-4 transition-colors ${abierto ? "border-negro/15 shadow-sm" : "border-negro/10"}`}
+      className={`${TARJETA} scroll-mt-4 transition-[box-shadow,border-color,background-color] duration-200 ${
+        abierto ? `border-negro/10 ${SOMBRA_ACTIVA}` : estado === "bloqueado" ? "bg-white/60" : ""
+      }`}
     >
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-4">
+      <div className={`flex items-center gap-3 px-4 sm:px-6 ${abierto ? "pt-5 pb-4" : "py-4"}`}>
         <span
-          className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-dm text-[12px] font-medium ${
+          className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-dm text-[13px] font-medium transition-colors ${
             estado === "hecho"
-              ? "bg-verde-selva text-crema"
+              ? "bg-verde-selva/10 text-verde-selva"
               : abierto
-                ? "bg-verde-profundo text-crema"
-                : "border border-negro/20 text-negro/35"
+                ? "bg-verde-selva text-crema shadow-[0_0_0_4px_rgba(58,107,26,0.12)]"
+                : "border border-negro/15 text-negro/35"
           }`}
           aria-hidden="true"
         >
-          {estado === "hecho" ? <Check className="w-4 h-4" /> : numero}
+          {estado === "hecho" ? <Check className="w-4 h-4" strokeWidth={2.5} /> : numero}
         </span>
         <div className="min-w-0 flex-1">
           <h2
             id={`${id}-titulo`}
-            className={`font-cormorant text-[22px] leading-tight ${estado === "bloqueado" ? "text-negro/35" : "text-verde-profundo"}`}
+            className={`font-cormorant leading-tight ${abierto ? "text-[24px]" : "text-[21px]"} ${estado === "bloqueado" ? "text-negro/40" : "text-verde-profundo"}`}
           >
             {titulo}
           </h2>
@@ -69,14 +72,15 @@ export function PasoAcordeon({
             onClick={onEditar}
             aria-expanded={false}
             aria-controls={`${id}-contenido`}
-            className="flex-shrink-0 font-dm text-[12px] text-verde-selva underline underline-offset-2 hover:text-verde-vivo"
+            className="flex-shrink-0 min-h-[36px] rounded-full border border-verde-selva/25 px-3.5 font-dm text-[12px] text-verde-selva transition-colors hover:border-verde-selva hover:bg-verde-selva/5"
           >
             {textoEditar}
           </button>
         )}
+        {estado === "bloqueado" && <Lock className="w-3.5 h-3.5 flex-shrink-0 text-negro/25" aria-hidden="true" />}
       </div>
       {abierto && (
-        <div id={`${id}-contenido`} className="px-4 sm:px-5 pb-5">
+        <div id={`${id}-contenido`} className="px-4 sm:px-6 pb-6">
           {children}
         </div>
       )}

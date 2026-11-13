@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { Elements } from "@stripe/react-stripe-js";
-import { ChevronLeft, AlertCircle } from "lucide-react";
+import { ChevronLeft, AlertCircle, ArrowRight, Lock } from "lucide-react";
 import { formatMXN } from "@/lib/tourBooking";
 import { TOURS_DB, type Tour } from "@/lib/tours";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
@@ -33,6 +33,7 @@ import { DatosContacto } from "./DatosContacto";
 import { BarraPago } from "./BarraPago";
 import { ConfianzaJuntoAlBoton } from "./ConfianzaJuntoAlBoton";
 import { QuePasaDespues } from "./QuePasaDespues";
+import { BOTON_PRINCIPAL, TARJETA } from "./estilos";
 
 const FORM_PAGO = "checkout-pago";
 
@@ -183,7 +184,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
             resumen={resumenExperiencia} textoEditar={tc.editar} onEditar={() => setPaso(1)}
           >
             {error && (
-              <p className="mb-3 border border-terracota/40 bg-terracota/8 px-3 py-2.5 font-dm text-[12px] text-terracota">{error}</p>
+              <p className="mb-3 rounded-xl border border-terracota/40 bg-terracota/8 px-3.5 py-3 font-dm text-[12px] text-terracota">{error}</p>
             )}
             <AvisoFechasPasadas quitadas={c.fechasQuitadas} en={c.en} onCerrar={() => c.setFechasQuitadas([])} />
             <div className="space-y-3">
@@ -213,12 +214,9 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
                 Viven en el paso ②, antes de «Ir al pago». */}
             <PagoExpres c={c} />
 
-            <button
-              type="button"
-              onClick={terminarExperiencia}
-              className="mt-5 w-full bg-verde-selva text-crema py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors"
-            >
+            <button type="button" onClick={terminarExperiencia} className={`mt-6 ${BOTON_PRINCIPAL}`}>
               {tc.continuar}
+              <ArrowRight className="w-4 h-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
             </button>
 
             {/* La salida secundaria, plegada: quien todavía lo piensa deja su
@@ -238,11 +236,11 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
                       onChange={(e) => { setCorreoGuardar(e.target.value); setErrorGuardar(""); }}
                       type="email" autoComplete="email" inputMode="email" aria-label={tc.correoLabel}
                       placeholder={t.tuCorreoPlaceholder}
-                      className="flex-1 min-w-0 border border-negro/20 bg-white px-3 py-2.5 font-dm text-[14px] text-negro placeholder:text-negro/35 focus:border-verde-selva outline-none"
+                      className="flex-1 min-w-0 rounded-xl border border-negro/15 bg-white px-3.5 py-2.5 font-dm text-[16px] sm:text-[14px] text-negro placeholder:text-negro/35 outline-none transition-[border-color,box-shadow] focus:border-verde-selva focus:ring-4 focus:ring-verde-selva/10"
                     />
                     <button
                       type="button" onClick={guardarCotizacion} disabled={guardando}
-                      className="flex-shrink-0 border border-verde-selva text-verde-selva px-4 text-[11px] tracking-[1.5px] uppercase font-dm hover:bg-verde-selva/8 transition-colors disabled:opacity-40"
+                      className="flex-shrink-0 rounded-xl border border-verde-selva text-verde-selva px-4 text-[11px] tracking-[1.5px] uppercase font-dm hover:bg-verde-selva/8 transition-colors disabled:opacity-40"
                     >
                       {guardando ? "…" : t.enviar}
                     </button>
@@ -280,7 +278,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
                 Solo aparece cuando el viaje llega al umbral de los meses sin
                 intereses: debajo de eso no le sirve a nadie. */}
             {puedePagarTodo && (
-              <div className="mt-5 border border-verde-selva/30 bg-verde-selva/5 p-3.5">
+              <div className="mt-5 rounded-xl border border-verde-selva/30 bg-verde-selva/5 p-3.5">
                 <label className="flex cursor-pointer items-start gap-2.5">
                   <input
                     type="checkbox"
@@ -297,13 +295,9 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
               </div>
             )}
             {error && <p className="mt-3 font-dm text-[12px] text-terracota">{error}</p>}
-            <button
-              type="button"
-              onClick={() => { void terminarDatos(); }}
-              disabled={cargando}
-              className="mt-5 w-full bg-verde-selva text-crema py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors disabled:opacity-50"
-            >
+            <button type="button" onClick={() => { void terminarDatos(); }} disabled={cargando} className={`mt-6 ${BOTON_PRINCIPAL}`}>
               {cargando ? tc.preparandoPago : tc.irAlPago}
+              {!cargando && <Lock className="w-3.5 h-3.5" aria-hidden="true" />}
             </button>
           </PasoAcordeon>
 
@@ -319,7 +313,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
               <>
                 {/* En celular el resumen no tiene columna propia: va aquí,
                     plegado, para revisar el desglose antes de pagar. */}
-                <details className="lg:hidden mb-4 border border-negro/10">
+                <details className="lg:hidden mb-4 rounded-xl border border-negro/10">
                   <summary className="cursor-pointer list-none px-3 py-2.5 font-dm text-[12px] text-verde-selva">{tc.verDesglose} +</summary>
                   <div className="px-3 pb-3"><ResumenCarrito c={c} /></div>
                 </details>
@@ -339,9 +333,9 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
 
           {/* Las dudas de siempre, al final y plegadas. La de cancelar ya va,
               con fecha exacta, en «Lo que más nos preguntan». */}
-          <section className="pt-6">
-            <h2 className="font-cormorant text-verde-profundo text-xl mb-2">{t.antesDePagar}</h2>
-            <div className="divide-y divide-negro/10 border-y border-negro/10">
+          <section className={`${TARJETA} mt-6 px-4 sm:px-6 py-5`}>
+            <h2 className="font-cormorant text-verde-profundo text-[22px] mb-1">{t.antesDePagar}</h2>
+            <div className="divide-y divide-negro/[0.07]">
               {t.faq.filter((f) => f.clave !== "cancelar").map((f) => (
                 <details key={f.q} className="group py-3.5">
                   <summary className="flex items-start justify-between gap-4 cursor-pointer list-none font-dm text-[13px] text-negro/80">
@@ -367,15 +361,11 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
           {/* El botón del paso, fijo también en escritorio (13 nov 2026): el
               resumen no se mueve al bajar, y antes había que buscar el botón
               al final del paso. Es la misma acción que la barra del celular. */}
-          <button
-            type="button"
-            onClick={accionBarra.fn}
-            disabled={cargando || (paso === 3 && !cobro)}
-            className="w-full bg-verde-selva text-crema py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors disabled:opacity-50"
-          >
+          <button type="button" onClick={accionBarra.fn} disabled={cargando || (paso === 3 && !cobro)} className={BOTON_PRINCIPAL}>
             {accionBarra.texto}
+            <ArrowRight className="w-4 h-4 transition-transform duration-150 group-hover:translate-x-0.5" aria-hidden="true" />
           </button>
-          <div className="border border-negro/10 bg-white px-5 pb-4 pt-1">
+          <div className={`${TARJETA} px-5 sm:px-6 pb-5 pt-1`}>
             <ConfianzaJuntoAlBoton resenas={t.resenasGoogle} cancelacion={cancelacion} pagoCifrado={tc.pagoCifrado} />
             {paso < 3 && <QuePasaDespues titulo={tc.queSigueTitulo} pasos={tc.queSigue(formatMXN(saldo))} />}
           </div>
@@ -428,7 +418,7 @@ function AvisoFechasPasadas({ quitadas, en, onCerrar }: { quitadas: { tourName: 
       ? `La fecha que tenías para ${lista} ya pasó. Elige otro día abajo.`
       : `Las fechas que tenías para ${lista} ya pasaron. Elige otro día abajo.`;
   return (
-    <div role="status" className="mb-3 flex items-start gap-2 border border-dorado/50 bg-dorado/10 px-3 py-2.5 font-dm text-[12px] text-negro/75">
+    <div role="status" className="mb-3 flex items-start gap-2 rounded-xl border border-dorado/50 bg-dorado/10 px-3.5 py-3 font-dm text-[12px] text-negro/75">
       <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-dorado" aria-hidden="true" />
       <p className="flex-1">{texto}</p>
       <button type="button" onClick={onCerrar} aria-label={en ? "Close" : "Cerrar"} className="-mr-1 px-1 text-negro/40 hover:text-negro">×</button>
