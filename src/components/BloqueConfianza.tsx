@@ -136,8 +136,8 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
       alto: "h-14 sm:h-20 lg:h-24",
     },
     {
-      src: "/logos/marcas/hotel-paraiso-encantado.png",
-      w: 720, h: 461,
+      src: "/logos/marcas/hotel-paraiso-encantado.svg",
+      w: 1246, h: 566,
       alt: HOTEL_PROPIO.nombre,
       linea: t(
         `Hotel a ${HOTEL_PROPIO.metrosALasPozas} m de Las Pozas`,
@@ -145,9 +145,11 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
       ),
       href: "https://www.paraisoencantado.com",
       externo: true,
-      // Un poco más alto: entre las manos y el nombre hay mucho aire, y a la
-      // misma altura que los otros dos se leía más chico (visto en :3430, 12 nov).
-      alto: "h-[60px] sm:h-[92px] lg:h-[108px]",
+      // Logo NUEVO del hotel (Manolo, 12 nov 2026: «el logo nuevo del hotel es
+      // este»): el horizontal «b-04», en tinta oscura para el crema. Es más
+      // ancho que alto (2.2:1), así que va más bajo que los otros dos para que
+      // pesen parecido y quepa en la columna del teléfono.
+      alto: "h-[40px] sm:h-[60px] lg:h-[76px]",
     },
     {
       src: "/logos/marcas/el-papan-huasteco.png",
