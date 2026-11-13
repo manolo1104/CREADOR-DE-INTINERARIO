@@ -21,9 +21,10 @@
  *    banco, cuenta y monto). «No encontrada» no siempre es fraude: casi
  *    siempre es un dato mal copiado del comprobante.
  *  · Probado el 12 nov 2026 con una consulta inventada («Operación no
- *    encontrada»). La respuesta de un pago REAL no se ha visto todavía: por eso
- *    solo se da por verificado si Banxico dice «liquidad…» y lo demás queda
- *    «no concluyente», con su texto a la vista para que una persona decida.
+ *    encontrada») y con una transferencia REAL de Manolo (BBVA → Inbursa,
+ *    $3,443, «Estado del pago en Banxico Liquidado»). Solo «Liquidado» con la
+ *    misma cuenta y el mismo monto verifica; lo demás queda «no concluyente»,
+ *    con el texto de Banxico a la vista para que una persona decida.
  */
 
 const BASE = "https://www.banxico.org.mx/cep";
@@ -87,8 +88,8 @@ export function validarConsulta(c: ConsultaCep): string | null {
   return null;
 }
 
-/** HTML → texto corto y limpio (lo que se guarda y se enseña). */
-export function textoDe(html: string): string {
+/** HTML → texto limpio, completo (para leer los campos). */
+function limpiar(html: string): string {
   return html
     .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[\s\S]*?<\/script>/gi, " ")
@@ -97,17 +98,78 @@ export function textoDe(html: string): string {
     .replace(/&oacute;/g, "ó").replace(/&aacute;/g, "á").replace(/&eacute;/g, "é")
     .replace(/&iacute;/g, "í").replace(/&uacute;/g, "ú").replace(/&ntilde;/g, "ñ").replace(/&nbsp;/g, " ")
     .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 600);
+    .trim();
+}
+
+/** HTML → texto corto y limpio (lo que se guarda y se enseña). */
+export function textoDe(html: string): string {
+  return limpiar(html).slice(0, 600);
+}
+
+/**
+ * Los campos de un pago encontrado. Así contestó Banxico el 12 nov 2026 a una
+ * transferencia REAL (BBVA → Inbursa, $3,443): «…Clave de Rastreo MBAN0100…
+ * Institución emisora del pago BBVA MEXICO Institución receptora del pago
+ * INBURSA Estado del pago en Banxico Liquidado Fecha y hora de recepción
+ * 12/11/2026 13:32:42 … Cuenta Beneficiaria 0361805… Monto 3443.00 IMPORTANTE…».
+ */
+export interface CamposCep {
+  estado: string | null;
+  cuenta: string | null;
+  monto: number | null;
+  recibido: string | null;
+  emisor: string | null;
+}
+export function camposCep(texto: string): CamposCep {
+  const uno = (re: RegExp) => texto.match(re)?.[1]?.trim() ?? null;
+  const monto = uno(/\bMonto\s+\$?\s*([\d,]+(?:\.\d{1,2})?)/i);
+  return {
+    estado: uno(/Estado del pago en Banxico\s+([A-Za-zÁÉÍÓÚáéíóú]+)/i),
+    cuenta: uno(/Cuenta Beneficiaria\s+(\d{10,18})/i),
+    monto: monto ? Number(monto.replace(/,/g, "")) : null,
+    recibido: uno(/Fecha y hora de recepci[oó]n\s+(\d{2}\/\d{2}\/\d{4} \d{2}:\d{2}:\d{2})/i),
+    emisor: uno(/Instituci[oó]n emisora del pago\s+(.+?)\s+Instituci[oó]n receptora/i),
+  };
 }
 
 /**
  * Lee lo que contestó Banxico. Puro: se prueba con respuestas guardadas.
  * Solo «liquidad…» (Liquidada / Liquidado) cuenta como verificado.
  */
-export function interpretarRespuestaCep(html: string): ResultadoCep {
-  const texto = textoDe(html);
-  const t = texto.toLowerCase();
+export function interpretarRespuestaCep(html: string, esperado?: { cuenta: string; monto: number }): ResultadoCep {
+  const completo = limpiar(html);
+  const texto = completo.slice(0, 600);
+  const t = completo.toLowerCase();
+
+  // 1) Pago encontrado: se lee su «Estado del pago en Banxico» y se comprueba
+  //    que el dinero fue a NUESTRA cuenta y por ESE monto.
+  const c = camposCep(completo);
+  if (c.estado) {
+    if (esperado && c.cuenta && c.cuenta !== esperado.cuenta.replace(/\D/g, "")) {
+      return { estado: "no_concluyente", mensaje: "Banxico encontró un pago, pero a OTRA cuenta. No lo des por bueno: avísale a Manolo.", textoBanxico: texto };
+    }
+    if (esperado && c.monto !== null && Math.abs(c.monto - esperado.monto) > 0.5) {
+      return {
+        estado: "no_concluyente",
+        mensaje: `Banxico encontró el pago por $${c.monto.toLocaleString("es-MX")}, no por $${esperado.monto.toLocaleString("es-MX")}. Revisa el monto del cobro.`,
+        textoBanxico: texto,
+      };
+    }
+    if (/^liquidad/i.test(c.estado)) {
+      return {
+        estado: "verificado",
+        mensaje: `Banxico confirma que la transferencia se liquidó en la cuenta de Inbursa${c.recibido ? ` (recibida el ${c.recibido})` : ""}.`,
+        textoBanxico: texto,
+      };
+    }
+    return {
+      estado: "no_concluyente",
+      mensaje: `Banxico encontró la transferencia, pero su estado es «${c.estado}», no «Liquidado». No la des por buena todavía.`,
+      textoBanxico: texto,
+    };
+  }
+
+  // 2) Sin el campo de estado: lo demás que puede contestar.
   if (/no encontrada/.test(t)) {
     return {
       estado: "no_encontrado",
@@ -124,8 +186,11 @@ export function interpretarRespuestaCep(html: string): ResultadoCep {
   if (/devuelt|rechazad|cancelad/.test(t)) {
     return { estado: "no_concluyente", mensaje: "Banxico encontró la transferencia pero NO dice que se haya liquidado (puede estar devuelta o cancelada). No la des por buena: avísale a Manolo.", textoBanxico: texto };
   }
+  // 🔴 Sin el campo «Estado del pago en Banxico» NO se verifica aunque diga
+  // «liquidado» en algún lado: si Banxico cambia su página, que el panel falle
+  // hacia «revísalo a mano» y nunca hacia un falso «verificado».
   if (/liquidad/.test(t)) {
-    return { estado: "verificado", mensaje: "Banxico confirma que la transferencia se liquidó en la cuenta de Inbursa.", textoBanxico: texto };
+    return { estado: "no_concluyente", mensaje: "Banxico contestó en un formato que el panel no reconoce. Revísala a mano en su página con los mismos datos.", textoBanxico: texto };
   }
   if (/captcha|imagen de seguridad|c[oó]digo de seguridad/.test(t)) {
     return { estado: "sin_servicio", mensaje: "Banxico pidió un código de seguridad: hay que verificarla a mano en su página.", textoBanxico: texto };
@@ -170,7 +235,7 @@ export async function consultarCep(c: ConsultaCep, f: typeof fetch = fetch): Pro
     });
     const html = await texto(res);
     if (!res.ok && !html) return { estado: "sin_servicio", mensaje: `Banxico no respondió (error ${res.status}). Inténtalo más tarde.` };
-    return interpretarRespuestaCep(html);
+    return interpretarRespuestaCep(html, { cuenta: c.cuenta, monto: c.monto });
   } catch (e) {
     console.error("banxicoCep:", (e as Error)?.message);
     return { estado: "sin_servicio", mensaje: "No se pudo hablar con Banxico ahora. Inténtalo en unos minutos o verifícala a mano en su página." };
