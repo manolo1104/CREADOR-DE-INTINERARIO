@@ -19,7 +19,7 @@ const inputCls =
  */
 export default function ExtrasEditor({
   extras, onChange, personas = 0, presets = EXTRAS_PRESET,
-  titulo = "Extras e items incluidos (opcional)",
+  titulo = "Extras e items incluidos (opcional)", verCostos = true,
 }: {
   extras:   ExtraItem[];
   onChange: (next: ExtraItem[]) => void;
@@ -29,6 +29,12 @@ export default function ExtrasEditor({
   /** Los conceptos con sus precios, tal como Manolo los dejó en el Cotizador. */
   presets?: PresetExtra[];
   titulo?:  string;
+  /**
+   * false = sin «Te cuesta» ni «Te deja» (lote 8, 10 nov 2026): quien no tiene
+   * el Cotizador ve y cobra el precio al cliente, no lo que nos cuesta. El
+   * servidor conserva el costo que ya tenía cada extra al guardar.
+   */
+  verCostos?: boolean;
 }) {
   /**
    * 🔴 Aquí NO se normaliza: `normalizarExtra` hace `.trim()` y se ejecutaba en
@@ -137,7 +143,7 @@ export default function ExtrasEditor({
                     }`}>Va incluido</button>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className={`grid ${verCostos ? "grid-cols-3" : "grid-cols-2"} gap-2`}>
                   <div>
                     <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Cantidad</label>
                     <input type="number" min={1} max={99} value={ex.cantidad}
@@ -152,19 +158,19 @@ export default function ExtrasEditor({
                       onChange={e => update(i, "precioUnitario", Number(e.target.value))}
                       className={`${inputCls} ${ex.incluido ? "opacity-40" : ""}`} />
                   </div>
-                  <div>
+                  {verCostos && <div>
                     <label className="flex items-center gap-1 text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1"
                       title="Solo tú lo ves: no sale en la cotización, ni en el PDF, ni en el correo.">
                       <Lock className="w-2.5 h-2.5" />Te cuesta
                     </label>
                     <input type="number" min={0} value={ex.costoUnitario}
                       onChange={e => update(i, "costoUnitario", Number(e.target.value))} className={inputCls} />
-                  </div>
+                  </div>}
                 </div>
 
                 <div className="flex items-center justify-between gap-2 text-xs font-dm">
                   <span className="text-[#1B4332]/35">
-                    {costo > 0 && (
+                    {verCostos && costo > 0 && (
                       ganancia >= 0
                         ? <>Te deja <span className={ganancia > 0 ? "text-[#40916C]" : "text-[#1B4332]/50"}>{fmx(ganancia)}</span></>
                         : <span className="text-[#C9484A]">Pierdes {fmx(Math.abs(ganancia))}</span>

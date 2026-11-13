@@ -1,19 +1,26 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { cobradoDe } from "@/lib/admin/dinero";
+import { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Trash2, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
+import { Search, RefreshCw, Mail, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA, recogidaDeTour, salidaCorta, partesRecogida } from "@/lib/tours";
 import { descuentoDeMeta, historialDeMeta, montoDescuento } from "@/lib/admin/descuento";
+import { ajusteDeTotal, avisoCambioDeTotal, totalConAjuste } from "@/lib/admin/precioPactado";
+import { habitacionesParaEditar, lineaParaGuardar } from "@/lib/admin/reservaEdicion";
 import { ReservaModal, EMPTY_RESERVA_FORM, ZONA_TEXTO, zonaDeTexto, type ReservaFormState, type LineItem, type PackageItem, calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn, lineaCompleta } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { grupoDe, grupoCorto, grupoLargo, grupoParaGuardar, lineasDe, metaDe } from "@/lib/admin/reserva";
 import { extrasDe, totalExtras, calcExtraLine, normalizarExtra, EXTRAS_PRESET, type PresetExtra } from "@/lib/admin/extras";
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
-import { zonaDeReserva } from "@/lib/admin/hospedaje";
+import { pickupParaFormulario } from "@/lib/admin/hospedaje";
 import CobroModal from "@/components/admin/CobroModal";
+import { avisoDeCobro } from "@/lib/admin/metodosCobro";
 import { origenValido } from "@/lib/origenReserva";
+import { MOTIVOS_CANCELACION, motivoParaGuardar, type MotivoCancelacion } from "@/lib/admin/cancelacion";
 import { escapeHtml as esc } from "@/lib/escapeHtml";
 import { CheckinBoton } from "@/components/admin/Checkin";
 import type { EstadoCheckin } from "@/lib/encuestas/opciones";
@@ -69,9 +76,12 @@ function DaysChip({ d }: { d: number }) {
 }
 
 export default function ReservasClient(
-  { initialBookings, presetsExtras = EXTRAS_PRESET, quien = "Admin", checkins: checkinsIniciales = {} }:
-  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; quien?: string; checkins?: Record<string, EstadoCheckin> },
+  { initialBookings, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", checkins: checkinsIniciales = {}, abrir = null }:
+  { initialBookings: TourBooking[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; checkins?: Record<string, EstadoCheckin>;
+    /** Desde la ficha de un lead: la reserva a abrir (y si es para cobrar). */
+    abrir?: { folio: string; cobrar: boolean } | null },
 ) {
+  const router = useRouter();
   const [bookings,      setBookings]      = useState(initialBookings);
   // El estado del check-in de cada reserva (21 oct 2026). Vive aparte de la
   // reserva: lo actualizan el botón de la fila y la ficha.
@@ -84,6 +94,10 @@ export default function ReservasClient(
   const [loading,       setLoading]       = useState(false);
   const [sending,       setSending]       = useState<string | null>(null);
   const [statusEditing, setStatusEditing] = useState<string | null>(null);
+  // Cancelar pide el motivo (3 nov 2026): la reserva que se está cancelando y lo elegido.
+  const [cancelando,    setCancelando]    = useState<TourBooking | null>(null);
+  const [motivo,        setMotivo]        = useState<MotivoCancelacion | "">("");
+  const [motivoDetalle, setMotivoDetalle] = useState("");
   const [msg,           setMsg]           = useState("");
   const [modal,         setModal]         = useState<"new" | "edit" | null>(null);
   const [editTarget,    setEditTarget]    = useState<TourBooking | null>(null);
@@ -95,6 +109,18 @@ export default function ReservasClient(
   const [dateFrom,      setDateFrom]      = useState("");
   const [dateTo,        setDateTo]        = useState("");
   const today = useMemo(() => todayMX(), []);
+
+  // `?folio=HP-…` (y `&cobrar=1`) desde la ficha del lead: se busca esa reserva
+  // y se abre su detalle o su cobro, una sola vez.
+  const reservaPedida = abrir ? initialBookings.find(b => b.confirmationNumber === abrir.folio) ?? null : null;
+  useEffect(() => {
+    if (!abrir || !reservaPedida) return;
+    setSearch(abrir.folio);
+    if (abrir.cobrar) setCobrando(reservaPedida); else setDetalle(reservaPedida);
+    // Una sola vez: recargar o Atrás/Adelante ya no vuelve a abrir el cobro.
+    router.replace("/admin/reservas", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Los guías que ya se han asignado alguna vez. Salen de las propias
   // reservas: no hace falta darlos de alta en ningún lado, y el nombre se
@@ -115,11 +141,13 @@ export default function ReservasClient(
     setTimeout(() => setMsg(""), 4000);
   }
 
-  async function refresh() {
+  async function refresh(): Promise<TourBooking[] | null> {
     setLoading(true);
     const r = await fetch("/api/admin/reservas");
-    if (r.ok) setBookings(await r.json());
+    const lista = r.ok ? await r.json() : null;
+    if (lista) setBookings(lista);
     setLoading(false);
+    return lista;
   }
 
   async function sendEmail(id: string) {
@@ -130,29 +158,50 @@ export default function ReservasClient(
     setSending(null);
   }
 
-  async function changeStatus(id: string, newStatus: string) {
+  async function changeStatus(id: string, newStatus: string, motivoCancelacion?: string, forzarCupo = false) {
     const r = await fetch(`/api/admin/reservas/${id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify(motivoCancelacion ? { status: newStatus, motivoCancelacion } : { status: newStatus, ...(forzarCupo ? { forzarCupo: true } : {}) }),
     }).catch(() => null);
+    // Reactivar una salida llena: el servidor pregunta antes de sobrevender.
+    if (r?.status === 409) {
+      const d = await r.json().catch(() => null);
+      if (d?.sePuedeForzar && window.confirm(d.error)) return changeStatus(id, newStatus, motivoCancelacion, true);
+      flash(`❌ ${d?.error || "No se reactivó"}`); setStatusEditing(null); return;
+    }
     if (r?.ok) {
-      setBookings(b => b.map(x => x.id === id ? { ...x, status: newStatus } : x));
-      flash("✅ Estado actualizado");
+      // El estado que quedó de verdad: con cobros, «pagada» o «pendiente» lo decide el dinero.
+      const d = await r.json().catch(() => null);
+      const final = typeof d?.updated?.status === "string" ? d.updated.status : newStatus;
+      setBookings(b => b.map(x => x.id === id
+        ? { ...x, status: final, depositoPagado: d?.updated?.depositoPagado ?? x.depositoPagado, motivoCancelacion: newStatus === "cancelled" ? (motivoCancelacion ?? null) : null }
+        : x));
+      // Al cancelar, sus ligas sin pagar se apagan solas (lote 3, 5 nov 2026): que se note.
+      const ligas = d?.ligasApagadas > 0 ? ` · ${d.ligasApagadas === 1 ? "su liga de pago ya no se puede pagar" : `sus ${d.ligasApagadas} ligas de pago ya no se pueden pagar`}` : "";
+      flash((final !== newStatus ? `✅ Estado actualizado: queda «${final === "paid" ? "pagada" : "pendiente"}» por lo que ya se cobró` : "✅ Estado actualizado") + ligas);
+      router.refresh(); // su lead pudo cambiar de etapa (cancelar / reactivar)
     } else {
-      flash("❌ No se pudo actualizar el estado");
+      const d = await r?.json().catch(() => null);
+      flash(`❌ ${d?.error || "No se pudo actualizar el estado"}`);
     }
     setStatusEditing(null);
   }
 
-  async function hardDelete(id: string) {
-    if (!confirm("¿Eliminar completamente esta reserva? No se puede deshacer.")) return;
-    const r = await fetch(`/api/admin/reservas/${id}`, { method: "DELETE" }).catch(() => null);
-    if (r?.ok) {
-      setBookings(b => b.filter(x => x.id !== id));
-      flash("✅ Reserva eliminada");
-    } else {
-      flash("❌ No se pudo eliminar la reserva");
+  // Cancelar pasa por el cuadro del motivo; los demás estados cambian directo.
+  function pedirEstado(b: TourBooking, s: string) {
+    if (s === "cancelled" && b.status !== "cancelled") {
+      setStatusEditing(null); setMotivo(""); setMotivoDetalle(""); setCancelando(b);
+      return;
     }
+    changeStatus(b.id, s);
+  }
+
+  async function confirmarCancelacion() {
+    if (!cancelando) return;
+    const texto = motivoParaGuardar(motivo, motivoDetalle);
+    if (!texto) { flash("❌ Elige el motivo (y explícalo si es «Otro»)"); return; }
+    await changeStatus(cancelando.id, "cancelled", texto);
+    setCancelando(null);
   }
 
   function openEdit(b: TourBooking) {
@@ -167,11 +216,15 @@ export default function ReservasClient(
           childrenSmall: l.childrenSmall ?? 0,
         }))
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];
-    const storedPkgs = (b as any).packageItems as PackageItem[] | null;
+    // Con su precio por noche aunque la web no lo guarde (sale de su importe):
+    // antes el hotel valía NaN y se guardaba sin importe (lote 5, 5 nov 2026).
+    const storedPkgs = habitacionesParaEditar((b as any).packageItems as PackageItem[] | null);
 
-    // Preservar el total editado a mano: si el total guardado difiere del
-    // calculado (precio ajustado, descuento de una cotización convertida, etc.)
-    // lo cargamos como total editado para no perderlo al reabrir/guardar.
+    // Preservar el precio pactado: si el total guardado difiere del calculado
+    // (precio fijado en la cotización, lo que cobró la web, un trato), la
+    // diferencia se carga como AJUSTE sobre la lista (lote 4, 5 nov 2026). 🔴
+    // Antes iba como «total editado» y se borraba al tocar cualquier renglón,
+    // aunque fuera solo la fecha: el total brincaba al de lista y el saldo con él.
     // El descuento guardado (o el de la cotización de origen) se vuelve a poner
     // como descuento, con su candado: ya no se esconde dentro del total.
     const descuento = descuentoDeMeta(meta);
@@ -188,7 +241,7 @@ export default function ReservasClient(
       lines,
       packages:       storedPkgs ?? [],
       extras:         extrasDe((b as any).extraItems),
-      totalOverride:  b.totalAmount !== conDescuento ? String(b.totalAmount) : "",
+      ajustePrecio:   ajusteDeTotal(b.totalAmount, conDescuento),
       descuentoTipo:      descuento?.tipo ?? "percent",
       descuentoValor:     descuento ? String(descuento.valor) : "",
       descuentoGuardado:  descuento,
@@ -197,9 +250,12 @@ export default function ReservasClient(
       depositoPagado: String((b as any).depositoPagado ?? 0),
       metodoPago:     meta.metodoPago  || "Transferencia",
       folioPago:      meta.folioPago   || "",
-      // A quien sale de Valles no se le propone el lobby de Xilitla: guardar la
-      // reserva lo escribiría y el correo le diría que pasan por él a Xilitla.
-      pickupLugar:    meta.pickupLugar || (zonaDeReserva(b) === "valles" ? "" : "Lobby de tu hotel en Xilitla"),
+      // 🔴 Vacío salvo que alguien lo haya anotado (5 nov 2026): proponer el
+      // «Lobby de tu hotel en Xilitla» hacía que editar la reserva solo para
+      // asignar el guía lo dejara escrito, y el correo lo imprimía como punto de
+      // salida (al del RZR, al del buceo, al que duerme en Valles). Vacío, el
+      // correo usa el punto de encuentro de cada recorrido.
+      pickupLugar:    pickupParaFormulario(meta.pickupLugar),
       // Solo lo que se ELIGIÓ (botones, web o bot): adivinarla del hotel la
       // escribiría al guardar como si alguien la hubiera elegido.
       zona:           zonaDeTexto(meta.zonaHospedaje),
@@ -243,8 +299,13 @@ export default function ReservasClient(
         // el correo y en el comprobante del cliente, y esto no puede salir de
         // aquí. Ver `notasInternas` en ReservaModal.
         notasInternas: form.notasInternas.trim(),
+        // El precio pactado, guardado como ajuste sobre la lista (lote 4, 5 nov
+        // 2026): dice POR QUÉ el total no es la suma de los renglones.
+        ajustePrecio: form.ajustePrecio !== 0 ? form.ajustePrecio : null,
       },
-      ...form.lines.map(l => ({ ...l, subtotal: calcLine(l) })),
+      // `children` al día con los dos tramos (lote 5): quitar a los niños ya
+      // no los deja ocupando cupo ni lugar en la salida.
+      ...form.lines.map(l => lineaParaGuardar({ ...l, subtotal: calcLine(l) })),
     ];
     const packageItems = form.packages.map(p => ({ ...p, subtotal: calcPackageLine(p) }));
     const extraItems   = (form.extras ?? []).filter(e => e.concepto.trim()).map(normalizarExtra);
@@ -256,7 +317,8 @@ export default function ReservasClient(
       Number(form.descuentoValor) > 0 ? { tipo: form.descuentoTipo, valor: Math.round(Number(form.descuentoValor)) } : null,
       sinDescuento,
     );
-    const totalAmount  = form.totalOverride !== "" ? Number(form.totalOverride) || calcTotal : calcTotal;
+    // El precio pactado va encima de la lista como ajuste: no se pierde al editar.
+    const totalAmount  = totalConAjuste(calcTotal, form.ajustePrecio);
     const primaryLine  = form.lines[0];
     const tourNames    = form.lines.map(l => l.tourName).filter(Boolean).join(" + ");
     return {
@@ -291,14 +353,24 @@ export default function ReservasClient(
     setSaving(true);
     const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
     const datos = buildPayload(form);
-    // Pagada sólo si el dinero ya está: antes toda reserva manual nacía "paid"
-    // aunque no se hubiera cobrado un peso, y el corte lo daba por bueno.
-    const status = datos.depositoPagado >= datos.totalAmount && datos.totalAmount > 0 ? "paid" : "pending";
+    // 🔴 Revisión del 4 nov 2026: el anticipo ya NO se guarda como número suelto
+    // (quedaba sin método ni quién lo recibió, y no salía en el efectivo de cada
+    // quien). La reserva nace pendiente y se abre el cobro con ese monto puesto.
+    const anticipo = datos.depositoPagado;
     const r = await fetch("/api/admin/reservas", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ confirmationNumber, status, ...datos }),
+      body: JSON.stringify({ confirmationNumber, ...datos, status: "pending", depositoPagado: 0 }),
     });
-    if (r.ok) { await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM); flash("✅ Reserva creada"); }
+    if (r.ok) {
+      const j = await r.json().catch(() => null);
+      const lista = await refresh(); setModal(null); setForm(EMPTY_RESERVA_FORM);
+      const nueva = anticipo > 0 ? lista?.find(b => b.id === j?.id) : null;
+      if (nueva) {
+        const lineas = Array.isArray((nueva as any).lineItems) ? (nueva as any).lineItems : [];
+        setCobrando({ ...nueva, lineItems: [{ _meta: true, anticipoAcordado: anticipo }, ...lineas.filter((l: any) => !l?._meta)] } as TourBooking);
+        flash(`✅ Reserva creada. Ahora registra cómo entró el anticipo de $${anticipo.toLocaleString("es-MX")}`);
+      } else flash(j?.avisoCupo ? `✅ Reserva creada. ${j.avisoCupo}` : "✅ Reserva creada");
+    }
     // Antes un error no decía nada: el botón dejaba de girar y ya.
     else { const j = await r.json().catch(() => ({})); flash(`❌ ${j.error || "No se pudo guardar la reserva"}`); }
     setSaving(false);
@@ -306,15 +378,35 @@ export default function ReservasClient(
 
   async function saveEdit() {
     if (!editTarget) return;
-    setSaving(true);
     // 🔴 Al editar NO se manda `depositoPagado`: ese número es el espejo de los
     // cobros registrados. Mandarlo desde un formulario abierto hace un rato
     // pisaría un cobro que se capturó mientras tanto.
     const { depositoPagado: _ignorado, ...payload } = buildPayload(form, metaDe(editTarget));
-    const r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
+    // Si el total se mueve, se pregunta antes, diciendo de cuánto a cuánto
+    // (lote 4, 5 nov 2026): el saldo que cobra el guía sale de aquí.
+    const aviso = avisoCambioDeTotal(editTarget.totalAmount, payload.totalAmount);
+    if (aviso && !window.confirm(aviso)) return;
+    setSaving(true);
+    let r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    // Cambió la fecha o la gente y ya no cabe (lote 5, 5 nov 2026): se pregunta
+    // antes de sobrevender; a veces se suma una unidad y se guarda igual.
+    if (r.status === 409) {
+      const d = await r.clone().json().catch(() => null);
+      if (d?.sePuedeForzar) {
+        if (!window.confirm(d.error)) {
+          setSaving(false);
+          flash("Sin cambios: la reserva se quedó como estaba.");
+          return;
+        }
+        r = await fetch(`/api/admin/reservas/${editTarget.id}`, {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, forzarCupo: true }),
+        });
+      }
+    }
     if (r.ok) {
       await refresh();
       setModal(null); setEditTarget(null); flash("✅ Reserva actualizada");
@@ -326,6 +418,8 @@ export default function ReservasClient(
   }
 
   function downloadPDF(b: TourBooking) {
+    // El comprobante dice «✓ Reserva confirmada»: una cancelada no lo lleva (lote 5).
+    if (b.status === "cancelled") { flash("❌ Esta reserva está cancelada: no lleva comprobante."); return; }
     const win = window.open("", "_blank");
     if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
 
@@ -339,7 +433,7 @@ export default function ReservasClient(
     const pkgs: PackageItem[] = (b as any).packageItems ?? [];
     const rawDeposito = (b as any).depositoPagado ?? 0;
     // Pago online por Stripe = liquidado al 100% aunque no tenga anticipo registrado.
-    const deposito   = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+    const deposito   = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
     const pendiente  = Math.max(0, b.totalAmount - deposito);
     // 🔴 Todo lo que sale de la base y pudo escribir un cliente, el equipo o el
     // bot entra al HTML escapado con `esc`: este voucher se abre con
@@ -754,6 +848,12 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {reservaPedida && (reservaPedida as any).oportunidadId && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-[#1B4332]/15 bg-[#F3F8F5] px-4 py-2.5 text-sm font-dm text-[#1B4332]">
+          <span>Reserva <span className="font-mono">{reservaPedida.confirmationNumber}</span> de <strong>{reservaPedida.customerName}</strong>.</span>
+          <Link href={`/admin/leads/${(reservaPedida as any).oportunidadId}`} className="panel-foco font-semibold hover:underline">← Volver a su ficha</Link>
+        </div>
+      )}
       {msg && (
         // Con el formulario abierto el aviso flota encima (si no, queda tapado
         // por el modal y un error al guardar no se ve). Sin translate: la
@@ -823,7 +923,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         {filtered.length === 0 && <p className="py-10 text-center text-[#1B4332]/30 font-dm text-sm">Sin resultados</p>}
         {filtered.map(b => {
           const rawDeposito = (b as any).depositoPagado ?? 0;
-          const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+          const deposito = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
           const pendiente = Math.max(0, b.totalAmount - deposito);
           const hosp = hospedajeSummary(b);
           return (
@@ -853,13 +953,13 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               </div>
               {pendiente > 0 && <p className="text-orange-600 text-[10px] mt-1">Saldo pendiente: {fmx(pendiente)}</p>}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
-                <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
+                {/* Cancelada: ni «Tu tour está confirmado», ni comprobante, ni check-in (lote 5). */}
+                {b.status !== "cancelled" && <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>}
+                {b.status !== "cancelled" && <button onClick={() => { playClick(); downloadPDF(b); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>}
                 <button onClick={() => { playClick(); openEdit(b); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                   className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
-                <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
-                <button onClick={() => { playClick(); hardDelete(b.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
+                {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
               </div>
             </div>
           );
@@ -881,7 +981,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               {filtered.length === 0 && <tr><td colSpan={11} className="py-12 text-center text-[#1B4332]/30 font-dm">Sin resultados</td></tr>}
               {filtered.map(b => {
                 const rawDeposito = (b as any).depositoPagado ?? 0;
-                const deposito = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+                const deposito = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
                 const pendiente = Math.max(0, b.totalAmount - deposito);
                 const hosp = hospedajeSummary(b);
                 return (
@@ -929,7 +1029,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                           <div className="fixed inset-0 z-10" onClick={() => setStatusEditing(null)} />
                           <div className="absolute left-0 top-8 z-20 bg-white border border-[#1B4332]/15 shadow-lg rounded-sm overflow-hidden min-w-[120px]">
                             {(["paid", "pending", "cancelled"] as const).map(s => (
-                              <button key={s} onClick={() => { playClick(); changeStatus(b.id, s); }}
+                              <button key={s} onClick={() => { playClick(); pedirEstado(b, s); }}
                                 className={`w-full text-left px-3 py-2 text-[10px] font-dm tracking-[1px] uppercase hover:bg-[#FAFAF8] transition-colors flex items-center gap-2 ${b.status === s ? "text-[#1B4332] font-semibold" : "text-[#1B4332]/60"}`}>
                                 {b.status === s && <span className="text-[#1B4332]">✓</span>}
                                 {STATUS_LABEL[s]}
@@ -948,17 +1048,16 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                       <div className="flex items-center gap-2">
                         <button onClick={() => { playClick(); setDetalle(b); }} title="Ver detalles"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} title="Enviar email"
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); downloadPDF(b); }} title="Descargar PDF"
-                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
+                        {/* Cancelada: ni «Tu tour está confirmado», ni comprobante, ni check-in (lote 5). */}
+                        {b.status !== "cancelled" && <button onClick={() => { playClick(); sendEmail(b.id); }} disabled={sending === b.id} title="Enviar email"
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>}
+                        {b.status !== "cancelled" && <button onClick={() => { playClick(); downloadPDF(b); }} title="Descargar PDF"
+                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>}
                         <button onClick={() => { playClick(); openEdit(b); }} title="Editar"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
                         <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
-                        <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />
-                        <button onClick={() => { playClick(); hardDelete(b.id); }} title="Eliminar"
-                          className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                        {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
                       </div>
                     </td>
                   </tr>
@@ -969,6 +1068,32 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {cancelando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setCancelando(null)} />
+          <div role="dialog" aria-labelledby="cancelar-titulo" className="relative bg-white rounded-sm shadow-2xl w-full max-w-md border border-[#1B4332]/10 p-5">
+            <p className="text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm">Cancelar reserva</p>
+            <h3 id="cancelar-titulo" className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{cancelando.customerName}</h3>
+            <p className="font-mono text-xs text-[#1B4332]/60 mb-4">{cancelando.confirmationNumber}</p>
+            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">¿Por qué se cancela? *</label>
+            <select value={motivo} onChange={e => setMotivo(e.target.value as MotivoCancelacion | "")}
+              className="w-full border border-[#1B4332]/20 rounded-sm px-3 py-2.5 text-[16px] font-dm mb-3 panel-foco" aria-invalid={!motivo}>
+              <option value="">— Elige el motivo —</option>
+              {MOTIVOS_CANCELACION.map(m => <option key={m.clave} value={m.clave}>{m.etiqueta}</option>)}
+            </select>
+            <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Detalle {motivo === "otro" ? "*" : "(opcional)"}</label>
+            <input value={motivoDetalle} onChange={e => setMotivoDetalle(e.target.value)} maxLength={200}
+              placeholder="Por ejemplo: avisó por WhatsApp el martes"
+              className="w-full border border-[#1B4332]/20 rounded-sm px-3 py-2.5 text-[16px] font-dm mb-4 panel-foco" />
+            <p className="text-[11px] font-dm text-[#1B4332]/55 mb-4">La reserva no se borra: queda como cancelada con este motivo y en la bitácora. Sus ligas de pago sin pagar se apagan solas. Si tiene cobros, regístralos o anúlalos desde Cobros.</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setCancelando(null)} className="px-4 py-2.5 text-xs font-dm text-[#1B4332]/70 hover:text-[#1B4332] panel-foco">Dejarla como está</button>
+              <button onClick={() => { playClick(); confirmarCancelacion(); }} disabled={!motivo}
+                className="px-4 py-2.5 text-xs font-dm bg-[#b8413f] text-white rounded-sm disabled:opacity-40 panel-pulsable panel-foco">Cancelar la reserva</button>
+            </div>
+          </div>
+        </div>
+      )}
       {detalle && (
         <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} onCheckin={ponCheckin(detalle.id)} />
       )}
@@ -978,21 +1103,23 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           reserva={cobrando}
           quien={quien}
           onClose={() => setCobrando(null)}
-          onGuardado={cobrado => {
+          onGuardado={(cobrado, que) => {
             // Sin recargar la lista entera: se actualiza la fila que cambió.
             setBookings(bs => bs.map(b => (b.id === cobrando.id ? { ...b, depositoPagado: cobrado } : b)));
             setCobrando(c => (c ? { ...c, depositoPagado: cobrado } : c));
-            flash("✅ Cobro registrado");
+            flash(avisoDeCobro(que));
+            // La ficha del lead lee lo cobrado: que no se quede con lo de antes.
+            router.refresh();
           }}
         />
       )}
 
       {modal === "new" && (
-        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
+        <ReservaModal title="Nueva Reserva Manual" form={form} setForm={setForm} presetsExtras={presetsExtras} verCostos={verCostos} guiasConocidos={guiasConocidos}
           onSave={saveNew} onClose={() => setModal(null)} saving={saving} />
       )}
       {modal === "edit" && (
-        <ReservaModal soloLecturaCobro title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} guiasConocidos={guiasConocidos}
+        <ReservaModal soloLecturaCobro title="Editar Reserva" form={form} setForm={setForm} presetsExtras={presetsExtras} verCostos={verCostos} guiasConocidos={guiasConocidos}
           folio={editTarget?.confirmationNumber}
           onSave={saveEdit} onClose={() => { setModal(null); setEditTarget(null); }} saving={saving} />
       )}

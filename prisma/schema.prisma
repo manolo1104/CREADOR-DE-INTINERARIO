@@ -143,12 +143,23 @@ model TourQuote {
   /// `prisma db push --accept-data-loss` en producción y una columna
   /// obligatoria sobre filas existentes tumba el despliegue.
   extraItems    Json? // [{concepto,detalle,cantidad,precioUnitario,incluido,costoUnitario,subtotal}]
-  status        String   @default("borrador") // borrador | enviada | aceptada | expirada
+  status        String   @default("borrador") // borrador | enviada | aceptada | expirada | archivada
+  /// La oportunidad del CRM de la que salió (Fase 2, 3 nov 2026). Opcional: las de antes no tienen.
+  oportunidadId String?
+  /// Cuándo pasó a «aceptada» (KPI «Cotización → reserva a 14 días», 4 nov 2026).
+  /// Opcional: las aceptadas antes de esta fecha no lo tienen y se estiman.
+  aceptadaEn    DateTime?
+  /// La PRIMERA vez que salió al cliente: por correo, por WhatsApp o al bajar su
+  /// PDF (lote 9, 10 nov 2026). «Cotización → reserva» cuenta desde aquí, no
+  /// desde que se creó el borrador. Opcional: las de antes no lo tienen y se
+  /// estiman con lo mejor que haya (el arranque de su seguimiento o la Bitácora).
+  enviadaEn     DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
   @@index([customerEmail])
   @@index([status])
+  @@index([oportunidadId])
 }
 
 // Carrito abandonado: el cliente eligió tour/fecha y dejó su correo pero no pagó.
@@ -271,6 +282,10 @@ model TourBooking {
   pagoProveedorFecha    DateTime?
   pagoProveedorNota     String?
   status                String    @default("pending")
+  /// Por qué se canceló (`lib/admin/cancelacion.ts`: clave y detalle). Obligatorio
+  /// al pasar a `cancelled` desde el panel; las reservas ya NO se borran.
+  /// Opcional a propósito: `prisma db push` corre al arrancar Railway.
+  motivoCancelacion     String?
   /// Quién sale a guiar esta reserva. Texto libre a propósito: los guías
   /// cambian con la temporada y una tabla aparte obligaría a darlos de alta
   /// antes de poder asignarlos. El panel ofrece los nombres ya usados.
@@ -293,6 +308,11 @@ model TourBooking {
   /// fecha y las personas de estas reservas solo cambian desde Salidas, que
   /// pasa por el candado del cupo; Reservas las rechaza.
   salidaId              String?
+  /// La oportunidad del CRM que terminó en esta reserva (Fase 2, 3 nov 2026).
+  oportunidadId         String?
+  /// La cotización (`TourQuote.id`) que se convirtió en esta reserva (4 nov
+  /// 2026). Opcional: las de antes y las que no vienen de una cotización no lo traen.
+  cotizacionId          String?
   /// Check-in previo y encuesta de satisfacción (21 oct 2026). Tabla aparte, no
   /// el `_meta`: el PATCH de Reservas reescribe `lineItems` entero.
   encuesta              EncuestaReserva?
@@ -304,6 +324,8 @@ model TourBooking {
   @@index([status])
   @@index([origen])
   @@index([salidaId])
+  @@index([oportunidadId])
+  @@index([cotizacionId])
 }
 
 model BlogPost {
@@ -572,6 +594,29 @@ model Movimiento {
   anuladoAt  DateTime?
   motivoAnulacion String?
 
+  /// Sólo en cobros: el folio de la transferencia, los últimos 4 dígitos o la
+  /// sesión de Stripe. Antes vivía solo dentro de `concepto` y corregir el
+  /// método la borraba (lote 3 de la auditoría, 5 nov 2026).
+  referencia String?
+  /// Sólo en cobros de Stripe: el PaymentIntent (o la sesión) que lo pagó. Es
+  /// único: si Stripe repite el aviso, el mismo pago no se abona dos veces
+  /// aunque la primera vez haya fallado a la mitad (5 nov 2026).
+  stripeRef  String?   @unique
+
+  /// Sólo en transferencias: la clave de rastreo SPEI del comprobante y el banco
+  /// que la mandó (código de Banxico: 40012 = BBVA). Con las dos se pregunta al
+  /// CEP de Banxico si el dinero llegó a la cuenta (12 nov 2026).
+  claveRastreo String?
+  bancoEmisor  String?
+  /// Verificado contra el banco: cuándo, quién y cómo («banxico» = lo confirmó
+  /// el CEP; «manual» = Manolo o Martín lo vieron en la cuenta). Vacío = sin
+  /// verificar. NO cambia lo cobrado: el dinero cuenta igual que antes.
+  verificadoEn        DateTime?
+  verificadoPor       String?
+  verificacion        String?
+  /// Lo último que contestó Banxico (estado y texto), para revisarlo después.
+  verificacionDetalle Json?
+
   creadoPor String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -657,6 +702,10 @@ model CorteSemanal {
   /// [{ monto, recibio: "Manolo" | "Martín", concepto: <de qué, texto libre> }].
   /// Nullable: los cortes de antes no lo tienen y `db push` no debe tumbarse.
   cobros      Json?
+  /// Las tarjetas tal como estaban al hacer el corte (lote 7, 10 nov 2026):
+  /// con sus ventas y su hotel. Un corte hecho se calcula con esto, no con las
+  /// reservas de hoy. Nullable: los cortes de antes no lo tienen.
+  tarjetas    Json?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -699,9 +748,16 @@ model LinkPago {
 
   pagadoAt          DateTime?
   stripeSessionId   String?
+  /// El PaymentIntent del pago: un reembolso o un contracargo de Stripe llega
+  /// con él, y con él se encuentra el cobro que hay que anular (5 nov 2026).
+  stripePaymentIntentId String?
   /// Lo que Stripe dice que se cobró de verdad, por si difiere del monto.
   montoPagado       Int?
   correoDelPagador  String?
+
+  /// Por qué se apagó (p. ej. «se canceló la reserva HP-…»). Vacío si la
+  /// canceló una persona desde Cobros antes de que existiera (5 nov 2026).
+  motivoCancelacion String?
 
   creadoPor String?
   createdAt DateTime @default(now())
@@ -710,6 +766,7 @@ model LinkPago {
   @@index([estado, createdAt])
   @@index([reservaId])
   @@index([cotizacionId])
+  @@index([stripePaymentIntentId])
 }
 
 /// Ajustes sueltos del sitio que edita el panel (p. ej. el estado del río).
@@ -923,4 +980,421 @@ model CodigoCumple {
   createdAt  DateTime  @default(now())
 
   @@unique([email, anio])
+}
+
+/// Una SALIDA (rediseño del panel, 3 nov 2026): tour + fecha (+ nombre si es a
+/// medida). Las reservas NO se migran: la salida se deriva de los renglones de
+/// `TourBooking.lineItems` (`lib/admin/salidas.ts`) y esta tabla guarda solo lo
+/// que no se puede derivar: guía, vehículo, estado, checklist y notas. Se crea
+/// al primer toque desde «Salidas del día».
+model Salida {
+  id        String   @id @default(cuid())
+  /// `claveDeSalida()`: "YYYY-MM-DD|<slug>" o "YYYY-MM-DD|<slug>|<nombre>" (a medida).
+  clave     String   @unique
+  tourSlug  String
+  /// YYYY-MM-DD
+  fecha     String
+  /// fija (compartida, el valor de siempre) | privada
+  tipo      String   @default("fija")
+  guia      String?
+  vehiculo  String?
+  /// programada | confirmada | operada | cancelada
+  estado    String   @default("programada")
+  /// [{ clave, texto, hecho, por, en }] — ver `lib/admin/checklistSalida.ts`.
+  checklist Json?
+  /// Bitácora de incidencias de la salida (4 nov 2026): [{ id, tipo, gravedad,
+  /// causa, accion, por, en }] — ver `lib/admin/incidencias.ts`. El guía también anota.
+  incidencias Json?
+  notas     String?
+  /// Los folios de sus reservas al último guardado (lote 6, 10 nov 2026): si la
+  /// clave cambia (se renombró el tour a medida, cambió el vehículo del RZR),
+  /// el registro se reconoce por sus reservas y no se pierde. Lista de textos.
+  folios    Json?
+  /// Sube en cada guardado (lote 6, 10 nov 2026): el checklist y las
+  /// incidencias se escriben solo si nadie guardó en medio; si alguien sí, se
+  /// vuelve a leer y se aplica encima. Opcional a propósito (db push).
+  version   Int?     @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([fecha])
+  @@index([tourSlug, fecha])
+}
+
+/// La revisión del jueves (rediseño, 3 nov 2026): lo que todavía no sale del
+/// panel porque no hay Bandeja de WhatsApp (Fase 2) ni score automático
+/// (Fase 3) se captura a mano una vez por semana, y el scorecard lo lee de
+/// aquí. Cuando esos datos salgan solos, esta tabla queda como respaldo.
+/// Bitácora de CAMBIOS del negocio (4 nov 2026). Regla del plan As Is / To Be:
+/// «cada cambio se anota con su fecha; sin fecha no se puede saber qué movió el
+/// número». No es la Bitácora de quién hizo qué: es «el 11 nov se publicó
+/// OXXO/SPEI» para leer las tendencias antes y después.
+model CambioMedido {
+  id        String   @id @default(cuid())
+  /// YYYY-MM-DD, el día en que el cambio quedó vivo.
+  fecha     String
+  /// demanda | comercial | operacion | producto | precio | servicio | datos
+  frente    String
+  titulo    String
+  detalle   String?
+  /// Claves de los KPIs que debería mover (`lib/admin/indicadores/catalogo.ts`).
+  kpis      String[] @default([])
+  creadoPor String
+  createdAt DateTime @default(now())
+
+  @@index([fecha])
+}
+
+model RevisionSemanal {
+  id             String   @id @default(cuid())
+  /// Lunes de la semana, YYYY-MM-DD.
+  semana         String   @unique
+  /// Contactos nuevos que escribieron esa semana (revisión de WhatsApp).
+  leadsNuevos    Int?
+  /// De esos, cuántos recibieron el primer mensaje en 5 min o menos (en horario).
+  respuestas5min Int?
+  /// Clientes distintos a los que se les cotizó (si no se captura, se cuenta del panel).
+  leadsCotizados Int?
+  /// Score del operador, 0 a 100 (rúbrica de 14 reglas).
+  score          Int?
+  /// Reseñas nuevas de Google esa semana (si no se captura, sale de la lectura de Google).
+  resenasNuevas  Int?
+  notas          String?
+  /// Score WhatsApp (Fase 3, 4 nov 2026): por regla de `lib/admin/rubrica.ts`,
+  /// { [clave]: { aplican, cumplen } }. El `score` de arriba sale de aquí.
+  rubrica        Json?
+  /// Conversaciones revisadas con su nota (texto libre, una por renglón).
+  revisadas      String?
+  /// Lo que se le pide al operador para la próxima semana.
+  recomendaciones String?
+  /// Cuándo se le mandó al operador (botón «Guardar y mandar»).
+  enviadoOperadorEn DateTime?
+  guardadoPor    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ── CRM (Fase 2 del rediseño, 3 nov 2026) ───────────────────────────────────
+// Un CONTACTO es una persona (único por teléfono). Una OPORTUNIDAD es una
+// intención de viaje de esa persona: pasa por etapas hasta reservar o
+// perderse. La tabla `Lead` de arriba es OTRA cosa (secuencias de correo del
+// recomendador) y no se toca.
+
+model Contacto {
+  id        String   @id @default(cuid())
+  nombre    String
+  /// E.164 (+52…). Único cuando existe: dos oportunidades del mismo número son la misma persona.
+  telefono  String?  @unique
+  correo    String?
+  /// es | en
+  idioma    String   @default("es")
+  notas     String?
+  oportunidades Oportunidad[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([correo])
+}
+
+model Oportunidad {
+  id            String    @id @default(cuid())
+  contactoId    String
+  contacto      Contacto  @relation(fields: [contactoId], references: [id], onDelete: Cascade)
+  /// nuevo | calificado | cotizado | seguimiento | anticipo | confirmado | operado | perdido
+  etapa         String    @default("nuevo")
+  /// Mismo catálogo que `TourBooking.origen` (`lib/origenReserva.ts`).
+  canal         String    @default("whatsapp")
+  /// Slugs de los tours que le interesan.
+  tours         String[]  @default([])
+  /// YYYY-MM-DD
+  fechaViaje    String?
+  pax           Int?
+  /// pareja | familia | amigos | empresa | solo
+  perfil        String?
+  quiereHospedaje Boolean?
+  /// Pesos. Lo cotizado (o lo estimado mientras no hay cotización).
+  monto         Int?
+  responsable   String?
+  proximoPaso   String?
+  /// YYYY-MM-DD
+  proximoPasoEn String?
+  /// `lib/admin/crm.ts` MOTIVOS_PERDIDA: clave y detalle. Obligatorio al pasar a perdido.
+  motivoPerdida String?
+  creadoPor     String?
+  /// De qué página y de qué canal llegó (4 nov 2026): lo pone la Bandeja con el
+  /// código de referencia del mensaje de WhatsApp. Ver `lib/admin/origenWeb.ts`.
+  origenWeb     Json?
+  historial     EtapaOportunidad[]
+  notasLista    NotaOportunidad[]
+  tareas        Tarea[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([etapa])
+  @@index([createdAt])
+  @@index([proximoPasoEn])
+}
+
+/// Cada cambio de etapa, con quién lo hizo: una persona, una regla o el agente.
+model EtapaOportunidad {
+  id            String      @id @default(cuid())
+  oportunidadId String
+  oportunidad   Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  anterior      String?
+  nueva         String
+  por           String
+  /// persona | regla | agente
+  origen        String      @default("persona")
+  createdAt     DateTime    @default(now())
+
+  @@index([oportunidadId])
+}
+
+model NotaOportunidad {
+  id            String      @id @default(cuid())
+  oportunidadId String
+  oportunidad   Oportunidad @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  autor         String
+  texto         String
+  createdAt     DateTime    @default(now())
+
+  @@index([oportunidadId])
+}
+
+/// Un pendiente con dueño y fecha. De una oportunidad o de una salida.
+model Tarea {
+  id            String       @id @default(cuid())
+  oportunidadId String?
+  oportunidad   Oportunidad? @relation(fields: [oportunidadId], references: [id], onDelete: Cascade)
+  /// Clave de la salida (`claveDeSalida`), si es de una salida.
+  salidaClave   String?
+  titulo        String
+  responsable   String
+  /// YYYY-MM-DD
+  vence         String
+  /// HH:MM (hora de México), opcional. Con hora, el recordatorio sale a esa hora.
+  hora          String?
+  /// Cuándo se le avisó al responsable (correo y panel). Una vez por tarea.
+  avisadaEn     DateTime?
+  /// pendiente | hecha
+  estado        String       @default("pendiente")
+  /// manual | regla | agente
+  origen        String       @default("manual")
+  /// Fase 3 (4 nov 2026): la regla que la creó (`lib/admin/automatizaciones.ts`)
+  /// y su clave única «regla:objeto», para que la misma no nazca dos veces.
+  regla         String?
+  claveRegla    String?      @unique
+  creadaPor     String?
+  hechaPor      String?
+  hechaEn       DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([estado, vence])
+  @@index([responsable])
+  @@index([oportunidadId])
+}
+
+// ── Bandeja de WhatsApp (Fase 2.3 del rediseño, 4 nov 2026) ─────────────────
+// Sin Meta: un «puente» (`whatsapp-bandeja/`, servicio aparte en Railway) se
+// vincula al número del negocio como WhatsApp Web y le pasa al panel cada
+// mensaje que entra o sale (también los que Erick manda desde su celular). El
+// panel los guarda aquí y deja en cola lo que se contesta desde la Bandeja.
+
+/// Un chat individual. Se identifica por el id de WhatsApp («…@c.us» o «…@lid»):
+/// en los «@lid» el teléfono no viene en el id y puede tardar en saberse.
+model Conversacion {
+  id               String    @id @default(cuid())
+  chatId           String    @unique
+  /// E.164 cuando se sabe.
+  telefono         String?
+  nombre           String?
+  contactoId       String?
+  /// Último mensaje del cliente (para saber cuánto lleva sin respuesta).
+  ultimoEntranteEn DateTime?
+  ultimoMensajeEn  DateTime?
+  ultimoTexto      String?
+  /// Quién escribió lo último: cliente | equipo.
+  ultimoDe         String?
+  noLeidos         Int       @default(0)
+  archivada        Boolean   @default(false)
+  /// Proveedor, amigo, alguien del equipo: sus mensajes no crean leads ni cuentan en los KPI.
+  noEsCliente      Boolean   @default(false)
+  /// Hasta cuándo leyó el agente este chat (Fase 4): se vuelve a leer solo si entró algo después.
+  agenteLeyoHasta  DateTime?
+  mensajes         Mensaje[]
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([ultimoMensajeEn])
+  @@index([telefono])
+  @@index([contactoId])
+}
+
+model Mensaje {
+  id             String       @id @default(cuid())
+  conversacionId String
+  conversacion   Conversacion @relation(fields: [conversacionId], references: [id], onDelete: Cascade)
+  /// Id de WhatsApp: único, para no guardar dos veces el mismo (idempotente).
+  waId           String?      @unique
+  /// entra | sale
+  direccion      String
+  /// texto | imagen | audio | video | documento | ubicacion | sticker | otro
+  tipo           String       @default("texto")
+  texto          String?
+  /// Desde dónde salió: cliente | app (el celular) | panel | agente | bot
+  enviadoDesde   String
+  /// Quién del equipo lo mandó desde el panel.
+  enviadoPor     String?
+  /// pendiente | enviado | entregado | leido | fallo
+  estado         String       @default("enviado")
+  error          String?
+  /// Cuándo lo tomó el puente para enviarlo (si no confirma en 3 min, se da por fallido).
+  tomadoEn       DateTime?
+  /// Vino de la importación del historial: no crea leads ni cuenta como no leído.
+  importado      Boolean      @default(false)
+  fecha          DateTime
+  createdAt      DateTime     @default(now())
+
+  @@index([conversacionId, fecha])
+  @@index([direccion, estado])
+}
+
+// ── Agente de operaciones (Fase 4 del rediseño, 4 nov 2026) ────────────────
+// Claude vía API con tope de gasto mensual (10 USD, decisión de Manolo). Lo
+// interno lo hace solo (llenar datos vacíos del lead); lo que sale a un
+// cliente es SIEMPRE una propuesta que una persona aprueba, edita o rechaza.
+
+/// Cada llamada a Claude, con su costo: de aquí sale el gasto del mes y el tope.
+model UsoClaude {
+  id           String   @id @default(cuid())
+  /// YYYY-MM (hora de México): el tope es por mes.
+  mes          String
+  /// extraer | responder
+  tarea        String
+  modelo       String
+  entrada      Int      @default(0)
+  salida       Int      @default(0)
+  cacheLectura Int      @default(0)
+  cacheEscrita Int      @default(0)
+  costoUsd     Float    @default(0)
+  ok           Boolean  @default(true)
+  error        String?
+  createdAt    DateTime @default(now())
+
+  @@index([mes])
+}
+
+/// Lo que el agente propone y una persona decide. Cada decisión queda con su motivo.
+model PropuestaAgente {
+  id             String    @id @default(cuid())
+  /// respuesta (mensaje al cliente)
+  tipo           String
+  conversacionId String?
+  oportunidadId  String?
+  borrador       String
+  /// A qué se refiere (p. ej. la clave de la salida de una confirmación de 48 h): no se prepara dos veces.
+  referencia     String?
+  razon          String?
+  /// Lo que falta saber para contestar mejor (el agente no inventa).
+  faltaDato      String?
+  /// pendiente | aprobada (sin cambios) | editada | rechazada | caducada
+  estado         String    @default("pendiente")
+  textoFinal     String?
+  motivo         String?
+  decididoPor    String?
+  decididoEn     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([estado, createdAt])
+  @@index([conversacionId])
+  @@index([referencia])
+}
+
+// ── Rutas y protocolos + Proveedores (Fase 1 del rediseño, 4 nov 2026) ──────
+// Una ficha por tour: la base de la futura «escuela de guías». Los COSTOS no
+// van aquí: siguen en el Cotizador (`CostoTour`), que es de donde los leen la
+// salida, Rentabilidad y el corte.
+
+model RutaTour {
+  tourSlug       String   @id
+  /// [{ hora: "08:00", lugar: "…", detalle: "…" }]
+  paradas        Json?
+  puntoEncuentro String?
+  /// Lo que cuenta el guía en el camino.
+  guion          String?
+  /// Puntos de seguridad (uno por renglón).
+  seguridad      String?
+  /// Qué se hace si el río sube, llueve, cierran el acceso…
+  planB          String?
+  /// Qué llevar (uno por renglón).
+  queLlevar      String?
+  notas          String?
+  /// Ids de `Proveedor` que participan.
+  proveedores    String[] @default([])
+  actualizadoPor String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Proveedor {
+  id        String   @id @default(cuid())
+  nombre    String
+  /// canoas | alimentos | hospedaje | transporte | guia | equipo | entradas | otro
+  servicio  String   @default("otro")
+  contacto  String?
+  /// E.164 cuando se puede.
+  telefono  String?
+  correo    String?
+  /// [{ temporada: "Alta (15 dic–6 ene)", concepto: "Canoa", precio: 300, porPersona: true }]
+  precios   Json?
+  /// Slugs de los tours en los que participa.
+  tours     String[] @default([])
+  notas     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([activo])
+}
+
+/// La revisión de calidad de UN chat en una semana (Fase 4, 4 nov 2026): qué
+/// reglas de la rúbrica aplicaron y cuáles se cumplieron. La suma es la
+/// propuesta del Score WhatsApp; la persona la revisa antes de guardarla.
+model RevisionChat {
+  id             String   @id @default(cuid())
+  /// Lunes de la semana, YYYY-MM-DD.
+  semana         String
+  conversacionId String
+  /// { [clave de la regla]: { aplica, cumple } }
+  reglas         Json
+  nota           String?
+  /// agente | nombre de la persona
+  revisor        String
+  createdAt      DateTime @default(now())
+
+  @@unique([semana, conversacionId])
+  @@index([semana])
+}
+
+/// Un hallazgo del reporte de oportunidades de los jueves (Fase 4).
+model HallazgoAgente {
+  id          String    @id @default(cuid())
+  semana      String
+  /// repetitiva | error | incidencia
+  tipo        String
+  titulo      String
+  evidencia   String
+  frecuencia  String?
+  impacto     String?
+  solucion    String
+  /// Quién debería hacerlo.
+  responsable String?
+  /// nuevo | aceptado | descartado
+  estado      String    @default("nuevo")
+  tareaId     String?
+  decididoPor String?
+  createdAt   DateTime  @default(now())
+
+  @@index([semana, estado])
 }

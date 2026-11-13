@@ -4,8 +4,9 @@ import { stripe } from "@/lib/stripe";
 import { computeTourCharge, computeVehiculoCharge, vehiculoBookingName, fechaTourValida } from "@/lib/tourPricing";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
-import { trackServerEvent } from "@/lib/serverTrack";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
+import { peticionDelEquipo, trackServerEvent } from "@/lib/serverTrack";
+import { metadataDelEquipo } from "@/lib/equipoInterno";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -81,13 +82,15 @@ export async function POST(req: NextRequest) {
           gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
           sid:             typeof sid === "string" ? sid.slice(0, 60) : "",
           source:        "huasteca-potosina.com",
+          // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+          ...metadataDelEquipo(peticionDelEquipo()),
         },
       });
       actividad(
         "💳  ABRIÓ EL PAGO (RZR)",
         bookingName,
         veh.pct === 100 ? mxn(veh.charge) : `${mxn(veh.charge)} (anticipo ${veh.pct}% de ${mxn(veh.total)})`,
-        customerName,
+        nombreParaLog(customerName),
         customerEmail,
         tourDetails?.tourDate,
         paymentIntent.id,
@@ -119,6 +122,8 @@ export async function POST(req: NextRequest) {
       pct:           tourDetails?.pct,
       addOns:        tourDetails?.addOns,
       tourDate:      tourDetails?.tourDate,
+      // Ruta Acuática: Tamasopo suma $150 por cabeza (se valida contra el catálogo).
+      eleccion:      typeof tourDetails?.eleccion === "string" ? tourDetails.eleccion : undefined,
     });
 
     if (!charge) {
@@ -166,11 +171,17 @@ export async function POST(req: NextRequest) {
         pctPagado:     String(charge.pct),
         saldo:         String(charge.saldo),
         addOns:        charge.addOns.map((a) => `${a.nombre} x${a.cantidad}`).join(", ").slice(0, 480),
+        // El código que de verdad descontó (ya validado aquí): la reserva lo toma
+        // de la metadata, no del navegador (lote 5, 5 nov 2026).
+        promoCode:     charge.promoDiscount > 0 ? String(tourDetails?.promoCode ?? "").trim().toUpperCase().slice(0, 40) : "",
+        promoDiscount: String(charge.promoDiscount || 0),
         // Identidad de Google Analytics y del embudo propio: el webhook es el
         // único que se entera de todas las compras y no tiene cookies.
         gaClientId:    typeof gaClientId === "string" ? gaClientId.slice(0, 60) : "",
         sid:           typeof sid === "string" ? sid.slice(0, 60) : "",
         source:        "huasteca-potosina.com",
+        // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+        ...metadataDelEquipo(peticionDelEquipo()),
       },
     });
 
@@ -188,7 +199,7 @@ export async function POST(req: NextRequest) {
       nombreCorto(charge.tour.nombre),
       quienes,
       charge.pct === 100 ? mxn(charge.charge) : `${mxn(charge.charge)} (anticipo ${charge.pct}% de ${mxn(charge.total)})`,
-      customerName,
+      nombreParaLog(customerName),
       customerEmail,
       tourDetails?.tourDate,
       paymentIntent.id,

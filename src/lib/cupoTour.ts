@@ -72,7 +72,7 @@ export const RANGO_MAX_DIAS = 190;
  * después (es lo que deja elegir el calendario). Sin margen, el segundo
  * recorrido de un carrito no se contaría en su día.
  */
-const MARGEN_DIAS = 200;
+export const MARGEN_DIAS = 200;
 
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -215,12 +215,14 @@ export function ocupacionDe(reservas: ReservaParaCupo[]): Map<string, Map<string
 async function reservasEntre(
   desde: string,
   hasta: string,
-  { excluirApartado, sinApartados = false }: { excluirApartado?: string; sinApartados?: boolean } = {},
+  { excluirApartado, sinApartados = false, excluirReserva }: { excluirApartado?: string; sinApartados?: boolean; excluirReserva?: string } = {},
 ): Promise<ReservaParaCupo[]> {
   const [reservas, apartados] = await Promise.all([
     prisma.tourBooking.findMany({
       where: {
         status: { notIn: NO_CUENTAN },
+        // La reserva que se está editando no se cuenta contra sí misma (lote 5).
+        ...(excluirReserva ? { id: { not: excluirReserva } } : {}),
         OR: [
           { tourDate: { gte: addDaysYMD(desde, -MARGEN_DIAS), lte: addDaysYMD(hasta, MARGEN_DIAS) } },
           // Las que no traen fecha arriba pueden traerla en sus renglones.
@@ -387,7 +389,7 @@ const DIAS_ALREDEDOR = 7;
  */
 export async function pedidosSinCupo(
   pedidos: PedidoDeCupo[],
-  { excluirApartado }: { excluirApartado?: string } = {},
+  { excluirApartado, excluirReserva }: { excluirApartado?: string; excluirReserva?: string } = {},
 ): Promise<SinCupo[]> {
   const juntos = new Map<string, PedidoDeCupo>();
   for (const p of pedidos) {
@@ -403,7 +405,7 @@ export async function pedidosSinCupo(
     const fechas = lista.map((p) => p.fecha).sort();
     const slugs = Array.from(new Set(lista.map((p) => p.slug)));
     const [reservas, cerradasPorSlug] = await Promise.all([
-      reservasEntre(fechas[0], fechas[fechas.length - 1], { excluirApartado }),
+      reservasEntre(fechas[0], fechas[fechas.length - 1], { excluirApartado, excluirReserva }),
       Promise.all(slugs.map(async (s) => [s, await fechasCerradasDe(s)] as const)),
     ]);
     const ocupacion = ocupacionDe(reservas);
@@ -435,6 +437,45 @@ export async function pedidosSinCupo(
     console.error("cupoTour: no se pudo contar el cupo; se deja pasar:", e instanceof Error ? e.message : e);
     return [];
   }
+}
+
+/**
+ * Lo que una reserva EDITADA pide de más (lote 5, 5 nov 2026): los recorridos
+ * y días donde ahora va más gente que antes (un día nuevo, más personas), con
+ * TODA la gente de ese día. Se cuentan contra las demás reservas, sin ella
+ * (`excluirReserva`): así el Edén —privado, una reserva por día— no se ve
+ * lleno por la propia reserva al sumarle a alguien. Cambiar el guía, el
+ * nombre o quitar gente no pide nada.
+ *
+ * 🔴 Antes Editar no revisaba el cupo: mover a un grupo a un día lleno, o al
+ * Edén de un día que ya era de otro, se guardaba sin decir nada.
+ */
+export function pedidosQueCrecen(antes: ReservaParaCupo, despues: ReservaParaCupo): PedidoDeCupo[] {
+  const porDia = (b: ReservaParaCupo) => {
+    const m = new Map<string, PedidoDeCupo>();
+    for (const s of salidasDeReserva(b)) {
+      const k = `${s.slug}|${s.fecha}`;
+      m.set(k, { slug: s.slug, fecha: s.fecha, personas: (m.get(k)?.personas ?? 0) + s.personas });
+    }
+    return m;
+  };
+  const a = porDia(antes);
+  return Array.from(porDia(despues).entries())
+    .filter(([k, p]) => p.personas > (a.get(k)?.personas ?? 0))
+    .map(([, p]) => p);
+}
+
+/**
+ * Lo que se le dice al EQUIPO al editar una reserva: «Expedición Tamul el
+ * 2026-11-22 (14 pers., sin lugar)». En el Edén —una reserva por día— no es
+ * que falte lugar: ese día ya es de otro grupo.
+ */
+export function explicarSinLugar(s: Pick<SinCupo, "slug" | "fecha" | "personas" | "estado">): string {
+  const t = TOURS_DB.find((x) => x.slug === s.slug);
+  const por = s.estado === "cerrada"
+    ? "fecha cerrada"
+    : t && esPrivadaDelDia(t) ? "ese día ya es de otro grupo" : "sin lugar";
+  return `${t?.nombreCorto || s.slug} el ${s.fecha} (${s.personas} pers., ${por})`;
 }
 
 /** ¿Cabe este grupo en ese recorrido ese día? Sin cupo que contar (el RZR), sí. */

@@ -15,6 +15,7 @@ import {
 } from "@/lib/reviewRequest";
 import { asegurarEncuesta, correoUtil, linkOpina, ultimoDiaDelTour } from "@/lib/encuestas/encuesta";
 import { hoyMX } from "@/lib/dates";
+import { diasDeTourDe, viajeConTodoCancelado } from "@/lib/admin/salidas";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -66,7 +67,7 @@ export async function POST(req: NextRequest) {
       OR: [{ status: { not: "pending" } }, { depositoPagado: { gt: 0 } }],
     },
     select: {
-      id: true, customerName: true, customerEmail: true,
+      id: true, confirmationNumber: true, customerName: true, customerEmail: true,
       tourName: true, tourSlug: true, tourDate: true, lineItems: true,
       adults: true, children: true, totalAmount: true, status: true,
       encuesta: { select: { satisfaccionEnviadaEn: true, satisfaccionEn: true } },
@@ -76,10 +77,19 @@ export async function POST(req: NextRequest) {
     orderBy: { tourDate: "desc" },
     take: 300,
   });
-  const candidatos = traidos.filter((b) => {
+  const elegibles = traidos.filter((b) => {
     const fin = ultimoDiaDelTour(b);
     return fin <= hasta && (b.status !== "pending" || fin >= DESDE_PENDIENTES) && correoUtil(b.customerEmail);
   });
+  // 🔴 Si Operación marcó «Cancelada» TODAS sus salidas, no hizo ningún tour: no
+  // se le pregunta «¿cómo te fue?» ni se le pide reseña (lote 7, 10 nov 2026;
+  // mismo criterio que el check-in). No se marca: si se reabre, sale después.
+  const fechas = Array.from(new Set(elegibles.flatMap((b) => diasDeTourDe(b).map((d) => d.fecha))));
+  const canceladas = new Set(fechas.length
+    ? (await prisma.salida.findMany({ where: { estado: "cancelada", fecha: { in: fechas } }, select: { clave: true } }).catch(() => [])).map((s) => s.clave)
+    : []);
+  const candidatos = elegibles.filter((b) => !viajeConTodoCancelado(b, canceladas));
+  const salidasCanceladas = elegibles.length - candidatos.length;
 
   let enviados = 0;
   let fallidos = 0;
@@ -140,6 +150,7 @@ export async function POST(req: NextRequest) {
     `${candidatos.length} candidatos`,
     yaPedidas ? `${yaPedidas} ya pedidas` : undefined,
     otroIdioma ? `${otroIdioma} en otro idioma` : undefined,
+    salidasCanceladas ? `${salidasCanceladas} con sus salidas canceladas` : undefined,
     fallidos ? `⚠️ ${fallidos} fallaron` : undefined,
   );
 
@@ -150,6 +161,7 @@ export async function POST(req: NextRequest) {
     candidatos: candidatos.length,
     yaPedidas,
     otroIdioma,
+    salidasCanceladas,
     fallidos,
     ventana: { desde, hasta },
     // En prueba se devuelve a quién le tocaría; en real, solo el conteo.

@@ -7,6 +7,7 @@ import { rateLimit } from "@/lib/rateLimit";
 import { MARCA_PAQUETE } from "@/lib/recuperacion";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
 import { logger } from "@/lib/logger";
+import { leadDesdeWeb } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -88,13 +89,19 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    if (existente) {
-      await prisma.abandonedCart.update({ where: { id: existente.id }, data: datos });
-      return NextResponse.json({ ok: true, nuevo: false });
-    }
+    if (existente) await prisma.abandonedCart.update({ where: { id: existente.id }, data: datos });
+    else await prisma.abandonedCart.create({ data: datos });
 
-    await prisma.abandonedCart.create({ data: datos });
-    return NextResponse.json({ ok: true, nuevo: true });
+    // Al CRM como lead (5 nov 2026): quien llega al pago del paquete y no paga ya
+    // no se queda fuera. Sin duplicar si ya tiene uno; si paga, su reserva
+    // encuentra este lead. No lanza.
+    const personas = datos.adults + datos.childrenMid + datos.childrenSmall;
+    await leadDesdeWeb({
+      nombre: typeof body?.nombre === "string" ? body.nombre : null, telefono: datos.customerPhone, correo: email,
+      idioma: body?.locale === "en" ? "en" : "es", fechaViaje: datos.tourDate, pax: personas, monto: datos.total,
+      que: `Llenó sus datos para pagar el paquete ${datos.tourName} en el sitio: ${datos.tourDate || "sin fecha"}, ${personas} personas, $${datos.total.toLocaleString("es-MX")}. Si no paga, escríbele.`,
+    });
+    return NextResponse.json({ ok: true, nuevo: !existente });
   } catch (err) {
     const e = err as Error;
     logger.error("guardar_carrito_paquete_error", { message: e.message });

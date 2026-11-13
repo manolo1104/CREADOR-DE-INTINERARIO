@@ -1,6 +1,7 @@
 import { SignJWT, jwtVerify } from "jose";
 import bcrypt from "bcryptjs";
 import { usuariosAdmin, type SeccionAdmin, type UsuarioAdmin } from "./usuarios";
+import { ROLES_CON_HUELLA, claveConfigurada, huellaDeClave, huellaDeSesionVigente } from "./huellaClave";
 
 // Sin fallback: si falta ADMIN_JWT_SECRET la app no puede firmar/verificar sesiones.
 function getSecret(): Uint8Array {
@@ -17,12 +18,16 @@ function getSecret(): Uint8Array {
  * para volver a firmar la MISMA sesión con pestañas nuevas sin alargarla.
  */
 export async function createToken(usuario: UsuarioAdmin, secciones: SeccionAdmin[], expira?: number): Promise<string> {
+  // La sesión del guía lleva la huella de su contraseña (lote 8, 10 nov 2026):
+  // al cambiarla en Railway, las sesiones abiertas dejan de valer.
+  const clave = ROLES_CON_HUELLA.includes(usuario.rol) ? claveConfigurada(usuario) : "";
   return new SignJWT({
     role:   "admin",
     user:   usuario.user,
     rol:    usuario.rol,
     nombre: usuario.nombre,
     secciones,
+    ...(clave ? { huella: await huellaDeClave(getSecret(), clave) } : {}),
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -32,6 +37,8 @@ export async function createToken(usuario: UsuarioAdmin, secciones: SeccionAdmin
 
 export async function verifyToken(token: string) {
   const { payload } = await jwtVerify(token, getSecret());
+  // La sesión del guía con la contraseña de antes ya no vale (lote 8).
+  if (!(await huellaDeSesionVigente(payload, getSecret()))) throw new Error("Sesión de una contraseña anterior");
   return payload;
 }
 

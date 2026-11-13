@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { sesionActual } from "@/lib/admin/sesion";
+import { esDeOficina } from "@/lib/admin/usuarios";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { MAX_BYTES_EVIDENCIA, TIPOS_OK, tipoDeArchivo } from "@/lib/admin/evidencia";
 
@@ -14,6 +16,10 @@ function esArchivo(v: FormDataEntryValue | null): v is ArchivoSubido & FormDataE
 // GET → metadatos de las evidencias de una reserva (NUNCA los bytes).
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     const evidencias = await prisma.evidencia.findMany({
       where: { bookingId: params.id },
       select: { id: true, bookingId: true, movimientoId: true, nombreArchivo: true, tipoMime: true, tamanoBytes: true, createdAt: true },
@@ -29,6 +35,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 // POST → sube un archivo (multipart/form-data, campo "archivo").
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     const reserva = await prisma.tourBooking.findUnique({
       where: { id: params.id },
       select: { id: true, confirmationNumber: true, customerName: true },
@@ -40,6 +50,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Opcional: el cobro al que pertenece el comprobante. Sin esto, el archivo
     // queda colgando de la reserva (comprobante de pago al proveedor).
     const movimientoId = (form.get("movimientoId") as string | null)?.trim() || null;
+    // Solo un cobro de ESTA reserva (lote 3, 5 nov 2026): no se le cuelga un archivo al cobro de otra.
+    if (movimientoId) {
+      const cobro = await prisma.movimiento.findUnique({ where: { id: movimientoId }, select: { reservaId: true } });
+      if (!cobro || cobro.reservaId !== params.id) return NextResponse.json({ error: "Ese cobro no es de esta reserva" }, { status: 400 });
+    }
     // 🔴 NO usar `instanceof File`: Railway corre Node 18, donde `File` no es
     // global, y la comparación lanzaba "File is not defined" → TODA subida de
     // comprobante daba 500 en producción (en la Mac, con Node 20+, pasaba).

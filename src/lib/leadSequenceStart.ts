@@ -30,6 +30,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { buildLeadSequenceEmail, PASOS_SECUENCIA } from "@/lib/leadSequenceEmail";
 import { registrarLead, esEmailValido, type ContextoLead } from "@/lib/leads";
 import { actividad, logger } from "@/lib/logger";
+import { TOURS_LISTA } from "@/lib/tours";
 
 export const FUENTE_RECOMENDADOR = "Recomendador";
 
@@ -57,6 +58,16 @@ export async function arrancarSecuenciaRecomendador(
 
   try {
     const registro = await registrarLead(email, FUENTE_RECOMENDADOR, ctx);
+    // Al CRM como lead (5 nov 2026): quien pide su recomendación ya no se queda
+    // solo en la secuencia de correos. Sin duplicar si ya tiene uno. No lanza.
+    if (registro) {
+      const tours = [ctx.tourPrincipal, ctx.tourSecundario].filter((t): t is string => !!t);
+      const nombres = tours.map(s => TOURS_LISTA.find(t => t.slug === s)?.nombre ?? s).join(" y ");
+      await import("@/lib/admin/crmDatos").then(m => m.leadDesdeWeb({
+        correo: email, tours,
+        que: `Pidió su recomendación en el sitio: ${nombres || "sin tour"}${ctx.paquete ? `, paquete ${ctx.paquete}` : ""}${ctx.grupo ? ` · ${ctx.grupo}` : ""}${ctx.dias ? ` · ${ctx.dias}` : ""}${ctx.origen ? ` · desde ${ctx.origen}` : ""}. Le llegan los correos automáticos.`,
+      })).catch(() => null);
+    }
     // Sin fila no hay a quién apuntarle el envío ni de dónde reintentarlo.
     if (!registro) return { enviado: false, motivo: "sin-registro" };
 

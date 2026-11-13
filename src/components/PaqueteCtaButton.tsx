@@ -1,6 +1,7 @@
 "use client";
 
-import { trackPackageInquiry, trackWhatsapp } from "@/lib/analytics";
+import { trackPackageInquiry } from "@/lib/analytics";
+import { trackTourEvent } from "@/lib/tourTracker";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getPaqueteFormUI } from "@/lib/i18n/paquetes.en";
 
@@ -21,9 +22,13 @@ interface Props {
 
 export function PaqueteCtaButton({ href, packageName, price, destacado }: Props) {
   const t = getPaqueteFormUI(useLocale().locale);
+  // 🔴 Contaba el WhatsApp DOBLE en GA4 (4 nov 2026): mandaba su propio
+  // `whatsapp_contact` y, como el enlace no llevaba `data-wa-manual`, el
+  // contador global del sitio mandaba otro. Ahora va una sola vez, por el mismo
+  // camino que el resto (`WHATSAPP_CLICK` → panel + GA4).
   function handleClick() {
     trackPackageInquiry(packageName, price);
-    trackWhatsapp("package_inquiry", price);
+    trackTourEvent("WHATSAPP_CLICK", { context: "package_inquiry", boton: "paquete", amount: price, paquete: packageName });
   }
 
   return (
@@ -32,6 +37,7 @@ export function PaqueteCtaButton({ href, packageName, price, destacado }: Props)
       target="_blank"
       rel="noopener noreferrer"
       onClick={handleClick}
+      data-wa-manual="1"
       className={`flex items-center justify-center gap-2.5 w-full py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 ${
         destacado
           ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"

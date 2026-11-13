@@ -2,7 +2,7 @@
 
 import { personasDeItem } from "@/lib/carrito";
 import { formatMXN, formatTourDate } from "@/lib/tourBooking";
-import { TOURS_DB, incluyeDeTour, fraseRecogida, cargoVallesDe } from "@/lib/tours";
+import { TOURS_DB, incluyeDeTour, fraseRecogida, cargoVallesDe, opcionDeEleccion } from "@/lib/tours";
 import { serviciosHotel } from "@/lib/habitaciones";
 import { localizeTour } from "@/lib/i18n/localize";
 import { ResumenReserva } from "@/components/booking/ResumenReserva";
@@ -35,7 +35,8 @@ export function ResumenCarrito({ c }: { c: CarritoCheckout }) {
             : t.personas(personasDeItem(i)),
           subtotal: i.total + cargo,
           incluye:  incluyeDeTour({ incluye: tour?.incluye ?? [] }, locale),
-          eleccion: i.eleccion,
+          // El carrito guarda el id de la opción («tamasopo»): se pinta su nombre en el idioma de la página.
+          eleccion: (base && tour?.eleccion?.opciones.find((x) => x.id === opcionDeEleccion(base, i.eleccion)?.id)?.nombre) ?? i.eleccion,
           recogida: base ? fraseRecogida(base, en) : undefined,
           cancelacion: base ? (cancelacionDe(base) || undefined) : undefined,
           // Las actividades opcionales se cobran, así que tienen que

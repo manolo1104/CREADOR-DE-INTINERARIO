@@ -143,7 +143,9 @@ export default function ConfirmacionTourPage() {
           <h1 className="font-cormorant font-light text-verde-profundo mb-3" style={{ fontSize: "clamp(32px,5vw,52px)" }}>
             {t.titulo}
           </h1>
-          <p className="font-dm text-negro/60 text-sm max-w-sm mx-auto leading-relaxed">
+          {/* Clarity graba el texto de la pantalla: el nombre y el correo del
+              cliente van tapados (lote 8, 10 nov 2026). */}
+          <p data-clarity-mask="True" className="font-dm text-negro/60 text-sm max-w-sm mx-auto leading-relaxed">
             {t.saludo(data.customerName, data.customerEmail)}
           </p>
         </div>

@@ -497,6 +497,8 @@ export default function ReservarPaquetePage() {
         personas, childrenMid, childrenSmall, vistaMontana, fecha, reparto, tourElegido, nocheExtra, habitacionId,
         // Para que el correo de rescate salga en el idioma del cliente.
         locale,
+        // Su nombre, para su lead del CRM (5 nov 2026).
+        nombre: name.trim(),
       }),
     }).catch(() => {});
 
@@ -505,6 +507,9 @@ export default function ReservarPaquetePage() {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           customerEmail: email.trim(), customerName: name.trim(),
+          // Si cierra la pestaña tras pagar, la reserva del webhook sale de la
+          // metadata: sin estos dos quedaba sin teléfono ni notas (lote 5).
+          customerPhone: phone.trim(), notes: notes.trim(),
           sid: sessionId(), gaClientId: ga4ClientId(), locale,
           // Desde el 11 oct el modo viaja aparte y la frase la arma el servidor
           // (el cargo de Valles no puede depender de un texto del navegador).

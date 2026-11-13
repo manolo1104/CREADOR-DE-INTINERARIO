@@ -26,7 +26,7 @@ import type { TourQuote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import {
   TOURS_DB, TOURS_LISTA, PROMO_TEMPORADA, PROMO_VENCE, fechaConPromo, precioDeFecha, promoVigente,
-  precioGrupo, precioPorCabeza, cargoVallesDe,
+  precioGrupo, precioPorCabeza, cargoVallesDe, extraDeEleccion,
   type Tour, type TourVehiculo,
 } from "@/lib/tours";
 import { computeTourCharge, computeVehiculoCharge, fechaTourValida, vehiculoBookingName, ID_TRASLADO_VALLES } from "@/lib/tourPricing";
@@ -46,6 +46,7 @@ import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
 import { fechaLimite } from "@/lib/vencimientoCotizacion";
 import { conMeta as conMetaSeguimiento, metaCotizacion as metaSeguimiento } from "@/lib/quoteFollowUp";
+import { precioWebDelBot } from "./reglasEnvio";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
 import type {
   CotizacionBotInput, CotizacionCalculada, ErrorPrecio, HospedajeCotizacionBot, HospedajePrecio,
@@ -211,8 +212,9 @@ export function subtotalPanel(l: LineItem): number {
   const delGrupo = precioGrupo(t, personas);
   // Lo que paga cada cabeza: lista menos el escalón del tamaño del grupo
   // (`escalaPersona`, desde 3 personas). TOURS_LISTA no lleva promo, así que
-  // aquí siempre aplica la escalera, como en el editor del panel.
-  const porCabeza = precioPorCabeza(t, personas);
+  // aquí siempre aplica la escalera, como en el editor del panel. Con el extra
+  // de la opción elegida (Ruta Acuática → Tamasopo, +$150), como `calcTourLine`.
+  const porCabeza = precioPorCabeza(t, personas) + extraDeEleccion(t, l.eleccion);
   const base = delGrupo !== null
     ? delGrupo
     : (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
@@ -1028,6 +1030,10 @@ export function calcularCotizacionBot(input: PrecioBotInput, opciones: OpcionesC
   const sumaPanel = guardadas.reduce((s, l) => s + l.subtotal, 0) + filas.reduce((s, f) => s + f.subtotal, 0);
   const priceOverride = total > sumaPanel ? total : null;
   const descuentoFijo = total < sumaPanel ? sumaPanel - total : null;
+  // Y lo que cobra la web por ESTA cotización tal cual (revisión del lote 4,
+  // 5 nov 2026): con esa marca el correo sabe que su botón al sitio cobra lo
+  // cotizado aunque haya descuento o precio editado. Ver `precioWebDelBot`.
+  const precioWeb = precioWebDelBot(total, { paquete: !!paquete, recorridosAparte: sueltas.length, hospedaje: !!hospedaje });
 
   // El MISMO redondeo que el panel con «30 %» y que `desgloseCotizacion`
   // (`Math.round(total × 0.3)`), guardado como importe: el PDF, el correo, el
@@ -1054,6 +1060,7 @@ export function calcularCotizacionBot(input: PrecioBotInput, opciones: OpcionesC
     priceOverride,
     discountType:  descuentoFijo !== null ? "fixed" : null,
     discountValue: descuentoFijo,
+    precioWeb,
     notasInternas,
     origen:        "bot",
     waChatId:      texto(cliente?.waChatId, 120) || null,
@@ -1650,6 +1657,10 @@ async function reemplazarUna(
       };
     }
 
+    // Reemplazada (vencida), su liga de anticipo ya no se puede pagar (lote 3, 5 nov 2026). No lanza.
+    await import("@/lib/admin/linksPago")
+      .then(async m => { const q = await prisma.tourQuote.findUnique({ where: { quoteNumber: folio }, select: { id: true } }); if (q) await m.apagarLigasDe({ cotizacionIds: [q.id] }, `la reemplazó la ${nueva.quoteNumber}`); })
+      .catch(() => {});
     await registrarEnBitacora({
       accion:     "modificó",
       entidad:    "cotización",

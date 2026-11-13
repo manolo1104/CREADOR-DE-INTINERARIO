@@ -191,6 +191,13 @@ export interface PaqueteChargeResult {
    */
   extraTraslado:  number;
   habitaciones:   number;
+  /**
+   * Lo que vale el HOTEL dentro del total: lo que ocupan de verdad, con la
+   * noche extra y la 3.ª noche gratis (`hotelReal`). Va como `subtotal` del
+   * renglón del hotel para que el corte no lo reparta 50/50 como si fuera de
+   * tours (lote 5, 5 nov 2026). 0 en las noches sin hotel.
+   */
+  importeHotel:   number;
   total:          number;
   charge:         number;
   saldo:          number;
@@ -297,6 +304,7 @@ export function computePaqueteCharge(input: {
       conTour,
       extraTraslado,
       habitaciones: 0,
+      importeHotel: 0,
       total, charge, saldo: total - charge, pct,
     };
   }
@@ -387,6 +395,8 @@ export function computePaqueteCharge(input: {
     conTour: false,
     extraTraslado: 0,
     habitaciones: Math.max(1, Math.ceil(personas / MAX_POR_HABITACION)),
+    // Nunca más que el paquete entero: lo que sobre de un descuento lo absorben los tours.
+    importeHotel: Math.max(0, Math.min(hotelReal, total)),
     total,
     charge,
     saldo: total - charge,

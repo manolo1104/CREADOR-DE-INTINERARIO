@@ -16,6 +16,7 @@ import {
   type MetaCotizacion,
 } from "@/lib/quoteFollowUp";
 import { actividad, logger } from "@/lib/logger";
+import { ligaVivaDeCotizacion, revisarReservaPosterior } from "@/lib/cotizaciones/estadoCotizacion";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -32,7 +33,9 @@ export const maxDuration = 60;
  * decidiendo AHORA. La versión anterior esperaba 2, 5 y 10 días y llegaba tarde
  * a su propia conversación.
  *
- * Si el cliente CONFIRMA la reserva, la secuencia se pausa en el acto.
+ * Si el cliente CONFIRMA la reserva de ESA cotización, pasa a «aceptada» y la
+ * secuencia se pausa en el acto. Si el mismo correo reservó otra cosa, solo se
+ * pausan sus correos (ver `reservaPosterior`, lote 4 de la auditoría).
  *
  * La secuencia se CANCELA si no cabe completa antes de la fecha del tour. Es
  * deliberado: tres correos que se cortan a la mitad, justo cuando la persona
@@ -76,6 +79,9 @@ export async function POST(req: NextRequest) {
   let convertidas = 0;
   let sinTiempo = 0;
   let terminadas = 0;
+  // Folios que pasan a «aceptada» (su reserva) y que solo se pausan (otra reserva del mismo correo).
+  const aceptadas: string[] = [];
+  const pausadas: string[] = [];
   const destinatarios: { folio: string; email: string; paso: number | "vence" }[] = [];
   const vencidas: { folio: string; cliente: string; vencio: string }[] = [];
   const duplicadas: { folio: string; masReciente: string }[] = [];
@@ -143,28 +149,33 @@ export async function POST(req: NextRequest) {
     }
 
     /**
-     * Si CONFIRMÓ la reserva, la secuencia se pausa. Nada peor que seguir
-     * persiguiendo a alguien que ya te pagó.
+     * ¿Ya reservó? Nada peor que seguir persiguiendo a alguien que ya te pagó.
      *
-     * Se mira solo la reserva hecha DESPUÉS de mandar esta cotización. Con el
-     * filtro por correo a secas, un cliente que ya había viajado con nosotros
-     * el año pasado quedaba fuera del seguimiento de su cotización NUEVA: su
-     * reserva vieja la mataba antes de empezar.
+     * 🔴 Regla de Manolo (lote 4 de la auditoría, 5 nov 2026): «aceptada»
+     * SOLO si la reserva salió de ESTA cotización (su `cotizacionId` o su
+     * `cotizacionOrigen`) y no está cancelada. Si el mismo correo —sin
+     * distinguir mayúsculas— reservó OTRA cosa, solo se pausan sus correos:
+     * sigue Enviada, sin `aceptadaEn`, se puede convertir o cobrar y vence en
+     * su fecha. Antes cualquier reserva posterior del correo (cancelada, de
+     * otro tour, la de la otra opción que sí eligió) la marcaba «aceptada» e
+     * inflaba el KPI «Cotización → reserva».
+     *
+     * De otra reserva se mira solo la hecha DESPUÉS de mandar esta cotización.
+     * Con el filtro por correo a secas, un cliente que ya había viajado con
+     * nosotros el año pasado quedaba fuera del seguimiento de su cotización
+     * NUEVA: su reserva vieja la mataba antes de empezar.
      */
     const desdeCuando = meta.seqDesde ? new Date(meta.seqDesde) : q.createdAt;
-    const yaReservo = await prisma.tourBooking.findFirst({
-      where:  {
-        customerEmail: q.customerEmail,
-        createdAt:     { gte: Number.isNaN(desdeCuando.getTime()) ? q.createdAt : desdeCuando },
-      },
-      select: { id: true },
-    });
-    if (yaReservo) {
+    const reservo = await revisarReservaPosterior(q, Number.isNaN(desdeCuando.getTime()) ? q.createdAt : desdeCuando);
+    if (reservo === "aceptar") {
+      aceptadas.push(q.quoteNumber);
       if (!dry) {
         await prisma.tourQuote.update({
           where: { id: q.id },
           data:  {
             status:    "aceptada",
+            // KPI «Cotización → reserva a 14 días» (4 nov 2026).
+            aceptadaEn: new Date(),
             // "pausada" y no "terminado": deja dicho en el panel POR QUÉ dejó
             // de recibir correos, que es distinto de haberse agotado sola.
             lineItems: conMeta(q.lineItems, { seqEstado: "pausada" }) as never,
@@ -174,6 +185,23 @@ export async function POST(req: NextRequest) {
       convertidas++;
       continue;
     }
+    // Pausada: ya compró otra cosa, pidió la baja o se regresó a Enviada desde
+    // el panel. No se le escribe nada —ni pasos ni «vence mañana»—, pero vence.
+    let pausada = meta.seqEstado === "pausada";
+    if (reservo === "pausar") {
+      pausada = true;
+      // Se escribe una vez y solo sobre un seguimiento vivo: «terminado» y
+      // «sin-tiempo» ya dicen por qué no recibe pasos.
+      if (!meta.seqEstado || meta.seqEstado === "activo") {
+        pausadas.push(q.quoteNumber);
+        if (!dry) {
+          await prisma.tourQuote.update({
+            where: { id: q.id },
+            data:  { lineItems: conMeta(q.lineItems, { seqEstado: "pausada" }) as never },
+          });
+        }
+      }
+    }
 
     // Pasó su fecha límite sin respuesta: Vencida, y se acabó el seguimiento.
     if (venceEl && diasParaVencer(venceEl, hoy) < 0) {
@@ -181,6 +209,8 @@ export async function POST(req: NextRequest) {
       if (!dry) await vencer(q.id, q.lineItems, venceEl);
       continue;
     }
+
+    if (pausada) continue;
 
     // El mismo cliente tiene una más reciente: solo esa le escribe.
     if (await esAnterior(q, meta)) continue;
@@ -206,6 +236,10 @@ export async function POST(req: NextRequest) {
             lineItems:    q.lineItems,
             // Paquete u hotel: el botón no puede mandar al carrito con los tours sueltos.
             packageItems: q.packageItems,
+            // Con extras, descuento o precio a mano el carrito no cobra lo cotizado:
+            // va su liga de anticipo o WhatsApp (lote 4, 5 nov 2026).
+            extraItems:   q.extraItems,
+            ligaPago:     await ligaVivaDeCotizacion(q.id),
             tourSlug:     q.tourSlug,
             venceEl,
             cuando:       cuandoVence(venceEl, locale, hoy),
@@ -265,6 +299,8 @@ export async function POST(req: NextRequest) {
         totalAmount:  q.totalAmount,
         lineItems:    q.lineItems,
         packageItems: q.packageItems,
+        extraItems:   q.extraItems,
+        ligaPago:     await ligaVivaDeCotizacion(q.id),
         tourSlug:     q.tourSlug,
       });
       await sendBrevoEmail({ to: [{ email: q.customerEmail, name: q.customerName }], subject, htmlContent: html });
@@ -298,6 +334,7 @@ export async function POST(req: NextRequest) {
     dry ? `${destinatarios.length} recibirían` : `${enviados} enviado(s)`,
     `${cotizaciones.length} vivas`,
     convertidas ? `${convertidas} ya reservó` : undefined,
+    pausadas.length ? `${pausadas.length} pausada(s) por otra reserva del mismo correo` : undefined,
     vencidas.length ? `${vencidas.length} vencida(s)` : undefined,
     sinTiempo   ? `${sinTiempo} sin tiempo antes del tour` : undefined,
     duplicadas.length ? `${duplicadas.length} terminada(s) por duplicado` : undefined,
@@ -306,11 +343,12 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({
     ok: true, dry, enviados, fallidos, convertidas, sinTiempo, terminadas,
+    pausadas: pausadas.length,
     vencidas: vencidas.length,
     // Las que se terminaron (o, en prueba, se terminarían) por tener una más reciente del mismo cliente.
     porDuplicado: duplicadas.length,
     revisadas: cotizaciones.length,
-    ...(dry ? { recibirian: destinatarios, vencerian: vencidas, duplicadas } : {}),
+    ...(dry ? { recibirian: destinatarios, vencerian: vencidas, duplicadas, aceptarian: aceptadas, pausarian: pausadas } : {}),
   });
 }
 
@@ -329,6 +367,8 @@ async function vencer(id: string, lineItems: unknown, venceEl: string) {
     where: { id },
     data:  { status: "expirada", lineItems: conMeta(lineItems, { venceEl, seqEstado: "terminado" }) as never },
   });
+  // Vencida, su liga de anticipo ya no se puede pagar (lote 3, 5 nov 2026). No lanza.
+  await import("@/lib/admin/linksPago").then(m => m.apagarLigasDe({ cotizacionIds: [id] }, "la cotización venció")).catch(() => {});
 }
 
 // (La regla de la baja vive en `lib/estaDeBaja.ts`, igual para todos los crons.)

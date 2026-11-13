@@ -13,6 +13,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Archivar borradores de más de 30 días
+        # Antes del resumen, para que el correo no cuente borradores viejos.
+        continue-on-error: true
+        run: |
+          curl -fsS --max-time 60 -X POST \
+            -H "Authorization: Bearer ${{ secrets.BLOG_AGENT_SECRET }}" \
+            https://www.huasteca-potosina.com/api/cron/archivar-borradores
       - name: Avisar al equipo qué cotizaciones vencen
         run: |
           # -f hace que un 401 (secreto mal configurado) falle el job en vez de

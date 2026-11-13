@@ -4,6 +4,8 @@ import { TOURS_DB } from "@/lib/tours";
 import { PAQUETES_DB, PAQUETES_EVENTO } from "@/lib/paquetes";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rateLimit";
+import { MARCA_EQUIPO, visitaDelEquipo } from "@/lib/equipoInterno";
+import { datosSinPrivados, textoSinPrivados } from "@/lib/medicionPrivada";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -157,8 +159,9 @@ const EVENTOS: Record<
  * Nunca bloquea ni revienta la respuesta: si la tabla aún no existe o la base
  * está caída, se pierde el evento y el sitio sigue igual.
  */
+// Sin el token de /checkin u /opina ni parámetros privados (`medicionPrivada.ts`).
 const sinToken = (s: unknown): string | undefined =>
-  typeof s === "string" ? s.replace(/\/(checkin|opina)\/[^/?#\s]+/g, "/$1") : undefined;
+  typeof s === "string" ? textoSinPrivados(s) : undefined;
 
 async function persistir(event: string, d: Datos, path?: string, sid?: string, device?: string, referrer?: string) {
   try {
@@ -206,7 +209,7 @@ export async function POST(req: NextRequest) {
     const texto = await req.text();
     if (texto.length > MAX_BYTES) return NextResponse.json({ ok: false }, { status: 413 });
     const body = JSON.parse(texto);
-    const { event, data, path: pathCrudo, sid, device, referrer: referrerCrudo } = body as {
+    const { event, data: dataCruda, path: pathCrudo, sid, device, referrer: referrerCrudo } = body as {
       event: string;
       data?: Datos;
       path?: string;
@@ -218,6 +221,9 @@ export async function POST(req: NextRequest) {
     // respuestas de un cliente: no se guarda ni se imprime en el log.
     const path = sinToken(pathCrudo);
     const referrer = sinToken(referrerCrudo);
+    // Y tampoco en los datos del evento (lote 8, 10 nov 2026): el clic a
+    // WhatsApp trae la primera página de la visita, que puede ser su liga.
+    const data = dataCruda && typeof dataCruda === "object" ? datosSinPrivados(dataCruda) : undefined;
 
     // Nombres de evento como los del sitio (MAYÚSCULAS_Y_GUIONES): nada de texto libre.
     if (!event || typeof event !== "string" || !/^[A-Z0-9_]{2,60}$/.test(event)) {
@@ -239,10 +245,17 @@ export async function POST(req: NextRequest) {
       actividad(`📊  ${event}`, path ?? "/", visitante);
     }
 
+    // Lo que hace el equipo no se mide (3 nov 2026). Antes 34 de 154 clics a
+    // WhatsApp salían de /admin y el embudo contaba al propio equipo. Lote 8
+    // (10 nov 2026): con la MISMA marca que GA4 y Clarity (`hp_interno`), que
+    // pone abrir el panel; antes aquí se miraba la sesión del panel y quien la
+    // había cerrado seguía contando aquí pero no en GA4.
+    const delEquipo = visitaDelEquipo({ ruta: path, marca: req.cookies.get(MARCA_EQUIPO)?.value });
+
     // SIN await: medir jamás debe frenar al visitante. Con la base caída, la
     // conexión de Prisma tarda ~9 s en rendirse; esperarla convertía cada
     // evento en una petición colgada.
-    void persistir(event, data ?? {}, path, sid, device, referrer);
+    if (!delEquipo) void persistir(event, data ?? {}, path, sid, device, referrer);
 
     return NextResponse.json({ ok: true });
   } catch {

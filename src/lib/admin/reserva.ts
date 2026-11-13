@@ -9,6 +9,8 @@
 // tour. El tamaño real del grupo es entonces el MÁXIMO por línea, no la suma.
 // Los datos viejos no se tocan: se corrigen al leerlos.
 
+import { extrasDe, totalExtras } from "./extras";
+
 export interface LineaTour {
   tourSlug?: string;
   tourName?: string;
@@ -44,11 +46,43 @@ export interface Grupo {
   total: number;
 }
 
+/**
+ * Cuánto se cobra de verdad por cada peso de lista de una reserva (lote 9, 10
+ * nov 2026): su total ÷ (renglones + hotel + extras). Con descuento, código o
+ * un precio pactado más bajo da menos de 1; con el total editado hacia arriba,
+ * más de 1. Así el ingreso de cada renglón es lo que se cobró y no su precio de
+ * lista (el margen estimado y la realización de precio salían inflados). Sin
+ * renglones, sin lista o con algún renglón sin subtotal (reservas viejas), 1.
+ */
+export function factorDeTotal(b: { totalAmount: number; lineItems?: unknown; packageItems?: unknown; extraItems?: unknown }): number {
+  const sinMeta = (raw: unknown) => (Array.isArray(raw) ? raw : []).filter((x: any) => x && typeof x === "object" && !x._meta) as Record<string, unknown>[];
+  const lineas = sinMeta(b.lineItems);
+  if (!lineas.length || lineas.some(l => l.subtotal === undefined || l.subtotal === null || !Number.isFinite(Number(l.subtotal)))) return 1;
+  const lista = lineas.reduce((t, l) => t + Number(l.subtotal), 0)
+    + sinMeta(b.packageItems).reduce((t, p) => t + (Number(p.subtotal) || 0), 0)
+    + totalExtras(extrasDe(b.extraItems));
+  const total = Number(b.totalAmount) || 0;
+  return lista > 0 && total >= 0 ? total / lista : 1;
+}
+
 /** Las líneas de tour reales, sin la línea `_meta`. */
 export function lineasDe(b: ConLineas): LineaTour[] {
   const raw = b.lineItems;
   if (!Array.isArray(raw)) return [];
   return raw.filter((l: any) => l && !l._meta && (l.tourSlug || l.tourName));
+}
+
+/**
+ * ¿La reserva incluye noches de hotel que vendimos nosotros? (KPI «Reservas con
+ * hotel», 4 nov 2026). Sí cuando `packageItems` trae un renglón de hotel, o
+ * cuando es el viaje CDMX, que lleva su noche. OJO: NO es dónde duerme el
+ * cliente — eso lo dice `hospedajeDeReserva()` y puede ser otro hotel.
+ */
+export function incluyeHotel(b: { packageItems?: unknown; tourSlug?: string; lineItems?: unknown }): boolean {
+  const pk = Array.isArray(b.packageItems) ? (b.packageItems as any[]) : [];
+  if (pk.some(p => p && !p._meta && (p.hotel || p.habitacion || Number(p.noches) > 0))) return true;
+  const VIAJE = "viaje-cdmx-xilitla"; // = VIAJE_SLUG (lib/viajeCdmx/config.ts)
+  return b.tourSlug === VIAJE || (Array.isArray(b.lineItems) && (b.lineItems as any[]).some(l => l && !l._meta && l.tourSlug === VIAJE));
 }
 
 /** La línea `_meta` (método de pago, folio, pickup, numPersonas). */

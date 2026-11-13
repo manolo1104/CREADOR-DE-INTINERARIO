@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // `src/instrumentation.ts`: el reloj de los recordatorios de seguimiento (3 nov 2026).
+  experimental: { instrumentationHook: true },
   transpilePackages: ["leaflet", "react-leaflet"],
   compress: true,
   images: {

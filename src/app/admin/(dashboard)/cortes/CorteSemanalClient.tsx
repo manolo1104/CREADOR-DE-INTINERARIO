@@ -18,16 +18,36 @@ import { hoyMX, addDaysYMD } from "@/lib/dates";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { colorDeTour, codigoDeTour } from "@/lib/admin/coloresTour";
 import {
-  lunesDe, etiquetaSemana, diaCorto, fmx, capturaDe, calcularCorte,
+  lunesDe, domingoDe, etiquetaSemana, diaCorto, fmx, capturaDe, calcularCorte,
   cuentasDe, costosPorTarjeta, sugerirCostos, comisionDeCobro, RECEPTORES, SOCIO_COSTOS,
-  type CobroSemana, type Receptor,
+  cambiosDe, normalizarCuentas, diferenciasDelCorte, cuadreCobros, avisosCuadre, puedeHacerCorte,
+  type CobroSemana, type Receptor, type DiferenciaCorte, type CobrosDelPanel,
   SOCIO_HOTEL, CONCEPTO_HOSTING, HOSTING_PCT, VENDEDOR, REPARTO_RZR, repartir, type SalidaCorte, type Captura, type CapturaSalida, type CostoCorte, type ResumenCorte,
   type EstadoCorte, type CatalogoCostos, type CuentaCorte, type ReservaCorte,
 } from "@/lib/admin/corteSemanal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 
-interface Guardado { captura: Captura; cobros: CobroSemana[]; resumen: ResumenCorte; guardadoPor: string; updatedAt: string; estado: EstadoCorte }
-interface Semana { semana: string; hasta: string; salidas: SalidaCorte[]; catalogo: CatalogoCostos; guardado: Guardado | null }
+interface Guardado {
+  captura: Captura; cobros: CobroSemana[]; resumen: ResumenCorte; guardadoPor: string; updatedAt: string; estado: EstadoCorte;
+  /** El corte hecho guarda sus tarjetas con sus ventas y su hotel (lote 7). */
+  congelado?: boolean;
+}
+/** Lo registrado en Cobros esa semana, para el cuadre con lo escrito a mano (lote 7). */
+interface CobrosPanel extends CobrosDelPanel {
+  lista: { fecha: string; monto: number; metodo: string; recibio: string; folio: string; cliente: string }[];
+}
+interface Semana {
+  semana: string; hasta: string; salidas: SalidaCorte[]; catalogo: CatalogoCostos; guardado: Guardado | null;
+  /** Corte hecho: tours que llegaron después (no cuentan hasta rehacerlo). */
+  nuevas?: SalidaCorte[];
+  /** Corte hecho y congelado: las tarjetas de hoy, para decir qué cambiaría al rehacerlo. */
+  vivas?: SalidaCorte[] | null;
+  /** Cuentas juntas que heredaron los costos de su principal (se canceló o cambió de fecha). */
+  heredadas?: string[];
+  cobrosPanel?: CobrosPanel | null;
+}
+/** Lo que había guardado al abrir (o al último guardar): contra eso se mandan los cambios. */
+interface Abierto { captura: Captura; cobros: CobroSemana[]; version: string | null }
 interface FilaHistorial {
   semana: string; hasta: string; ventas: number; costos: number; utilidad: number;
   guardadoPor: string; updatedAt: string; estado: EstadoCorte;
@@ -64,6 +84,11 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
   // Las cuentas juntas cuyos costos se volvieron a calcular al juntarlas (para avisar).
   const [recalculadas, setRecalculadas] = useState<string[]>([]);
   const semanaCargada = useRef<string | null>(null);
+  // Cómo estaba lo guardado al abrir: al guardar se manda solo lo que cambió
+  // desde aquí, y el servidor lo junta con lo que otro haya guardado (lote 7).
+  const abierto = useRef<Abierto>({ captura: {}, cobros: [], version: null });
+  // Otro guardó la misma tarjeta o los cobros: hay que recargar (lote 7).
+  const [choque, setChoque] = useState<string | null>(null);
 
   const cargarHistorial = useCallback(async () => {
     try {
@@ -94,8 +119,10 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
           semanaCargada.current = d.semana;
           setCaptura(d.guardado?.captura ?? {});
           setCobros(d.guardado?.cobros ?? []);
+          abierto.current = { captura: d.guardado?.captura ?? {}, cobros: d.guardado?.cobros ?? [], version: d.guardado?.updatedAt ?? null };
           setSucio(false);
           setRecalculadas([]);
+          setChoque(null);
         }
       })
       .catch(e => vigente && setError(e.message))
@@ -123,12 +150,26 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
     [datos, captura, cobros],
   );
 
-  // Se guardó, y después entró un cobro o se canceló una reserva.
-  const cambioDesdeGuardado = !!(datos?.guardado && resumen && !sucio && (
-    resumen.ventas !== datos.guardado.resumen.ventas ||
-    resumen.costos !== datos.guardado.resumen.costos ||
-    resumen.salidas.length !== datos.guardado.resumen.salidas.length
-  ));
+  // Se guardó, y después entró un cobro o se canceló una reserva. Compara
+  // también el hotel, la ganancia y lo que se le pasa a Martín (lote 7).
+  // Un corte hecho antes del lote 7 (sin tarjetas guardadas) se ve con las
+  // reservas de hoy: ahí se compara solo lo de siempre (revisión, 10 nov 2026).
+  const diferencias: DiferenciaCorte[] = useMemo(
+    () => (datos?.guardado && resumen && !sucio
+      ? diferenciasDelCorte(datos.guardado.resumen, resumen, { comoAntes: datos.guardado.estado === "cerrado" && !datos.guardado.congelado })
+      : []),
+    [datos, resumen, sucio],
+  );
+  const cambioDesdeGuardado = diferencias.length > 0;
+  // Corte hecho y congelado: qué cambiaría si se rehace con las reservas de hoy.
+  const siSeRehace: DiferenciaCorte[] = useMemo(() => {
+    if (!datos?.vivas || !datos.guardado || !resumen || sucio) return [];
+    const enVivo = calcularCorte(datos.vivas, normalizarCuentas(datos.vivas, captura).captura, cobros);
+    return diferenciasDelCorte(resumen, enVivo);
+  }, [datos, resumen, captura, cobros, sucio]);
+  const fuera = useMemo(() => (datos?.salidas ?? []).filter(s => s.trasCorte === "fuera"), [datos]);
+  const nuevas = datos?.nuevas ?? [];
+  const puedeCerrar = puedeHacerCorte(semana, hoyMX());
 
   function editar(s: SalidaCorte, cambio: (c: CapturaSalida) => CapturaSalida) {
     setCaptura(prev => ({ ...prev, [s.clave]: cambio(capturaDe(s, prev)) }));
@@ -144,19 +185,31 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
     playClick();
     setGuardando(cerrar ? "corte" : "costos");
     try {
+      // Solo lo que cambió desde que se abrió, con cómo estaba (lote 7, 10 nov
+      // 2026): así no se pisa lo que otro guardó mientras tanto.
+      const cambios = cambiosDe(abierto.current, { captura, cobros });
       const r = await fetch("/api/admin/cortes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ semana: datos.semana, captura, cobros, cerrar }),
+        body: JSON.stringify({ semana: datos.semana, cerrar, version: abierto.current.version, cambios }),
       });
       const d = await r.json();
+      if (r.status === 409 && d.conflicto) {
+        setChoque(d.error);
+        throw new Error(d.error);
+      }
       if (!r.ok) throw new Error(d.error || (cerrar ? "No se pudo hacer el corte" : "No se pudieron guardar los costos"));
       setDatos({ ...datos, guardado: d.guardado });
       setCaptura(d.guardado.captura);
       setCobros(d.guardado.cobros ?? []);
+      abierto.current = { captura: d.guardado.captura, cobros: d.guardado.cobros ?? [], version: d.guardado.updatedAt };
       setSucio(false);
+      setChoque(null);
       playSuccess();
+      if (d.juntado) alert(`Guardado. Se juntó con lo que guardó ${d.otroGuardo ?? "alguien más"} mientras tenías abierta la semana: ya lo ves aquí.`);
       cargarHistorial();
+      // Las tarjetas y el cuadre se vuelven a leer (al hacer el corte se congelan).
+      setRecarga(n => n + 1);
     } catch (e: any) {
       playError();
       alert(e.message);
@@ -244,6 +297,14 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
     setSucio(true);
   }
 
+  /** Tras un choque: vuelve a leer la semana tal como está guardada (lo no guardado se pierde). */
+  function recargarSemana() {
+    if (sucio && !confirm("Se van a perder tus cambios sin guardar para ver lo que guardó el otro. ¿Recargar?")) return;
+    playClick();
+    semanaCargada.current = null;
+    setRecarga(n => n + 1);
+  }
+
   function irATarjeta(clave: string) {
     document.querySelector(`[data-clave="${CSS.escape(clave)}"]`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
@@ -281,12 +342,34 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
         </button>
       </div>
 
+      {choque && (
+        <div className="flex flex-wrap items-start gap-2 mb-4 px-3 py-2.5 rounded-sm bg-[#C0392B]/10 text-[#9B2C1F] font-dm text-xs">
+          <AlertTriangle size={14} className="mt-px shrink-0" />
+          <span className="flex-1 min-w-[200px]">{choque}</span>
+          <button onClick={recargarSemana} className={BTN_2}>Recargar la semana</button>
+        </div>
+      )}
+
       {cambioDesdeGuardado && (
         <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-sm bg-[#a86814]/10 text-[#7a4b0e] font-dm text-xs">
           <AlertTriangle size={14} className="mt-px shrink-0" />
           <span>
             Los números cambiaron desde que se guardó (entró un cobro, cambió una reserva o hay una
-            reserva nueva). Revisa y {cerrado ? "vuelve a hacer el corte para actualizarlo" : "vuelve a guardar los costos"}.
+            reserva nueva): {textoDiferencias(diferencias)}. Revisa y {cerrado ? "vuelve a hacer el corte para actualizarlo" : "vuelve a guardar los costos"}.
+          </span>
+        </div>
+      )}
+
+      {/* Corte hecho: se calcula con lo que había al hacerlo; si las reservas
+          cambiaron, se dice qué cambiaría al rehacerlo (lote 7). */}
+      {cerrado && !sucio && (siSeRehace.length > 0 || fuera.length > 0 || nuevas.length > 0) && (
+        <div className="flex items-start gap-2 mb-4 px-3 py-2.5 rounded-sm bg-[#a86814]/10 text-[#7a4b0e] font-dm text-xs">
+          <AlertTriangle size={14} className="mt-px shrink-0" />
+          <span>
+            Las reservas cambiaron después del corte. Este corte sigue con lo que había al hacerlo
+            {fuera.length > 0 && <> ({fuera.length} tour{fuera.length === 1 ? "" : "s"} ya no {fuera.length === 1 ? "está" : "están"} en las reservas y sigue{fuera.length === 1 ? "" : "n"} contando)</>}
+            {nuevas.length > 0 && <>; {nuevas.length} tour{nuevas.length === 1 ? "" : "s"} nuevo{nuevas.length === 1 ? "" : "s"} no {nuevas.length === 1 ? "entra" : "entran"}</>}.
+            {siSeRehace.length > 0 && <> Si lo rehaces: {textoDiferencias(siSeRehace)}.</>}
           </span>
         </div>
       )}
@@ -323,6 +406,7 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
                         c={capturaDe(cu.principal, captura)}
                         candidatos={candidatosDe(cu)}
                         recalculada={recalculadas.includes(cu.clave)}
+                        heredada={(datos.heredadas ?? []).includes(cu.clave)}
                         onCambio={cambio => editar(cu.principal, cambio)}
                         onJuntar={otra => juntar(cu.clave, otra)}
                         onSeparar={() => separar(cu.clave)} />
@@ -331,21 +415,42 @@ export default function CorteSemanalClient(_props: { quien?: string }) {
                 </GrupoDia>
               ))
             )}
+            {/* Corte hecho: lo que llegó después no entra hasta rehacerlo (lote 7). */}
+            {nuevas.length > 0 && (
+              <div className="panel-card p-4 font-dm text-xs text-[#1B4332]/75">
+                <p className="panel-eyebrow mb-2">Llegaron después del corte · no cuentan</p>
+                <ul className="space-y-1">
+                  {nuevas.map(n => (
+                    <li key={n.clave} className="truncate">
+                      <CodigoTour slug={n.slug} className="text-[10px] mr-1" />{diaCorto(n.fecha)} · {n.tour} · {n.reserva.cliente} · <span className="font-mono text-[10px] text-[#1B4332]/45">{n.reserva.folio}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[11px] text-[#1B4332]/55">Para sumarlos, rehaz el corte (toma las reservas de hoy).</p>
+              </div>
+            )}
           </section>
 
           <aside className="lg:sticky lg:top-6 space-y-3">
-            <Resultados r={resumen} cobros={cobros} onCambio={editarCobros} />
+            <Resultados r={resumen} cobros={cobros} onCambio={editarCobros} panel={datos.cobrosPanel ?? null} />
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={() => guardar(true)} disabled={!!guardando || cargando} className={`${BTN} col-span-2`}>
+              {/* El corte se hace cuando terminó la semana (lote 7, 10 nov 2026). */}
+              <button onClick={() => guardar(true)} disabled={!!guardando || cargando || !puedeCerrar} className={`${BTN} col-span-2`}
+                title={puedeCerrar ? undefined : "El corte se hace cuando termina la semana"}>
                 {guardando === "corte" ? <Loader2 size={13} className="animate-spin" /> : <Scissors size={13} />}
                 {cerrado ? "Rehacer corte" : "Hacer corte"}
               </button>
+              {!puedeCerrar && (
+                <p className="col-span-2 font-dm text-[11px] text-[#1B4332]/55">
+                  La semana termina el {diaCorto(domingoDe(semana))}: el corte se hace a partir del lunes. Mientras, guarda los costos.
+                </p>
+              )}
               <button onClick={() => guardar(false)} disabled={!!guardando || cargando} className={BTN_2}
                 title={cerrado ? "El corte ya está hecho: guardar los costos lo actualiza" : "Guarda los costos sin hacer el corte"}>
                 {guardando === "costos" ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 Guardar costos
               </button>
-              <button onClick={() => { playClick(); imprimir(datos, resumen, sucio); }} className={BTN_2}>
+              <button onClick={() => { playClick(); imprimir(datos, resumen, sucio, diferencias); }} className={BTN_2}>
                 <Printer size={13} /> Imprimir / PDF
               </button>
             </div>
@@ -449,13 +554,15 @@ const unicos = (xs: string[]) => xs.filter((x, i) => xs.indexOf(x) === i);
  * semana». Si alguien más hizo el mismo tour el mismo día, la tarjeta lo
  * pregunta sola.
  */
-function TarjetaCuenta({ cuenta, c, candidatos, recalculada, onCambio, onJuntar, onSeparar }: {
+function TarjetaCuenta({ cuenta, c, candidatos, recalculada, heredada, onCambio, onJuntar, onSeparar }: {
   cuenta: CuentaCorte;
   /** La captura de la principal: la casilla y los costos de toda la cuenta. */
   c: CapturaSalida;
   candidatos: Candidato[];
   /** Se juntó encima de costos ya escritos: avisar que se volvieron a calcular. */
   recalculada: boolean;
+  /** Tomó los costos de su principal, que ya no está (lote 7). */
+  heredada?: boolean;
   onCambio: (cambio: (c: CapturaSalida) => CapturaSalida) => void;
   onJuntar: (clave: string) => void;
   onSeparar: () => void;
@@ -502,6 +609,12 @@ function TarjetaCuenta({ cuenta, c, candidatos, recalculada, onCambio, onJuntar,
               </span>
             )}
             {!junta && <SalidaZona s={ts[0]} />}
+            {ts.some(t => t.trasCorte === "fuera") && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm bg-[#C0392B]/10 text-[#9B2C1F] font-dm text-[10px]"
+                title="Estaba al hacer el corte; después se canceló o cambió de fecha. Cuenta con lo que tenía; si rehaces el corte, sale.">
+                Ya no está en reservas
+              </span>
+            )}
           </p>
           {/* El día ya lo dice el encabezado del grupo: aquí va QUIÉN. */}
           <p className="font-dm text-[11px] text-[#1B4332]/55">
@@ -561,6 +674,11 @@ function TarjetaCuenta({ cuenta, c, candidatos, recalculada, onCambio, onJuntar,
             {recalculada && (
               <p className="font-dm text-[11px] text-[#7a4b0e] mb-2">
                 Al juntarlos, los costos se calcularon de nuevo para todos. Revisa si habías escrito alguno.
+              </p>
+            )}
+            {heredada && (
+              <p className="font-dm text-[11px] text-[#7a4b0e] mb-2">
+                El tour donde estaban los costos de esta cuenta ya no está (se canceló o cambió de fecha): sus costos pasaron aquí. Revísalos y guarda.
               </p>
             )}
             {deValles && (
@@ -741,11 +859,15 @@ function Renglon({ fila, texto, nota, valor, fuerte }: { fila: string; texto: st
  * Martín (`REPARTO_RZR`). A Martín se le pasan los costos de tours, sus partes
  * y lo de Erick (él se lo paga), menos lo que ya tiene en la mano.
  */
-function Resultados({ r, cobros, onCambio }: {
+function Resultados({ r, cobros, onCambio, panel }: {
   r: ResumenCorte;
   cobros: CobroSemana[];
   onCambio: (cambio: (prev: CobroSemana[]) => CobroSemana[]) => void;
+  /** Lo registrado en Cobros esa semana (null: no se pudo leer). */
+  panel: CobrosPanel | null;
 }) {
+  const [verPanel, setVerPanel] = useState(false);
+  const avisos = panel ? avisosCuadre(cuadreCobros(cobros, panel)) : [];
   const fila = "flex items-baseline justify-between gap-3";
   const liq  = r.liquidacion;
   const cambiar = (i: number, parte: Partial<CobroSemana>) =>
@@ -828,6 +950,31 @@ function Resultados({ r, cobros, onCambio }: {
             Las tarjetas de RZR registran {fmx(r.rzr.registrado)} cobrados y aquí marcaste {fmx(r.rzr.cobrado)} como «Es de RZR».
           </p>
         )}
+        {/* Lo escrito contra lo registrado en Cobros (lote 7, 10 nov 2026). */}
+        {avisos.map((a, i) => (
+          <p key={i} className="mt-2 flex gap-1.5 text-[11px] leading-snug text-[#7a4b0e]">
+            <AlertTriangle size={13} className="shrink-0 mt-px" aria-hidden="true" />
+            {a}
+          </p>
+        ))}
+        {panel && panel.lista.length > 0 && (
+          <div className="mt-2">
+            <button onClick={() => { playClick(); setVerPanel(v => !v); }} aria-expanded={verPanel}
+              className="text-[11px] text-[#1B4332]/65 hover:text-[#1B4332] underline-offset-2 hover:underline panel-foco">
+              {verPanel ? "Ocultar" : "Ver"} lo registrado en Cobros esta semana ({panel.lista.length} · {fmx(panel.total)})
+            </button>
+            {verPanel && (
+              <ul className="mt-1 space-y-0.5 text-[11px] text-[#1B4332]/75">
+                {panel.lista.map((m, i) => (
+                  <li key={i} className={fila}>
+                    <span className="truncate">{diaCorto(m.fecha)} · {m.cliente || "Sin reserva"}{m.folio ? ` (${m.folio})` : ""}{m.metodo ? ` · ${m.metodo}` : ""}{m.recibio ? ` · ${m.recibio}` : ""}</span>
+                    <span className="panel-cifra shrink-0">{fmx(m.monto)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </Bloque>
 
       {/* 2 · Comisiones y hotel: lo que no se queda nadie de nosotros */}
@@ -852,6 +999,20 @@ function Resultados({ r, cobros, onCambio }: {
         </div>
       </Bloque>
       <Total icono={TrendingUp} texto="Ganancia" nota="lo que queda real menos costos" valor={r.utilidad} color={C_QUEDA} grande />
+      {/* La cuenta completa en una línea (3 nov 2026): «ventas − costos» NO es
+          la ganancia, y verlo escrito evita pensar que el reparto está mal. */}
+      {r.ventas > 0 && (
+        <p className="mt-1.5 px-3 text-[11px] leading-relaxed text-[#1B4332]/60 panel-cifra">
+          Cómo se calcula: cobrado {fmx(r.ventas)}
+          {r.comisionStripe > 0 && <> − Stripe {fmx(r.comisionStripe)}</>}
+          {r.hosting > 0 && <> − Railway {fmx(r.hosting)}</>}
+          {r.rzr.vendedor > 0 && <> − {VENDEDOR} {fmx(r.rzr.vendedor)}</>}
+          {r.hospedaje > 0 && <> − hotel {fmx(r.hospedaje)}</>}
+          {" "}= {fmx(r.quedaReal)}; − costos {fmx(r.costos)} = <strong>{fmx(r.utilidad)}</strong>.
+          {" "}Manolo = 50 % de tours {fmx(gManolo)}{r.rzr.manolo > 0 && <> + {REPARTO_RZR.pctManolo} % del RZR {fmx(r.rzr.manolo)}</>} = <strong>{fmx(parteManolo)}</strong>;
+          {" "}Martín = {fmx(gMartin)}{r.rzr.martin > 0 && <> + {fmx(r.rzr.martin)} del RZR</>}{r.rzr.costos > 0 && <> − costos del RZR {fmx(r.rzr.costos)}</>} = <strong>{fmx(parteMartin)}</strong>.
+        </p>
+      )}
 
       {/* La ganancia, separada (Manolo, 20 oct 2026): los tours solos, con su
           50/50, y el RZR aparte, con su 10 % de Erick y su 20/80. */}
@@ -1062,6 +1223,12 @@ function Historial({ filas, actual, onAbrir }: {
   );
 }
 
+/** «Hotel $1,200 → $1,500 · Ganancia …» (lote 7). */
+function textoDiferencias(ds: DiferenciaCorte[]): string {
+  const v = (d: DiferenciaCorte, n: number) => (d.pesos ? fmx(n) : String(n));
+  return ds.map(d => `${d.que} ${v(d, d.antes)} → ${v(d, d.ahora)}`).join(" · ");
+}
+
 // ── La hoja para imprimir / guardar como PDF ────────────────────────────────
 
 const esc = (t: string) =>
@@ -1071,14 +1238,17 @@ const esc = (t: string) =>
 const codigos = (slugs: string[] = []) =>
   slugs.map(sl => `<b style="color:${colorDeTour(sl)}">${esc(codigoDeTour(sl))}</b>`).join(" ");
 
-function imprimir(d: Semana, r: ResumenCorte, sucio: boolean) {
+function imprimir(d: Semana, r: ResumenCorte, sucio: boolean, diferencias: DiferenciaCorte[] = []) {
   const win = window.open("", "_blank");
   if (!win) {
     alert("El navegador bloqueó la ventana. Permite ventanas emergentes para imprimir.");
     return;
   }
+  // 🔴 Si las cifras ya no son las que se guardaron, la hoja lo dice (lote 7):
+  // antes salía «Corte hecho» con números recalculados con las reservas de hoy.
   const sello = d.guardado && !sucio
     ? `${d.guardado.estado === "borrador" ? "Borrador: costos guardados" : "Corte hecho"} por ${esc(d.guardado.guardadoPor)} · ${esc(fechaGuardado(d.guardado.updatedAt))}`
+      + (diferencias.length ? ` · <b style="color:#b8413f">RECALCULADO</b>: no son las cifras que se guardaron (${esc(textoDiferencias(diferencias))})` : "")
     : "Vista previa · sin guardar";
 
   const conHotel = r.hospedaje > 0;

@@ -62,6 +62,27 @@ function util(texto: unknown): string | null {
   return t;
 }
 
+/**
+ * El «Lugar de recogida» que el correo puede imprimir como punto de salida:
+ * solo si dice algo (la misma regla de arriba). Si no, null y el correo pone
+ * la hora y el lugar de cada recorrido del catálogo (5 nov 2026: el «Lobby de
+ * tu hotel en Xilitla» que el panel escribía solo le llegaba como punto de
+ * salida a quien dormía en Valles o iba al RZR, que sale de la base).
+ */
+export function pickupConDato(texto: unknown): string | null {
+  return util(texto);
+}
+
+/**
+ * Lo que se enseña en el campo «Lugar de recogida» al editar una reserva: lo
+ * que se anotó, pero nunca el lobby que el panel ponía solo (5 nov 2026). Así
+ * guardar la reserva para asignar el guía ya no lo vuelve a escribir.
+ */
+export function pickupParaFormulario(texto: unknown): string {
+  const t = typeof texto === "string" ? texto : "";
+  return comparable(t) === comparable(PICKUP_POR_DEFECTO) ? "" : t;
+}
+
 export function hospedajeDeReserva(b: ReservaConHospedaje): string | null {
   const pkgs = Array.isArray(b.packageItems) ? (b.packageItems as Array<Record<string, unknown>>) : [];
   const conHotel = pkgs.find((p) => p && (p.hotel || p.habitacion));

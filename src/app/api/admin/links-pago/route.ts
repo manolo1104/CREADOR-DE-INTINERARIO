@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
   } catch (e: any) {
     // Los errores de validación son para el usuario; los de Stripe, para el log.
     const mensaje = e?.message ?? "No se pudo crear el cobro";
-    const esDeUsuario = /monto|título|reserva|Escribe/i.test(mensaje);
+    const esDeUsuario = /monto|título|reserva|Escribe|No se puede mandar/i.test(mensaje);
     if (!esDeUsuario) logger.error("links_pago_create_failed", { reason: mensaje });
     return NextResponse.json(
       { error: esDeUsuario ? mensaje : "No se pudo crear el cobro. Revisa el log." },
@@ -92,17 +92,24 @@ export async function PATCH(req: NextRequest) {
 
     const { id } = await req.json();
     const antes = await prisma.linkPago.findUnique({ where: { id: String(id) } });
-    await cancelarLinkDePago(String(id));
+    const r = await cancelarLinkDePago(String(id), `la canceló ${sesion.nombre} desde Cobros`);
 
     await registrarEnBitacora({
       accion:  "eliminó",
       entidad: "cobro",
-      resumen: antes
+      resumen: (antes
         ? `Liga de pago "${antes.titulo}" de ${pesos(antes.monto)} cancelada`
-        : `Liga de pago ${id} cancelada`,
+        : `Liga de pago ${id} cancelada`) + (r.enStripe === "no-existe" ? " (Stripe no la encontró en la cuenta actual)" : ""),
     });
 
-    return NextResponse.json({ ok: true });
+    // 🔴 Antes se marcaba cancelada en silencio aunque Stripe no la tuviera
+    // (lote 3, 5 nov 2026): las ligas de la cuenta anterior siguen cobrables allá.
+    return NextResponse.json({
+      ok: true,
+      ...(r.enStripe === "no-existe"
+        ? { aviso: "La marqué cancelada aquí, pero Stripe no la encontró en la cuenta actual. Si es de la cuenta anterior de Stripe, sigue viva allá: apágala desde el panel de esa cuenta." }
+        : {}),
+    });
   } catch (e: any) {
     return NextResponse.json({ error: e?.message ?? "No se pudo cancelar" }, { status: 400 });
   }

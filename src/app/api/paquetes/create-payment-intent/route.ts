@@ -10,9 +10,10 @@ import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { habitacionesDePaquete } from "@/lib/paquetes";
 import { computePaqueteCharge, MAX_PERSONAS_PAQUETE, pctPaqueteValido, parseEleccion } from "@/lib/paquetePricing";
 import { rateLimit } from "@/lib/rateLimit";
-import { logger, actividad, mxn } from "@/lib/logger";
+import { logger, actividad, mxn, nombreParaLog } from "@/lib/logger";
 import { fechaTourValida } from "@/lib/tourPricing";
-import { trackServerEvent } from "@/lib/serverTrack";
+import { peticionDelEquipo, trackServerEvent } from "@/lib/serverTrack";
+import { metadataDelEquipo } from "@/lib/equipoInterno";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, paqueteDetails, sid, gaClientId, locale } = await req.json();
+    const { customerEmail, customerName, customerPhone, notes, paqueteDetails, sid, gaClientId, locale } = await req.json();
 
     const paquete = getPaquete(paqueteDetails?.slug);
     if (!paquete) {
@@ -282,6 +283,13 @@ export async function POST(req: NextRequest) {
         extraTours:    String(cobro.extraTours),
         extraEvento:   String(cobro.extraEvento),
         extraTraslado: String(cobro.extraTraslado),
+        // Lo que vale el hotel dentro del total (lote 5, 5 nov 2026): la reserva
+        // lo guarda como `subtotal` del hotel y el corte ya no lo reparte 50/50.
+        importeHotel:  String(cobro.importeHotel),
+        // El teléfono y las notas, para la reserva que arma el webhook si el
+        // cliente cierra la pestaña: sin teléfono, la Bandeja no la reconoce.
+        customerPhone: typeof customerPhone === "string" ? customerPhone.trim().slice(0, 40) : "",
+        notasCliente:  typeof notes === "string" ? notes.trim().slice(0, 300) : "",
         // Lo que el equipo opera esa noche y, sin hotel, dónde recoger. Si la
         // pantalla de confirmación no llega, el webhook arma la reserva con esto.
         // Con el día completo, la operación cambia: se avisa al principio para
@@ -297,6 +305,8 @@ export async function POST(req: NextRequest) {
         recogidaCliente: recogidaCliente.slice(0, 490),
         personas,
         source:        "huasteca-potosina.com",
+        // Pago de alguien del equipo: su compra no va a GA4 desde el servidor (lote 8, 10 nov 2026).
+        ...metadataDelEquipo(peticionDelEquipo()),
         // El idioma y la identidad de medición, como en el carrito de tours: si
         // el cliente cierra la pestaña, el webhook es el único que se entera de
         // la compra y sin esto no sabe en qué idioma escribirle ni de dónde vino.
@@ -324,7 +334,7 @@ export async function POST(req: NextRequest) {
       // se leía como una reserva casi liquidada cuando faltaban $32,252.
       `${mxn(charge)} de ${mxn(cobro.total)}`,
       personas ? `${personas} personas` : "",
-      customerName,
+      nombreParaLog(customerName),
       customerEmail,
       fecha,
       paymentIntent.id,

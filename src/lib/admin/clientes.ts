@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { montoCobrado, saldoPendiente } from "@/lib/admin/kpis";
 import type { TourBooking } from "@prisma/client";
+import { correoParaContacto, nombreParaContacto } from "@/lib/reservaWeb";
 
 export interface Cliente {
   clave: string;
@@ -41,14 +42,18 @@ const normNombre  = (s: string) => s.trim().toLowerCase().replace(/\s+/g, " ");
  * Orden de preferencia: correo → teléfono → nombre → la reserva misma (para no
  * volver a fusionar gente distinta cuando no hay ningún dato con el que ligar).
  */
-export function claveCliente(b: TourBooking): string {
-  const email = (b.customerEmail || "").trim().toLowerCase();
+export function claveCliente(b: Pick<TourBooking, "id" | "customerEmail" | "customerPhone" | "customerName">): string {
+  // 🔴 Sin los datos de relleno de las reservas pagadas que llegaron sin
+  // correo ni nombre («pendiente@desconocido», «Pendiente (vía webhook)»):
+  // con ellos, desconocidos distintos salían como UN cliente que «vuelve»
+  // (revisión del lote 5, 10 nov 2026).
+  const email = (correoParaContacto(b.customerEmail) ?? "").toLowerCase();
   if (email) return `mail:${email}`;
 
   const tel = soloDigitos(b.customerPhone || "");
   if (tel.length >= 8) return `tel:${tel}`;
 
-  const nombre = normNombre(b.customerName || "");
+  const nombre = normNombre(nombreParaContacto(b.customerName) ?? "");
   if (nombre) return `nom:${nombre}`;
 
   return `res:${b.id}`;
@@ -72,7 +77,7 @@ export function agruparClientes(bookings: TourBooking[]): Cliente[] {
     const clave = claveCliente(b);
     map[clave] ??= {
       clave,
-      email: b.customerEmail || "",
+      email: correoParaContacto(b.customerEmail) ?? "",
       nombre: b.customerName || "(sin nombre)",
       telefono: b.customerPhone || "",
       totalReservas: 0, totalGastado: 0, totalVendido: 0, saldo: 0,
@@ -84,7 +89,8 @@ export function agruparClientes(bookings: TourBooking[]): Cliente[] {
     c.totalVendido  += b.totalAmount;
     c.saldo         += saldoPendiente(b);
     // Rellenar huecos: una reserva puede traer el teléfono y otra el correo.
-    if (!c.email    && b.customerEmail) c.email    = b.customerEmail;
+    const correo = correoParaContacto(b.customerEmail);
+    if (!c.email    && correo) c.email = correo;
     if (!c.telefono && b.customerPhone) c.telefono = b.customerPhone;
     if (b.tourDate > c.ultimaFecha) c.ultimaFecha = b.tourDate;
     for (const n of toursDe(b)) if (!c.tours.includes(n)) c.tours.push(n);
@@ -95,7 +101,8 @@ export function agruparClientes(bookings: TourBooking[]): Cliente[] {
 
 export async function getClientes(): Promise<Cliente[]> {
   const bookings = await prisma.tourBooking.findMany({
-    where: { status: { not: "cancelled" } },
+    // Sin los «borrador» del bot viejo: quien solo pidió precio no es cliente (lote 6, 10 nov 2026).
+    where: { status: { notIn: ["cancelled", "borrador"] } },
     orderBy: { createdAt: "desc" },
     include: { encuesta: true },
   });

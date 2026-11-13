@@ -6,12 +6,26 @@ import {
 } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { puedeHacer } from "@/lib/admin/usuarios";
-import { anularCobro } from "@/lib/admin/cobros";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
 import {
   canjearCodigoCumple, codigoCumpleAlGuardar, codigoDeLineas, liberarCodigoCumple, liberarCodigosDeFolio,
 } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
+import { motivoParaGuardar } from "@/lib/admin/cancelacion";
+import { leadDesdeReserva, leadTrasCancelarReserva, leadTrasReactivarReserva } from "@/lib/admin/crmDatos";
+import { asegurarHistorico, sincronizarDeposito } from "@/lib/admin/cobros";
+import { cobradoAFijarAntesDeEditar, montoCobrado } from "@/lib/admin/dinero";
+import { apagarLigasDe } from "@/lib/admin/linksPago";
+import { lineasDe } from "@/lib/admin/reserva";
+import { NO_CUENTAN, explicarSinLugar, pedidosQueCrecen, pedidosSinCupo } from "@/lib/cupoTour";
+import { avisoSobrecupo } from "@/lib/cotizaciones/reglasConversion";
+import { identidadDePaqueteAlEditar, notasConAviso, totalParaGuardar } from "@/lib/admin/reservaEdicion";
+import { getPaquete } from "@/lib/paquetes";
+import { claveDeSalida, diasDeTourDe } from "@/lib/admin/salidas";
+import { reflejarGuiaEnSalidas } from "@/lib/admin/registroSalidaDatos";
+import { sesionVeCostos } from "@/lib/admin/permisos";
+import { conservarCostosExtras, sinCostosDeExtras } from "@/lib/admin/extras";
+import { leerPreciosExtras } from "@/lib/admin/preciosExtras";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +33,7 @@ const BOOKING_FIELDS = [
   "tourId", "tourName", "tourSlug", "tourDate", "adults", "children",
   "totalAmount", "depositoPagado", "promoCode", "promoDiscount",
   "customerName", "customerEmail", "customerPhone", "notes",
-  "lineItems", "packageItems", "extraItems", "status",
+  "lineItems", "packageItems", "extraItems", "status", "motivoCancelacion",
   "pagoProveedor", "pagoProveedorMonto", "pagoProveedorFecha", "pagoProveedorNota",
   "guia", "idiomaTour",
 ] as const;
@@ -36,6 +50,15 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // desglose de ingresos y una cadena libre lo convertiría en otra columna
     // sin agrupar.
     if (body.origen !== undefined) data.origen = origenValido(body.origen);
+    // 🔴 El total es un entero ≥ 0 (lote 5, 5 nov 2026): un NaN del cuadro
+    // viajaba como null y salía «Error interno» sin decir qué pasaba.
+    if (data.totalAmount !== undefined) {
+      const total = totalParaGuardar(data.totalAmount);
+      if (total === null) {
+        return NextResponse.json({ error: "El total de la reserva no es válido. Revisa los renglones y el precio antes de guardar." }, { status: 400 });
+      }
+      data.totalAmount = total;
+    }
     // 🔴 Lo cobrado sale de los renglones de cobro (`cobros.ts`), con método y
     // comprobante. La pantalla ya no lo manda, pero la API lo aceptaba de
     // cualquier rol: se podía «cobrar» o «des-cobrar» sin dejar renglón. Solo
@@ -46,6 +69,11 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Foto de cómo estaba ANTES, para poder contar qué cambió en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
+    // Quien no ve costos no los cambia: cada extra conserva el que tenía (lote 8, 10 nov 2026).
+    const veCostosQuien = await sesionVeCostos(sesion);
+    if (data.extraItems !== undefined && !veCostosQuien) {
+      data.extraItems = conservarCostosExtras(data.extraItems, antes?.extraItems, await leerPreciosExtras());
+    }
 
     // 🔴 Un lugar del viaje CDMX–Xilitla solo cambia de fecha o de personas
     // desde Salidas, que pasa por el candado del cupo. Desde aquí se podría
@@ -70,6 +98,36 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         ];
       }
     }
+    // 🔴 Una reserva de paquete sigue siendo ese paquete (lote 5, 5 nov 2026):
+    // el cuadro mandaba el slug, el id y el nombre del primer tour, y el
+    // paquete dejaba de contar en su cupo y su correo enlazaba a /tours/….
+    if (antes && !antes.salidaId && getPaquete(antes.tourSlug)) {
+      Object.assign(data, identidadDePaqueteAlEditar(antes, data));
+    }
+    // 🔴 Mover de fecha o sumar personas revisa el cupo, como al reactivar
+    // (lote 5, 5 nov 2026): antes se guardaba sin preguntar y quedaban 14 en
+    // una salida de 12, o dos grupos en el Edén el mismo día. Pregunta y, si se
+    // guarda de todos modos (a veces se suma una unidad), queda la nota.
+    // Antes del código de cumpleaños: un 409 aquí no deja nada canjeado.
+    if (antes && !antes.salidaId && !NO_CUENTAN.includes(antes.status) && data.status !== "cancelled") {
+      const crecen = pedidosQueCrecen(antes, {
+        tourSlug:  String(data.tourSlug ?? antes.tourSlug),
+        tourDate:  String(data.tourDate ?? antes.tourDate),
+        adults:    Number(data.adults ?? antes.adults),
+        children:  Number(data.children ?? antes.children),
+        lineItems: data.lineItems !== undefined ? data.lineItems : antes.lineItems,
+      });
+      const sinLugar = crecen.length ? await pedidosSinCupo(crecen, { excluirReserva: antes.id }).catch(() => []) : [];
+      if (sinLugar.length && body.forzarCupo !== true) {
+        return NextResponse.json({
+          error: `Ya no cabe: ${sinLugar.map(explicarSinLugar).join("; ")}. ¿Guardar de todos modos?`,
+          sePuedeForzar: true,
+        }, { status: 409 });
+      }
+      if (sinLugar.length) {
+        data.notes = notasConAviso(data.notes !== undefined ? String(data.notes ?? "") : antes.notes, avisoSobrecupo(sinLugar, "editada en el panel"));
+      }
+    }
     // El descuento: si cambió, queda sellado con quién y cuándo, y en su
     // historial; si no, se queda el sello de antes (ver `descuento.ts`).
     let eventoDescuento = null;
@@ -91,6 +149,37 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     // reactivar una cancelada lo vuelve a tomar, si nadie más lo usó.
     const cancela   = !!antes && data.status === "cancelled" && antes.status !== "cancelled";
     const reactiva  = !!antes && data.status !== undefined && data.status !== "cancelled" && antes.status === "cancelled";
+    // Cancelar exige el motivo (3 nov 2026): el panel manda `motivo` + `motivoDetalle`
+    // o ya el texto armado en `motivoCancelacion`. Reactivar lo limpia.
+    if (cancela) {
+      const motivo = typeof data.motivoCancelacion === "string" && data.motivoCancelacion.trim()
+        ? String(data.motivoCancelacion).trim().slice(0, 220)
+        : motivoParaGuardar(body.motivo, body.motivoDetalle);
+      if (!motivo) {
+        return NextResponse.json({ error: "Para cancelar hay que decir el motivo." }, { status: 400 });
+      }
+      data.motivoCancelacion = motivo;
+    }
+    if (reactiva) data.motivoCancelacion = null;
+    // 🔴 Reactivar no revisaba el cupo (revisión del 4 nov 2026): una salida llena
+    // se sobrevendía sin aviso. Ahora se pregunta; con `forzarCupo` se reactiva
+    // igual (a veces se suma una camioneta). Los lugares del viaje CDMX tienen su
+    // propio cupo: también se pide confirmar.
+    if (reactiva && antes && body.forzarCupo !== true) {
+      if (antes.salidaId) {
+        return NextResponse.json({ error: "Es un lugar del viaje CDMX: revisa en Viaje CDMX que todavía haya lugar antes de reactivarlo.", sePuedeForzar: true }, { status: 409 });
+      }
+      const lineas = lineasDe(antes as never).filter(l => l.tourSlug && l.tourDate);
+      const pedidos = (lineas.length ? lineas : [{ tourSlug: antes.tourSlug, tourDate: antes.tourDate, adults: antes.adults, childrenMid: antes.children, childrenSmall: 0 }])
+        .map(l => ({ slug: String(l.tourSlug), fecha: String(l.tourDate), personas: Number(l.adults || 0) + Number((l as { childrenMid?: number }).childrenMid || 0) + Number((l as { childrenSmall?: number }).childrenSmall || 0) }));
+      const sinLugar = await pedidosSinCupo(pedidos).catch(() => []);
+      if (sinLugar.length) {
+        return NextResponse.json({
+          error: `Ya no cabe: ${sinLugar.map(s => `${s.slug} el ${s.fecha} (${s.personas} pers., ${s.estado === "cerrada" ? "fecha cerrada" : "sin lugar"})`).join("; ")}. ¿Reactivarla de todos modos?`,
+          sePuedeForzar: true,
+        }, { status: 409 });
+      }
+    }
     if (reactiva && antes) {
       const codigo = codigoDeLineas(data.lineItems !== undefined ? data.lineItems : antes.lineItems);
       if (codigo && codigo !== canjeado) {
@@ -102,6 +191,14 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         canjeado = codigo;
       }
     }
+    // 🔴 Cambia el total de una reserva sin renglones de cobro (reservas#5, 5 nov
+    // 2026): lo que ya figura cobrado se fija ANTES con el total de antes. Una
+    // vieja pagada por Stripe con depósito 0 cuenta como pagada al 100 % del
+    // total VIGENTE: sin esto quedaba «pagada» sin cobrar lo que se sumó.
+    if (antes && antes.status !== "cancelled" && data.totalAmount !== undefined) {
+      const renglones = await prisma.movimiento.count({ where: { reservaId: antes.id, tipo: "cobro" } });
+      if (cobradoAFijarAntesDeEditar(antes, Number(data.totalAmount) || 0, renglones) > 0) await asegurarHistorico(antes.id);
+    }
     const updated = await prisma.tourBooking.update({
       where: { id: params.id },
       data,
@@ -111,6 +208,39 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       throw e;
     });
     if (porLiberar) await liberarCodigoCumple(porLiberar, updated.confirmationNumber);
+    // Su lead: cancelar su única reserva viva lo pierde con ese motivo; si le
+    // queda otra, se pone al día con lo que sigue vivo (5 nov 2026).
+    if (cancela) await leadTrasCancelarReserva(updated.id, sesion?.nombre ?? "Desconocido");
+    // 🔴 Cancelada, sus ligas sin pagar —la del saldo y la del anticipo de su
+    // cotización— dejan de poder pagarse (lote 3, 5 nov 2026). Antes el cliente
+    // podía pagar una reserva cancelada y la regla pedía recordárselo. No lanza.
+    const ligas = cancela
+      ? await apagarLigasDe({ reservaIds: [updated.id], cotizacionIds: [updated.cotizacionId] }, `se canceló la reserva ${updated.confirmationNumber}`)
+      : { apagadas: 0, fallidas: 0 };
+    // El estado de pago lo dicen los cobros (revisión del 4 nov 2026): tras cambiar
+    // el total, reactivarla o ponerle un estado a mano, se recalcula pagada ↔
+    // pendiente. Solo si su dinero ya vive en cobros (las históricas no se tocan).
+    if (updated.status !== "cancelled") {
+      if ((await prisma.movimiento.count({ where: { reservaId: updated.id, tipo: "cobro" } })) > 0) await sincronizarDeposito(updated.id);
+      else if (updated.status === "paid" || updated.status === "pending") {
+        // Sin renglones de cobro, lo dice lo que figura cobrado (montoCobrado): ya
+        // no se puede dejar «pagada» con $0 ni «pendiente» una liquidada.
+        const debe = montoCobrado(updated) >= updated.totalAmount && updated.totalAmount > 0 ? "paid" : "pending";
+        if (debe !== updated.status) await prisma.tourBooking.update({ where: { id: updated.id }, data: { status: debe } });
+      }
+    }
+    // Un solo guía (lote 6, 10 nov 2026): el que se asigna aquí se refleja en
+    // sus salidas (Salidas del día, Inicio, correo de las 7:30). No lanza.
+    // Revisión (10 nov 2026): solo de hoy en adelante y sin pisar la salida que ya tiene otro guía.
+    if (antes && (antes.guia ?? "").trim() !== (updated.guia ?? "").trim() && !NO_CUENTAN.includes(updated.status)) {
+      const hoy = hoyMX();
+      await reflejarGuiaEnSalidas(Array.from(new Set(diasDeTourDe(updated).filter(d => d.fecha >= hoy).map(claveDeSalida))), updated.guia, antes.guia);
+    }
+    // Reactivada: su lead se pone al día con TODAS sus reservas vivas, ya con el
+    // dinero recalculado (si se perdió por ella, vuelve).
+    if (reactiva) await leadTrasReactivarReserva(updated.id);
+    // Editada (total, pagos, fechas): su lead se pone al día según el dinero.
+    if (!cancela && !reactiva && updated.status !== "cancelled") await leadDesdeReserva(updated.id, `reserva ${updated.confirmationNumber} editada`);
     if (cancela && (await liberarCodigosDeFolio(updated.confirmationNumber))) {
       resumenCumple = [resumenCumple, "al cancelarla se liberó su código de cumpleaños"].filter(Boolean).join(" · ");
     }
@@ -134,59 +264,32 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
         detalle:    cambios,
       });
     }
-    return NextResponse.json({ ok: true, updated });
+    // Lo que quedó de verdad (el estado pudo cambiar al recalcular con los cobros).
+    const final = (await prisma.tourBooking.findUnique({ where: { id: updated.id } })) ?? updated;
+    return NextResponse.json({ ok: true, ligasApagadas: ligas.apagadas, updated: veCostosQuien ? final : sinCostosDeExtras(final) });
   } catch (e: any) {
     console.error("admin/reservas/[id]:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
+/**
+ * Las reservas ya NO se borran (3 nov 2026). Antes esta ruta eliminaba la fila
+ * y anulaba sus cobros; en la línea base el panel decía «0 canceladas» aunque
+ * sí las hubo, porque se borraban. Ahora se cancelan con motivo y queda el
+ * rastro en la reserva y en la bitácora. Se deja la ruta para que un panel
+ * viejo en caché reciba una respuesta clara, no un 404.
+ */
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  try {
-    // Eliminación completa de la base de datos. La evidencia del pago al
-    // proveedor vive en otra tabla sin llave foránea, así que se borra a mano:
-    // si no, quedarían bytes huérfanos ocupando espacio para siempre.
-    // Se lee antes de borrar: después ya no hay a quién nombrar en la bitácora.
-    const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
-
-    // 🔴 Los cobros no tienen llave foránea: al borrar la reserva quedaban
-    // huérfanos, seguían contando como efectivo en mano en los cortes y
-    // desaparecían de Finanzas. Si tiene cobros vivos, solo un socio o el dueño
-    // la borra, y sus cobros se ANULAN con motivo (queda rastro); Operación la
-    // cancela en vez de borrarla.
-    const sesion = await sesionActual();
-    const cobrosVivos = await prisma.movimiento.findMany({
-      where:  { reservaId: params.id, tipo: "cobro", anulado: false },
-      select: { id: true },
-    });
-    if (cobrosVivos.length) {
-      if (!sesion || !puedeHacer(sesion.rol, "anularMovimiento")) {
-        return NextResponse.json(
-          { error: "Esta reserva tiene cobros registrados. Cámbiala a «cancelada» o pídele a un socio que la elimine." },
-          { status: 403 },
-        );
-      }
-      for (const c of cobrosVivos) {
-        await anularCobro(c.id, `Reserva ${antes?.confirmationNumber ?? params.id} eliminada`, sesion.nombre);
-      }
-    }
-
-    await prisma.evidencia.deleteMany({ where: { bookingId: params.id } });
-    await prisma.tourBooking.delete({ where: { id: params.id } });
-    // El código de cumpleaños que usaba vuelve a servirle al cliente.
-    if (antes) await liberarCodigosDeFolio(antes.confirmationNumber);
-
-    await registrarEnBitacora({
-      accion:     "eliminó",
-      entidad:    "reserva",
-      referencia: antes?.confirmationNumber,
-      resumen:    antes
-        ? `Reserva ${antes.confirmationNumber} — ${antes.customerName}, ${antes.tourName || "sin tour"} el ${antes.tourDate || "sin fecha"}, ${pesos(antes.totalAmount)}`
-        : `Reserva ${params.id} (ya no estaba en la base)`,
-    });
-    return NextResponse.json({ ok: true });
-  } catch (e: any) {
-    console.error("admin/reservas/[id]:", e?.message);
-    return NextResponse.json({ error: "Error interno" }, { status: 500 });
-  }
+  const antes = await prisma.tourBooking.findUnique({ where: { id: params.id }, select: { confirmationNumber: true } }).catch(() => null);
+  await registrarEnBitacora({
+    accion:     "modificó",
+    entidad:    "reserva",
+    referencia: antes?.confirmationNumber ?? params.id,
+    resumen:    `Intento de borrar la reserva ${antes?.confirmationNumber ?? params.id}: las reservas no se borran, se cancelan con motivo`,
+  });
+  return NextResponse.json(
+    { error: "Las reservas no se borran: cámbiala a «Cancelada» y di el motivo." },
+    { status: 403 },
+  );
 }

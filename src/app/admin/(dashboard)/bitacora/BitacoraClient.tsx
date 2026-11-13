@@ -71,6 +71,10 @@ const TIPOS = [
   { id: "corte",       label: "🔒 Cortes" },
   { id: "panel",       label: "🚪 Entradas al panel" },
   { id: "conversación", label: "💬 Chats que el bot pasó al equipo" },
+  // Rediseño (3 nov 2026): salidas, CRM y seguimientos.
+  { id: "salida",      label: "🚐 Salidas" },
+  { id: "lead",        label: "🎯 Leads" },
+  { id: "tarea",       label: "✅ Seguimientos" },
 ];
 
 const fFecha = (iso: string) =>

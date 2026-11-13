@@ -3,6 +3,7 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { crearSalida, datosDelPanel, type FormSalida } from "@/lib/viajeCdmx/admin";
 import { respuestaDeError } from "@/lib/viajeCdmx/respuesta";
+import { administraSalidasCdmx } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -20,7 +21,8 @@ export async function GET() {
 /** Nueva salida. Precio y cupo son decisiones de dinero: solo dueño y socio. */
 export async function POST(req: NextRequest) {
   const sesion = await sesionActual();
-  if (!sesion || sesion.rol === "operacion") return NextResponse.json({ error: "Solo Manolo o Martín crean salidas." }, { status: 403 });
+  // Lista blanca (lote 8, 10 nov 2026): Manolo y Martín; antes solo se frenaba a Operación y el guía pasaba.
+  if (!sesion || !administraSalidasCdmx(sesion.rol)) return NextResponse.json({ error: "Solo Manolo o Martín crean salidas." }, { status: 403 });
   let b: FormSalida;
   try { b = await req.json(); } catch { return NextResponse.json({ error: "JSON inválido" }, { status: 400 }); }
   try {

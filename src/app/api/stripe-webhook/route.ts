@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { marcarLinkPagado } from "@/lib/admin/linksPago";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildGuiaEmailHtml } from "@/lib/guiaEmail";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
 import { recuperarPago, esPagoDeTours, ESPERA_WEBHOOK_MS } from "@/lib/recuperarPago";
 import { esPagoDelViaje } from "@/lib/viajeCdmx/confirmar";
 import { manejarEventoViaje } from "@/lib/viajeCdmx/webhook";
+import { CLAVE_ULTIMO_WEBHOOK_STRIPE } from "@/lib/admin/indicadores/fuentes";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -38,6 +39,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 
+  // El último aviso de Stripe que llegó (lote 9, 10 nov 2026): «Metas →
+  // Fuentes» lo compara con la última reserva web para saber si el webhook
+  // sigue vivo. Nunca frena el aviso: sin `await` (revisión del lote 9), ni
+  // una base lenta retrasa el registro del cobro, y si falla no pasa nada.
+  void prisma.config.upsert({
+    where: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE },
+    update: { value: JSON.stringify({ en: new Date().toISOString(), tipo: event.type }) },
+    create: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE, value: JSON.stringify({ en: new Date().toISOString(), tipo: event.type }) },
+  }).catch(() => {});
+
   // ── Viaje mensual CDMX–Xilitla ────────────────────────────────────────────
   // Va PRIMERO y se espera: si algo falla, 500 y Stripe reintenta. Sin los 90 s
   // de espera de los tours: su reserva se arma con el apartado que guardó el
@@ -53,6 +64,25 @@ export async function POST(req: NextRequest) {
       }
       return NextResponse.json({ received: true });
     }
+  }
+
+  // ── Reembolsos y contracargos (lote 3 de la auditoría, 5 nov 2026) ─────────
+  // Lo que se devuelve en Stripe ya no se queda contado como cobrado en el
+  // panel: el cobro se anula (devolución completa y clara) o se marca, y Manolo
+  // recibe el seguimiento. Solo toca pagos del panel; si algo falla, 500 y
+  // Stripe reintenta (todo es de una sola vez: el seguimiento tiene clave).
+  // 🔴 Hay que suscribir `charge.refunded` y `charge.dispute.created` en el
+  // endpoint de Stripe para que lleguen.
+  if (event.type === "charge.refunded" || event.type === "charge.dispute.created") {
+    try {
+      const { manejarReembolso, manejarContracargo } = await import("@/lib/admin/reembolsosStripe");
+      if (event.type === "charge.refunded") await manejarReembolso(event.data.object as Stripe.Charge);
+      else await manejarContracargo(event.data.object as Stripe.Dispute);
+    } catch (e: unknown) {
+      logger.error("stripe_reembolso_fallo", { tipo: event.type, reason: e instanceof Error ? e.message : String(e) });
+      return NextResponse.json({ error: "reembolso" }, { status: 500 });
+    }
+    return NextResponse.json({ received: true });
   }
 
   if (event.type === "checkout.session.completed") {
@@ -73,14 +103,20 @@ export async function POST(req: NextRequest) {
           session.id,
           Math.round((session.amount_total ?? 0) / 100),
           session.customer_details?.email || session.customer_email || null,
+          // El PaymentIntent: con él el cobro no se repite y un reembolso lo encuentra (5 nov 2026).
+          typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null,
         );
       } catch (e) {
-        // Un fallo aquí no puede tumbar el webhook: Stripe reintentaría y el
-        // resto de los avisos (correos, reservas) se mandarían dos veces.
+        // Revisión del 4 nov 2026: si el cobro no se pudo registrar, la liga se
+        // soltó y se contesta 500 para que Stripe vuelva a intentar. Antes la
+        // liga quedaba «pagada» sin dinero en la reserva y Stripe no reintentaba.
+        // Es seguro: una sesión de liga de pago no pasa por las otras ramas
+        // (correos de la guía, del curso o de reservas), así que no se duplica nada.
         logger.error("link_pago_webhook_failed", {
           reason: e instanceof Error ? e.message : "desconocido",
           payment_link: String(session.payment_link),
         });
+        return NextResponse.json({ error: "liga-de-pago" }, { status: 500 });
       }
     }
 
@@ -232,7 +268,7 @@ export async function POST(req: NextRequest) {
       motivo,
       err?.message,
       err?.payment_method?.type,
-      meta.customerName,
+      nombreParaLog(meta.customerName),
       meta.customerEmail || pi.receipt_email || undefined,
       meta.tourDate,
       pi.id,

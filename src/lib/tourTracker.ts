@@ -1,4 +1,23 @@
+import { origenVisita, refReciente } from "@/lib/refWhatsapp";
+import { MARCA_EQUIPO, esMarcaDelEquipo } from "@/lib/equipoInterno";
 // Client-only — call only from "use client" components
+
+/**
+ * ¿Este navegador es del equipo? La MISMA marca que miran GA4 y Clarity
+ * (`hp_interno`, en localStorage o en cookie). Lote 8 (10 nov 2026): antes el
+ * embudo propio usaba otra regla (página /admin o sesión del panel abierta) y
+ * quien tenía la marca sin sesión seguía contando aquí.
+ */
+function navegadorDelEquipo(): boolean {
+  try {
+    if (esMarcaDelEquipo(localStorage.getItem(MARCA_EQUIPO))) return true;
+  } catch { /* sin localStorage */ }
+  try {
+    return document.cookie.split("; ").some(c => c === `${MARCA_EQUIPO}=1`);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Id de sesión del visitante. Se exporta porque el pago se crea en el servidor
@@ -185,11 +204,26 @@ export function marcarPasoClarity(event: string, data?: Record<string, unknown>)
   etiquetarClarity(event, getSessionId(), data ?? {});
 }
 
+/** El código del clic y el origen de la visita, para `WHATSAPP_CLICK`. Solo lo que existe. */
+function conOrigen(): Record<string, unknown> {
+  const o = origenVisita();
+  const ref = refReciente();
+  return {
+    ...(ref ? { ref } : {}),
+    ...(o ? { landing: o.landing, ...(o.fuente ? { fuente: o.fuente } : {}), ...(o.medio ? { medio: o.medio } : {}), ...(o.campana ? { campana: o.campana } : {}), ...(o.referrer ? { referrerVisita: o.referrer } : {}) } : {}),
+  };
+}
+
 export function trackTourEvent(
   event: string,
-  data?: Record<string, unknown>
+  datos?: Record<string, unknown>
 ): void {
   if (typeof window === "undefined") return;
+  // Lo que hace el equipo no se mide (lote 8): ni aquí, ni en GA4, ni en Clarity.
+  if (navegadorDelEquipo()) return;
+  // Todo clic a WhatsApp lleva su código de referencia y de dónde llegó la
+  // visita (4 nov 2026): así la Bandeja une el lead con su página y su canal.
+  const data = event === "WHATSAPP_CLICK" ? { ...conOrigen(), ...(datos ?? {}) } : datos;
   try {
     etiquetarClarity(event, getSessionId(), data ?? {});
     mandarAGa4(event, data ?? {});

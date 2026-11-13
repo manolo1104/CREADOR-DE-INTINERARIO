@@ -13,7 +13,18 @@ export interface GalleryImage {
  */
 export interface TourEleccion {
   titulo:   string;
-  opciones: { id: string; nombre: string; nota?: string }[];
+  opciones: {
+    id: string;
+    nombre: string;
+    nota?: string;
+    /**
+     * MXN que esta opción le SUMA al precio por persona (Ruta Acuática:
+     * Tamasopo +$150, Manolo, 5 nov 2026). Se suma ANTES de los % de niños,
+     * así que un menor paga su parte del extra como paga su parte del tour.
+     * Leerlo siempre con `extraDeEleccion`.
+     */
+    extraPorPersona?: number;
+  }[];
 }
 
 /**
@@ -535,6 +546,29 @@ export function precioPorCabeza(
  */
 export function esPorPersona(t: Pick<Tour, "precioUnidad">): boolean {
   return t.precioUnidad === undefined || t.precioUnidad === "persona";
+}
+
+/**
+ * La opción elegida de un tour con `eleccion`, venga como venga: por su `id`
+ * (lo que guarda el carrito) o por su nombre en español (lo que guardan las
+ * reservas y las cotizaciones). Sin elección válida, `undefined`.
+ */
+export function opcionDeEleccion(
+  t: Pick<Tour, "eleccion">,
+  valor?: string | null,
+): TourEleccion["opciones"][number] | undefined {
+  if (!valor || !t.eleccion) return undefined;
+  return t.eleccion.opciones.find((o) => o.id === valor || o.nombre === valor);
+}
+
+/**
+ * Lo que la opción elegida le SUMA al precio por persona (0 si no suma o no hay
+ * elección). Lo leen todos los que cobran un recorrido —`totalRecorrido` (web y
+ * Stripe) y `calcTourLine` (panel)— para que el mismo grupo pague lo mismo
+ * por cualquier puerta.
+ */
+export function extraDeEleccion(t: Pick<Tour, "eleccion">, valor?: string | null): number {
+  return Math.max(0, opcionDeEleccion(t, valor)?.extraPorPersona ?? 0);
 }
 
 /**
@@ -1394,8 +1428,9 @@ const TOURS_RAW: Tour[] = [
     nombreCorto:      "Ruta Surrealista",
     articulo:         "la",
     tagline:          "Arte, agua y misterio en un recorrido de contrastes únicos",
-    precio:           1400,
-    // Por persona, según el tamaño del grupo: 1,400 · 1,350 · 1,300 MXN.
+    // +$100 por persona (Manolo, 5 nov 2026): era 1,400 · 1,350 · 1,300.
+    precio:           1500,
+    // Por persona, según el tamaño del grupo: 1,500 · 1,450 · 1,400 MXN.
     escalaPersona:    [{ desde: 3, menos: 50 }, { desde: 6, menos: 100 }],
     urgencia:         "Cuatro paradas con entradas incluidas — reserva con anticipación",
     descripcion:
@@ -1843,7 +1878,9 @@ const TOURS_RAW: Tour[] = [
     groupMin:         2,
     groupMax:         12,
     privateAvailable: true,
-    nombre:           "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
+    // Nombre nuevo (Manolo, 5 nov 2026): el viejo prometía Tamasopo siempre y
+    // Tamasopo es una de las dos opciones. La URL (slug) NO cambia.
+    nombre:           "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
     nombreCorto:      "Ruta Acuática",
     articulo:         "la",
     tagline:          "El recorrido más refrescante y completo de la región",
@@ -1854,14 +1891,16 @@ const TOURS_RAW: Tour[] = [
     // escasez inventada. Como en el Rappel, la urgencia no dice cuántos quedan.
     urgencia:         "El más completo — se aparta con anticipación",
     descripcion:
-      "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo. En un día da para uno de los dos, no para ambos.",
+      "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo (+$150 por persona). En un día da para uno de los dos, no para ambos.",
     descripcionLarga:
-      "El Puente de Dios es un arco de roca natural de 15 metros de altura por donde el río fluye, y hay un momento cada día —entre las 11 y las 13 horas— cuando la luz del sol entra perpendicular y convierte el agua en cristal líquido. Nosotros llegamos a esa hora. Siempre.\n\nEntrar al Puente de Dios es una experiencia sensorial completa: el sonido del agua amplificado por la cueva, el frío del interior, la luz que entra por el arco como un faro natural, la textura de la piedra bajo los pies. No es solo una foto. Es un momento que se graba en la memoria.\n\nLa segunda mitad del día la eliges tú, y te lo decimos claro porque el tiempo no da para las dos: o la Hacienda Los Gómez con las Siete Cascadas —que están en el mismo sitio, así que ahí se ven las dos cosas—, o las Cascadas de Tamasopo. Si es tu primera vez en la Huasteca, la mayoría se va por las Siete Cascadas; Tamasopo es la opción de quien busca pozas más abiertas para nadar con calma.\n\nSea cual sea, lo decides al reservar y nosotros armamos el día alrededor de esa elección, con la seguridad de que cada paso lo guía alguien que conoce estos ríos de memoria.",
+      "El Puente de Dios es un arco de roca natural de 15 metros de altura por donde el río fluye, y hay un momento cada día —entre las 11 y las 13 horas— cuando la luz del sol entra perpendicular y convierte el agua en cristal líquido. Nosotros llegamos a esa hora. Siempre.\n\nEntrar al Puente de Dios es una experiencia sensorial completa: el sonido del agua amplificado por la cueva, el frío del interior, la luz que entra por el arco como un faro natural, la textura de la piedra bajo los pies. No es solo una foto. Es un momento que se graba en la memoria.\n\nLa segunda mitad del día la eliges tú, y te lo decimos claro porque el tiempo no da para las dos: o la Hacienda Los Gómez con las Siete Cascadas —que están en el mismo sitio, así que ahí se ven las dos cosas—, o las Cascadas de Tamasopo, que suman $150 por persona. Si es tu primera vez en la Huasteca, la mayoría se va por las Siete Cascadas; Tamasopo es la opción de quien busca pozas más abiertas para nadar con calma.\n\nSea cual sea, lo decides al reservar y nosotros armamos el día alrededor de esa elección, con la seguridad de que cada paso lo guía alguien que conoce estos ríos de memoria.",
     eleccion: {
       titulo: "El día no da para las dos. ¿Cuál prefieres?",
       opciones: [
         { id: "siete-cascadas", nombre: "Hacienda Los Gómez + Siete Cascadas", nota: "Están en el mismo lugar, así que ves las dos. La opción de la mayoría." },
-        { id: "tamasopo",       nombre: "Cascadas de Tamasopo",                nota: "Pozas más abiertas, para nadar con calma." },
+        // +$150 por persona (Manolo, 5 nov 2026): la entrada de Tamasopo cuesta
+        // más (ver la tarifa del proveedor en `admin/proveedor.ts`).
+        { id: "tamasopo",       nombre: "Cascadas de Tamasopo",                nota: "Pozas más abiertas, para nadar con calma.", extraPorPersona: 150 },
       ],
     },
     // El día NO da para todo: Puente de Dios va siempre y después se elige.
@@ -1870,7 +1909,7 @@ const TOURS_RAW: Tour[] = [
     destinos: [
       "Puente de Dios",
       "A elegir: Hacienda Los Gómez + Siete Cascadas (mismo lugar)",
-      "A elegir: Cascadas de Tamasopo",
+      "A elegir: Cascadas de Tamasopo (+$150 por persona)",
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",

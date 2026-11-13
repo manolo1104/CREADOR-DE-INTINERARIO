@@ -1,5 +1,6 @@
 "use client";
 
+import { cobradoDe } from "@/lib/admin/dinero";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import type { TourBooking } from "@prisma/client";
@@ -16,6 +17,7 @@ const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+import { etiquetaMotivo } from "@/lib/admin/cancelacion";
 const STATUS_LABEL: Record<string, string> = { paid: "Pagada", pending: "Pendiente", cancelled: "Cancelada" };
 const STATUS_STYLE: Record<string, string> = {
   paid: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800", cancelled: "bg-red-100 text-red-700",
@@ -80,11 +82,15 @@ export default function ReservaDetalle({
   const extras   = extrasDe((b as any).extraItems);
 
   const rawDeposito = (b as any).depositoPagado ?? 0;
-  const deposito    = rawDeposito > 0 ? rawDeposito : (b.stripePaymentIntentId ? b.totalAmount : 0);
+  const deposito    = rawDeposito > 0 ? rawDeposito : cobradoDe(b as any);
   const pendiente   = Math.max(0, b.totalAmount - deposito);
   const sumaLineas  = lineas.reduce((s, l) => s + (l.subtotal ?? 0), 0)
                     + hospedaje.reduce((s, p) => s + (Number(p.subtotal) || 0), 0)
                     + totalExtras(extras);
+  // Un paquete de la web trae sus recorridos SIN precio (el paquete no es la
+  // suma de sus partes) y, desde el lote 5, el hotel con el suyo: ahí que «no
+  // cuadre» no es un precio ajustado a mano.
+  const lineasConPrecio = lineas.every(l => l.subtotal != null);
 
 
   const nombreTour = (l: LineaTour) =>
@@ -106,6 +112,11 @@ export default function ReservaDetalle({
               <span className="text-[10px] font-dm text-[#1B4332]/40">
                 {b.stripePaymentIntentId ? "Pagó en línea" : "Capturada a mano"}
               </span>
+              {b.status === "cancelled" && (b as { motivoCancelacion?: string | null }).motivoCancelacion && (
+                <span className="text-[10px] font-dm text-[#b8413f]">
+                  Motivo: {etiquetaMotivo((b as { motivoCancelacion?: string | null }).motivoCancelacion)}
+                </span>
+              )}
             </div>
             <p className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{b.customerName}</p>
           </div>
@@ -262,7 +273,7 @@ export default function ReservaDetalle({
                 {descuentoDeMeta(meta)?.por ? <span className="text-[#1B4332]/45"> · lo puso {descuentoDeMeta(meta)?.por}</span> : null}
               </p>
             )}
-            {sumaLineas > 0 && sumaLineas - montoDescuento(descuentoDeMeta(meta), sumaLineas) !== b.totalAmount && (
+            {sumaLineas > 0 && lineasConPrecio && sumaLineas - montoDescuento(descuentoDeMeta(meta), sumaLineas) !== b.totalAmount && (
               <p className="text-[#1B4332]/45 font-dm text-xs mt-1">
                 Las líneas suman {fmx(sumaLineas)} y el total es {fmx(b.totalAmount)}: hay un precio ajustado a mano
                 {meta.cotizacionOrigen ? ` (viene de la cotización ${meta.cotizacionOrigen})` : ""}.
@@ -271,7 +282,8 @@ export default function ReservaDetalle({
             {b.promoCode && (
               <p className="text-[#1B4332]/45 font-dm text-xs mt-1">
                 Código promocional <span className="font-mono">{b.promoCode}</span>
-                {b.promoDiscount > 0 && ` · −${fmx(b.promoDiscount)}`}
+                {/* `promoDiscount` es un PORCENTAJE (tourPricing.ts), no pesos: salía «−$10». */}
+                {b.promoDiscount > 0 && ` · −${b.promoDiscount} %`}
               </p>
             )}
 

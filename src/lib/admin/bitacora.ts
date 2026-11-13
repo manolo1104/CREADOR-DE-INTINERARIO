@@ -79,6 +79,7 @@ export const ETIQUETAS_RESERVA: Record<string, string> = {
   customerPhone:      "teléfono",
   notes:              "notas",
   status:             "estado",
+  motivoCancelacion:  "motivo de cancelación",
   origen:             "origen",
   pagoProveedor:      "pago al proveedor",
   pagoProveedorMonto: "monto al proveedor",

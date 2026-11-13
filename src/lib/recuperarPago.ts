@@ -19,7 +19,6 @@
  * Solo quien CREA la fila manda el correo, así que nadie lo recibe dos veces.
  */
 import type Stripe from "stripe";
-import { CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
@@ -27,9 +26,11 @@ import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildAvisoPagoIncompletoHtml } from "@/lib/avisoCarritoGrande";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
-import { logger, actividad, mxn, nombreCorto } from "@/lib/logger";
-import { leerJson, reconstruirLineas } from "@/lib/webhookRecuperacion";
+import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
+import { reconstruirLineas } from "@/lib/webhookRecuperacion";
+import { armarReservaWeb } from "@/lib/reservaWeb";
 import { enviarCompraGA4 } from "@/lib/ga4Server";
+import { pagoDelEquipo } from "@/lib/equipoInterno";
 import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import { TOURS_DB } from "@/lib/tours";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
@@ -52,24 +53,40 @@ export function esPagoDeTours(pi: Stripe.PaymentIntent): boolean {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/**
+ * Quién pagó, con lo que trae la metadata y, si falta algo, con lo que el
+ * cliente escribió en la tarjeta (`billing_details` del cargo). 🔴 Antes solo
+ * se miraba el cargo para el correo: una reserva recuperada quedaba sin
+ * nombre ni teléfono aunque Stripe los tuviera (lote 5, 5 nov 2026). Sin
+ * teléfono, la Bandeja no la enlaza con su chat y le abre otro lead.
+ */
+async function quienPago(pi: Stripe.PaymentIntent, telefonoMeta: string | null) {
+  const meta = pi.metadata ?? {};
+  let email = meta.customerEmail || pi.receipt_email || "";
+  let nombre = meta.customerName || "";
+  let telefono = telefonoMeta;
+  if ((!email || !nombre || !telefono) && pi.latest_charge) {
+    try {
+      const charge = typeof pi.latest_charge === "string" ? await stripe.charges.retrieve(pi.latest_charge) : pi.latest_charge;
+      if (!email) email = charge.billing_details?.email || charge.receipt_email || "";
+      if (!nombre) nombre = charge.billing_details?.name || "";
+      if (!telefono) telefono = charge.billing_details?.phone || null;
+    } catch { /* si no se puede leer el cargo, se sigue con lo que hay */ }
+  }
+  return { email, emailValido: EMAIL_RE.test(email), nombre, telefono };
+}
+
 /** El paquete, con el armado de la pantalla. Devuelve el folio, o null si falló. */
 async function recuperarPaquete(pi: Stripe.PaymentIntent, origen: "webhook" | "conciliacion"): Promise<string | null> {
   const meta = pi.metadata ?? {};
-  let email = meta.customerEmail || pi.receipt_email || "";
-  if (!email && pi.latest_charge) {
-    try {
-      const chId = typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge.id;
-      const charge = await stripe.charges.retrieve(chId);
-      email = charge.billing_details?.email || charge.receipt_email || "";
-    } catch { /* sin correo: se avisa al equipo abajo */ }
-  }
-  const emailValido = EMAIL_RE.test(email);
+  const { email, emailValido, nombre, telefono } = await quienPago(pi, (meta.customerPhone || "").trim() || null);
 
   const r = await registrarReservaPaquete(
     pi,
     {
       email:        emailValido ? email : "",
-      customerName: meta.customerName || "Pendiente (vía webhook)",
+      customerName: nombre || "Pendiente (vía webhook)",
+      customerPhone: telefono,
       locale:       meta.locale,
       slug:         meta.tourSlug,
       pct:          meta.paquetePct,
@@ -88,10 +105,10 @@ async function recuperarPaquete(pi: Stripe.PaymentIntent, origen: "webhook" | "c
     accion:     "creó",
     entidad:    "reserva",
     referencia: r.confirmationNumber,
-    resumen:    `Reserva ${r.confirmationNumber} — ${meta.customerName || "cliente sin nombre"}, ${meta.tourName || "paquete"}, ${pesos(r.totalFull)} (pago en línea, recuperada ${origen === "conciliacion" ? "por la conciliación" : "por el webhook"})`,
+    resumen:    `Reserva ${r.confirmationNumber} — ${nombre || "cliente sin nombre"}, ${meta.tourName || "paquete"}, ${pesos(r.totalFull)} (pago en línea, recuperada ${origen === "conciliacion" ? "por la conciliación" : "por el webhook"})`,
     actor:      SISTEMA,
   });
-  actividad("⚠️  RESERVÓ PAQUETE (recuperada)", nombreCorto(meta.tourName || meta.tourId), mxn(r.totalFull), meta.customerName, emailValido ? email : undefined, r.confirmationNumber, "el cliente no completó la pantalla");
+  actividad("⚠️  RESERVÓ PAQUETE (recuperada)", nombreCorto(meta.tourName || meta.tourId), mxn(r.totalFull), nombreParaLog(nombre), emailValido ? email : undefined, r.confirmationNumber, "el cliente no completó la pantalla");
 
   // Sin correo del cliente nadie le avisó: que lo haga el equipo a mano.
   const adminTo = process.env.ADMIN_EMAIL_TOURS;
@@ -159,104 +176,59 @@ export async function recuperarPago(
       folioParaGA4 = folio;
     } else if (!existing) {
       const cobrado = Math.round((pi.amount_received || pi.amount) / 100);
-      // El precio completo llega en metadata. Con anticipo (30 %) es mayor
-      // que lo cobrado; con pago completo coinciden.
-      const totalAmount = Number(meta.totalCompleto) > 0 ? Number(meta.totalCompleto) : cobrado;
       const confirmationNumber = "HP" + Date.now().toString(36).toUpperCase();
 
-      // Recupera el correo del cliente: metadata → receipt_email → billing_details
-      // del cargo (el cliente lo escribió al confirmar el pago aunque no
-      // completara la pantalla). Así podemos enviarle su confirmación.
-      let clienteEmail = meta.customerEmail || pi.receipt_email || "";
-      if (!clienteEmail && pi.latest_charge) {
-        try {
-          const chId = typeof pi.latest_charge === "string" ? pi.latest_charge : pi.latest_charge.id;
-          const charge = await stripe.charges.retrieve(chId);
-          clienteEmail = charge.billing_details?.email || charge.receipt_email || "";
-        } catch { /* si no se puede leer el cargo, seguimos sin correo */ }
-      }
-      const emailValido = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clienteEmail);
-      const locale = meta.locale === "en" ? "en" : "es";
-
       // ── Reconstrucción del pedido ────────────────────────────────────
-      // 🔴 El bug que esto arregla: aquí solo se copiaban los campos planos.
-      // Un carrito de tres recorridos con hotel y traslado quedaba en el
-      // panel como UN tour suelto, sin itinerario, sin hospedaje y sin el
-      // traslado que el equipo tiene que operar — aunque el cobro sí había
-      // incluido todo eso. El comentario de `carrito-payment-intent` decía
-      // que el webhook leía `meta.items`; no lo leía.
-      const lineas = reconstruirLineas(meta);
-      const hotel  = leerJson<{ habitacion?: string; noches?: number; huespedes?: number; total?: number; checkin?: string; checkout?: string }>(meta.hospedajeData);
-      const viaje  = leerJson<{ ciudad?: string; personas?: number; total?: number }>(meta.trasladoData);
+      // 🔴 Con la MISMA función que la pantalla de confirmación (lote 5, 5 nov
+      // 2026): recorridos con su elección, actividades y Valles, el grupo (no
+      // la suma por recorrido), el traslado y el hotel con su importe. Antes
+      // la misma compra quedaba distinta según quién creara la reserva.
+      const r = armarReservaWeb(meta, cobrado);
+      const totalAmount = r.totalAmount;
+      const locale = r.locale;
 
-      if (viaje?.ciudad) {
-        lineas.push({
-          tourName: `Traslado ${viaje.ciudad} → Xilitla (ida y vuelta)`,
-          tourDate: meta.tourDate || "",
-          adults:   Number(viaje.personas) || 1,
-          children: 0,
-          subtotal: Number(viaje.total) || 0,
-        });
-      }
+      // Quién es: metadata → `billing_details` del cargo (el cliente lo
+      // escribió al confirmar el pago aunque no completara la pantalla). Así
+      // podemos enviarle su confirmación.
+      const { email: clienteEmail, emailValido, nombre, telefono } = await quienPago(pi, r.telefono);
 
       // ¿Cabía? Ya pagó: entra igual, marcada (`lib/sobrecupo.ts`).
       const avisoCupo = await revisarSobrecupo(
-        lineas.length ? lineas : [{ tourSlug: meta.tourSlug, tourDate: meta.tourDate, adults: Number(meta.adults) || 1, children: Number(meta.children) || 0 }],
-        { folio: confirmationNumber, cliente: meta.customerName || "cliente sin nombre", excluirApartado: esIdApartado(meta.apartadoId) ? meta.apartadoId : undefined },
+        r.lineas.length ? r.lineas : [{ tourSlug: r.tourSlug, tourDate: r.tourDate, adults: r.adults, children: r.children }],
+        { folio: confirmationNumber, cliente: nombre || "cliente sin nombre", excluirApartado: esIdApartado(meta.apartadoId) ? meta.apartadoId : undefined },
       );
 
       const notas = [
         avisoCupo,
         `${origen === "conciliacion" ? "Reserva registrada por la conciliación de pagos" : "Reserva registrada automáticamente por webhook"} — el cliente no completó la pantalla de confirmación.`,
-        locale === "en" ? "⚠️ CLIENTE DE HABLA INGLESA: reservó desde la versión en inglés del sitio." : "",
-        // Lo PIDIÓ, que no es lo mismo que haber comprado desde /en.
-        meta.idiomaTour === "en" ? "🗣️ PIDIÓ GUÍA EN INGLÉS (sin costo): asignar guía bilingüe o avisarle antes por WhatsApp." : "",
-        meta.addOns    ? `ACTIVIDAD EXTRA CONTRATADA: ${meta.addOns}` : "",
-        meta.viajeroSolo ? `BAJO EL MÍNIMO (${meta.viajeroSolo}): pagó tarifa normal. Sumarlo a una salida compartida y confirmarle ${CONFIRMA_SALIDA_DIAS} días antes; si no se junta, REEMBOLSO del 100 %.` : "",
-        meta.hospedaje ? `Hospedaje: ${meta.hospedaje}` : "",
-        meta.traslado  ? `TRASLADO: ${meta.traslado}. Falta acordar hora y domicilio de recogida.` : "",
-        // Ruta Surrealista desde Ciudad Valles (+$400 por reserva): ya va dentro
-        // del subtotal del renglón; aquí, para que el equipo sepa ir por él allá.
-        Number(meta.cargoValles) > 0 ? `🚐 SE HOSPEDA EN CIUDAD VALLES: traslado cobrado +$${Number(meta.cargoValles).toLocaleString("es-MX")}.` : "",
-        // Eventos de Xantolo (4 oct 2026): lo que se opera esa noche y, en la
-        // noche sin hotel, dónde pasar por el cliente.
-        meta.recogida   ? `RECOGER EN: ${meta.recogida}` : "",
-        meta.notaEquipo ? meta.notaEquipo : "",
+        ...r.notasEquipo,
       ].filter(Boolean).join(" | ");
 
       const creada = await prisma.tourBooking.create({
         data: {
           confirmationNumber,
-          tourId:                meta.tourId,
-          tourName:              meta.tourName || "Tour Huasteca",
-          tourSlug:              meta.tourSlug || "",
-          tourDate:              meta.tourDate || "",
-          adults:                Number(meta.adults) || 1,
-          children:              Number(meta.children) || 0,
+          tourId:                r.tourId,
+          tourName:              r.tourName,
+          tourSlug:              r.tourSlug,
+          tourDate:              r.tourDate,
+          adults:                r.adults,
+          children:              r.children,
           totalAmount,
           depositoPagado:        cobrado, // lo realmente cobrado (100% en tours, parcial en paquetes)
+          promoCode:             r.promoCode,
+          promoDiscount:         r.promoDiscount,
           stripePaymentIntentId: pi.id,
-          customerName:          meta.customerName || "Pendiente (vía webhook)",
+          customerName:          nombre || "Pendiente (vía webhook)",
           customerEmail:         emailValido ? clienteEmail : "pendiente@desconocido",
-          customerPhone:         meta.customerPhone || null,
+          customerPhone:         telefono,
           notes:                 notas,
-          lineItems:             [...lineas, { _meta: true, locale, ...(meta.zonaHospedaje ? { zonaHospedaje: meta.zonaHospedaje } : {}) }],
-          packageItems:          hotel?.habitacion
-            ? [{
-                hotel:        "Hotel Paraíso Encantado",
-                habitacion:   hotel.habitacion,
-                noches:       Number(hotel.noches) || 0,
-                habitaciones: String(hotel.habitacion).split(" + ").length,
-                checkin:      hotel.checkin  || "",
-                checkout:     hotel.checkout || "",
-                subtotal:     Number(hotel.total) || 0,
-              }]
-            : undefined,
+          lineItems:             [...r.lineas, r.meta] as never,
+          packageItems:          (r.packageItems ?? undefined) as never,
           // El idioma del GUÍA, de la metadata que escribió el servidor al
           // crear el cobro. Mismo valor que escribe `send-confirmation`: si
           // solo uno de los dos lo pusiera, la mitad de las reservas —las de
           // la pestaña cerrada— perderían el dato.
-          idiomaTour:            meta.idiomaTour === "en" ? "en" : "es",
+          idiomaTour:            r.idiomaTour,
           // Con saldo es «pending», como en el panel: un anticipo marcado
           // «paid» salía de la lista de pendientes.
           status:                cobrado >= totalAmount ? "paid" : "pending",
@@ -267,7 +239,7 @@ export async function recuperarPago(
 
       // Ya pagó: que el cron de carritos deje de escribirle «olvidaste tu…».
       if (emailValido) {
-        await cerrarCarritosDe(clienteEmail, lineas.length ? lineas : [{ tourSlug: meta.tourSlug, tourDate: meta.tourDate }]);
+        await cerrarCarritosDe(clienteEmail, r.lineas.length ? r.lineas : [{ tourSlug: r.tourSlug, tourDate: r.tourDate }]);
       }
 
       // Renglón de cobro para el desglose del corte (ver `cobros.ts`).
@@ -276,13 +248,15 @@ export async function recuperarPago(
           reservaId: creada.id, monto: cobrado, metodo: "stripe",
           nota: "Pago en línea recuperado por el webhook", sinRescate: true,
         });
+        // Al CRM (revisión del 4 nov 2026): la reserva de la web también es un lead, enlazado al de esa persona o uno nuevo. No lanza.
+        await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(creada.id, "Web")).catch(() => {});
       }
 
       await registrarEnBitacora({
         accion:     "creó",
         entidad:    "reserva",
         referencia: confirmationNumber,
-        resumen:    `Reserva ${confirmationNumber} — ${meta.customerName || "cliente sin nombre"}, ${meta.tourName || "Tour Huasteca"} el ${meta.tourDate || "sin fecha"}, ${pesos(totalAmount)} (pago en línea, recuperada ${origen === "conciliacion" ? "por la conciliación" : "por el webhook"})`,
+        resumen:    `Reserva ${confirmationNumber} — ${nombre || "cliente sin nombre"}, ${r.tourName} el ${r.tourDate || "sin fecha"}, ${pesos(totalAmount)} (pago en línea, recuperada ${origen === "conciliacion" ? "por la conciliación" : "por el webhook"})`,
         actor:      SISTEMA,
       });
 
@@ -292,8 +266,8 @@ export async function recuperarPago(
       });
 
       const quienes = [
-        `${Number(meta.adults) || 1} adulto${(Number(meta.adults) || 1) > 1 ? "s" : ""}`,
-        Number(meta.children) ? `${Number(meta.children)} niño${Number(meta.children) > 1 ? "s" : ""}` : "",
+        `${r.adults} adulto${r.adults > 1 ? "s" : ""}`,
+        r.children ? `${r.children} niño${r.children > 1 ? "s" : ""}` : "",
       ]
         .filter(Boolean)
         .join(", ");
@@ -302,7 +276,7 @@ export async function recuperarPago(
         nombreCorto(meta.tourName || meta.tourId),
         quienes,
         mxn(totalAmount),
-        meta.customerName,
+        nombreParaLog(nombre),
         emailValido ? clienteEmail : undefined,
         meta.tourDate,
         confirmationNumber,
@@ -315,40 +289,33 @@ export async function recuperarPago(
       if (emailValido) {
         try {
           const html = buildTourEmailHtml({
-            customerName:  meta.customerName || "",
+            customerName:  nombre,
             confirmationNumber,
             paymentIntentId: pi.id,
-            tourName:      meta.tourName || "Tour Huasteca",
-            tourDate:      meta.tourDate || "",
+            tourName:      r.tourName,
+            tourDate:      r.tourDate,
             // Con carrito, `tourSlug` es solo el del PRIMER recorrido: se
             // deja vacío para que el correo lea el itinerario de `lineItems`
             // y no titule el viaje entero con un solo tour.
-            tourSlug:      lineas.length > 1 ? "" : (meta.tourSlug || ""),
-            adults:        Number(meta.adults) || 1,
-            children:      Number(meta.children) || 0,
+            tourSlug:      r.lineas.length > 1 ? "" : r.tourSlug,
+            adults:        r.adults,
+            children:      r.children,
             totalAmount,
             depositoPagado: cobrado, // muestra saldo pendiente si fue anticipo
-            promoDiscount: 0,
+            promoCode:     r.promoCode ?? undefined,
+            promoDiscount: r.promoDiscount,
+            // Dónde pasar por él, como en el correo de la pantalla.
+            pickupLugar:   r.recogida || undefined,
             // El itinerario completo y el hotel, para que el cliente que
             // cerró la pestaña reciba la misma confirmación que los demás.
-            lineItems:     lineas.length ? lineas : undefined,
-            packageItems:  hotel?.habitacion
-              ? [{
-                  hotel:        "Hotel Paraíso Encantado",
-                  habitacion:   hotel.habitacion,
-                  noches:       Number(hotel.noches) || 0,
-                  habitaciones: String(hotel.habitacion).split(" + ").length,
-                  checkin:      hotel.checkin  || "",
-                  checkout:     hotel.checkout || "",
-                  subtotal:     Number(hotel.total) || 0,
-                }]
-              : undefined,
+            lineItems:     r.lineas.length ? r.lineas : undefined,
+            packageItems:  r.packageItems,
             locale,
             // Lo mismo que se acaba de guardar en la reserva.
-            idiomaTour:    meta.idiomaTour === "en" ? "en" : "es",
+            idiomaTour:    r.idiomaTour,
           });
           await sendBrevoEmail({
-            to:  [{ email: clienteEmail, name: meta.customerName || undefined }],
+            to:  [{ email: clienteEmail, name: nombre || undefined }],
             bcc: process.env.ADMIN_EMAIL_TOURS ? [{ email: process.env.ADMIN_EMAIL_TOURS }] : undefined,
             subject: `Tu tour está confirmado — ${confirmationNumber}`,
             htmlContent: html,
@@ -414,6 +381,7 @@ export async function recuperarPago(
     await enviarCompraGA4({
       transactionId: folioParaGA4 || pi.id,
       clientId:      meta.gaClientId || null,
+      interno:       pagoDelEquipo(meta),
       value:         Math.round((pi.amount_received || pi.amount) / 100),
       paymentPlan:   Number(meta.pctPagado) || undefined,
       hasHotel:      !!meta.hospedaje,

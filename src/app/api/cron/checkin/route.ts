@@ -5,6 +5,7 @@ import { buildCheckinEmailHtml } from "@/lib/checkinEmail";
 import { localeDeReserva } from "@/lib/reviewRequest";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { actividad, logger } from "@/lib/logger";
+import { diaConTodoCancelado } from "@/lib/admin/salidas";
 import {
   ESTADOS_EXCLUIDOS, HORA_DESDE, HORA_HASTA, asegurarEncuesta, correoUtil, fechaDelTour, horaMX,
   linkCheckin, tocaCheckin,
@@ -55,7 +56,16 @@ export async function POST(req: NextRequest) {
     take: 300,
   });
 
-  const toca = reservas.filter((b) => tocaCheckin(fechaDelTour(b), hoy, hora) && correoUtil(b.customerEmail));
+  const candidatas = reservas.filter((b) => tocaCheckin(fechaDelTour(b), hoy, hora) && correoUtil(b.customerEmail));
+  // 🔴 Si Operación marcó «Cancelada» la salida de ese día, no se le manda el
+  // check-in al cliente (revisión del lote 6, 10 nov 2026): ya hay un
+  // seguimiento para avisarle y reprogramar o reembolsar. Si se reabre, sale
+  // en la siguiente corrida.
+  const fechasCheckin = Array.from(new Set(candidatas.map((b) => fechaDelTour(b))));
+  const canceladas = new Set(fechasCheckin.length
+    ? (await prisma.salida.findMany({ where: { estado: "cancelada", fecha: { in: fechasCheckin } }, select: { clave: true } }).catch(() => [])).map((s) => s.clave)
+    : []);
+  const toca = candidatas.filter((b) => !diaConTodoCancelado(b, fechaDelTour(b), canceladas));
   const recibirian = toca.map((b) => ({ folio: b.confirmationNumber, email: b.customerEmail, tour: b.tourName, fecha: fechaDelTour(b) }));
   if (dry) return NextResponse.json({ ok: true, dry, hoy, manana, candidatos: reservas.length, recibirian });
 

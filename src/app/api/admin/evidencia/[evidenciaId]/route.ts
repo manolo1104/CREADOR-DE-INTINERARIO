@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { registrarEnBitacora } from "@/lib/admin/bitacora";
+import { sesionActual } from "@/lib/admin/sesion";
+import { esDeOficina, puedeHacer } from "@/lib/admin/usuarios";
+import { puedeQuitarComprobante } from "@/lib/admin/candadosCobro";
 
 export const dynamic = "force-dynamic";
 
 // GET → devuelve el archivo para verlo/descargarlo desde el panel.
 export async function GET(req: NextRequest, { params }: { params: { evidenciaId: string } }) {
   try {
+    // Cobros y comprobantes son dinero: solo la oficina (lote 8, 10 nov 2026). El guía, aunque
+    // Manolo le abra una pestaña que use esta API, no los recibe.
+    const quien = await sesionActual();
+    if (!quien || !esDeOficina(quien.rol)) return NextResponse.json({ error: "Sin permiso" }, { status: 403 });
     const ev = await prisma.evidencia.findUnique({
       where: { id: params.evidenciaId },
     });
@@ -42,11 +49,20 @@ export async function GET(req: NextRequest, { params }: { params: { evidenciaId:
 
 export async function DELETE(_req: NextRequest, { params }: { params: { evidenciaId: string } }) {
   try {
+    const sesion = await sesionActual();
+    if (!sesion) return NextResponse.json({ error: "Sin sesión" }, { status: 401 });
     // Se lee antes de borrar para poder decir en la bitácora QUÉ se borró.
     const ev = await prisma.evidencia.findUnique({
       where:  { id: params.evidenciaId },
-      select: { nombreArchivo: true, bookingId: true },
+      select: { nombreArchivo: true, bookingId: true, movimientoId: true },
     });
+    if (!ev) return NextResponse.json({ error: "Ese comprobante ya no existe" }, { status: 404 });
+    // 🔴 El comprobante de un cobro ya registrado es la prueba de ese dinero:
+    // solo lo quita quien puede anular cobros (lote 3, 5 nov 2026). Antes
+    // cualquier sesión lo borraba por la API, sin rastro de a qué cobro era.
+    if (!puedeQuitarComprobante({ movimientoId: ev.movimientoId, puedeAnular: puedeHacer(sesion.rol, "anularMovimiento") })) {
+      return NextResponse.json({ error: "Ese comprobante es de un cobro ya registrado: solo Manolo o Martín lo pueden quitar." }, { status: 403 });
+    }
     await prisma.evidencia.delete({ where: { id: params.evidenciaId } });
 
     const reserva = ev
@@ -60,7 +76,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { evidenci
       accion:     "eliminó",
       entidad:    "comprobante",
       referencia: reserva?.confirmationNumber,
-      resumen:    `Comprobante "${ev?.nombreArchivo ?? params.evidenciaId}"` +
+      resumen:    `Comprobante "${ev.nombreArchivo}"` + (ev.movimientoId ? " de un cobro registrado" : "") +
         (reserva ? ` de la reserva ${reserva.confirmationNumber} (${reserva.customerName})` : ""),
     });
     return NextResponse.json({ ok: true });

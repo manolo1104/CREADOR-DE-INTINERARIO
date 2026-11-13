@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rateLimit";
 import { guardarLead, registrarLead, esEmailValido, normalizarFuente } from "@/lib/leads";
+import { enmascararTexto } from "@/lib/logger";
 
 export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { key: "guardar-email", limit: 5, windowMs: 60_000 });
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error("[guardar-email]", err);
+    console.error("[guardar-email]", enmascararTexto(err instanceof Error ? err.message : String(err)));
     return NextResponse.json({ error: "Error al guardar" }, { status: 500 });
   }
 }

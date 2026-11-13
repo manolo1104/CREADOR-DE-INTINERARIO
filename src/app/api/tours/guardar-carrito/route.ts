@@ -11,6 +11,7 @@ import { buildCartEmailHtml } from "@/lib/cartEmail";
 import { actividad, mxn, nombreCorto } from "@/lib/logger";
 import { ESTADOS_VIVOS } from "@/lib/cartFollowUp";
 import { avisarCarritoGrande } from "@/lib/avisoCarritoGrande";
+import { leadDesdeWeb } from "@/lib/admin/crmDatos";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -46,6 +47,8 @@ export async function POST(req: NextRequest) {
       // «¿Xilitla o Ciudad Valles?», si ya la eligió: la Ruta Surrealista cobra
       // +$400 desde Valles y la cotización tiene que decir el mismo total que el cobro.
       zona,
+      // El nombre que dejó en «Tus datos», para su lead del CRM (5 nov 2026).
+      nombre,
     } = body;
 
     if (!email || !EMAIL_RE.test(email)) {
@@ -61,6 +64,7 @@ export async function POST(req: NextRequest) {
         silencioso:       silencioso === true,
         enviarCotizacion: enviarCotizacion === true,
         zona:             zonaValida(zona),
+        nombre:           typeof nombre === "string" ? nombre : null,
       });
     }
 
@@ -171,6 +175,14 @@ export async function POST(req: NextRequest) {
       esNuevo ? "nueva" : "actualizada",
     );
 
+    // Al CRM como lead (5 nov 2026): antes solo le llegaban los correos
+    // automáticos y nadie le daba seguimiento. Sin duplicar si ya tiene uno. No lanza.
+    await leadDesdeWeb({
+      nombre: typeof nombre === "string" ? nombre : null, telefono: datos.customerPhone, correo: datos.customerEmail, idioma: locale === "en" ? "en" : "es",
+      tours: [datos.tourSlug], fechaViaje: datos.tourDate, pax: datos.adults + datos.childrenMid + datos.childrenSmall, monto: datos.total,
+      que: `Guardó su cotización en el sitio: ${datos.tourName}, ${datos.tourDate}, ${datos.adults + datos.childrenMid + datos.childrenSmall} personas, ${mxn(datos.total)}. No ha pagado.`,
+    });
+
     return NextResponse.json({ ok: true });
   } catch {
     return NextResponse.json({ error: "No se pudo guardar." }, { status: 500 });
@@ -196,7 +208,7 @@ async function guardarCarritoCompleto(
   hospedaje?: { habitaciones?: { habitacionId: string; huespedes: number }[]; noches?: number; checkin?: string; checkout?: string } | null,
   traslado?: { ciudad?: string; personas?: number } | null,
   locale?: unknown,
-  { silencioso = false, enviarCotizacion = false, zona = null }: { silencioso?: boolean; enviarCotizacion?: boolean; zona?: ZonaHospedaje | null } = {},
+  { silencioso = false, enviarCotizacion = false, zona = null, nombre = null }: { silencioso?: boolean; enviarCotizacion?: boolean; zona?: ZonaHospedaje | null; nombre?: string | null } = {},
 ) {
   // Sin zona elegida (el guardado silencioso puede llegar antes) se cotiza sin
   // el cargo de Valles; el cobro lo vuelve a pedir y no deja pagar sin ella.
@@ -370,6 +382,17 @@ async function guardarCarritoCompleto(
     esNuevo ? "nueva" : "actualizada",
     silencioso ? "(guardado al llenar sus datos)" : "",
   );
+
+  // Al CRM como lead (5 nov 2026): quien llena sus datos en el pago o pide su
+  // cotización y no paga ya no se queda fuera. Sin duplicar si ya tiene uno; si
+  // paga, su reserva encuentra este lead. No lanza.
+  const personas = datos.adults + datos.childrenMid;
+  const lista = tarifa.lineItems.map((l) => `${l.tourName}${l.tourDate ? ` (${l.tourDate})` : ""}`).join(", ");
+  await leadDesdeWeb({
+    nombre, telefono: datos.customerPhone, correo: datos.customerEmail, idioma: locale === "en" ? "en" : "es",
+    tours: tarifa.lineItems.map((l) => l.tourSlug), fechaViaje: datos.tourDate, pax: personas, monto: datos.total,
+    que: `${silencioso ? "Llenó sus datos en el pago del sitio" : "Pidió su cotización en el carrito del sitio"}: ${lista}; ${personas} personas${hotel ? `, hotel ${hotel.noches} noche${hotel.noches === 1 ? "" : "s"}` : ""}${viaje ? `, traslado desde ${viaje.ciudad}` : ""}; ${mxn(datos.total)}.${silencioso ? " Si no paga, escríbele." : ""}`,
+  });
 
   return NextResponse.json({ ok: true });
 }

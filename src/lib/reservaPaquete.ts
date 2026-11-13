@@ -18,7 +18,7 @@ import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
 import { getPaquete } from "@/lib/paquetes";
 import { haciaLa } from "@/lib/nocheXantolo";
-import { actividad, mxn } from "@/lib/logger";
+import { actividad, mxn, nombreParaLog, enmascararTexto } from "@/lib/logger";
 import { getEmails, emailLocale } from "@/lib/i18n/emails";
 import { buildPaqueteConfirmEmailHtml } from "@/lib/paqueteEmail";
 import { TOURS_DB } from "@/lib/tours";
@@ -26,6 +26,7 @@ import { parseEleccion } from "@/lib/paquetePricing";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { revisarSobrecupo } from "@/lib/sobrecupo";
+import { HOTEL_PARAISO_WEB, importeHotelDePaquete, pctDelPaquete } from "@/lib/reservaWeb";
 import fs from "fs";
 import path from "path";
 
@@ -65,12 +66,18 @@ export async function registrarReservaPaquete(
   d: DatosClientePaquete,
   origen: "pantalla" | "webhook",
 ): Promise<ResultadoReservaPaquete> {
-  const { email, customerName, customerPhone, notes, pct, personas, fecha } = d;
+  const { email, customerName, pct, personas, fecha } = d;
   const paymentIntentId = pi.id;
   const L = emailLocale(d.locale as string | undefined);
   const T = getEmails(L).paquete;
 
   const meta = pi.metadata ?? {};
+  // El teléfono y las notas que escribió al pagar viajan en la metadata desde
+  // el 5 nov 2026 (lote 5): sin ellos, la reserva del webhook quedaba «sin
+  // teléfono ni notas» y la Bandeja, que busca por teléfono, le abría otro
+  // contacto y otro lead cuando escribía por WhatsApp.
+  const customerPhone = String(d.customerPhone || meta.customerPhone || "").trim() || null;
+  const notes = String(d.notes || meta.notasCliente || "").trim() || null;
   // El paquete sale de la metadata, que escribió el servidor al crear el
   // cobro; el del navegador es solo respaldo (antes mandaba el del cuerpo, y
   // un cuerpo alterado podía etiquetar la reserva con otro paquete).
@@ -96,8 +103,8 @@ export async function registrarReservaPaquete(
   const totalMeta = Math.round(Number(meta.totalCompleto) || 0);
   const totalFull = totalMeta > 0 ? totalMeta : paquete.precio;
   const pendiente = Math.max(0, totalFull - cobrado);
-  const pctNum    = Number(pct) || Number(meta.paquetePct)
-    || (totalFull > 0 ? Math.min(100, Math.round((cobrado / totalFull) * 100)) : 100);
+  // El % de la metadata primero (revisión del lote 5, 10 nov 2026).
+  const pctNum    = pctDelPaquete(meta.paquetePct, pct, cobrado, totalFull);
 
   // ── El grupo, con sus tramos ──────────────────────────────────────────
   // También de la metadata: el cuerpo de la petición solo manda `personas`,
@@ -108,8 +115,10 @@ export async function registrarReservaPaquete(
   const nSmall  = Number(meta.childrenSmall) || 0;
   const nNinos  = (nMid + nSmall) || Number(meta.children) || 0;
 
-  // Un paquete de evento tiene SU fecha: no se toma la del navegador.
-  const fechaInicio  = paquete.evento ? paquete.evento.fecha : String(fecha || meta.tourDate || "");
+  // Un paquete de evento tiene SU fecha: no se toma la del navegador. Los
+  // demás, la de la metadata primero (lote 5, 5 nov 2026): es la que se cobró
+  // y con la que se revisó el cupo; la del navegador queda de respaldo.
+  const fechaInicio  = paquete.evento ? paquete.evento.fecha : String(meta.tourDate || fecha || "");
   const habitacion   = meta.habitacion || "";
   const nocheExtra   = String(meta.nocheExtra || "").startsWith("sí");
   const nochesHotel  = Number(meta.nochesHotel) || paquete.noches;
@@ -125,9 +134,11 @@ export async function registrarReservaPaquete(
     // La creó el webhook (el cliente tardó o cerró la pestaña y volvió): se
     // le suma lo que solo trae la pantalla, sin otro correo.
     if (origen === "pantalla" && customerPhone && !existing.customerPhone) {
+      // Las notas que el webhook ya tomó de la metadata no se repiten.
+      const nuevas = notes && !(existing.notes ?? "").includes(notes) ? notes : null;
       await prisma.tourBooking.update({
         where: { id: existing.id },
-        data:  { customerPhone, notes: notes ? `${existing.notes ?? ""} | Notas: ${notes}` : existing.notes },
+        data:  { customerPhone, notes: nuevas ? `${existing.notes ?? ""} | Notas: ${nuevas}` : existing.notes },
       }).catch(() => {});
     }
     return { estado: "ya-existia", confirmationNumber: existing.confirmationNumber, cobrado, totalFull, pendiente };
@@ -202,13 +213,19 @@ export async function registrarReservaPaquete(
     ? [...lineItems, renglon(paquete.evento!.tourOpcional!.tourSlug, 1, paquete.evento!.tourOpcional!.nombreLargo)]
     : lineItems;
 
+  // 🔴 El hotel lleva su importe (lote 5, 5 nov 2026, plan aprobado por
+  // Manolo): sin `subtotal` el corte lo tomaba como $0 y repartía el dinero del
+  // hotel 50/50 como si fuera de tours. Es lo que vale lo que ocupan de verdad
+  // (`importeHotel` de `computePaqueteCharge`); los tours siguen sin cifra.
+  const importeHotel = sinHotel ? null : importeHotelDePaquete(meta);
   const packageItems = sinHotel ? [] : [{
-    hotel:        "Hotel Paraíso Encantado",
+    hotel:        HOTEL_PARAISO_WEB,
     habitacion:   habitacion || (L === "en" ? "Room" : "Habitación"),
     noches:       nochesHotel,
     habitaciones: repartoHab ? repartoHab.split("+").length : 1,
     checkin,
     checkout,
+    ...(importeHotel ? { subtotal: importeHotel } : {}),
   }];
 
   // ¿Cabían sus recorridos (y la Ruta del combo)? Ya pagó: entra marcada.
@@ -216,7 +233,7 @@ export async function registrarReservaPaquete(
 
   const notesFull = [
     avisoCupo,
-    origen === "webhook" ? "Reserva registrada por el webhook: el cliente pagó pero no llegó a la pantalla de confirmación (sin teléfono ni notas)." : null,
+    origen === "webhook" ? `Reserva registrada por el webhook: el cliente pagó pero no llegó a la pantalla de confirmación${customerPhone ? "" : " (sin teléfono)"}.` : null,
     sinHotel ? nombreReserva : `Paquete: ${paquete.nombre} (${paquete.duracion})`,
     `Grupo: ${adultos} adulto(s)${nMid ? `, ${nMid} niño(s) 6–10` : ""}${nSmall ? `, ${nSmall} menor(es) de 6` : ""}`,
     conTour ? `⚠️ CON ${paquete.evento!.tourOpcional!.nombre.toUpperCase()} ESE DÍA: sale ${paquete.evento!.tourOpcional!.horaRecogida} (dos salidas, la del día y la de la noche)` : null,
@@ -276,6 +293,8 @@ export async function registrarReservaPaquete(
         reservaId: reserva.id, monto: cobrado, metodo: "stripe",
         nota: origen === "webhook" ? "Pago en línea recuperado por el webhook" : "Pago en línea", sinRescate: true,
       });
+        // Al CRM (revisión del 4 nov 2026): la reserva de la web también es un lead, enlazado al de esa persona o uno nuevo. No lanza.
+        await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(reserva.id, "Web")).catch(() => {});
     }
     const anticipo = pctNum === 100 ? "pago completo" : `anticipo ${pctNum}%`;
     actividad(
@@ -285,7 +304,7 @@ export async function registrarReservaPaquete(
       anticipo,
       `${mxn(cobrado)} de ${mxn(totalFull)}`,
       pendiente > 0 ? `saldo ${mxn(pendiente)}` : "liquidado",
-      customerName,
+      nombreParaLog(customerName),
       email,
       customerPhone,
       fechaInicio,
@@ -347,7 +366,7 @@ export async function registrarReservaPaquete(
       });
       actividad("📧  CORREO PAQUETE ENVIADO", paquete.nombre, email, confirmationNumber);
     } catch (e: any) {
-      console.error("❌ Brevo paquete email:", e.message);
+      console.error("❌ Brevo paquete email:", enmascararTexto(String(e?.message ?? "")));
     }
   }
 

@@ -1,9 +1,9 @@
 "use client";
 
+import VerificarPagos from "./VerificarPagos";
 import { useEffect, useState } from "react";
 import { Link2, Copy, Check, Ban, ExternalLink, Loader2, MessageCircle, Search } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
-import { codigoDeTour } from "@/lib/admin/coloresTour";
 
 interface ReservaConSaldo {
   id: string; folio: string; cliente: string; tour: string; tourSlug: string; fecha: string;
@@ -29,6 +29,8 @@ interface Cobro {
   cliente: string | null; nota: string | null; createdAt: string;
   pagadoAt: string | null; montoPagado: number | null; correoDelPagador: string | null;
   creadoPor: string | null; folio: string | null; clienteReserva: string | null;
+  /** Por qué se apagó sola (p. ej. «se canceló la reserva HP-…»), desde el 5 nov 2026. */
+  motivoCancelacion?: string | null;
 }
 
 const fmx = (n: number) => `$${Math.round(n ?? 0).toLocaleString("es-MX")}`;
@@ -80,6 +82,8 @@ export default function CobrosClient(
   const [error, setError]     = useState("");
   const [reciente, setReciente] = useState<{ url: string; titulo: string; monto: number } | null>(null);
   const [copiado, setCopiado] = useState<string | null>(null);
+  /** Lo que dijo el servidor al cancelar una liga (p. ej. que es de la otra cuenta de Stripe). */
+  const [aviso, setAviso] = useState("");
 
   async function cargar() {
     setCargando(true);
@@ -107,6 +111,22 @@ export default function CobrosClient(
         normalizar(c.cliente).includes(q) ||
         normalizar(c.folio).includes(q) ||
         normalizar(c.tour || "").includes(q))
+      .slice(0, 8);
+  })();
+
+  /**
+   * Las reservas con saldo que coinciden con lo tecleado (lote 3, 5 nov 2026).
+   * Ya son TODAS las que deben, no las 60 más recientes: un desplegable de
+   * cientos no se lee, así que se busca igual que las cotizaciones.
+   */
+  const reservasEncontradas = (() => {
+    const q = normalizar(busqueda);
+    if (!q) return reservasConSaldo.slice(0, 6);
+    return reservasConSaldo
+      .filter(r =>
+        normalizar(r.cliente).includes(q) ||
+        normalizar(r.folio).includes(q) ||
+        normalizar(r.tour || "").includes(q))
       .slice(0, 8);
   })();
 
@@ -212,12 +232,14 @@ export default function CobrosClient(
 
   async function cancelar(id: string) {
     if (!window.confirm("¿Cancelar este cobro? La liga dejará de funcionar.")) return;
+    setAviso("");
     const r = await fetch("/api/admin/links-pago", {
       method: "PATCH", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id }),
     });
-    if (r.ok) cargar();
-    else setError((await r.json()).error ?? "No se pudo cancelar");
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) { if (d?.aviso) setAviso(d.aviso); cargar(); }
+    else setError(d?.error ?? "No se pudo cancelar");
   }
 
   /**
@@ -248,6 +270,9 @@ export default function CobrosClient(
       <p className="text-[rgba(22,54,42,0.66)] font-dm text-sm mb-6">
         Una liga de pago para mandar por WhatsApp. El cliente paga con tarjeta y aquí ves cuándo lo hizo.
       </p>
+
+      {/* ── Verificar pagos (12 nov 2026): transferencias con Banxico y Stripe ── */}
+      <VerificarPagos />
 
       {/* ── Crear ────────────────────────────────────────────────────────── */}
       <div className="panel-card panel-card-alta p-5 mb-6">
@@ -356,30 +381,63 @@ export default function CobrosClient(
           </div>
         )}
 
-        {/* ── Lo que falta: reservas con saldo ────────────────────────────── */}
+        {/* ── Lo que falta: reservas con saldo ──────────────────────────────
+            Todas las que deben, con buscador (lote 3, 5 nov 2026): antes era un
+            desplegable de las 60 más recientes y una vieja con saldo no salía. */}
         {proposito === "resto" && (
           <div className="mb-4">
-            <label className="panel-eyebrow block mb-1.5" htmlFor="reserva">¿De qué reserva?</label>
+            <label className="panel-eyebrow block mb-1.5" htmlFor="buscar-reserva">¿De qué reserva? Búscala por cliente o folio</label>
             {reservasConSaldo.length === 0 ? (
               <p className="text-[rgba(22,54,42,0.51)] font-dm text-xs py-2">
                 Ninguna reserva tiene saldo pendiente: todas están pagadas.
               </p>
-            ) : (
-              <select id="reserva" value={reservaId} onChange={e => elegirReserva(e.target.value)}
-                className="w-full border border-[rgba(27,67,50,0.15)] text-[#16362a] text-sm font-dm px-3 py-2.5 rounded-[7px] focus:outline-none focus:border-[#1B4332] bg-white">
-                <option value="">Elige una reserva…</option>
-                {reservasConSaldo.map(r => (
-                  <option key={r.id} value={r.id}>
-                    {/* Dentro de un <option> no se puede pintar color: aquí el
-                        código va como texto, que es justo para lo que sirve. */}
-                    {codigoDeTour(r.tourSlug)} · {r.folio} · {r.cliente} · debe {fmx(r.saldo)}
-                  </option>
-                ))}
-              </select>
-            )}
+            ) : !reserva ? (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgba(22,54,42,0.35)]" strokeWidth={1.75} />
+                  <input id="buscar-reserva" value={busqueda}
+                    onChange={e => { setBusqueda(e.target.value); setReservaId(""); }}
+                    placeholder="Escribe el nombre del cliente, el folio o el tour"
+                    className="w-full border border-[rgba(27,67,50,0.15)] text-[#16362a] text-sm font-dm pl-9 pr-3 py-2.5 rounded-[7px] focus:outline-none focus:border-[#1B4332] placeholder:text-[rgba(22,54,42,0.35)]" />
+                </div>
+                <p className="text-[11px] font-dm text-[rgba(22,54,42,0.42)] mt-2 mb-1.5">
+                  {busqueda.trim()
+                    ? `${reservasEncontradas.length} ${reservasEncontradas.length === 1 ? "coincidencia" : "coincidencias"}`
+                    : `Las más recientes · ${reservasConSaldo.length} ${reservasConSaldo.length === 1 ? "reserva debe" : "reservas deben"} algo`}
+                </p>
+                <div className="border border-[rgba(27,67,50,0.12)] rounded-[7px] overflow-hidden divide-y divide-[rgba(27,67,50,0.07)]">
+                  {reservasEncontradas.length === 0 && (
+                    <p className="px-3 py-3 text-xs font-dm text-[rgba(22,54,42,0.51)]">
+                      Ninguna reserva con saldo coincide con “{busqueda}”.
+                    </p>
+                  )}
+                  {reservasEncontradas.map(r => (
+                    <button key={r.id} onClick={() => elegirReserva(r.id)}
+                      className="w-full text-left px-3 py-2.5 hover:bg-[#FAFAF8] panel-pulsable panel-foco flex items-center gap-3">
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-sm font-dm text-[#16362a] truncate">{r.cliente}</span>
+                        <span className="block text-[11px] font-dm text-[rgba(22,54,42,0.51)] truncate">
+                          {r.folio} · <CodigoTour slug={r.tourSlug} className="text-[10px]" /> {nombreCorto(r.tour)}{r.fecha ? ` · ${fechaLarga(r.fecha)}` : ""}
+                        </span>
+                      </span>
+                      <span className="panel-cifra text-sm font-dm text-[#16362a] flex-shrink-0">debe {fmx(r.saldo)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : null}
 
             {reserva && (
               <div className="mt-2.5 panel-card px-3.5 py-3">
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <p className="text-sm font-dm text-[#16362a] truncate min-w-0">
+                    {reserva.cliente} <span className="text-[11px] text-[rgba(22,54,42,0.51)]">· {reserva.folio}</span>
+                  </p>
+                  <button onClick={() => { setReservaId(""); setMonto(""); }}
+                    className="text-[11px] font-dm text-[rgba(22,54,42,0.51)] hover:text-[#16362a] panel-foco rounded-[7px] px-1">
+                    cambiar
+                  </button>
+                </div>
                 <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-xs font-dm">
                   <span className="text-[rgba(22,54,42,0.51)]">
                     Total <strong className="panel-cifra text-[#16362a] font-medium">{fmx(reserva.total)}</strong>
@@ -505,6 +563,11 @@ export default function CobrosClient(
         )}
       </div>
 
+      {/* Lo que avisó el servidor al cancelar una liga (p. ej. que sigue viva en la otra cuenta de Stripe). */}
+      {aviso && (
+        <p role="status" className="text-amber-900 bg-amber-50 border border-amber-300 rounded-[7px] px-3 py-2 font-dm text-xs mb-3">{aviso}</p>
+      )}
+
       {/* ── Lista ────────────────────────────────────────────────────────── */}
       {pagados.length > 0 && (
         <p className="font-dm text-xs text-[rgba(22,54,42,0.66)] mb-3">
@@ -548,6 +611,7 @@ export default function CobrosClient(
                     {c.creadoPor ? ` por ${c.creadoPor}` : ""}
                     {c.pagadoAt && ` · pagada el ${fFecha(c.pagadoAt)}`}
                     {c.correoDelPagador && ` · ${c.correoDelPagador}`}
+                    {c.estado === "cancelado" && c.motivoCancelacion && ` · se apagó: ${c.motivoCancelacion}`}
                   </p>
                 </div>
 

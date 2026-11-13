@@ -9,7 +9,9 @@ import { localizePaquete } from "./i18n/paquetes.en";
 import type { Locale } from "./i18n/config";
 import { extrasDe, calcExtraLine, totalExtras } from "./admin/extras";
 import { desgloseCotizacion } from "./admin/totalesCotizacion";
-import { hospedajeDeReserva, SIN_HOSPEDAJE } from "./admin/hospedaje";
+import { cobraComoLaWeb } from "./cotizaciones/reglasEnvio";
+import { VIGENCIAS, vigenciaDe } from "./vencimientoCotizacion";
+import { hospedajeDeReserva, pickupConDato, SIN_HOSPEDAJE } from "./admin/hospedaje";
 import { CONTACTO } from "./contacto";
 import { HOTEL_PROPIO, horarioRestaurante } from "./hotelPropio";
 // 🔴 El nombre, las notas, el hotel o los conceptos a mano los escribe el
@@ -162,7 +164,11 @@ export function buildTourEmailHtml(data: {
     : T.pickupDefault;
   // Lo que capturó el equipo (el hotel del cliente) manda sobre lo genérico.
   // Escapado: en las reservas del sitio sale de lo que el cliente escribió.
-  const pickupText = data.pickupLugar ? esc(data.pickupLugar) : pickupCatalogo;
+  // 🔴 Solo si dice algo (5 nov 2026): el «Lobby de tu hotel en Xilitla» que el
+  // panel escribía solo, o un «por definir», tapaban el punto de encuentro real
+  // (la base del RZR, la Gruta de Xilo a las 7 PM, el hotel en Valles).
+  const pickupDato = pickupConDato(data.pickupLugar);
+  const pickupText = pickupDato ? esc(pickupDato) : pickupCatalogo;
 
   /** La línea bajo la fecha, para el bloque de un solo recorrido. Vacía si no se sabe cuál es. */
   const tourUnico = toursCatalogo.length === 1 ? toursCatalogo[0] : undefined;
@@ -181,7 +187,12 @@ export function buildTourEmailHtml(data: {
   );
   const packages = Array.isArray(data.packageItems) ? data.packageItems.filter((p: any) => p && !p._meta) : [];
   const isMultiTour = tours.length > 1;
-  const tourParts = (t: any) => (Number(t.adults) || 0) + (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0) + (Number(t.children) || 0);
+  // 🔴 La misma cuenta que el cupo (`personasDeRenglon`, lote 5, 5 nov 2026):
+  // el carrito guarda `children` (los dos tramos juntos) ADEMÁS de
+  // `childrenMid` y `childrenSmall`, y sumarlo todo decía «Grupo de 6
+  // personas» a una familia de 4.
+  const tourParts = (t: any) => (Number(t.adults) || 0)
+    + Math.max(Number(t.children) || 0, (Number(t.childrenMid) || 0) + (Number(t.childrenSmall) || 0));
   // La hora de salida de ESE renglón (" · 7:00 PM"). Con varios recorridos no
   // hay línea bajo la fecha, y cada uno puede salir a una hora distinta.
   const horaDeLinea = (t: any): string => {
@@ -411,7 +422,7 @@ export function buildTourEmailHtml(data: {
    * un cuarto a más de dos horas de su recorrido: recibe el del siguiente tour.
    */
   const dondeDuerme = hospedajeDeReserva({ notes: null, packageItems: data.packageItems })
-    ?? (data.pickupLugar?.trim() || null);
+    ?? pickupDato;
   const paqueteReservado = slugReal ? getPaquete(slugReal) : undefined;
   const tieneHospedaje = (!!dondeDuerme && !SIN_HOSPEDAJE.test(dondeDuerme))
     || (!!paqueteReservado && !paqueteReservado.evento?.sinHotel);
@@ -734,6 +745,16 @@ export function buildTourQuoteEmailHtml(data: {
   locale?:       string;
   /** Fecha límite (`YYYY-MM-DD`). Ver `vencimientoCotizacion.ts`. */
   venceEl?:      string;
+  /**
+   * La liga de pago viva de ESTA cotización: el botón cuando la web no cobraría
+   * lo cotizado (descuento, precio a mano, extras, conceptos a mano).
+   */
+  ligaPago?:     { url: string; monto: number } | null;
+  /**
+   * Es una COPIA de una cotización que ya no está abierta (ya es reserva, ya
+   * la aceptó o la reemplazó otra): sin botón de pago ni vigencia, con el aviso.
+   */
+  copia?:        { motivo: "reserva" | "aceptada" | "reemplazada"; folio?: string | null } | null;
 }): string {
   const locale = emailLocale(data.locale);
   const T = getEmails(locale).cotizacion;
@@ -741,6 +762,11 @@ export function buildTourQuoteEmailHtml(data: {
   const base     = "https://www.huasteca-potosina.com";
   const pre      = locale === "en" ? "/en" : "";
   const waUrl    = "https://wa.me/524891090388";
+  // 🔴 Los renglones SIN el `_meta` de seguimiento (lote 4, 5 nov 2026): una
+  // cotización ya enviada, recordada o con la fecha límite movida lo trae en
+  // `lineItems`, y el correo lo pintaba como un tour sin nombre, «undefined
+  // adultos» y «$NaN» (y «Grupo de N personas» con un solo recorrido).
+  const lineas   = (data.lineItems ?? []).filter((l) => !!l && !(l as { _meta?: unknown })._meta);
   /**
    * A dónde lleva el botón "Reservar y pagar en línea".
    *
@@ -763,15 +789,25 @@ export function buildTourQuoteEmailHtml(data: {
    * sin el hotel. Ahí queda solo el botón de WhatsApp.
    */
   const slugsCotizados = Array.from(new Set(
-    (data.lineItems ?? []).map((l) => l.tourSlug).filter((x): x is string => !!x && TOURS_DB.some((t) => t.slug === x)),
+    lineas.map((l) => l.tourSlug).filter((x): x is string => !!x && TOURS_DB.some((t) => t.slug === x)),
   ));
-  const conVehiculo = (data.lineItems ?? []).some((l) => !!l.vehiculo);
-  const tourUrl: string | null = esPaquete
+  const conVehiculo = lineas.some((l) => !!l.vehiculo);
+  // 🔴 Y solo si lo cotizado vale lo mismo que en la web (lote 4, 5 nov 2026):
+  // sin descuento, precio a mano, extras cobrados ni conceptos a mano. El
+  // carrito solo recibe los recorridos y cobraba otro precio. Una copia de
+  // una cotización ya aceptada no lleva botón de pago: ya pagó.
+  const comoLaWeb = !data.copia && cobraComoLaWeb({ lineItems: lineas, packageItems: data.packageItems, extraItems: data.extraItems, totalAmount: data.totalAmount });
+  const tourUrl: string | null = !comoLaWeb
+    ? null
+    : esPaquete
     ? `${base}${pre}/reservar-paquete/${data.tourSlug}`
     : packages.length || conVehiculo
       ? null
       // Los slugs van dentro de un `href`: codificados, uno raro no rompe el atributo.
       : `${base}${pre}/reservar/carrito?${(slugsCotizados.length ? slugsCotizados : [data.tourSlug ?? ""]).map((x) => `agregar=${encodeURIComponent(x)}`).join("&")}`;
+  // Sin botón a la web: la liga de pago de ESTA cotización, si tiene (cobra lo cotizado).
+  const liga = !data.copia && !tourUrl && data.ligaPago?.url ? data.ligaPago : null;
+  const via: "web" | "liga" | "wa" = tourUrl ? "web" : liga ? "liga" : "wa";
 
   const formatDate = (d: string) => {
     if (!d) return C.porConfirmar;
@@ -784,11 +820,22 @@ export function buildTourQuoteEmailHtml(data: {
   const venceTxt = data.venceEl && /^\d{4}-\d{2}-\d{2}$/.test(data.venceEl)
     ? (locale === "en" ? formatDate(data.venceEl) : formatDate(data.venceEl).replace(/^./, (c) => c.toLowerCase()).replace(",", ""))
     : "";
+  // 🔴 La vigencia REAL (lote 4, 5 nov 2026): decía «48 horas» fijo aunque
+  // Erick diera 15 días y, más abajo, el mismo correo dijera «vale hasta el…».
+  // Con fecha límite manda la fecha; sin ella, la vigencia elegida.
+  const vigenciaTxt = T.duracion((VIGENCIAS[vigenciaDe(data.packageItems)] ?? VIGENCIAS["7dias"]).dias);
+  const validez = venceTxt ? T.validezHasta(venceTxt) : T.validezPor(vigenciaTxt);
+  // Una copia de una cotización que ya no está abierta lo dice, en vez de la vigencia.
+  const folioCopia = data.copia?.folio ? esc(data.copia.folio) : "";
+  const avisoCopia = !data.copia ? ""
+    : data.copia.motivo === "reemplazada" && folioCopia ? T.copiaReemplazada(folioCopia)
+    : data.copia.motivo === "reserva" && folioCopia ? T.copiaReserva(folioCopia)
+    : T.copiaAceptada;
   // Lo que incluyen los recorridos de la cotización. Antes se leía solo
   // `data.tourSlug` (el primero) y SIN idioma: una cotización de tres tours
   // prometía lo del primero para todos, y la versión en inglés lo listaba en
   // español.
-  const slugsCotiza = (data.lineItems ?? []).map((l) => l.tourSlug).filter(Boolean) as string[];
+  const slugsCotiza = lineas.map((l) => l.tourSlug).filter(Boolean) as string[];
   const incluidosCotizacion = incluidosDeReserva(
     slugsCotiza.length ? slugsCotiza : [data.tourSlug],
     locale,
@@ -834,10 +881,10 @@ export function buildTourQuoteEmailHtml(data: {
   // hotel o un extra. Con un solo renglón y el TOTAL a la derecha, un tour con
   // dos noches de hotel se leía «Tamul $6,700» y abajo «Hotel $3,800», como si
   // todo sumara $10,500.
-  const lineasConPrecio = (data.lineItems ?? []).length > 0 && (data.lineItems ?? []).every((l) => Number.isFinite(Number(l.subtotal)));
-  const porRenglon = !!data.lineItems && (data.lineItems.length > 1 || (lineasConPrecio && (packages.length > 0 || extrasQ.length > 0)));
-  const itemsRows = porRenglon && data.lineItems
-    ? data.lineItems.map(it => `
+  const lineasConPrecio = lineas.length > 0 && lineas.every((l) => Number.isFinite(Number(l.subtotal)));
+  const porRenglon = lineas.length > 1 || (lineasConPrecio && (packages.length > 0 || extrasQ.length > 0));
+  const itemsRows = porRenglon
+    ? lineas.map(it => `
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="border-bottom:1px solid #e4ddd3;">
       <tr>
         <td style="padding:14px 0;vertical-align:top;width:65%">
@@ -856,7 +903,7 @@ export function buildTourQuoteEmailHtml(data: {
         <td style="padding:14px 0;vertical-align:top">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:17px;font-weight:400;color:#1a2e1a;margin:0 0 3px 0">${esc(data.tourName)}</p>
           <p style="font-size:12px;color:#8a7a5a;font-family:Arial;margin:0">${formatDate(data.tourDate)} · ${participantsText}</p>
-          ${extrasDeLinea(data.lineItems?.[0])}
+          ${extrasDeLinea(lineas[0])}
         </td>
         <td style="padding:14px 0 14px 16px;text-align:right;vertical-align:top;white-space:nowrap">
           <p style="font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;font-weight:500;color:#1a2e1a;margin:0">${fmx(data.totalAmount)}</p>
@@ -900,7 +947,7 @@ export function buildTourQuoteEmailHtml(data: {
    */
   const metaQ = (Array.isArray(data.packageItems) ? data.packageItems.find((p: any) => p && p._meta) : null) ?? {};
   const sumaLineas =
-    (data.lineItems ?? []).reduce((s, l) => s + (Number(l.subtotal) || 0), 0) +
+    lineas.reduce((s, l) => s + (Number(l.subtotal) || 0), 0) +
     packages.reduce((s, p) => s + (Number(p.subtotal) || 0), 0) +
     totalExtras(extrasQ);
   const desglose = desgloseCotizacion(sumaLineas, data.totalAmount, metaQ as any);
@@ -971,7 +1018,7 @@ export function buildTourQuoteEmailHtml(data: {
             ${T.hola} <span style="font-style:italic;color:#c4882a">${nombreCliente}</span>
           </p>
           <p style="margin:18px 0 28px;font-family:'DM Sans',Arial;font-size:14px;font-weight:300;color:#3a3a2e;line-height:1.85">
-            ${T.intro1} <strong>${T.validez}</strong>${T.intro2}
+            ${T.intro1} ${avisoCopia || `${validez}${T.intro2(via)}`}
           </p>
 
           <table role="presentation" width="48" cellspacing="0" cellpadding="0" border="0">
@@ -986,7 +1033,7 @@ export function buildTourQuoteEmailHtml(data: {
                   <td>
                     <p style="margin:0 0 6px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#8a7a5a">${T.numeroCotizacion}</p>
                     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:28px;font-weight:500;color:#1a2e1a;letter-spacing:1px">${folioQ}</p>
-                    <p style="margin:6px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${T.validaHoy}</p>
+                    ${data.copia ? "" : `<p style="margin:6px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${venceTxt ? T.validaHasta(venceTxt) : T.validaPor(vigenciaTxt)}</p>`}
                   </td>
                   <td style="vertical-align:middle;text-align:right;width:48px">
                     <table role="presentation" width="44" height="44" cellspacing="0" cellpadding="0" border="0" style="border:1.5px solid #c4882a;background-color:#f4edd8;border-radius:50%">
@@ -1000,7 +1047,7 @@ export function buildTourQuoteEmailHtml(data: {
 
           <!-- TOURS COTIZADOS -->
           <p style="margin:28px 0 16px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3.5px;text-transform:uppercase;color:#8a7a5a">${T.toursCotizados}</p>
-          ${data.partySize && data.partySize > 0 && data.lineItems && data.lineItems.length > 1 ? `
+          ${data.partySize && data.partySize > 0 && lineas.length > 1 ? `
           <p style="margin:-8px 0 16px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a;">${T.grupoDe(Number(data.partySize))}</p>` : ""}
           ${itemsRows}
           ${lodgingHtml}
@@ -1081,23 +1128,23 @@ export function buildTourQuoteEmailHtml(data: {
 
         </td></tr>
 
-        <!-- PRÓXIMOS PASOS -->
-        <tr><td class="mobile-p" style="background-color:#e6dfc8;padding:36px 48px">
+        <!-- PRÓXIMOS PASOS (no en una copia: ya no hay nada que confirmar) -->
+        ${data.copia ? "" : `<tr><td class="mobile-p" style="background-color:#e6dfc8;padding:36px 48px">
           <p style="margin:0 0 8px;font-family:'DM Sans',Arial;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#7a6a4a">${T.comoConfirmar}</p>
           <h2 style="margin:0 0 20px;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-style:italic;font-weight:300;color:#1a2e1a">${T.soloDinos}</h2>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
             <tr>
-              <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;background-color:#f4edd8">
+              <td style="width:${via === "wa" ? "100" : "50"}%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;background-color:#f4edd8">
                 <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${T.whatsappDirecto}</p>
                 <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${T.escribenosFolio} <strong>${folioQ}</strong></p>
               </td>
-              <td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-left:none;background-color:#f4edd8">
-                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${T.reservarEnLinea}</p>
-                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${T.pagaConTarjeta}</p>
-              </td>
+              ${via === "wa" ? "" : `<td style="width:50%;padding:14px 16px;vertical-align:top;border:1px solid #d4ccbc;border-left:none;background-color:#f4edd8">
+                <p style="margin:0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-size:16px;color:#1a2e1a">${via === "liga" ? T.pagarEnLinea : T.reservarEnLinea}</p>
+                <p style="margin:0;font-family:'DM Sans',Arial;font-size:12px;color:#4a4a3a;line-height:1.5">${via === "liga" ? T.pagaLigaSub : T.pagaConTarjeta}</p>
+              </td>`}
             </tr>
           </table>
-        </td></tr>
+        </td></tr>`}
 
         <!-- CTAs -->
         <tr><td class="mobile-plg" style="background-color:#f4edd8;padding:36px 48px;text-align:center">
@@ -1108,15 +1155,15 @@ export function buildTourQuoteEmailHtml(data: {
               </td>
             </tr>
           </table>
-          ${tourUrl ? `
+          ${tourUrl || liga ? `
           <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:12px auto 0">
             <tr>
               <td style="background-color:#3a6b1a;padding:14px 28px">
-                <a href="${tourUrl}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block">${T.btnReservar}</a>
+                <a href="${tourUrl ?? esc(liga!.url)}" style="font-family:'DM Sans',Arial;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#f4edd8;text-decoration:none;display:block">${tourUrl ? T.btnReservar : T.btnLiga(`${fmx(liga!.monto)} MXN`)}</a>
               </td>
             </tr>
           </table>` : ""}
-          <p style="margin:16px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${T.vence}</p>
+          ${data.copia ? "" : `<p style="margin:16px 0 0;font-family:'DM Sans',Arial;font-size:11px;color:#9a8a6a">${venceTxt ? T.venceHasta(venceTxt) : T.vencePor(vigenciaTxt)}</p>`}
         </td></tr>
 
         <!-- FOOTER -->

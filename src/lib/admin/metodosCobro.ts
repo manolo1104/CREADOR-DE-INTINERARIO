@@ -37,3 +37,20 @@ export function etiquetaMetodo(id: string | null | undefined): string {
 export function requiereComprobante(metodo: string): boolean {
   return POR_ID[metodo]?.comprobante ?? false;
 }
+
+// ── Lo que hizo el cuadro de cobro (lote 3 de la auditoría, 5 nov 2026) ──────
+
+/**
+ * Lo que pasó en el cuadro de cobro. Solo «registrado» y «anulado» mueven el
+ * dinero y ponen al día la pantalla de atrás. 🔴 Corregir quién lo recibió o el
+ * método ponía «$0 cobrado» en la lista de Reservas y avisaba «Cobro
+ * registrado» sin registrar nada.
+ */
+export type AccionCobro = "registrado" | "anulado" | "corregido";
+
+/** El aviso que ve el equipo después de cada acción. */
+export function avisoDeCobro(a: AccionCobro): string {
+  if (a === "anulado") return "✅ Cobro anulado";
+  if (a === "corregido") return "✅ Cobro corregido: el dinero no cambió";
+  return "✅ Cobro registrado";
+}

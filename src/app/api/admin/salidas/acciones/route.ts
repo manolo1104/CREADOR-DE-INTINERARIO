@@ -5,6 +5,7 @@ import { registrarEnBitacora } from "@/lib/admin/bitacora";
 import { agregarPasajero, cancelarPasajero, moverPasajero, type DatosPasajero } from "@/lib/viajeCdmx/pasajeros";
 import { avisarListaDeEspera } from "@/lib/viajeCdmx/tareas";
 import { respuestaDeError } from "@/lib/viajeCdmx/respuesta";
+import { administraSalidasCdmx } from "@/lib/admin/usuarios";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,7 +27,8 @@ export async function POST(req: NextRequest) {
       case "agregar": {
         const d = b.pasajero as DatosPasajero;
         // Una cortesía es dinero: solo dueño y socio.
-        if (d?.cortesia && sesion.rol === "operacion") return NextResponse.json({ error: "Las cortesías las da Manolo o Martín." }, { status: 403 });
+        // Lista blanca (lote 8, 10 nov 2026): Manolo y Martín; antes solo se frenaba a Operación y el guía pasaba.
+        if (d?.cortesia && !administraSalidasCdmx(sesion.rol)) return NextResponse.json({ error: "Las cortesías las da Manolo o Martín." }, { status: 403 });
         const r = await agregarPasajero(String(b.salidaId ?? ""), d, actor);
         return NextResponse.json({ ok: true, folio: r.confirmationNumber, id: r.id });
       }

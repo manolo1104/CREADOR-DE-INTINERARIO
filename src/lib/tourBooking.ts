@@ -1,6 +1,6 @@
 // Estado del carrito de reserva de tours — persiste en sessionStorage
 
-import { precioGrupo, precioPorCabeza, type Tour } from "./tours";
+import { extraDeEleccion, precioGrupo, precioPorCabeza, type Tour } from "./tours";
 
 export interface TourBookingState {
   tourId:        string;
@@ -144,11 +144,13 @@ export function esViajeroSolo(tour: TourParaSolo, adults: number, childrenMid = 
  * pasar por aquí; el servidor hace la misma bifurcación en `computeTourCharge`.
  */
 export function totalRecorrido(
-  tour: Pick<Tour, "precio" | "precioLista" | "tarifaGrupo" | "escalaPersona" | "groupMin" | "precioUnidad">,
+  tour: Pick<Tour, "precio" | "precioLista" | "tarifaGrupo" | "escalaPersona" | "groupMin" | "precioUnidad" | "eleccion">,
   adults: number,
   childrenMid = 0,
   childrenSmall = 0,
   promoDiscount = 0,
+  /** La opción elegida (id o nombre en español); la de Tamasopo suma $150 por cabeza. */
+  eleccion?: string | null,
 ): number {
   const delGrupo = precioGrupo(tour, adults + childrenMid + childrenSmall);
   if (delGrupo !== null) return delGrupo - Math.round(delGrupo * promoDiscount / 100);
@@ -158,7 +160,9 @@ export function totalRecorrido(
   // El escalón lo decide el total de cabezas —los niños también ocupan lugar—
   // y después cada quien paga lo suyo sobre ESE precio: el adulto completo, el
   // de 6 a 10 el 70 % y el menor de 6 el 50 %.
-  const porCabeza = precioPorCabeza(tour, adults + childrenMid + childrenSmall);
+  // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$150) va DENTRO
+  // del precio por cabeza: el menor paga su 70 % / 50 % también de él.
+  const porCabeza = precioPorCabeza(tour, adults + childrenMid + childrenSmall) + extraDeEleccion(tour, eleccion);
   return calcTourTotal(porCabeza, adults, childrenMid, childrenSmall, promoDiscount).total;
 }
 

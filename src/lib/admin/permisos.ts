@@ -7,7 +7,7 @@
 // desde el siguiente clic de esa persona, sin esperar a que vuelva a entrar.
 
 import { prisma } from "@/lib/prisma";
-import { seccionesValidas, usuariosAdmin, type SeccionAdmin, type UsuarioAdmin } from "./usuarios";
+import { seccionesValidas, usuariosAdmin, veCostos, type SeccionAdmin, type UsuarioAdmin } from "./usuarios";
 
 const CLAVE = "panel:permisos";
 
@@ -46,4 +46,13 @@ export async function guardarSeccionesDe(user: string, secciones: unknown): Prom
   const value = JSON.stringify(guardado);
   await prisma.config.upsert({ where: { key: CLAVE }, update: { value }, create: { key: CLAVE, value } });
   return limpias;
+}
+
+/**
+ * ¿Quien entró ve lo que NOS cuesta (costos y margen de los extras)? Con lo
+ * guardado HOY, no con lo de su sesión (lote 8, 10 nov 2026).
+ */
+export async function sesionVeCostos(sesion: Pick<UsuarioAdmin, "user" | "rol"> | null): Promise<boolean> {
+  if (!sesion) return false;
+  return veCostos(sesion.rol, await seccionesDe(sesion));
 }

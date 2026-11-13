@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { registrarReservaPaquete } from "@/lib/reservaPaquete";
+import { productoDelPago, PAGO_DE_OTRO_PRODUCTO } from "@/lib/reservaWeb";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,6 +27,15 @@ export async function POST(req: NextRequest) {
     }
     if (pi.status !== "succeeded") {
       return NextResponse.json({ error: "El pago no está completado." }, { status: 402 });
+    }
+    // 🔴 Solo un pago de PAQUETE de este sitio (lote 5, 5 nov 2026). Antes el
+    // pago de un tour (o de Kora) llegaba aquí y nacía una reserva del paquete
+    // que dijera el navegador, con el total de un recorrido. Un pago de otro
+    // producto no se pierde: el webhook y la conciliación lo arman con el suyo.
+    const producto = productoDelPago(pi.metadata);
+    if (producto !== "paquete") {
+      console.warn(`⚠️ send-confirmation paquete: ${paymentIntentId} es de «${producto}» — no se crea reserva aquí`);
+      return NextResponse.json({ error: PAGO_DE_OTRO_PRODUCTO }, { status: 400 });
     }
 
     // El armado de la reserva vive en `lib/reservaPaquete.ts`: lo comparte con

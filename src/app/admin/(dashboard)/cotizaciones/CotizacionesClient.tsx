@@ -6,15 +6,20 @@ import { useState, useMemo, useEffect } from "react";
 import type { TourQuote } from "@prisma/client";
 import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing, MapPin } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
-import { TOURS_LISTA, partesRecogida, cargoVallesDe, type Tour } from "@/lib/tours";
+import { TOURS_LISTA, partesRecogida, cargoVallesDe, opcionDeEleccion, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import {
   type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
   sincronizarNoches, AddOnsLinea, addOnsDeTour, cantidadAddOn, EMPTY_PACKAGE, HUESPEDES_POR_DEFECTO,
   aplicarHabitacion, SelectorHabitacion, ConceptoPersonalizado, NotasInternas,
   SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta, TrasladoVallesLinea, conTrasladoValles,
+  EleccionLinea, eleccionPorOmision,
 } from "@/components/admin/ReservaModal";
 import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
+import ConvertirReservaModal, { type DatosConversion, type ResultadoConversion } from "@/components/admin/ConvertirReservaModal";
+import CobroModal, { type ReservaCobrable } from "@/components/admin/CobroModal";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { HABITACION_POR_DEFECTO } from "@/lib/admin/habitacionesPanel";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import { addDaysYMD, hoyMX, ymdMX } from "@/lib/dates";
@@ -24,6 +29,7 @@ import {
   fechaLimite, recordadoPorWhatsapp, urlRecordatorio, vigenciaDe,
 } from "@/lib/vencimientoCotizacion";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
+import { avisoSoloLectura, mensajeTrasRegresar } from "@/lib/cotizaciones/reglasEnvio";
 import { PAQUETES_PANEL, cargarPaquete } from "@/lib/admin/paquetesPanel";
 import { Package } from "lucide-react";
 import { grupoDe, grupoParaGuardar, grupoLargo } from "@/lib/admin/reserva";
@@ -41,6 +47,8 @@ const STATUS: Record<string, { label: string; cls: string }> = {
   enviada:  { label: "Enviada",   cls: "bg-yellow-100 text-yellow-800" },
   aceptada: { label: "Aceptada",  cls: "bg-green-100 text-green-800"   },
   expirada: { label: "Vencida",   cls: "bg-red-100 text-red-700"       },
+  // Borrador de más de 30 días que archivó el cron (`archivar-borradores`).
+  archivada: { label: "Archivada", cls: "bg-gray-100 text-gray-400"     },
 };
 
 /** El color del «vence…»: verde con holgura, ámbar el último día, rojo vencida. */
@@ -48,12 +56,6 @@ function claseVence(dias: number): string {
   if (dias < 0)  return "text-red-600";
   if (dias <= 1) return "text-amber-600 font-semibold";
   return "text-[#40916C]";
-}
-
-/** El `_meta` de `lineItems` (seguimiento y fecha límite), aparte de las líneas de tour. */
-function metaLineas(q: TourQuote | null): Record<string, unknown> | null {
-  const ls = (q as any)?.lineItems;
-  return Array.isArray(ls) ? ls.find((l: any) => l && l._meta) ?? null : null;
 }
 
 const fmx    = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
@@ -122,11 +124,50 @@ const esc = escapeHtml;
 
 const inputCls = "w-full border border-[#1B4332]/15 text-[#1B4332] font-dm text-sm px-3 py-2.5 focus:outline-none focus:border-[#1B4332] rounded-sm placeholder:text-[#1B4332]/25 bg-white";
 
+/** Lo que llega por la dirección desde la ficha de un lead: qué abrir al entrar. */
+export interface InicioCotizaciones {
+  editar?: string | null; convertir?: string | null; nueva?: boolean;
+  lead?: { id: string; nombre: string; telefono: string | null; correo: string | null } | null;
+}
+/** Del lead de cada cotización: su canal (se sugiere al convertir) y su idioma. */
+export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
+
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET }:
-  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[] },
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, reservasDeCotizaciones = {} }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
 ) {
+  const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
+  // El folio de la reserva viva de cada aceptada (lote 4, 5 nov 2026): el
+  // aviso de «solo lectura» lo nombra y sin él se ofrece «Regresar a Enviada».
+  const [reservasDe,     setReservasDe]     = useState(reservasDeCotizaciones);
+  const folioReserva = (q: TourQuote): string | null => {
+    const m = getMeta((q as any).packageItems ?? []) as any;
+    return reservasDe[q.id] ?? (typeof m.reservaFolio === "string" && m.reservaFolio ? m.reservaFolio : null);
+  };
+  // «Regresar a Enviada»: solo la aceptada que no es reserva ni tiene un pago
+  // por liga (la que el cron de antes marcó por la reserva de otra cotización).
+  const regresable = (q: TourQuote) => q.status === "aceptada" && !folioReserva(q) && !((pagadasSinReserva[q.id] ?? 0) > 0);
+  /** Lo que hace el sobre, dicho antes de pulsarlo (lote 4, 5 nov 2026). */
+  const tituloCorreo = (q: TourQuote) =>
+    q.status === "aceptada" ? "Reenviar una copia por correo (no cambia nada)"
+    : !q.customerEmail ? "Sin correo del cliente: la copia te llega a ti y no cuenta como enviada"
+    : "Enviar por correo";
+  // Abierta en «solo lectura»: una aceptada ya no se edita (su reserva sí).
+  const [avisoLectura,   setAvisoLectura]   = useState<string | null>(null);
+  // Se puede convertir: borrador o enviada, o cualquiera con una liga pagada
+  // que aún no tiene reserva (5 nov 2026: ya hay dinero, aunque haya vencido).
+  // Si la lista está vieja y ya era reserva, el servidor lo dice sin crear otra.
+  const convertible = (q: TourQuote) => q.status === "borrador" || q.status === "enviada" || (pagadasSinReserva[q.id] ?? 0) > 0;
+  // Convertir a reserva pide lo que falta (3 nov 2026) y, si ya pagó, abre el cobro.
+  const [convirtiendo,   setConvirtiendo]   = useState<TourQuote | null>(null);
+  const [cobrando,       setCobrando]       = useState<ReservaCobrable | null>(null);
+  // Lo que el servidor dijo al convertir y alguien tiene que leer (ya era
+  // reserva, sobrecupo, el mismo cliente…): se queda hasta «Entendido».
+  const [avisosConv,     setAvisosConv]     = useState<string[]>([]);
+  // La cotización nueva que se abrió desde la ficha de un lead queda enlazada a él.
+  const [paraLead,       setParaLead]       = useState<string | null>(null);
+  const leadVuelta = inicio.lead ?? null;
   const [detalle,        setDetalle]        = useState<TourQuote | null>(null);
   const [search,         setSearch]         = useState("");
   const [modal,          setModal]          = useState<"new" | "edit" | null>(null);
@@ -158,7 +199,7 @@ export default function CotizacionesClient(
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
-  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "bot">("all");
+  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "archivada" | "bot">("all");
   const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto" | "vence">("reciente");
 
   // «Hoy» en México: de aquí salen el «vence…», la franja y los mensajes.
@@ -230,12 +271,17 @@ export default function CotizacionesClient(
           up.tourName      = "";
           up.precioPersona = 0;
           up.adults        = Math.max(1, up.adults || 2);
-          delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns;
+          delete up.ruta; delete up.vehiculo; delete up.unidades; delete up.addOns; delete up.eleccion;
           up.subtotal = calcLine(up);
           return up;
         }
         delete up.precioPersona;
         up.tourName = t?.nombre || "";
+        // Ruta Acuática: entra marcada Siete Cascadas (sin extra) y Erick cambia
+        // a Tamasopo (+$150 por persona) si el cliente la pide. Otro tour, sin elección.
+        delete up.eleccion;
+        const omision = eleccionPorOmision(String(val));
+        if (omision) up.eleccion = omision;
         if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
           up.ruta = t.rutas[0].nombre; up.vehiculo = t.flota[0].nombre; up.unidades = 1;
           up.adults = 0; up.childrenMid = 0; up.childrenSmall = 0;
@@ -265,7 +311,9 @@ export default function CotizacionesClient(
       }
       return next;
     });
-    soltarPrecioEditado();
+    // Cambiar solo la fecha no mueve el precio (lote 4, 5 nov 2026): el precio
+    // pactado se queda. Antes el total brincaba a la suma de lista.
+    if (field !== "tourDate") soltarPrecioEditado();
   }
 
   /** Editar una habitación. Entrada, noches y salida quedan siempre cuadradas. */
@@ -281,7 +329,8 @@ export default function CotizacionesClient(
       up.subtotal = calcPackageLine(up);
       return up;
     }));
-    soltarPrecioEditado();
+    // Mover la entrada conserva las noches: el precio no cambia (lote 4).
+    if (campo !== "checkin") soltarPrecioEditado();
   }
 
   /**
@@ -339,9 +388,11 @@ export default function CotizacionesClient(
     setTimeout(() => setMsg(""), 5000);
   }
 
-  function openNew() {
+  function openNew(lead?: InicioCotizaciones["lead"]) {
     setEditTarget(null);
-    setForm(EMPTY_FORM);
+    setAvisoLectura(null);
+    setParaLead(lead?.id ?? null);
+    setForm(lead ? { ...EMPTY_FORM, customerName: lead.nombre, customerPhone: lead.telefono ?? "", customerEmail: lead.correo ?? "" } : EMPTY_FORM);
     setLines([{ ...EMPTY_LINE }]);
     setPackages([]);
     setExtras([]);
@@ -355,6 +406,8 @@ export default function CotizacionesClient(
 
   function openEdit(q: TourQuote) {
     setEditTarget(q);
+    // Una aceptada se abre para VER, con el aviso de dónde se cambia (lote 4).
+    setAvisoLectura(avisoSoloLectura(q, folioReserva(q)));
     const metaNotas = getMeta((q as any).packageItems ?? []) as any;
     setForm({
       customerName:  q.customerName,
@@ -418,27 +471,41 @@ export default function CotizacionesClient(
     setModal("edit");
   }
 
-  function closeModal() { setModal(null); setEditTarget(null); }
+  function closeModal() { setModal(null); setEditTarget(null); setParaLead(null); }
+
+  // Desde la ficha del lead: «Editar cotización», «Convertir a reserva» o
+  // «Nueva cotización» abren aquí directo lo que se pidió (una sola vez).
+  const [inicioHecho, setInicioHecho] = useState(false);
+  useEffect(() => {
+    if (inicioHecho) return;
+    setInicioHecho(true);
+    const q = initialQuotes.find(x => x.id === (inicio.editar || inicio.convertir));
+    if (inicio.editar && q) openEdit(q);
+    // Solo una que todavía se puede convertir: recargar la página tras
+    // convertirla ya no abre otra vez el cuadro (y no nace otra reserva).
+    else if (inicio.convertir && q && convertible(q)) setConvirtiendo(q);
+    else if (inicio.nueva) openNew(inicio.lead);
+    // Se quita de la dirección: Atrás/Adelante o recargar no lo repiten.
+    if (inicio.editar || inicio.convertir || inicio.nueva) router.replace("/admin/cotizaciones", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function saveQuote() {
+    if (avisoLectura) return; // Solo lectura: una aceptada se cambia en su reserva.
     if (!form.customerName.trim()) { flash("❌ El nombre del cliente es obligatorio"); return; }
     if (!lines.every(lineaCompleta)) { flash("❌ Completa el concepto y la fecha en cada línea"); return; }
     if (form.customerEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail)) { flash("❌ El correo no tiene un formato válido"); return; }
     setSaving(true);
     const lineas       = lines.map(l => ({ ...l, subtotal: calcLine(l) }));
-    // Se conserva el `_meta` de seguimiento (cuándo se envió, qué paso va, la
-    // fecha límite). Si la fecha límite cambió a mano, los recordatorios de la
+    // 🔴 El `_meta` de seguimiento (cuándo se envió, qué paso va, la fecha
+    // límite) ya NO viaja desde aquí: lo conserva el servidor (lote 4, 5 nov
+    // 2026). Esta copia podía ser vieja —la cotización se mandó por correo sin
+    // recargar— y al guardar borraba la fecha límite y el seguimiento. Solo se
+    // dice la fecha límite nueva si se movió a mano: los recordatorios de la
     // anterior ya no cuentan, y una Vencida con fecha nueva vuelve a Enviada.
-    const metaPrevio   = modal === "edit" ? metaLineas(editTarget) : null;
     const venceAntes   = editTarget ? fechaLimite(editTarget) ?? "" : "";
     const venceCambio  = modal === "edit" && /^\d{4}-\d{2}-\d{2}$/.test(venceEdit) && venceEdit !== venceAntes;
-    const metaNuevo    = metaPrevio || venceCambio
-      ? {
-          ...(metaPrevio ?? {}), _meta: true,
-          ...(venceCambio ? { venceEl: venceEdit, recordadoWaAt: undefined, avisoVenceAt: undefined } : {}),
-        }
-      : null;
-    const lineItems    = metaNuevo ? [metaNuevo, ...lineas] : lineas;
+    const lineItems    = lineas;
     const reactivar    = venceCambio && editTarget?.status === "expirada" && venceEdit >= hoyMX();
     const extraItems   = extras.filter(e => e.concepto.trim()).map(normalizarExtra);
     const packageItems = [
@@ -485,7 +552,9 @@ export default function CotizacionesClient(
       totalAmount: finalTotal, lineItems, packageItems, extraItems,
       customerName: form.customerName, customerEmail: form.customerEmail,
       customerPhone: form.customerPhone, notes: form.notes,
+      ...(venceCambio ? { venceEl: venceEdit } : {}),
       ...(reactivar ? { status: "enviada" } : {}),
+      ...(modal === "new" && paraLead ? { oportunidadId: paraLead } : {}),
     };
 
     let r: Response;
@@ -500,10 +569,16 @@ export default function CotizacionesClient(
     }
 
     if (r.ok) {
+      const creada = modal === "edit" ? null : await r.json().catch(() => null);
       const ref = await fetch("/api/admin/cotizaciones");
       setQuotes(await ref.json());
       closeModal();
-      flash(modal === "edit" ? "✅ Cotización actualizada" : "✅ Cotización creada");
+      flash(modal === "edit" ? "✅ Cotización actualizada · su lead ya tiene los datos nuevos"
+        // Su lead anterior estaba Operado o Perdido: la venta nueva no se queda ahí (5 nov 2026).
+        : creada?.leadNuevo ? "✅ Cotización creada · su lead anterior ya estaba cerrado: se le abrió uno nuevo en Calificado"
+        : "✅ Cotización creada · su lead quedó en Calificado");
+      // La ficha del lead lee estos datos: que no se quede con los de antes.
+      router.refresh();
     } else {
       const d = await r.json().catch(() => ({}));
       const msg = d.error || `Error ${r.status}`;
@@ -515,135 +590,125 @@ export default function CotizacionesClient(
 
   async function sendEmail(id: string) {
     setSending(id);
-    const r = await fetch(`/api/admin/cotizaciones/${id}/send-email`, { method: "POST" });
-    const d = await r.json();
-    flash(r.ok ? "✅ Email enviado al cliente" : `❌ ${d.error || "Error al enviar"}`);
-    if (r.ok) setQuotes(q => q.map(x => x.id === id ? { ...x, status: "enviada" } : x));
+    const r = await fetch(`/api/admin/cotizaciones/${id}/send-email`, { method: "POST" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (r?.ok) {
+      // 🔴 Lo que pasó DE VERDAD (lote 4, 5 nov 2026): una aceptada recibe una
+      // copia y no cambia; sin correo del cliente solo le llega al equipo. Y la
+      // cotización como quedó en el servidor, con su fecha límite y su
+      // seguimiento: con la copia de antes, editarla después los borraba.
+      setQuotes(q => q.map(x => x.id === id ? { ...x, status: d.status ?? x.status, lineItems: d.lineItems ?? (x as any).lineItems } : x));
+      flash(typeof d.mensaje === "string" ? d.mensaje : "✅ Correo enviado");
+      router.refresh();
+    } else {
+      flash(`❌ ${d.error || "No se pudo enviar el correo"}`);
+    }
     setSending(null);
+  }
+
+  /**
+   * «Regresar a Enviada» (lote 4, 5 nov 2026): la aceptada que no es reserva
+   * ni tiene un pago por liga —la que el cron de antes marcó por la reserva de
+   * otra cotización del mismo correo— vuelve a poder convertirse o cobrarse.
+   * El servidor revisa otra vez que no sea reserva.
+   */
+  async function regresarAEnviada(q: TourQuote) {
+    if (!confirm(`¿Regresar ${q.quoteNumber} a Enviada?\n\nÚsalo solo si se marcó Aceptada por error (el cliente no reservó esta cotización). Deja de contar como aceptada y se podrá convertir o cobrar.`)) return;
+    const r = await fetch(`/api/admin/cotizaciones/${q.id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "enviada" }),
+    }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (r?.ok) {
+      const nueva = { ...q, status: "enviada", aceptadaEn: null, lineItems: d.lineItems ?? (q as any).lineItems } as TourQuote;
+      setQuotes(qs => qs.map(x => x.id === q.id ? nueva : x));
+      flash(mensajeTrasRegresar(fechaLimite(nueva), hoy));
+      router.refresh();
+    } else {
+      flash(`❌ ${d.error || "No se pudo regresar a Enviada"}`);
+    }
+  }
+
+  /** Un borrador archivado por el cron vuelve a ser borrador. */
+  async function desarchivar(id: string) {
+    const r = await fetch(`/api/admin/cotizaciones/${id}`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "borrador" }),
+    }).catch(() => null);
+    if (r?.ok) {
+      setQuotes(q => q.map(x => x.id === id ? { ...x, status: "borrador" } : x));
+      flash("✅ Cotización desarchivada: vuelve a Borrador");
+      router.refresh();
+    } else {
+      flash("❌ No se pudo desarchivar");
+    }
   }
 
   async function expireQ(id: string) {
     if (!confirm("¿Marcar como vencida?")) return;
     const r = await fetch(`/api/admin/cotizaciones/${id}`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) {
+      const d = await r.json().catch(() => ({}));
       setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
-      flash("✅ Cotización marcada como vencida");
+      // Su liga sin pagar se apaga sola (lote 3, 5 nov 2026): que se note.
+      flash(`✅ Cotización marcada como vencida${d?.ligasApagadas > 0 ? " · su liga de pago ya no se puede pagar" : ""}`);
+      router.refresh();
     } else {
       flash("❌ No se pudo actualizar la cotización");
     }
   }
 
-  async function convertToReserva(q: TourQuote) {
-    if (!confirm(`¿Convertir la cotización ${q.quoteNumber} a una reserva pagada?`)) return;
-    const confirmationNumber = "HP-M-" + Date.now().toString(36).toUpperCase();
-    const rawPkgs      = (q as any).packageItems ?? [];
-    const meta         = getMeta(rawPkgs);
-    const anticipo     = meta.anticipo != null ? Number(meta.anticipo) : 0;
-    const packageItems = cleanPackages(rawPkgs);
-    // Conservar el _meta de la reserva (método de pago / pickup) en lineItems.
-    // Las líneas de tour de la cotización pasan tal cual: ahí viven las fechas,
-    // el grupo por tour y los subtotales.
-    const tourLines    = Array.isArray((q as any).lineItems)
-      ? (q as any).lineItems.filter((l: any) => l && !l._meta)
-      : [];
-    // El grupo real: si la cotización no traía `numPersonas` capturado, se
-    // deduce de las líneas en vez de guardar 0 y perder el dato.
-    const grupo        = grupoDe(q as any);
-    const personas     = Number(meta.numPersonas) || grupo.total || 0;
-    const lineItems    = [
-      {
-        _meta: true,
-        // Se deja vacío a propósito: el método de verdad lo pone el cobro que
-        // se registre. Antes se escribía "Transferencia" fijo aunque el cliente
-        // hubiera pagado con liga, y esa mentira viajaba al correo.
-        metodoPago: "",
-        folioPago: "",
-        // Lo que se ACORDÓ cobrar de entrada. No es dinero recibido (por eso la
-        // reserva nace pendiente), pero es la cantidad que el modal de cobro
-        // propone: casi siempre lo primero que entra es justo el anticipo.
-        anticipoAcordado: anticipo,
-        // A quien sale de Valles no se le escribe el lobby de Xilitla: el correo
-        // imprime este texto en vez de la recogida del catálogo. Se deja vacío
-        // para anotar ahí su hotel, como hace la conversión del bot.
-        pickupLugar: zonaDeTexto((meta as any).zonaHospedaje) === "valles" ? "" : "Lobby de tu hotel en Xilitla",
-        // La zona viaja a la reserva: con ella el Corte marca la tarjeta.
-        ...((meta as any).zonaHospedaje ? { zonaHospedaje: (meta as any).zonaHospedaje } : {}),
-        numPersonas: personas,
-        // Rastro de la cotización de origen y del descuento que se le aplicó:
-        // sin esto se perdía POR QUÉ el total no cuadra con la suma de líneas.
-        cotizacionOrigen: q.quoteNumber,
-        // Lo que se anotó al cotizar sigue haciendo falta al operar el viaje.
-        notasInternas:    (meta as any).notasInternas || "",
-        priceOverride:    meta.priceOverride ?? null,
-        discountType:     meta.discountType ?? null,
-        discountValue:    meta.discountValue ?? null,
-        // El descuento pasa a la reserva con su candado: el mismo, con quién lo
-        // puso y su historial (ver `descuento.ts`), para que no se pierda al editarla.
-        ...((meta as any).descuento !== undefined ? { descuento: (meta as any).descuento } : {}),
-        ...(Array.isArray((meta as any).descuentoHistorial) ? { descuentoHistorial: (meta as any).descuentoHistorial } : {}),
-        // El código de cumpleaños pasa a la reserva y ahí se canjea (el
-        // servidor lo rechaza si ya se usó en otra).
-        ...((meta as any).codigoCumple ? { codigoCumple: (meta as any).codigoCumple } : {}),
-      },
-      ...tourLines,
-    ];
-
-    // Los extras viajan tal cual a la reserva: la comida que se cotizó es la
-    // misma que hay que operar y cobrar el día del tour.
-    const extraItems   = extrasDe((q as any).extraItems);
-
-    const r = await fetch("/api/admin/reservas", {
+  /**
+   * Convertir a reserva (lote 1 de la auditoría, 5 nov 2026): la crea el
+   * SERVIDOR, con candado sobre la cotización. Antes este navegador creaba la
+   * reserva y luego marcaba la cotización: con la lista vieja, dos personas a
+   * la vez o la liga ya pagada, nacía una segunda reserva y el anticipo se
+   * capturaba otra vez. Si ya tenía reserva, el servidor contesta esa y lo
+   * dice; «Registrar cobro» solo se abre si de verdad falta registrar el pago.
+   */
+  async function convertToReserva(q: TourQuote, datos: DatosConversion): Promise<ResultadoConversion> {
+    const r = await fetch(`/api/admin/cotizaciones/${q.id}/convertir`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        confirmationNumber,
-        // 🔴 Nace PENDIENTE, no pagada. El anticipo de la cotización es lo que
-        // se ACORDÓ cobrar, no dinero que alguien haya visto. Darlo por cobrado
-        // aquí hacía dos cosas malas: el corte contaba dinero que no existía, y
-        // como la reserva ya no debía nada, el panel contestaba "esta reserva
-        // solo debe $0" al intentar registrar el cobro de verdad.
-        // En cuanto se registra el cobro, `sincronizarDeposito` la pasa a pagada.
-        status:         "pending",
-        tourId:         q.tourSlug,
-        tourName:       q.tourName,
-        tourSlug:       q.tourSlug,
-        tourDate:       q.tourDate,
-        // El grupo, no la suma por tour: la cotización pudo guardarse con el
-        // formato viejo que sumaba, y ese error no debe heredarse a la reserva.
-        adults:         grupo.adultos || 1,
-        children:       grupo.ninos,
-        totalAmount:    q.totalAmount,
-        depositoPagado: 0, // se llena al registrar el cobro, con su método y comprobante
-        lineItems,
-        packageItems,
-        extraItems,
-        customerName:   q.customerName,
-        customerEmail:  q.customerEmail,
-        customerPhone:  q.customerPhone,
-        notes:          q.notes,
-      }),
-    });
-
-    if (r.ok) {
-      await fetch(`/api/admin/cotizaciones/${q.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "aceptada" }),
-      });
-      setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "aceptada" } : x));
-      flash(`✅ Reserva creada · ${confirmationNumber} — falta registrar el cobro en Reservas 💵`);
-    } else {
-      const d = await r.json().catch(() => ({}));
-      flash(`❌ Error: ${d.error || "No se pudo crear la reserva"}`);
+      body: JSON.stringify(datos),
+    }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    if (!r?.ok || !d?.reserva) {
+      return { ok: false, error: d?.error || "No se pudo crear la reserva. Revisa la conexión e intenta de nuevo.", puedeForzar: d?.puedeForzar === true };
     }
+    // El servidor ya la dejó «aceptada» (o ya lo estaba): la lista lo refleja.
+    setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.cotizacion?.status || "aceptada" } : x));
+    // Y su reserva: «Editar» la abre para ver y dice dónde se cambia (lote 4).
+    if (typeof d.reserva?.confirmationNumber === "string") setReservasDe(m => ({ ...m, [q.id]: d.reserva.confirmationNumber }));
+    setConvirtiendo(null);
+    router.refresh();
+    const avisos: string[] = Array.isArray(d.avisos) ? d.avisos.map(String) : [];
+    if (d.nueva) {
+      flash(`✅ ${d.mensaje}`);
+      setAvisosConv(avisos);
+    } else {
+      // Ya era reserva: no se creó otra. Se queda a la vista hasta que alguien lo lea.
+      setAvisosConv([String(d.mensaje), ...avisos]);
+    }
+    if (d.abrirCobro) {
+      const b = d.reserva;
+      setCobrando({ id: b.id, confirmationNumber: b.confirmationNumber, customerName: b.customerName, totalAmount: b.totalAmount, depositoPagado: b.depositoPagado, stripePaymentIntentId: b.stripePaymentIntentId, lineItems: b.lineItems });
+    }
+    return { ok: true };
   }
 
   async function hardDeleteQ(id: string) {
-    if (!confirm("¿Eliminar completamente esta cotización?")) return;
+    if (!confirm("¿Eliminar completamente esta cotización?\n\nSi su lead solo existía por ella, el lead también se quita. Si tiene una liga de pago sin pagar, se apaga. Si el cliente no la quiso, mejor márcala como Perdido en su ficha.")) return;
     const r = await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" }).catch(() => null);
     if (r?.ok) {
+      const d = await r.json().catch(() => ({}));
       setQuotes(q => q.filter(x => x.id !== id));
-      flash("✅ Cotización eliminada");
+      const ligas = d?.pagosSinReserva > 0 ? " · ⚠️ ya tenía un pago por liga sin reserva: Manolo tiene el seguimiento"
+        : d?.ligasApagadas > 0 ? " · su liga de pago ya no se puede pagar" : "";
+      flash((d?.lead === "borrado" ? "✅ Cotización eliminada · su lead también se quitó (no tenía nada más)"
+        : d?.lead === "actualizado" ? "✅ Cotización eliminada · su lead se queda (tiene más cosas) y quedó anotado"
+        : "✅ Cotización eliminada") + ligas);
+      router.refresh();
     } else {
       flash("❌ No se pudo eliminar la cotización");
     }
@@ -652,6 +717,8 @@ export default function CotizacionesClient(
   function downloadPDF(q: TourQuote) {
     const win = window.open("", "_blank");
     if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
+    // Descargar el PDF es mandarla: su lead pasa a Cotizado (3 nov 2026).
+    fetch(`/api/admin/cotizaciones/${q.id}/pdf`, { method: "POST", keepalive: true }).then(() => router.refresh()).catch(() => {});
 
     const rawPkgs  = (q as any).packageItems ?? [];
     const meta     = getMeta(rawPkgs);
@@ -764,7 +831,13 @@ export default function CotizacionesClient(
         .filter(x => x.n > 0)
         .map(({ a, n }) => `+ ${esc(a.nombre)} · ${n} ${n === 1 ? "persona" : "personas"} · $${(a.precio * n).toLocaleString("es-MX")}`)
         .join("<br/>");
-      return `<div class="row"><div><div class="tour-name">${esc(l.tourName)}</div><div class="tour-sub">${sub}</div>${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
+      // Lo que eligió el cliente (Ruta Acuática): a dónde va el grupo y, si la
+      // opción suma, por qué el renglón cuesta más que el precio de lista.
+      const opcion   = opcionDeEleccion(TOURS_LISTA.find(t => t.slug === l.tourSlug) ?? {}, l.eleccion);
+      const eleccion = opcion
+        ? `Elección: ${esc(opcion.nombre)}${opcion.extraPorPersona ? ` (+$${opcion.extraPorPersona.toLocaleString("es-MX")} por persona, incluido)` : ""}`
+        : (l.eleccion ? `Elección: ${esc(l.eleccion)}` : "");
+      return `<div class="row"><div><div class="tour-name">${esc(l.tourName)}</div><div class="tour-sub">${sub}</div>${eleccion ? `<div class="tour-sub">${eleccion}</div>` : ""}${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
     }).join("");
 
     const hospRows = pkgs.map(p => {
@@ -1048,7 +1121,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
       body: JSON.stringify({ tipo: "envio", venceEl }),
     })
       .then(r => r.ok ? r.json() : null)
-      .then(d => { if (d?.ok) setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.status, lineItems: d.lineItems } : x)); })
+      .then(d => { if (d?.ok) { setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: d.status, lineItems: d.lineItems } : x)); router.refresh(); } })
       .catch(() => {});
   }
 
@@ -1093,7 +1166,9 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     const list = quotes.filter(c => {
       if (statusFilter === "por-vencer") { if (etapaDe(c, hoy) !== "por-vencer") return false; }
       else if (statusFilter === "bot") { if (!esDelBot(c)) return false; }
-      else if (statusFilter !== "all" && c.status !== statusFilter) return false;
+      // «Todas» no enseña las archivadas: para eso está su pestaña.
+      else if (statusFilter === "all") { if (c.status === "archivada") return false; }
+      else if (c.status !== statusFilter) return false;
       return !q || [c.customerName, c.customerEmail, c.quoteNumber, c.tourName].some(v => v?.toLowerCase().includes(q));
     });
     return [...list].sort((a, b) => {
@@ -1133,8 +1208,23 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         </div>
       </div>
 
+      {leadVuelta && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-sm border border-[#1B4332]/15 bg-[#F3F8F5] px-4 py-2.5 text-sm font-dm text-[#1B4332]">
+          <span>Vienes de la ficha de <strong>{leadVuelta.nombre}</strong>. Lo que guardes aquí se refleja en su lead.</span>
+          <Link href={`/admin/leads/${leadVuelta.id}`} className="panel-foco font-semibold underline-offset-2 hover:underline">← Volver a su ficha</Link>
+        </div>
+      )}
       {msg && (
         <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
+      )}
+      {avisosConv.length > 0 && (
+        <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-sm border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm font-dm text-amber-900">
+          <div className="min-w-0">
+            <p className="font-semibold">Revisa esta reserva</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-5">{avisosConv.map((a, i) => <li key={i}>{a}</li>)}</ul>
+          </div>
+          <button onClick={() => setAvisosConv([])} className="panel-foco min-h-[44px] shrink-0 px-2 text-[12px] font-semibold underline-offset-2 hover:underline">Entendido</button>
+        </div>
       )}
 
       {/* Toca recordar: las que vencen hoy o mañana */}
@@ -1189,9 +1279,10 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
           { key: "por-vencer", label: "Por vencer" },
           { key: "aceptada", label: "Aceptadas" },
           { key: "expirada", label: "Vencidas"  },
+          { key: "archivada", label: "Archivadas" },
           { key: "bot",      label: "Bot"       },
         ] as const).map(tab => {
-          const count = tab.key === "all" ? quotes.length
+          const count = tab.key === "all" ? quotes.filter(q => q.status !== "archivada").length
             : tab.key === "por-vencer" ? porVencer.length
             : tab.key === "bot" ? quotes.filter(esDelBot).length
             : quotes.filter(q => q.status === tab.key).length;
@@ -1250,11 +1341,18 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               )}
               <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
                 <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" className="text-[#1B4332]/50 hover:text-[#1B4332]"><Eye className="w-4 h-4" /></button>
-                {q.status !== "aceptada" && q.status !== "expirada" && (
-                  <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
+                {q.status === "archivada" && (
+                  <button onClick={() => { playClick(); desarchivar(q.id); }} className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
                 )}
-                <button onClick={() => { playClick(); openEdit(q); }} className="text-[#1B4332]/50 hover:text-[#1B4332]"><Pencil className="w-4 h-4" /></button>
-                <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
+                {regresable(q) && (
+                  <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
+                    className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Regresar a Enviada</button>
+                )}
+                {convertible(q) && (
+                  <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
+                )}
+                <button onClick={() => { playClick(); openEdit(q); }} title={q.status === "aceptada" ? "Ver (ya aceptada: se cambia en su reserva)" : "Editar"} className="text-[#1B4332]/50 hover:text-[#1B4332]">{q.status === "aceptada" ? <Eye className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
+                <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                 <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} className="text-[#1B4332]/50 hover:text-[#25D366]"><MessageCircle className="w-4 h-4" /></a>
                 {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && waRecordatorio(q) && (
                   <button onClick={() => recordar(q)} title="Recordar que vence" className="text-amber-600/70 hover:text-amber-600"><BellRing className="w-4 h-4" /></button>
@@ -1311,13 +1409,21 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                       <div className="flex items-center gap-2">
                         <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa"
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
-                        {q.status !== "aceptada" && q.status !== "expirada" && (
-                          <button onClick={() => { playClick(); convertToReserva(q); }} title="Convertir a reserva"
+                        {q.status === "archivada" && (
+                          <button onClick={() => { playClick(); desarchivar(q.id); }} title="Volver a borrador"
+                            className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
+                        )}
+                        {regresable(q) && (
+                          <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
+                            className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline whitespace-nowrap">Regresar a Enviada</button>
+                        )}
+                        {convertible(q) && (
+                          <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva"
                             className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
                         )}
-                        <button onClick={() => { playClick(); openEdit(q); }} title="Editar"
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title="Enviar email"
+                        <button onClick={() => { playClick(); openEdit(q); }} title={q.status === "aceptada" ? "Ver (ya aceptada: se cambia en su reserva)" : "Editar"}
+                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors">{q.status === "aceptada" ? <Eye className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
+                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)}
                           className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
                         <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} title="Enviar por WhatsApp"
                           className="text-[#1B4332]/40 hover:text-[#25D366] transition-colors"><MessageCircle className="w-4 h-4" /></a>
@@ -1327,8 +1433,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         )}
                         <button onClick={() => { playClick(); downloadPDF(q); }} title="PDF"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
-                        <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar vencida"
-                          className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
+                        {/* Una aceptada ya es venta: no se marca vencida (lote 4, 5 nov 2026). */}
+                        {q.status !== "aceptada" && (
+                          <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar vencida"
+                            className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
+                        )}
                         <button onClick={() => { playClick(); hardDeleteQ(q.id); }} title="Eliminar"
                           className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
@@ -1343,6 +1452,31 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
       {detalle && (
         <CotizacionDetalle cotizacion={detalle} onClose={() => setDetalle(null)} />
+      )}
+
+      {convirtiendo && (() => {
+        const q = convirtiendo as any;
+        const meta = getMeta(q.packageItems ?? []) as any;
+        const zona = zonaDeTexto(meta.zonaHospedaje);
+        const lead = q.oportunidadId ? leads[q.oportunidadId] : undefined;
+        return (
+          <ConvertirReservaModal
+            q={{
+              quoteNumber: q.quoteNumber, customerName: q.customerName, customerEmail: q.customerEmail, customerPhone: q.customerPhone,
+              tourName: q.tourName, tourDate: q.tourDate, personas: Number(meta.numPersonas) || grupoDe(q).total || 0,
+              total: q.totalAmount, anticipo: meta.anticipo != null ? Number(meta.anticipo) : 0,
+              zona: zona ? ZONA_TEXTO[zona] : "",
+            }}
+            canalSugerido={lead?.canal === "whatsapp_sitio" ? "whatsapp" : lead?.canal ?? null} idiomaSugerido={lead?.idioma ?? null} guiasConocidos={guiasConocidos}
+            onCancelar={() => setConvirtiendo(null)}
+            onConvertir={datos => convertToReserva(convirtiendo, datos)}
+          />
+        );
+      })()}
+
+      {cobrando && (
+        <CobroModal reserva={cobrando} quien={quien} onClose={() => setCobrando(null)}
+          onGuardado={(cobrado, que) => { flash(`✅ ${que === "anulado" ? "Cobro anulado" : "Pago registrado"}: ${cobrado.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} cobrados. El lead quedó al día.`); router.refresh(); }} />
       )}
 
       {/* Modal nueva/editar cotización */}
@@ -1367,7 +1501,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
             {/* Header */}
             <div className="flex items-center justify-between px-6 pt-5 pb-0">
               <h2 className="font-cormorant text-[#1B4332] text-xl font-light">
-                {isEditMode ? "Editar Cotización" : "Nueva Cotización"}
+                {avisoLectura ? "Ver Cotización" : isEditMode ? "Editar Cotización" : "Nueva Cotización"}
                 {isEditMode && editTarget && <span className="text-[#1B4332] text-sm font-dm ml-2">{editTarget.quoteNumber}</span>}
                 {isEditMode && editTarget && esDelBot(editTarget) && <span className="ml-2 align-middle"><ChipBot /></span>}
               </h2>
@@ -1397,6 +1531,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
 
             {/* Scrollable content */}
             <div className="overflow-y-auto flex-1 px-6 py-5">
+
+            {/* Aceptada: solo se ve (lote 4, 5 nov 2026). Lo que se opera es su
+                reserva; editar aquí le cambiaba al lead lo que la reserva no tenía. */}
+            {avisoLectura && (
+              <p role="status" className="mb-4 rounded-sm border border-amber-300/70 bg-amber-50/70 px-3 py-2.5 font-dm text-[12.5px] leading-snug text-amber-900">
+                {avisoLectura}
+              </p>
+            )}
+            <fieldset disabled={!!avisoLectura} className="m-0 min-w-0 border-0 p-0">
 
             {/* ── Step 1: Cliente ── */}
             {step === 1 && (
@@ -1590,6 +1733,15 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                             </>
                           )}
                           {line.tourSlug && (
+                            <EleccionLinea
+                              line={line}
+                              onChange={nueva => {
+                                setLines(ls => ls.map((x, idx) => idx === i ? { ...nueva, subtotal: calcLine(nueva) } : x));
+                                soltarPrecioEditado();
+                              }}
+                            />
+                          )}
+                          {line.tourSlug && (
                             <AddOnsLinea
                               line={line}
                               personas={Number(numPersonas) || (line.adults + (line.childrenMid ?? 0) + (line.childrenSmall ?? 0))}
@@ -1691,6 +1843,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   extras={extras}
                   personas={personasGrupo}
                   presets={presetsExtras}
+                  verCostos={verCostos}
                   onChange={next => { setExtras(next); soltarPrecioEditado(); }}
                 />
 
@@ -1873,6 +2026,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
               </div>
             )}
 
+            </fieldset>
             </div>{/* end scrollable */}
 
             {/* Footer navigation */}
@@ -1889,6 +2043,11 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   disabled={step === 1 ? !step1Valid : !step2Valid}
                   className="flex items-center gap-1.5 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-5 py-2 text-[11px] font-dm uppercase tracking-[1.5px] transition-colors disabled:opacity-40 rounded-sm">
                   Siguiente <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              ) : avisoLectura ? (
+                <button onClick={closeModal}
+                  className="bg-[#1B4332] hover:bg-[#2D5A45] text-white px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors rounded-sm">
+                  Cerrar
                 </button>
               ) : (
                 <button onClick={saveQuote}

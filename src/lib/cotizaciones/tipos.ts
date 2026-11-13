@@ -287,6 +287,12 @@ export interface MetaCotizacionBot {
   /** Cuando la web cobra MENOS que la suma de lista (promo, Edén, paquete): la diferencia, fija. */
   discountType:   "fixed" | null;
   discountValue:  number | null;
+  /**
+   * Lo que cobra la web por esta cotización tal cual, o null si ninguna página
+   * la cobra entera (revisión del lote 4, 5 nov 2026): el correo solo manda a
+   * pagar al sitio si el total sigue siendo este. Ver `precioWebDelBot`.
+   */
+  precioWeb?:     number | null;
   notasInternas:  string;
   origen:         "bot";
   waChatId:       string | null;
@@ -366,6 +372,14 @@ export interface ResultadoEnvio {
   status?:       string;
   /** Los `lineItems` ya guardados (la ruta del panel los devuelve). */
   lineItems?:    unknown;
+  /**
+   * Correo: salió una COPIA y la cotización no cambió (ya es reserva, ya la
+   * aceptó o la reemplazó otra; lote 4, 5 nov 2026). `folio`: su reserva o la
+   * cotización que la reemplazó.
+   */
+  copia?:        { motivo: "reserva" | "aceptada" | "reemplazada"; folio: string | null };
+  /** Correo: no tiene correo del cliente; le llegó solo al equipo y nada cambió. */
+  soloEquipo?:   boolean;
   error?:        string;
 }
 
@@ -373,8 +387,11 @@ export interface ResultadoCorreoReserva {
   ok:            boolean;
   emailEnviado:  boolean;
   destinatario:  string | null;
-  /** "sin-correo": la reserva no tiene un correo válido (la ruta del panel responde 400). */
-  motivo?:       "sin-correo" | "error";
+  /**
+   * "sin-correo": la reserva no tiene un correo válido (la ruta del panel responde 400).
+   * "cancelada": está cancelada o es un borrador; no se le manda nada (409, lote 5).
+   */
+  motivo?:       "sin-correo" | "cancelada" | "error";
   error?:        string;
 }
 

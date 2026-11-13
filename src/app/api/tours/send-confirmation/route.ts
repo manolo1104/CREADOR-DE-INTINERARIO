@@ -8,9 +8,10 @@ import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
 import { addTourToSheet } from "@/lib/sheetsHuasteca";
-import { actividad, mxn, nombreCorto } from "@/lib/logger";
+import { actividad, mxn, nombreCorto, nombreParaLog, enmascararTexto } from "@/lib/logger";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
+import { armarReservaWeb, productoDelPago, PAGO_DE_OTRO_PRODUCTO } from "@/lib/reservaWeb";
 import fs from "fs";
 import path from "path";
 
@@ -23,13 +24,15 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
+    // 🔴 Del navegador solo se toma QUIÉN es y lo que escribió (lote 5, 5 nov
+    // 2026). Los recorridos, la fecha, las personas, el hotel y el traslado
+    // salen de la metadata que escribió el servidor al crear el cobro
+    // (`armarReservaWeb`, la misma función del webhook). Antes se guardaba lo
+    // que mandara el cuerpo: otra fecha u 8 personas con el pago de 2, y el
+    // hotel pagado del carrito se quedaba fuera de la reserva.
     const {
       email, customerName, customerPhone, notes,
       paymentIntentId,
-      tourId, tourName, tourSlug, tourDate,
-      adults, children,
-      promoCode, promoDiscount,
-      lineItems, packageItems,
       // Idioma en que el cliente reservó, para que la confirmación salga igual.
       locale,
     } = body;
@@ -51,13 +54,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "El pago no está completado." }, { status: 402 });
     }
 
+    // 🔴 Que el pago sea de una reserva de TOURS de este sitio (lote 5, 5 nov
+    // 2026). La cuenta de Stripe se comparte con Kora, y un pago de paquete o
+    // del viaje CDMX tiene su propia pantalla: antes cualquiera de ellos creaba
+    // aquí una reserva de tour «pagada». Ninguno se pierde: el webhook y la
+    // conciliación arman cada uno con su producto.
+    const producto = productoDelPago(pi.metadata);
+    if (producto !== "tour") {
+      console.warn(`⚠️ send-confirmation tour: ${paymentIntentId} es de «${producto}» — no se crea reserva aquí`);
+      return NextResponse.json({ error: PAGO_DE_OTRO_PRODUCTO }, { status: 400 });
+    }
+
     // Montos AUTORITATIVOS desde Stripe (centavos → MXN), no los que envía el
     // cliente. `cobrado` es lo que de verdad entró; `totalAmount` es el precio
     // completo de la reserva, que con anticipo NO coincide con lo cobrado.
-    const cobrado     = Math.round((pi.amount_received || pi.amount) / 100);
-    const totalCompleto = Math.round(Number(pi.metadata?.totalCompleto) || 0);
-    const totalAmount = totalCompleto > 0 ? totalCompleto : cobrado;
-    const saldo       = Math.max(0, totalAmount - cobrado);
+    const cobrado = Math.round((pi.amount_received || pi.amount) / 100);
+    const r = armarReservaWeb(pi.metadata ?? {}, cobrado);
+    const { tourName, tourDate, totalAmount, saldo } = r;
+    // El carrito escribe el idioma en la metadata; el checkout de un recorrido
+    // suelto no, y ahí vale el de la página.
+    const idioma: "es" | "en" = pi.metadata?.locale ? r.locale : (locale === "en" ? "en" : "es");
+    const telefono = (typeof customerPhone === "string" && customerPhone.trim()) || r.telefono || null;
 
     // ── Idempotencia: si ya existe una reserva para este pago, devolverla ─────
     const existing = await prisma.tourBooking.findFirst({
@@ -74,15 +91,15 @@ export async function POST(req: NextRequest) {
       await addTourToSheet({
         confirmationNumber,
         customerName,
-        customerPhone: customerPhone || null,
+        customerPhone: telefono,
         customerEmail: email,
         tourName,
         tourDate,
-        adults:        Number(adults)   || 1,
-        children:      Number(children) || 0,
-        totalAmount:   Math.round(Number(totalAmount) || 0),
-        promoCode:     promoCode  || null,
-        promoDiscount: Number(promoDiscount) || 0,
+        adults:        r.adults,
+        children:      r.children,
+        totalAmount,
+        promoCode:     r.promoCode,
+        promoDiscount: r.promoDiscount,
         stripePaymentIntentId: paymentIntentId || null,
         notes:         notes || null,
       });
@@ -93,46 +110,44 @@ export async function POST(req: NextRequest) {
     // ¿Cabía? El cupo se revisó al abrir el pago, no al cobrarlo: si en medio
     // se llenó la salida, la reserva entra igual (ya pagó) pero marcada.
     const avisoCupo = await revisarSobrecupo(
-      Array.isArray(lineItems) && lineItems.length
-        ? lineItems
-        : [{ tourSlug, tourDate, adults: Number(adults) || 1, children: Number(children) || 0 }],
+      r.lineas.length
+        ? r.lineas
+        : [{ tourSlug: r.tourSlug, tourDate, adults: r.adults, children: r.children }],
       {
         folio: confirmationNumber, cliente: customerName,
         excluirApartado: [pi.metadata?.apartadoId, body.apartadoId].find(esIdApartado),
       },
     );
 
-    const zonaMeta = pi.metadata?.zonaHospedaje ? { zonaHospedaje: pi.metadata.zonaHospedaje } : {};
     try {
       const creada = await prisma.tourBooking.create({
         data: {
           confirmationNumber,
-          tourId:    tourId    || "unknown",
-          tourName:  tourName  || "Tour Huasteca",
-          tourSlug:  tourSlug  || "",
-          tourDate:  tourDate  || "",
-          adults:    Number(adults)   || 1,
-          children:  Number(children) || 0,
-          totalAmount:           Math.round(Number(totalAmount) || 0),
+          tourId:    r.tourId,
+          tourName,
+          tourSlug:  r.tourSlug,
+          tourDate,
+          adults:    r.adults,
+          children:  r.children,
+          totalAmount,
           depositoPagado:        cobrado, // lo realmente cobrado: si hubo anticipo, queda saldo
-          promoCode:             promoCode  || null,
-          promoDiscount:         Number(promoDiscount) || 0,
+          promoCode:             r.promoCode,
+          promoDiscount:         r.promoDiscount,
           stripePaymentIntentId: paymentIntentId || null,
           customerName,
           customerEmail:  email,
-          customerPhone:  customerPhone || null,
+          customerPhone:  telefono,
           notes:          [avisoCupo, notes].filter(Boolean).join(" | ") || null,
-          // Tours por vehículo (RZR): guarda la línea con ruta/vehículo/unidades
-          // para que /reservas, el PDF y el modal del admin la reconstruyan.
-          // El idioma va en el objeto `_meta` (patrón del proyecto): sin él,
-          // reenviar la confirmación desde el panel la mandaría en español a un
-          // cliente que compró en inglés.
-          // La zona («Ciudad Valles»/«Xilitla») sale de la metadata que escribió
-          // el servidor al cobrar, no del navegador: es lo que el panel lee con
-          // `zonaDeReserva` para marcar la reserva de Valles en el corte.
-          lineItems:      Array.isArray(lineItems) && lineItems.length
-            ? [...lineItems, { _meta: true, locale: locale === "en" ? "en" : "es", ...zonaMeta }]
-            : [{ _meta: true, locale: locale === "en" ? "en" : "es", ...zonaMeta }],
+          // Los recorridos (con RZR, elección, actividades y Valles) y el
+          // traslado, rehechos de la metadata. El idioma va en el objeto
+          // `_meta` (patrón del proyecto): sin él, reenviar la confirmación
+          // desde el panel la mandaría en español a un cliente que compró en
+          // inglés. La zona («Ciudad Valles»/«Xilitla») es lo que el panel lee
+          // con `zonaDeReserva` para marcar la reserva de Valles en el corte.
+          lineItems:      [...r.lineas, { ...r.meta, locale: idioma }] as never,
+          // 🔴 El hotel pagado, con su importe (lote 5, 5 nov 2026): antes solo
+          // iba al correo y el corte lo repartía 50/50 como si fuera de tours.
+          packageItems:   (r.packageItems ?? undefined) as never,
           /**
            * En qué idioma tiene que salir el GUÍA. Sale de la metadata del
            * PaymentIntent y NO del cuerpo de la petición: la metadata la
@@ -162,18 +177,20 @@ export async function POST(req: NextRequest) {
           reservaId: creada.id, monto: cobrado, metodo: "stripe",
           nota: "Pago en línea desde el sitio", sinRescate: true,
         });
+        // Al CRM (revisión del 4 nov 2026): la reserva de la web también es un lead, enlazado al de esa persona o uno nuevo. No lanza.
+        await import("@/lib/admin/crmDatos").then(m => m.leadParaReservaSinLead(creada.id, "Web")).catch(() => {});
       }
       await registrarEnBitacora({
         accion:     "creó",
         entidad:    "reserva",
         referencia: confirmationNumber,
-        resumen:    `Reserva ${confirmationNumber} — ${customerName}, ${tourName || "Tour Huasteca"} el ${tourDate || "sin fecha"}, ${pesos(Number(totalAmount))} (reservó en el sitio)`,
+        resumen:    `Reserva ${confirmationNumber} — ${customerName}, ${tourName} el ${tourDate || "sin fecha"}, ${pesos(totalAmount)} (reservó en el sitio)`,
         actor:      SISTEMA,
       });
 
       const quienes = [
-        `${Number(adults) || 1} adulto${(Number(adults) || 1) > 1 ? "s" : ""}`,
-        Number(children) ? `${Number(children)} niño${Number(children) > 1 ? "s" : ""}` : "",
+        `${r.adults} adulto${r.adults > 1 ? "s" : ""}`,
+        r.children ? `${r.children} niño${r.children > 1 ? "s" : ""}` : "",
       ]
         .filter(Boolean)
         .join(", ");
@@ -182,9 +199,9 @@ export async function POST(req: NextRequest) {
         nombreCorto(tourName),
         quienes,
         saldo > 0 ? `${mxn(cobrado)} de ${mxn(totalAmount)} · saldo ${mxn(saldo)}` : mxn(totalAmount),
-        customerName,
+        nombreParaLog(customerName),
         email,
-        customerPhone,
+        telefono,
         tourDate,
         confirmationNumber,
       );
@@ -213,15 +230,16 @@ export async function POST(req: NextRequest) {
     // TODOS los recorridos: el carrito se guarda con el de fecha más temprana y
     // aquí llegaba solo el primero que se agregó, así que con varios tours el
     // recordatorio «tu carrito te espera» le seguía llegando a quien ya pagó.
-    await cerrarCarritosDe(email, [{ tourSlug, tourDate }, ...(Array.isArray(lineItems) ? lineItems : [])]);
+    await cerrarCarritosDe(email, [{ tourSlug: r.tourSlug, tourDate }, ...r.lineas]);
 
     if (!email?.includes("@")) {
       console.warn("⚠️ Email inválido — confirmación omitida");
     } else {
       try {
-        // Extraer pickup de notes: "Recogida: Hotel X | otras notas"
+        // Extraer pickup de notes: "Recogida: Hotel X | otras notas"; si no,
+        // lo que escribió al pagar (va en la metadata del carrito).
         const pickupMatch = (notes || "").match(/Recogida:\s*([^|]+)/);
-        const pickupLugar = pickupMatch ? pickupMatch[1].trim() : undefined;
+        const pickupLugar = pickupMatch ? pickupMatch[1].trim() : (r.recogida || undefined);
 
         const html = buildTourEmailHtml({
           customerName,
@@ -229,22 +247,23 @@ export async function POST(req: NextRequest) {
           paymentIntentId,
           tourName,
           tourDate,
-          tourSlug,
-          adults:        Number(adults)      || 1,
-          children:      Number(children)    || 0,
-          totalAmount:   Math.round(Number(totalAmount) || 0),
+          tourSlug:      r.tourSlug,
+          adults:        r.adults,
+          children:      r.children,
+          totalAmount,
           // Con anticipo, el correo muestra "Anticipo pagado" + "Saldo pendiente".
           // Si se pagó todo, deposito == total y sale como "✓ Liquidado".
           depositoPagado: cobrado,
-          promoCode,
-          promoDiscount: Number(promoDiscount) || 0,
+          promoCode:     r.promoCode ?? undefined,
+          promoDiscount: r.promoDiscount,
           pickupLugar,
-          lineItems:     Array.isArray(lineItems) ? lineItems.filter((l: any) => l && !l._meta) : undefined,
-          packageItems:  Array.isArray(packageItems) ? packageItems : undefined,
-          locale,
+          // Lo mismo que se acaba de guardar: recorridos, traslado y hotel.
+          lineItems:     r.lineas.length ? r.lineas : undefined,
+          packageItems:  r.packageItems,
+          locale:        idioma,
           // De la metadata del PaymentIntent, igual que la reserva: el correo
           // dice lo mismo que quedó guardado.
-          idiomaTour:    pi.metadata?.idiomaTour === "en" ? "en" : "es",
+          idiomaTour:    r.idiomaTour,
         });
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
@@ -268,7 +287,7 @@ export async function POST(req: NextRequest) {
 
         actividad("📧  CORREO ENVIADO", nombreCorto(tourName), email, confirmationNumber);
       } catch (e: any) {
-        console.error("❌ Brevo email exception:", e.message);
+        console.error("❌ Brevo email exception:", enmascararTexto(String(e?.message ?? "")));
       }
     }
 

@@ -1,5 +1,43 @@
 type LogLevel = "info" | "warn" | "error";
 
+// ── Datos de clientes en los logs (lote 8, 10 nov 2026) ─────────────────────
+// 🔴 Los logs de Railway los lee cualquiera con acceso al proyecto y se
+// guardan días: cada «RESERVÓ», «ABRIÓ EL PAGO» o error de correo imprimía el
+// nombre completo, el correo y el teléfono del cliente. Ahora todo lo que pasa
+// por `logger` y `actividad` sale enmascarado: «ju***@gmail.com», «***4567» y
+// «Juan P.». Para encontrar a alguien, el folio o el id del pago (esos sí
+// salen) y el panel.
+
+const RE_CORREO = /([A-Za-z0-9._%+-]{1,64})@([A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,})/g;
+// Un número de 10 a 13 cifras con o sin «+», espacios, guiones o paréntesis,
+// que no sea parte de un folio, un id ni una fecha («pi_3N…», «HP-…», «2026-11-10»).
+const RE_TELEFONO = /(?<![\w.\-/:$])\+?\d[\d\s().-]{8,}\d(?![\w-])/g;
+
+/** «juan.perez@gmail.com» → «ju***@gmail.com». */
+export function enmascararCorreo(correo: string): string {
+  return correo.replace(RE_CORREO, (_m, usuario: string, dominio: string) => `${usuario.slice(0, 2)}***@${dominio}`);
+}
+
+/** Correos y teléfonos dentro de cualquier texto, enmascarados. */
+export function enmascararTexto(texto: string): string {
+  return enmascararCorreo(texto).replace(RE_TELEFONO, m => {
+    const cifras = m.replace(/\D/g, "");
+    // Una marca de tiempo en milisegundos (13 cifras, «17…») no es un teléfono.
+    if (cifras.length < 10 || cifras.length > 13 || (/^\d+$/.test(m) && cifras.length === 13 && !cifras.startsWith("52"))) return m;
+    return `***${cifras.slice(-4)}`;
+  });
+}
+
+/** «Juan Pérez López» → «Juan P.»: el nombre de pila y la inicial. */
+export function nombreParaLog(nombre: string | null | undefined): string {
+  const partes = String(nombre ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!partes.length) return "";
+  return partes.length > 1 ? `${partes[0]} ${partes[1][0].toUpperCase()}.` : partes[0];
+}
+
+/** Las claves del log estructurado que traen el nombre de un cliente. */
+const CLAVES_NOMBRE = new Set(["customerName", "nombre", "cliente", "name"]);
+
 interface LogEntry {
   level: LogLevel;
   event: string;
@@ -7,14 +45,18 @@ interface LogEntry {
 }
 
 function log(level: LogLevel, event: string, data?: Record<string, unknown>) {
+  const datos = data
+    ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, CLAVES_NOMBRE.has(k) && typeof v === "string" ? nombreParaLog(v) : v]))
+    : undefined;
   const entry: LogEntry = {
     level,
     event,
     ts: new Date().toISOString(),
-    ...data,
+    ...datos,
   };
-  // Railway captura stdout — JSON estructurado para fácil búsqueda
-  console.log(JSON.stringify(entry));
+  // Railway captura stdout — JSON estructurado para fácil búsqueda. Sin
+  // correos ni teléfonos de clientes (lote 8).
+  console.log(enmascararTexto(JSON.stringify(entry)));
 }
 
 export const logger = {
@@ -51,7 +93,9 @@ export function actividad(
     (c): c is string | number =>
       c !== null && c !== undefined && c !== false && c !== "",
   );
-  console.log(`[${hora}]  ${[etiqueta, ...partes].join("  ·  ")}`);
+  // Sin correos ni teléfonos de clientes (lote 8); los nombres los pasa cada
+  // llamada por `nombreParaLog`.
+  console.log(enmascararTexto(`[${hora}]  ${[etiqueta, ...partes].join("  ·  ")}`));
 }
 
 // Formatea pesos mexicanos para los logs: 2900 → "$2,900"

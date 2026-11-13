@@ -5,12 +5,14 @@
  * metería Prisma en el navegador.
  */
 
-export type CanalGA4 = "seo" | "maps" | "directo" | "redes" | "referidos" | "publicidad" | "correo" | "otro";
+export type CanalGA4 = "seo" | "maps" | "directo" | "ia" | "redes" | "referidos" | "publicidad" | "correo" | "otro";
 
 export const ETIQUETA_CANAL: Record<CanalGA4, string> = {
   seo:        "SEO (Google orgánico)",
   maps:       "Google Maps",
   directo:    "Directo",
+  // GA4 trae este grupo desde 2026 (chatgpt.com / ai-assistant). Antes caía en «Otro».
+  ia:         "Asistentes de IA",
   redes:      "Redes sociales",
   referidos:  "Otros sitios",
   publicidad: "Publicidad",
