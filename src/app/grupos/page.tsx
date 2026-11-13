@@ -166,6 +166,10 @@ export default function GruposPage() {
               </p>
             </div>
           </div>
+          {/* Las piezas sueltas (camioneta, guía, comida en El Papán) tienen su página (12 nov 2026). */}
+          <p className="font-dm text-sm text-crema/65 leading-relaxed mt-6 max-w-2xl">
+            <Rico segs={t.serviciosSueltos} claseEnlace="text-dorado underline underline-offset-4 hover:text-crema" />
+          </p>
         </div>
       </section>
 

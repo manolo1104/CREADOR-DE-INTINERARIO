@@ -51,6 +51,7 @@ export function SiteFooter() {
         { label: "Tours in Ciudad Valles", href: lp("/tours-en-ciudad-valles") },
         { label: "Xilitla or Ciudad Valles? Where to stay", href: lp("/xilitla-o-ciudad-valles") },
         { label: "Group and school trips", href: lp("/grupos") },
+        { label: "Private transport and group meals", href: "/en/group-transport-and-meals" },
         { label: "Travel blog", href: lp("/blog") },
         { label: "Sustainability", href: lp("/sustentabilidad-y-conservacion") },
       ]
@@ -73,6 +74,8 @@ export function SiteFooter() {
         // Escuelas, empresas y agencias: se cotizan aparte, no pasan por el
         // motor de reservas. Entra al pie para que no nazca huérfana.
         { label: "Viajes de grupo y escolares", href: "/grupos" },
+        // Transporte, guías y comida para grupos, sueltos (12 nov 2026).
+        { label: "Transporte privado y comida para grupos", href: "/transporte-y-alimentos-para-grupos" },
         // Existía la landing de Ciudad Valles —donde operan los competidores—
         // y no la de Xilitla, que es donde está la empresa y el hotel.
         { label: "Tours y paquetes en Xilitla", href: "/tours-en-xilitla" },

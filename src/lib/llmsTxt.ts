@@ -701,6 +701,7 @@ ${desde.join("\n")}
 - [Tours from Xilitla](${SITE}/en/tours-en-xilitla)
 - [Tours from Ciudad Valles](${SITE}/en/tours-en-ciudad-valles)
 - [Group and school trips: custom quotes for schools, companies and agencies](${SITE}/en/grupos)
+- [Private transport, guides and meals for groups](${SITE}/en/group-transport-and-meals): round-trip transfers from San Luis Potosí, Tampico and Mexico City priced per van (airport pickup at the same rate), van with driver by the day, private guides, and breakfast, lunch and dinner at El Papán Huasteco, our restaurant inside Hotel Paraíso Encantado
 - [Cancellation and weather policy](${SITE}/en/politica-de-cancelacion): free cancellation up to 48 h before; what happens if it rains or a site closes
 - [About us](${SITE}/en/nosotros)
 - [Press & media](${SITE}/en/press): story angles, verified facts, photography for editorial use
@@ -731,6 +732,7 @@ ${full
 - [Tours con salida desde Ciudad Valles](${SITE}/tours-en-ciudad-valles)
 ${desde.join("\n")}
 - [Viajes de grupo: escuelas, empresas y agencias](${SITE}/grupos): cotización a la medida por WhatsApp
+- [Transporte privado, guías y comida para grupos](${SITE}/transporte-y-alimentos-para-grupos): traslados redondos desde San Luis Potosí, Tampico y la Ciudad de México con precio por camioneta (recogida en el aeropuerto con la misma tarifa), camioneta con chofer por día, guías privados y desayunos, comidas y cenas en El Papán Huasteco, nuestro restaurante dentro del Hotel Paraíso Encantado
 - [Qué hacer en la Huasteca Potosina (guía local)](${SITE}/que-hacer-en-la-huasteca-potosina)
 - [Cascadas de la Huasteca Potosina, comparadas](${SITE}/cascadas-de-la-huasteca-potosina): entrada, mejor época, tiempo desde Ciudad Valles y qué tour visita cada una
 - [Dónde hospedarse en la Huasteca Potosina: zonas y nuestro hotel](${SITE}/donde-hospedarse-en-la-huasteca-potosina): Xilitla, Ciudad Valles, Aquismón y Tamasopo, tiempos a cada lugar y qué tours recogen en cada zona

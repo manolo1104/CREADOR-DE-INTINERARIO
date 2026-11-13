@@ -51,6 +51,8 @@ const PARES: Record<string, string> = {
   // Guías nuevas del 10 nov 2026.
   "/donde-hospedarse-en-la-huasteca-potosina": "/en/where-to-stay-in-huasteca-potosina",
   "/cascadas-de-la-huasteca-potosina": "/en/huasteca-potosina-waterfalls",
+  // Servicios para grupos (12 nov 2026).
+  "/transporte-y-alimentos-para-grupos": "/en/group-transport-and-meals",
 };
 const PARES_EN: Record<string, string> = Object.fromEntries(Object.entries(PARES).map(([es, en]) => [en, es]));
 

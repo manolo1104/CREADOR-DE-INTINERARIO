@@ -124,6 +124,42 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
     },
   ];
 
+  /** Las tres marcas de la casa. Medidas = las del archivo, para que no brinque al cargar. */
+  const marcas = [
+    {
+      src: "/logos/huasteca-potosina-tours-color.svg",
+      w: 516, h: 382,
+      alt: "Huasteca Potosina Tours",
+      linea: t("Recorridos y paquetes", "Tours and packages"),
+      href: lp("/tours"),
+      externo: false,
+      alto: "h-14 sm:h-20 lg:h-24",
+    },
+    {
+      src: "/logos/marcas/hotel-paraiso-encantado.png",
+      w: 720, h: 461,
+      alt: HOTEL_PROPIO.nombre,
+      linea: t(
+        `Hotel a ${HOTEL_PROPIO.metrosALasPozas} m de Las Pozas`,
+        `Hotel ${HOTEL_PROPIO.metrosALasPozas} m from Las Pozas`,
+      ),
+      href: "https://www.paraisoencantado.com",
+      externo: true,
+      // Un poco más alto: entre las manos y el nombre hay mucho aire, y a la
+      // misma altura que los otros dos se leía más chico (visto en :3430, 12 nov).
+      alto: "h-[60px] sm:h-[92px] lg:h-[108px]",
+    },
+    {
+      src: "/logos/marcas/el-papan-huasteco.png",
+      w: 720, h: 465,
+      alt: HOTEL_PROPIO.restaurante,
+      linea: t("Restaurante de cocina huasteca", "Huasteca regional restaurant"),
+      href: `${lp("/info-practica")}#papan-huasteco`,
+      externo: false,
+      alto: "h-14 sm:h-20 lg:h-24",
+    },
+  ];
+
   const fotoCls = "relative overflow-hidden rounded-2xl bg-negro/5";
   const imgCls = "object-cover transition-transform duration-500 ease-smooth-out group-hover:scale-[1.03]";
 
@@ -143,11 +179,54 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
           </h2>
           <p className="mt-4 max-w-[60ch] font-dm text-[15px] leading-relaxed text-negro/60 sm:text-base">
             {t(
-              "Somos de Xilitla. El hotel, el restaurante y los guías son nuestros, y eso es lo que ninguna plataforma de reventa puede copiar.",
-              "We're from Xilitla. The hotel, the restaurant and the guides are ours, and that's the part no reselling platform can copy.",
+              "Somos de Xilitla: tres marcas con una sola administración. Los recorridos, el hotel y el restaurante son nuestros, y los guías también. Eso es lo que ninguna plataforma de reventa puede copiar.",
+              "We're from Xilitla: three brands under one management. The tours, the hotel and the restaurant are ours, and so are the guides. That's the part no reselling platform can copy.",
             )}
           </p>
         </div>
+
+        {/* ── Tres marcas, una sola administración (Manolo, 12 nov 2026) ──
+            «Es parte de nuestra propuesta de valor». Los tres logotipos a la
+            MISMA altura, sobre el crema del bloque: el del Papán solo existe con
+            letras negras, así que esta franja nunca va sobre fondo oscuro.
+            El Papán enlaza a su sección de /info-practica y no a su dominio:
+            elpapanhuasteco.com no respondía el 12 nov 2026. */}
+        <ul className="reveal-up mb-14 grid grid-cols-3 divide-x divide-negro/10 border-y border-negro/10 py-8 sm:py-10">
+          {marcas.map((m) => {
+            const contenido = (
+              <>
+                {/* eslint-disable-next-line @next/next/no-img-element -- SVG y PNG ya a su tamaño, como el logo del panel */}
+                <img
+                  src={m.src}
+                  alt={m.alt}
+                  width={m.w}
+                  height={m.h}
+                  loading="lazy"
+                  decoding="async"
+                  className={`w-auto ${m.alto}`}
+                />
+                <span className="mt-4 block text-center font-dm text-[12px] leading-snug text-negro/60 transition-colors group-hover:text-terracota sm:text-[13px]">
+                  {m.linea}
+                </span>
+              </>
+            );
+            const cls = "group flex h-full flex-col items-center justify-end px-2 sm:px-6";
+            return (
+              <li key={m.src}>
+                {m.externo ? (
+                  <a href={m.href} target="_blank" rel="noopener" className={cls}>
+                    {contenido}
+                    <span className="sr-only">{t(" (se abre en otra pestaña)", " (opens in a new tab)")}</span>
+                  </a>
+                ) : (
+                  <Link href={m.href} prefetch={false} className={cls}>
+                    {contenido}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
+        </ul>
 
         {/* ── Las fotos de la casa: una manda, tres acompañan ──
             Cuatro fotos REALES, en diferido: este bloque queda muy por debajo

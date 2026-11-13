@@ -80,3 +80,21 @@ describe("enlaces del artículo traducido", () => {
     expect(enlacesAIngles(html("/paquetes/noche-de-xantolo"), pares)).toBe(html("/en/paquetes"));
   });
 });
+
+describe("transporte y comida para grupos (12 nov 2026)", () => {
+  it("las dos versiones dicen lo mismo: mismas preguntas, mismo menú, misma índice", async () => {
+    const { getServiciosGrupos, PRECIO_BANDEJA_HUASTECA } = await import("@/lib/i18n/serviciosGrupos.en");
+    const es = getServiciosGrupos("es");
+    const en = getServiciosGrupos("en");
+    expect(en.bandejaIncluye).toHaveLength(es.bandejaIncluye.length);
+    expect(en.indice.map((i) => i.href)).toEqual(es.indice.map((i) => i.href));
+    expect(PRECIO_BANDEJA_HUASTECA).toBe(250);
+  });
+
+  it("la gemela en inglés existe y reexporta la de español", () => {
+    const raiz = path.resolve(__dirname, "../../app");
+    const enPage = fs.readFileSync(path.join(raiz, "en/group-transport-and-meals/page.tsx"), "utf8");
+    expect(enPage).toContain("../../transporte-y-alimentos-para-grupos/page");
+    expect(fs.existsSync(path.join(raiz, "transporte-y-alimentos-para-grupos/page.tsx"))).toBe(true);
+  });
+});

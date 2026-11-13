@@ -25,6 +25,7 @@ import { HeroVideo } from "@/components/HeroVideo";
 import { CarruselPromos } from "@/components/CarruselPromos";
 import { ClimaHero } from "@/components/ClimaHero";
 import { BandaTemporada } from "@/components/BandaTemporada";
+import { ProximasTemporadas } from "@/components/ProximasTemporadas";
 import { fechaInicioTexto } from "@/lib/temporada";
 import { prisma } from "@/lib/prisma";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
@@ -493,6 +494,10 @@ export default async function HomePage() {
 
       {/* ── TEMPORADA ── Se esconde sola fuera de temporada. */}
       <BandaTemporada en={en} hrefTours={lp("/tours")} />
+
+      {/* ── PRÓXIMAS TEMPORADAS ── Puentes, diciembre, Semana Santa… con fechas
+          (Manolo, 12 nov 2026). Las pasadas se esconden solas. */}
+      <ProximasTemporadas en={en} />
 
       {/* ── PANTALLA 3 · POR QUÉ CON NOSOTROS ── Un solo bloque. */}
       <BloqueConfianza locale={locale} />

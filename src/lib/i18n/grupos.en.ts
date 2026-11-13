@@ -1,3 +1,4 @@
+import { RUTA_SERVICIOS_ES, RUTA_SERVICIOS_EN } from "./serviciosGrupos.en";
 import { localePath, type Locale } from "./config";
 import { localizePaquete } from "./paquetes.en";
 import { TOURS_DB } from "@/lib/tours";
@@ -59,6 +60,9 @@ export interface GruposContent {
   transporteTitulo: string;
   transporteTexto: string;
   viajeCdmx: SegGrupos[];
+  /** Enlace a la página de piezas sueltas: transporte, guía y comida (12 nov 2026).
+   *  Sin nombrar ciudades: aquí solo la CDMX (regla del 11 sep, arriba). */
+  serviciosSueltos: SegGrupos[];
 
   composicionH2: string;
   composicion: SegGrupos[];
@@ -181,6 +185,11 @@ function construir(locale: Locale): GruposContent {
         `¿Son menos de ${CAPACIDAD_INICIAL} y salen de la CDMX? Súmense a nuestro `,
         { link: "viaje a la Huasteca desde CDMX", href: VIAJE_RUTA },
         ", que sale cada mes del Ángel de la Independencia.",
+      ],
+      serviciosSueltos: [
+        "¿Solo necesitan el transporte, un guía o la comida? Mira ",
+        { link: "transporte privado, guías y comida para grupos", href: RUTA_SERVICIOS_ES },
+        ".",
       ],
 
       composicionH2: "De qué se compone un viaje",
@@ -320,6 +329,11 @@ function construir(locale: Locale): GruposContent {
       `Fewer than ${CAPACIDAD_INICIAL} of you, leaving from Mexico City? Join our `,
       { link: "Huasteca trip from Mexico City", href: VIAJE_RUTA_EN },
       ", which leaves every month from the Ángel de la Independencia.",
+    ],
+    serviciosSueltos: [
+      "Only need the transport, a guide or the meals? See ",
+      { link: "private transport, guides and meals for groups", href: RUTA_SERVICIOS_EN },
+      ".",
     ],
 
     composicionH2: "What a trip is made of",

@@ -209,6 +209,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // «cascadas de la huasteca» sin página propia). Slug distinto en cada idioma.
     ...parDeSlugs("/donde-hospedarse-en-la-huasteca-potosina", "/en/where-to-stay-in-huasteca-potosina", { changeFrequency: "monthly", priority: 0.8, ...CAT }),
     ...parDeSlugs("/cascadas-de-la-huasteca-potosina", "/en/huasteca-potosina-waterfalls", { changeFrequency: "monthly", priority: 0.8, ...CAT }),
+    // Transporte privado, guías y comida para grupos (Manolo, 12 nov 2026). Enseña
+    // las tarifas de traslados.ts: por eso lleva la fecha del catálogo.
+    ...parDeSlugs("/transporte-y-alimentos-para-grupos", "/en/group-transport-and-meals", { changeFrequency: "monthly", priority: 0.7, ...CAT }),
     ...CIUDADES_ORIGEN.map((c) => ({
       url: `${BASE}/desde/${c.slug}`,
       changeFrequency: "monthly" as const,

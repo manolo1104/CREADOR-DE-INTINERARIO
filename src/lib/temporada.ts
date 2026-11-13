@@ -118,7 +118,7 @@ export const MEJOR_TEMPORADA = { inicioMes: 10, inicioDia: 30, finMes: 12, finDi
 const DIAS_DE_AVISO = 45;
 
 /** El día de hoy en la Huasteca, no en el servidor (Railway corre en UTC). */
-function hoyEnMexico(ahora?: Date): { y: number; m: number; d: number } {
+export function hoyEnMexico(ahora?: Date): { y: number; m: number; d: number } {
   const iso = (ahora ?? new Date()).toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
   const [y, m, d] = iso.split("-").map(Number);
   return { y, m, d };
@@ -196,6 +196,21 @@ export function temporadaDe(mes?: number, dia?: number): Temporada {
 export function rioSegunTemporada(ahora?: Date): "turquesa" | "caudal" {
   const { m, d } = hoyEnMexico(ahora);
   return temporadaDe(m, d) === LLUVIAS ? "caudal" : "turquesa";
+}
+
+/**
+ * Cómo viene el agua en una fecha, en tres estados y no en cuatro ventanas:
+ * lo usan las «Próximas temporadas» del inicio (12 nov 2026), que necesitan
+ * una etiqueta corta por fecha que nunca contradiga a la franja del río.
+ *  · `caudal`: lluvias (julio al 29 de octubre).
+ *  · `turquesa`: marzo a mayo, el turquesa más intenso.
+ *  · `clara`: el resto (30 de octubre a febrero, y junio).
+ */
+export function estadoAguaDe(mes: number, dia: number): "caudal" | "turquesa" | "clara" {
+  const t = temporadaDe(mes, dia);
+  if (t === LLUVIAS) return "caudal";
+  if (t === SECA_CLARA) return "turquesa";
+  return "clara";
 }
 
 /**
