@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { resenasTexto } from "@/lib/resenas";
 import { trackTourEvent } from "@/lib/tourTracker";
 import Link from "next/link";
+import Image from "next/image";
+import { PlanCompleto } from "@/components/recommender/PlanCompleto";
 import {
   Users, User, UserRound, Baby,
   Camera, Waves, Zap, Leaf, Sunset,
@@ -123,20 +125,6 @@ const GRUPOS = [
   { key: "En pareja",        Icon: UserRound,  desc: "Romántico y memorable" },
   { key: "Familia con niños",Icon: Baby,       desc: "Seguro y divertido para todos" },
   { key: "Con amigos",       Icon: Users,      desc: "Aventura en grupo" },
-];
-
-const INTERESES = [
-  { key: "Cascadas turquesas", Icon: Waves,   desc: "Pozas y cascadas" },
-  { key: "Aventura extrema",   Icon: Zap,     desc: "Adrenalina y retos" },
-  { key: "Arte y cultura",     Icon: Leaf,    desc: "Historia y arte" },
-  { key: "Fotografía perfecta",Icon: Camera,  desc: "Las mejores fotos" },
-  { key: "Relax total",        Icon: Sunset,  desc: "Desconexión y paz" },
-];
-
-const ACTIVIDADES = [
-  { key: "Tranquilo", label: "Tranquilo", sub: "Caminar poco, disfrutar mucho" },
-  { key: "Moderado",  label: "Moderado",  sub: "Algo de caminata, sin exigir" },
-  { key: "Intenso",   label: "Intenso",   sub: "Quiero moverme y sentir la aventura" },
 ];
 
 // Con 3+ días la recomendación incluye el paquete con hospedaje (la API lo decide).
@@ -429,28 +417,37 @@ function PaqueteResultCard({
 
 // ── Main shell ────────────────────────────────────────────────────────────────
 
-const DESTINOS_BUCKET = [
-  "Recorrido en RZR por Xilitla (off-road)",
-  "Cascada de Tamul",
-  "Las Pozas de Xilitla (Edward James)",
-  "Cascadas del Meco",
-  "Minas Viejas",
-  "Puente de Dios",
-  "Sótano de las Huahuas",
-  "Cascadas de Micos",
-  "Laguna de la Media Luna (buceo)",
-  // Los recorridos nuevos (sep 2026): sin estas opciones, sus bonos del
-  // respaldo por destino no se podían alcanzar desde la interfaz.
-  "Gruta de Xilo (recorrido nocturno)",
-  "Amanecer de Nubes (Cerro del Pilón)",
-  "Olla de la Luz (bosque de niebla)",
-  "Finca de café de Xilitla",
-  "Sin preferencia — sorpréndeme",
-];
-
-// Ya no hay paso «correo»: el plan se enseña al terminar las 7 preguntas y el
+// Ya no hay paso «correo»: el plan se enseña al terminar las preguntas y el
 // correo se ofrece en la pantalla del resultado (10 oct 2026).
-type WizardStep = "origen" | "dias" | "grupo" | "intereses" | "actividad" | "destino" | "detalles" | "loading" | "result" | "error";
+// 13 nov 2026 (auditoría): de 7 a 5 pasos que avanzan solos al tocar una
+// opción. «Intereses» y «energía» se juntaron en «¿Qué te late más?», el texto
+// libre salió, y el paso de lugares va con FOTOS (o se salta con «No conozco»).
+type WizardStep = "origen" | "dias" | "grupo" | "estilo" | "lugar" | "loading" | "result" | "error";
+
+/** «¿Qué te late más?»: cada opción lleva sus intereses y su ritmo (lo que la API ya entiende). */
+const ESTILOS = [
+  { key: "agua",     Icon: Waves,  label: "Cascadas y agua turquesa", sub: "Nadar, canoa y pozas",          intereses: ["Cascadas turquesas"],  actividad: "Moderado" },
+  { key: "aventura", Icon: Zap,    label: "Aventura y adrenalina",    sub: "Rafting, rappel, saltos",       intereses: ["Aventura extrema"],    actividad: "Intenso" },
+  { key: "cultura",  Icon: Leaf,   label: "Arte, cultura y Las Pozas", sub: "Edward James, pueblos, café",   intereses: ["Arte y cultura"],      actividad: "Tranquilo" },
+  { key: "fotos",    Icon: Camera, label: "Las mejores fotos",        sub: "Miradores y lugares únicos",    intereses: ["Fotografía perfecta"], actividad: "Moderado" },
+  { key: "relax",    Icon: Sunset, label: "Relax y naturaleza",       sub: "A tu ritmo, sin prisas",        intereses: ["Relax total"],         actividad: "Tranquilo" },
+] as const;
+
+/** Los lugares con foto (las etiquetas son las que entiende `/api/recomendar-tour`). */
+const LUGARES: { label: string; corto: string; img: string }[] = [
+  { label: "Cascada de Tamul",                     corto: "Cascada de Tamul",   img: "/imagenes/tours/tamul/cascada-de-tamul-desde-el-rio.jpg" },
+  { label: "Las Pozas de Xilitla (Edward James)",  corto: "Las Pozas",          img: "/imagenes/tours/edward-james/hero.jpg" },
+  { label: "Cascadas del Meco",                    corto: "Cascadas del Meco",  img: "/imagenes/cascada-el-meco/hero.jpg" },
+  { label: "Cascadas de Micos",                    corto: "Cascadas de Micos",  img: "/imagenes/cascadas-de-micos/hero.jpg" },
+  { label: "Puente de Dios",                       corto: "Puente de Dios",     img: "/imagenes/puente-de-dios-tamasopo/hero-new.webp" },
+  { label: "Minas Viejas",                         corto: "Minas Viejas",       img: "/imagenes/cascadas-minas-viejas/hero-new.jpg" },
+  { label: "Sótano de las Huahuas",                corto: "Sótano de las Huahuas", img: "/imagenes/sotano-de-las-huahuas/hero.jpg" },
+  { label: "Olla de la Luz (bosque de niebla)",    corto: "Olla de la Luz",     img: "/imagenes/tours/olla-de-la-luz/hero.jpg" },
+  { label: "Recorrido en RZR por Xilitla (off-road)", corto: "RZR por la sierra", img: "/imagenes/tours/rzr-xilitla/hero.jpg" },
+  { label: "Gruta de Xilo (recorrido nocturno)",   corto: "Gruta de Xilo",      img: "/imagenes/tours/gruta-de-xilo/hero.jpg" },
+  { label: "Amanecer de Nubes (Cerro del Pilón)",  corto: "Amanecer de Nubes",  img: "/imagenes/tours/amanecer-de-nubes/hero.jpg" },
+  { label: "Finca de café de Xilitla",             corto: "Finca de café",      img: "/imagenes/tours/travesia-del-cafe/hero.jpg" },
+];
 
 interface WizardState {
   origen:    string;
@@ -506,15 +503,6 @@ export function RecommenderShell() {
     if (inicioMarcado.current) return;
     inicioMarcado.current = true;
     trackTourEvent("RECOMMENDER_STARTED", {});
-  }
-
-  function toggleInteres(key: string) {
-    setState((s) => ({
-      ...s,
-      intereses: s.intereses.includes(key)
-        ? s.intereses.filter((i) => i !== key)
-        : [...s.intereses, key],
-    }));
   }
 
   // Compuerta de correo: se pide el email ANTES de correr el agente y se manda
@@ -583,21 +571,22 @@ export function RecommenderShell() {
    * fallo cae al paso `error`, con reintento y salida por WhatsApp. El propio
    * paso `loading` es el candado contra el doble envío.
    */
-  async function submit(correo: string) {
+  async function submit(correo: string, ultimo: Partial<WizardState> = {}) {
     if (step === "loading") return;
+    const st = { ...state, ...ultimo };
     setStep("loading");
     try {
       const res = await fetch("/api/recomendar-tour", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          origen:    state.origen,
-          dias:      state.dias,
-          grupo:     state.grupo,
-          intereses: state.intereses,
-          actividad: state.actividad,
-          destino:   state.destino,
-          notas:     state.notas,
+          origen:    st.origen,
+          dias:      st.dias,
+          grupo:     st.grupo,
+          intereses: st.intereses,
+          actividad: st.actividad,
+          destino:   st.destino,
+          notas:     st.notas,
           email:     correo,
         }),
       });
@@ -629,6 +618,12 @@ export function RecommenderShell() {
     } catch {
       setStep("error");
     }
+  }
+
+  /** Guarda la opción y pasa solo al siguiente paso (un respiro para ver el toque). */
+  function elegir(cambio: Partial<WizardState>, siguiente: WizardStep) {
+    setState((s) => ({ ...s, ...cambio }));
+    window.setTimeout(() => setStep(siguiente), 160);
   }
 
   const primaryTour   = result ? TOURS_DB.find((t) => t.id === result.primary.tourId)   : null;
@@ -768,6 +763,13 @@ export function RecommenderShell() {
             </div>
           )}
 
+          {/* Cómo llegar desde su ciudad, el viaje grupal y el total (13 nov 2026). */}
+          <PlanCompleto
+            origen={state.origen} dias={state.dias} grupo={state.grupo}
+            principal={primaryTour} secundario={secondaryTour ?? null}
+            paquete={paqueteRec ? { slug: paqueteRec.slug, nombre: paqueteRec.nombre } : null}
+          />
+
           {/* Guarantees — van justo debajo del tour recomendado, y el
               recomendador puede elegir el Edén, que NO reembolsa: si el tour
               trae `cancelacion` propia, no se le promete la de 48 h. */}
@@ -844,10 +846,10 @@ export function RecommenderShell() {
 
   // ── Wizard ───────────────────────────────────────────────────────────────
 
-  const TOTAL_PASOS = 7;
+  const TOTAL_PASOS = 5;
   // `correo` ya no es un paso del cuestionario (el plan se enseña sin él), así
   // que la barra ya no se queda clavada en 100 % en dos pantallas distintas.
-  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, intereses: 4, actividad: 5, destino: 6, detalles: 7 };
+  const STEP_NUMS: Partial<Record<WizardStep, number>> = { origen: 1, dias: 2, grupo: 3, estilo: 4, lugar: 5 };
   const stepNum = STEP_NUMS[step] ?? 1;
   const progress = (stepNum / TOTAL_PASOS) * 100;
 
@@ -879,352 +881,153 @@ export function RecommenderShell() {
             romper el diseño, pero lo leen buscadores y lectores de pantalla. */}
         <h1 className="sr-only">¿Qué tour de la Huasteca Potosina es para mí? Recomendador personalizado</h1>
 
-        {/* STEP 1: ORIGEN */}
+        {/* Cada opción AVANZA SOLA (13 nov 2026): `elegir` guarda y pasa al
+            siguiente paso; «← Atrás» sigue en todos. */}
+
+        {/* PASO 1: ORIGEN */}
         {step === "origen" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 01 · 07</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 01 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
               ¿De dónde nos <em className="text-dorado">visitas?</em>
             </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">Te ayuda a personalizar tu experiencia</p>
-
+            <p className="font-dm text-crema/40 text-sm mb-8">Con tu ciudad te decimos cómo llegar y cuánto cuesta</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
               {CIUDADES_POPULARES.filter((c) => c !== "Otra ciudad").map((ciudad) => (
-                <button
-                  key={ciudad}
-                  aria-pressed={state.origen === ciudad}
-                  onClick={() => { marcarInicio(); setOrigenInput(""); setShowInput(false); setState((s) => ({ ...s, origen: ciudad })); }}
-                  className={`border py-3 px-3 text-xs font-dm transition-all text-center ${
-                    state.origen === ciudad
-                      ? "border-verde-vivo bg-verde-vivo/15 text-crema font-medium"
-                      : "border-crema/20 text-crema/60 hover:border-verde-selva/50 hover:text-crema"
-                  }`}
-                >
+                <button key={ciudad} aria-pressed={state.origen === ciudad}
+                  onClick={() => { marcarInicio(); setOrigenInput(""); setShowInput(false); elegir({ origen: ciudad }, "dias"); }}
+                  className={`border py-3 px-3 text-xs font-dm transition-all text-center ${state.origen === ciudad ? "border-verde-vivo bg-verde-vivo/15 text-crema font-medium" : "border-crema/20 text-crema/60 hover:border-verde-selva/50 hover:text-crema"}`}>
                   {ciudad}
                 </button>
               ))}
             </div>
-
-            <button
-              onClick={() => setShowInput((v) => !v)}
-              className="text-[11px] font-dm text-crema/35 hover:text-crema/60 underline mb-4 block transition-colors"
-            >
+            <button onClick={() => setShowInput((v) => !v)} className="text-[11px] font-dm text-crema/35 hover:text-crema/60 underline mb-4 block transition-colors">
               {showInput ? "Ocultar" : "Mi ciudad no está en la lista"}
             </button>
-
             {showInput && (
-              <>
+              <div className="flex gap-2">
                 <label htmlFor="ciudad-origen" className="sr-only">Tu ciudad</label>
-                <input
-                  id="ciudad-origen"
-                  autoFocus
-                  type="text"
-                  maxLength={60}
-                  placeholder="Escribe tu ciudad…"
-                  value={origenInput}
-                  onChange={(e) => {
-                    marcarInicio();
-                    setOrigenInput(e.target.value);
-                    setState((s) => ({ ...s, origen: e.target.value.trim() }));
-                  }}
-                  className="w-full border border-crema/20 bg-transparent text-crema placeholder:text-crema/25 px-4 py-3 text-sm font-dm outline-none focus:border-verde-vivo mb-4"
-                />
-              </>
+                <input id="ciudad-origen" autoFocus type="text" maxLength={60} placeholder="Escribe tu ciudad…" value={origenInput}
+                  onChange={(e) => { marcarInicio(); setOrigenInput(e.target.value); setState((s) => ({ ...s, origen: e.target.value.trim() })); }}
+                  onKeyDown={(e) => { if (e.key === "Enter" && origenInput.trim()) setStep("dias"); }}
+                  className="flex-1 border border-crema/20 bg-transparent text-crema placeholder:text-crema/25 px-4 py-3 text-[16px] font-dm outline-none focus:border-verde-vivo" />
+                <button onClick={() => setStep("dias")} disabled={!origenInput.trim()} className="bg-verde-selva text-crema px-5 text-[11px] tracking-[2px] uppercase font-dm disabled:opacity-40">
+                  Seguir <ChevronRight className="inline w-4 h-4" aria-hidden="true" />
+                </button>
+              </div>
             )}
-
-            <button
-              onClick={() => setStep("dias")}
-              disabled={!state.origen}
-              className="mt-4 bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2"
-            >
-              Continuar <ChevronRight className="w-4 h-4" />
-            </button>
           </div>
         )}
 
-        {/* STEP 2: DÍAS DISPONIBLES */}
+        {/* PASO 2: DÍAS */}
         {step === "dias" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 02 · 07</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 02 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              ¿Cuántos <em className="text-dorado">días</em> tienen para<br />visitar la Huasteca?
+              ¿Cuántos <em className="text-dorado">días</em> tienen?
             </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">Con 3 o más días tu recomendación incluye un paquete con hospedaje</p>
-
-            <div className="space-y-3 mb-10">
+            <p className="font-dm text-crema/40 text-sm mb-8">Con 3 o más días te sugerimos un paquete con hospedaje</p>
+            <div className="space-y-3 mb-8">
               {DIAS_OPCIONES.map(({ key, sub }) => (
-                <button
-                  key={key}
-                  aria-pressed={state.dias === key}
-                  onClick={() => setState((s) => ({ ...s, dias: key }))}
-                  className={`w-full flex items-center justify-between border px-6 py-4 text-left transition-all ${
-                    state.dias === key
-                      ? "border-verde-vivo bg-verde-vivo/10"
-                      : "border-crema/20 hover:border-verde-selva/40"
-                  }`}
-                >
-                  <div className="flex items-center gap-4">
-                    <CalendarDays className="w-5 h-5 text-verde-selva flex-shrink-0" />
-                    <div>
-                      <div className="text-sm font-dm text-crema font-medium">{key}</div>
-                      <div className="text-[11px] text-crema/40 mt-0.5">{sub}</div>
-                    </div>
+                <button key={key} aria-pressed={state.dias === key} onClick={() => elegir({ dias: key }, "grupo")}
+                  className={`w-full flex items-center gap-4 border px-6 py-4 text-left transition-all ${state.dias === key ? "border-verde-vivo bg-verde-vivo/10" : "border-crema/20 hover:border-verde-selva/40"}`}>
+                  <CalendarDays className="w-5 h-5 text-verde-selva flex-shrink-0" />
+                  <div>
+                    <div className="text-sm font-dm text-crema font-medium">{key}</div>
+                    <div className="text-[11px] text-crema/40 mt-0.5">{sub}</div>
                   </div>
-                  <div className={`w-4 h-4 rounded-full border-2 transition-all flex-shrink-0 ${
-                    state.dias === key ? "bg-verde-vivo border-verde-vivo" : "border-crema/25"
-                  }`} />
                 </button>
               ))}
             </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("origen")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button
-                onClick={() => setStep("grupo")}
-                disabled={!state.dias}
-                className="flex-1 bg-verde-selva text-crema py-3.5 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continuar →
-              </button>
-            </div>
+            <BotonAtras onClick={() => setStep("origen")} />
           </div>
         )}
 
-        {/* STEP 3: GRUPO */}
+        {/* PASO 3: GRUPO */}
         {step === "grupo" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 03 · 07</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 03 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              ¿Cómo <em className="text-dorado">viajas?</em>
+              ¿Con quién <em className="text-dorado">viajas?</em>
             </h2>
             <p className="font-dm text-crema/40 text-sm mb-8">Elegimos el recorrido pensando en quién viaja contigo</p>
-
-            <div className="grid grid-cols-2 gap-3 mb-10">
+            <div className="grid grid-cols-2 gap-3 mb-8">
               {GRUPOS.map(({ key, Icon, desc }) => (
-                <button
-                  key={key}
-                  aria-pressed={state.grupo === key}
-                  onClick={() => setState((s) => ({ ...s, grupo: key }))}
-                  className={`border p-6 text-center transition-all ${
-                    state.grupo === key
-                      ? "border-dorado bg-dorado/10"
-                      : "border-crema/20 hover:border-dorado/40"
-                  }`}
-                >
+                <button key={key} aria-pressed={state.grupo === key} onClick={() => elegir({ grupo: key }, "estilo")}
+                  className={`border p-6 text-center transition-all ${state.grupo === key ? "border-dorado bg-dorado/10" : "border-crema/20 hover:border-dorado/40"}`}>
                   <Icon className="w-7 h-7 text-verde-selva mx-auto mb-2" />
                   <div className="text-sm font-dm text-crema mb-1">{key}</div>
                   <div className="text-[10px] text-crema/35 leading-tight">{desc}</div>
                 </button>
               ))}
             </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("dias")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button
-                onClick={() => setStep("intereses")}
-                disabled={!state.grupo}
-                className="flex-1 bg-verde-selva text-crema py-3.5 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continuar →
-              </button>
-            </div>
+            <BotonAtras onClick={() => setStep("dias")} />
           </div>
         )}
 
-        {/* STEP 4: INTERESES */}
-        {step === "intereses" && (
+        {/* PASO 4: ESTILO (intereses + ritmo en una sola elección) */}
+        {step === "estilo" && (
           <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 04 · 07</p>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 04 · 05</p>
             <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              ¿Qué te <em className="text-dorado">emociona?</em>
+              ¿Qué te <em className="text-dorado">late más?</em>
             </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">Selecciona uno o varios</p>
+            <p className="font-dm text-crema/40 text-sm mb-8">Elige el que más te emocione</p>
+            <div className="space-y-2.5 mb-8">
+              {ESTILOS.map(({ key, Icon, label, sub, intereses, actividad }) => {
+                const on = state.intereses.join() === intereses.join() && state.actividad === actividad;
+                return (
+                  <button key={key} aria-pressed={on} onClick={() => elegir({ intereses: [...intereses], actividad }, "lugar")}
+                    className={`w-full flex items-center gap-4 border px-5 py-4 text-left transition-all ${on ? "border-verde-vivo bg-verde-vivo/10" : "border-crema/20 hover:border-verde-selva/40"}`}>
+                    <Icon className="w-5 h-5 text-verde-selva flex-shrink-0" />
+                    <div>
+                      <div className="text-sm font-dm text-crema">{label}</div>
+                      <div className="text-[11px] text-crema/35">{sub}</div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+            <BotonAtras onClick={() => setStep("grupo")} />
+          </div>
+        )}
 
-            <div className="space-y-2.5 mb-10">
-              {INTERESES.map(({ key, Icon, desc }) => (
-                <button
-                  key={key}
-                  aria-pressed={state.intereses.includes(key)}
-                  onClick={() => toggleInteres(key)}
-                  className={`w-full flex items-center gap-4 border px-5 py-4 text-left transition-all ${
-                    state.intereses.includes(key)
-                      ? "border-verde-vivo bg-verde-vivo/10"
-                      : "border-crema/20 hover:border-verde-selva/40"
-                  }`}
-                >
-                  <div className={`w-5 h-5 border rounded flex items-center justify-center flex-shrink-0 text-[9px] transition-all ${
-                    state.intereses.includes(key) ? "bg-verde-vivo border-verde-vivo text-negro" : "border-crema/30"
-                  }`}>
-                    {state.intereses.includes(key) ? "✓" : ""}
-                  </div>
-                  <Icon className="w-5 h-5 text-verde-selva flex-shrink-0" />
-                  <div>
-                    <div className="text-sm font-dm text-crema">{key}</div>
-                    <div className="text-[11px] text-crema/35">{desc}</div>
-                  </div>
+        {/* PASO 5: LUGAR — con fotos; «No conozco» va directo al plan */}
+        {step === "lugar" && (
+          <div>
+            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 05 · 05</p>
+            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
+              ¿Ya tienes un lugar <em className="text-dorado">en mente?</em>
+            </h2>
+            <p className="font-dm text-crema/40 text-sm mb-6">Tócalo y armamos tu plan alrededor de él</p>
+            <button onClick={() => { setState((s) => ({ ...s, destino: "Sin preferencia — sorpréndeme" })); void submit("", { destino: "Sin preferencia — sorpréndeme" }); }}
+              className="w-full mb-4 bg-dorado text-negro py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors">
+              ✦ No conozco la región, sorpréndeme
+            </button>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-8">
+              {LUGARES.map((l) => (
+                <button key={l.label} onClick={() => { setState((s) => ({ ...s, destino: l.label })); void submit("", { destino: l.label }); }}
+                  className="group relative aspect-[4/3] overflow-hidden border border-crema/15 text-left">
+                  <Image src={l.img} alt={l.corto} fill sizes="(min-width: 640px) 180px, 45vw" className="object-cover transition-transform duration-300 group-hover:scale-105" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/20 to-transparent" aria-hidden="true" />
+                  <span className="absolute bottom-2 left-2.5 right-2 font-dm text-[12px] leading-tight text-crema">{l.corto}</span>
                 </button>
               ))}
             </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("grupo")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button
-                onClick={() => setStep("actividad")}
-                disabled={state.intereses.length === 0}
-                className="flex-1 bg-verde-selva text-crema py-3.5 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continuar →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 5: ACTIVIDAD */}
-        {step === "actividad" && (
-          <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 05 · 07</p>
-            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              ¿Cuánta <em className="text-dorado">energía</em> tienes?
-            </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">Para recomendarte el ritmo ideal</p>
-
-            <div className="space-y-3 mb-10">
-              {ACTIVIDADES.map(({ key, label, sub }) => (
-                <button
-                  key={key}
-                  aria-pressed={state.actividad === key}
-                  onClick={() => setState((s) => ({ ...s, actividad: key }))}
-                  className={`w-full flex items-center justify-between border px-6 py-5 text-left transition-all ${
-                    state.actividad === key
-                      ? "border-verde-vivo bg-verde-vivo/10"
-                      : "border-crema/20 hover:border-verde-selva/40"
-                  }`}
-                >
-                  <div>
-                    <div className="text-sm font-dm text-crema font-medium">{label}</div>
-                    <div className="text-[11px] text-crema/40 mt-0.5">{sub}</div>
-                  </div>
-                  <div className={`w-4 h-4 rounded-full border-2 transition-all flex-shrink-0 ${
-                    state.actividad === key ? "bg-verde-vivo border-verde-vivo" : "border-crema/25"
-                  }`} />
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("intereses")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button
-                onClick={() => setStep("destino")}
-                disabled={!state.actividad}
-                className="flex-1 bg-verde-selva text-crema py-3.5 text-[11px] tracking-[4px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continuar →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 6: DESTINO SOÑADO */}
-        {step === "destino" && (
-          <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 06 · 07</p>
-            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              ¿Hay un lugar que no te<br />
-              puedes <em className="text-dorado">perder?</em>
-            </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">Si tienes un destino en mente, lo incluimos en la recomendación</p>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mb-10">
-              {DESTINOS_BUCKET.map((d) => (
-                <button
-                  key={d}
-                  aria-pressed={state.destino === d}
-                  onClick={() => setState((s) => ({ ...s, destino: d }))}
-                  className={`border px-4 py-3.5 text-left text-sm font-dm transition-all ${
-                    state.destino === d
-                      ? "border-verde-vivo bg-verde-vivo/10 text-crema font-medium"
-                      : "border-crema/20 text-crema/60 hover:border-verde-selva/40 hover:text-crema"
-                  }`}
-                >
-                  {d === "Sin preferencia — sorpréndeme" ? (
-                    <span className="text-dorado/80">{d}</span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <span className="text-verde-vivo text-xs">→</span>
-                      {d}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-
-            {/* Trust signal — sin prometer aquí la cancelación de 48 h: el
-                recomendador puede elegir el Edén, que no reembolsa. */}
-            <div className="flex items-center gap-3 bg-white/5 border border-white/8 px-4 py-3 mb-6">
-              <Shield className="w-4 h-4 text-verde-selva flex-shrink-0" />
-              <p className="text-[11px] font-dm text-crema/50 leading-snug">
-                Recomendación gratuita · Sin compromisos
-              </p>
-            </div>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("actividad")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button
-                onClick={() => setStep("detalles")}
-                disabled={!state.destino}
-                className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Continuar →
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* STEP 7: CON TUS PALABRAS — el paso que pidió Manolo (29 sep 2026):
-            texto libre que la IA usa para ELEGIR y para redactar la reason. */}
-        {step === "detalles" && (
-          <div>
-            <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3">Paso 07 · 07</p>
-            <h2 className="font-cormorant font-light text-crema mb-2" style={{ fontSize: "clamp(30px,5vw,46px)" }}>
-              Cuéntanos con <em className="text-dorado">tus palabras</em>
-            </h2>
-            <p className="font-dm text-crema/40 text-sm mb-8">
-              Opcional, pero es lo que más personaliza tu plan: ¿celebran algo?,
-              ¿algo que te preocupe?, ¿alguien del grupo con condición especial?
-            </p>
-
-            <label htmlFor="notas-viaje" className="sr-only">Cuéntanos de tu viaje</label>
-            <textarea
-              id="notas-viaje"
-              value={state.notas}
-              maxLength={280}
-              rows={4}
-              placeholder={"Por ejemplo: «es nuestro aniversario», «le tengo miedo al agua», «viajo con mi mamá de 70 y camina poco»…"}
-              onChange={(e) => setState((s) => ({ ...s, notas: e.target.value }))}
-              className="w-full border border-crema/20 bg-transparent text-crema placeholder:text-crema/25 px-4 py-3.5 text-sm font-dm leading-relaxed outline-none focus:border-verde-vivo resize-none"
-            />
-            <p className="mt-1.5 mb-8 text-right text-[10px] font-dm text-crema/30">{state.notas.length}/280</p>
-
-            <div className="flex gap-3">
-              <button onClick={() => setStep("destino")} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              {/* 🔴 10 oct 2026 — este botón hacía `setStep("correo")`: se
-                  contestaban las 7 preguntas y la ÚNICA salida era el muro de
-                  correo. En 9 días de Clarity, 8 personas empezaron el
-                  recomendador y solo 2 dejaron su correo; las otras se salieron
-                  por el menú al catálogo y se fueron en 3-9 segundos, después de
-                  contestar todo. Ahora el plan se enseña y el correo se ofrece
-                  DESPUÉS, en la pantalla del resultado. */}
-              <button
-                onClick={() => void submit("")}
-                className="flex-1 bg-dorado text-negro py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors"
-              >
-                ✦ Ver mi plan
-              </button>
-            </div>
+            <BotonAtras onClick={() => setStep("estilo")} />
           </div>
         )}
 
       </main>
     </div>
+  );
+}
+
+/** «← Atrás», el mismo en todos los pasos. */
+function BotonAtras({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">
+      ← Atrás
+    </button>
   );
 }

@@ -8,7 +8,7 @@ const URL = `${SITE}/recomendar`;
 export const metadata: Metadata = {
   title: "¿Qué tour es para ti? — Recomendador IA | Huasteca Potosina",
   description:
-    "Responde 7 preguntas —incluye una donde nos cuentas tu viaje con tus palabras— y te recomendamos tu tour y tu plan de días. Gratis.",
+    "Responde 5 preguntas rápidas y te recomendamos tu tour, cómo llegar desde tu ciudad y cuánto cuesta el viaje. Gratis.",
   keywords: [
     "qué tour hacer en la huasteca potosina",
     "recomendador de tours",
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "¿Qué tour es para ti? — Recomendador IA",
     description:
-      "Responde 7 preguntas y encuentra el tour perfecto para tu grupo en la Huasteca Potosina. Gratis.",
+      "Responde 5 preguntas y encuentra el tour perfecto para tu grupo en la Huasteca Potosina. Gratis.",
     url: URL,
     siteName: "Tours Huasteca Potosina",
     locale: "es_MX",
@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "¿Qué tour es para ti? — Recomendador IA",
-    description: "Responde 7 preguntas y encuentra tu tour ideal en la Huasteca Potosina.",
+    description: "Responde 5 preguntas y encuentra tu tour ideal en la Huasteca Potosina.",
     images: [`${SITE}/og-image.jpg`],
   },
 };
