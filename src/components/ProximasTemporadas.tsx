@@ -1,28 +1,56 @@
 /* ProximasTemporadas — las fechas que se llenan, en el inicio (Server Component) */
+import type { CSSProperties } from "react";
 import { Droplets } from "lucide-react";
-import { proximasTemporadas, fechasDeTemporada, type TemporadaVista } from "@/lib/temporadasProximas";
+import {
+  proximasTemporadas, fechasDeTemporada, type TemaTemporada, type TemporadaVista,
+} from "@/lib/temporadasProximas";
 import { GRUPO_MAX } from "@/lib/tours";
 import { waLink } from "@/lib/whatsapp";
+import { IlustracionTemporada } from "@/components/temporadas/IlustracionTemporada";
 
 /**
  * «Una pequeña sección donde se desglosen las temporadas que vienen, como
- * vacaciones de dic, Semana Santa, etc.» (Manolo, 12 nov 2026).
+ * vacaciones de dic, Semana Santa, etc.» (Manolo, 12 nov 2026). Y el mismo
+ * día: «dale un diseño atractivo… si se puede con diseño de esa temporada».
+ *
+ * Cada tarjeta lleva el color y la ilustración de SU fecha (papel picado
+ * tricolor, nochebuenas, jacarandas, palma y agua turquesa, lluvia y cascada,
+ * cempasúchil): ver `temporadas/IlustracionTemporada.tsx`. Los colores viven
+ * en `TEMAS`, aquí abajo; el texto y las fechas, en `temporadasProximas.ts`.
  *
  * Va justo después de `BandaTemporada` (la de «la mejor temporada para venir»)
  * porque las dos responden lo mismo: ¿cuándo voy? Esta lo dice con fechas.
+ * Las que ya pasaron no llegan hasta aquí; sin ninguna, no se pinta.
  *
- * Las fechas, las notas y la regla del agua viven en `temporadasProximas.ts`;
- * aquí solo se pintan. Las que ya pasaron no llegan hasta aquí, y si algún día
- * no queda ninguna, la sección no se pinta.
- *
- * Sin cajas, como las razones de «Por qué con nosotros»: una línea arriba de
- * cada temporada. En el teléfono es una fila que se desliza (cinco tarjetas
- * apiladas eran más de una pantalla para una sección «pequeña»); de `sm` para
- * arriba, rejilla.
- *
- * El clic de «Apartar por WhatsApp» lo cuenta `WhatsAppClickTracker` (escucha
- * todo el documento) con `data-seccion="proximas-temporadas"`.
+ * En el teléfono es una fila que se desliza (cinco tarjetas apiladas eran más
+ * de una pantalla para una sección «pequeña»); de `sm` para arriba, rejilla.
+ * El clic de «Apartar por WhatsApp» lo cuenta `WhatsAppClickTracker` con
+ * `data-seccion="proximas-temporadas"`.
  */
+
+interface Tema {
+  /** Fondo de toda la tarjeta. */
+  fondo: string;
+  /** Color del texto. */
+  tinta: string;
+  /** Texto secundario (nota, agua). */
+  suave: string;
+  /** Botón: fondo y letra. */
+  boton: string;
+  botonTinta: string;
+  /** Las etiquetas de demanda, sobre la ilustración. */
+  etiqueta: string;
+}
+
+const TEMAS: Record<TemaTemporada, Tema> = {
+  revolucion:     { fondo: "#f4edd8", tinta: "#1a2e1a", suave: "rgba(26,46,26,.68)", boton: "#1f7a3a", botonTinta: "#ffffff", etiqueta: "rgba(255,255,255,.85)" },
+  navidad:        { fondo: "linear-gradient(165deg,#1d3a27 0%,#0f2016 100%)", tinta: "#f4edd8", suave: "rgba(244,237,216,.72)", boton: "#d7263d", botonTinta: "#ffffff", etiqueta: "rgba(255,255,255,.14)" },
+  constitucion:   { fondo: "linear-gradient(180deg,#eaf6f9 0%,#d5edf3 100%)", tinta: "#12323d", suave: "rgba(18,50,61,.7)", boton: "#1f6f8b", botonTinta: "#ffffff", etiqueta: "rgba(255,255,255,.8)" },
+  juarez:         { fondo: "linear-gradient(170deg,#f4f0fa 0%,#e6dcf3 100%)", tinta: "#2c1f45", suave: "rgba(44,31,69,.7)", boton: "#6b4fa3", botonTinta: "#ffffff", etiqueta: "rgba(255,255,255,.8)" },
+  "semana-santa": { fondo: "linear-gradient(180deg,#fff6df 0%,#d9f2ee 100%)", tinta: "#0f3b3a", suave: "rgba(15,59,58,.72)", boton: "#0f8a84", botonTinta: "#ffffff", etiqueta: "rgba(255,255,255,.8)" },
+  verano:         { fondo: "linear-gradient(170deg,#1b4438 0%,#0f2a24 100%)", tinta: "#eef7f2", suave: "rgba(238,247,242,.72)", boton: "#8fbe3a", botonTinta: "#0e1710", etiqueta: "rgba(255,255,255,.14)" },
+  xantolo:        { fondo: "linear-gradient(165deg,#3d1443 0%,#22081f 100%)", tinta: "#fbeee0", suave: "rgba(251,238,224,.74)", boton: "#f39a1d", botonTinta: "#22081f", etiqueta: "rgba(255,255,255,.14)" },
+};
 
 const AGUA = {
   caudal:   { es: "Cascadas a todo caudal",        en: "Waterfalls at full flow" },
@@ -65,50 +93,64 @@ export function ProximasTemporadas({ en }: { en: boolean }) {
           </p>
         </div>
 
-        <ol className="-mx-6 flex snap-x snap-mandatory scroll-px-6 gap-5 overflow-x-auto px-6 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-x-8 sm:gap-y-10 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-5 lg:gap-x-6">
-          {temporadas.map((t) => (
-            <li
-              key={t.id}
-              className="flex w-[78%] shrink-0 snap-start flex-col border-t border-negro/15 pt-5 sm:w-auto"
-            >
-              <div className="mb-3 flex flex-wrap gap-1.5">
-                {t.enCurso && (
-                  <span className="rounded-full bg-verde-selva px-2.5 py-0.5 font-dm text-[11px] font-medium text-white">
-                    {en ? "Happening now" : "En curso"}
-                  </span>
-                )}
-                <span
-                  className={`rounded-full px-2.5 py-0.5 font-dm text-[11px] font-medium ${
-                    t.afluencia === "muy-alta" ? "bg-terracota/10 text-terracota" : "bg-dorado/15 text-verde-profundo"
-                  }`}
-                >
-                  {t.afluencia === "muy-alta"
-                    ? (en ? "Busiest dates" : "Muy alta demanda")
-                    : (en ? "High demand" : "Alta demanda")}
-                </span>
-              </div>
-
-              <p className="font-cormorant text-[28px] leading-none text-verde-profundo">
-                {fechasDeTemporada(t, loc)}
-              </p>
-              <h3 className="mt-2 font-dm text-[15px] font-medium text-verde-profundo">{t.nombre[loc]}</h3>
-              <p className="mt-1.5 font-dm text-[13px] leading-relaxed text-negro/55">{t.nota[loc]}</p>
-              <p className="mt-2 flex items-center gap-1.5 font-dm text-[12px] text-negro/50">
-                <Droplets className="h-3.5 w-3.5 shrink-0 text-agua" strokeWidth={1.75} aria-hidden="true" />
-                {AGUA[t.agua][loc]}
-              </p>
-
-              <a
-                href={waLink(mensaje(t, en))}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={en ? `Book ${t.nombre.en} on WhatsApp` : `Apartar ${t.nombre.es} por WhatsApp`}
-                className="mt-auto pt-4 font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota"
+        <ol className="-mx-6 flex snap-x snap-mandatory scroll-px-6 gap-4 overflow-x-auto px-6 pb-3 sm:mx-0 sm:grid sm:grid-cols-2 sm:gap-5 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-5 lg:gap-4">
+          {temporadas.map((t) => {
+            const tema = TEMAS[t.tema];
+            const estilo: CSSProperties = { background: tema.fondo, color: tema.tinta };
+            return (
+              <li
+                key={t.id}
+                style={estilo}
+                className="group flex w-[80%] shrink-0 snap-start flex-col overflow-hidden rounded-3xl shadow-[0_1px_2px_rgba(14,23,16,.06),0_8px_24px_-12px_rgba(14,23,16,.25)] ring-1 ring-black/5 transition-transform duration-300 ease-out hover:-translate-y-1 sm:w-auto"
               >
-                {en ? "Book on WhatsApp →" : "Apartar por WhatsApp →"}
-              </a>
-            </li>
-          ))}
+                {/* La ilustración de la fecha, con las etiquetas encima. */}
+                {/* 2:1 = la proporción del dibujo: se ve completo en cualquier ancho de tarjeta. */}
+                <div className="relative aspect-[2/1] overflow-hidden">
+                  <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-[1.04]">
+                    <IlustracionTemporada tema={t.tema} />
+                  </div>
+                  <div className="absolute left-4 top-3 flex flex-wrap gap-1.5">
+                    {t.enCurso && (
+                      <span className="rounded-full bg-verde-selva px-2.5 py-0.5 font-dm text-[11px] font-medium text-white">
+                        {en ? "Happening now" : "En curso"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-1 flex-col px-5 pb-5 pt-3">
+                  <span
+                    className="mb-2 self-start rounded-full px-2.5 py-0.5 font-dm text-[11px] font-medium backdrop-blur-sm"
+                    style={{ background: tema.etiqueta, color: tema.tinta, boxShadow: `inset 0 0 0 1px ${tema.suave.replace(/[\d.]+\)$/, ".18)")}` }}
+                  >
+                    {t.afluencia === "muy-alta"
+                      ? (en ? "● Busiest dates" : "● Muy alta demanda")
+                      : (en ? "High demand" : "Alta demanda")}
+                  </span>
+                  <p className="font-cormorant text-[30px] leading-none">{fechasDeTemporada(t, loc)}</p>
+                  <h3 className="mt-1.5 font-dm text-[15px] font-semibold leading-snug">{t.nombre[loc]}</h3>
+                  <p className="mt-1.5 font-dm text-[13px] leading-relaxed" style={{ color: tema.suave }}>{t.nota[loc]}</p>
+                  <p className="mt-2 flex items-center gap-1.5 font-dm text-[12px]" style={{ color: tema.suave }}>
+                    <Droplets className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                    {AGUA[t.agua][loc]}
+                  </p>
+
+                  <div className="mt-auto pt-4">
+                  <a
+                    href={waLink(mensaje(t, en))}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={en ? `Book ${t.nombre.en} on WhatsApp` : `Apartar ${t.nombre.es} por WhatsApp`}
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 font-dm text-[13px] font-medium transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
+                    style={{ background: tema.boton, color: tema.botonTinta }}
+                  >
+                    {en ? "Book on WhatsApp" : "Apartar por WhatsApp"}
+                  </a>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
         </ol>
       </div>
     </section>

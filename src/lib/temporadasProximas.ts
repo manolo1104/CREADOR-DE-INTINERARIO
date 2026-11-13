@@ -26,6 +26,9 @@ import { estadoAguaDe, hoyEnMexico } from "./temporada";
 
 export type Afluencia = "muy-alta" | "alta";
 
+/** El diseño de su tarjeta en el inicio (colores e ilustración de esa fecha). */
+export type TemaTemporada = "revolucion" | "navidad" | "constitucion" | "juarez" | "semana-santa" | "verano" | "xantolo";
+
 export interface TemporadaFechada {
   id: string;
   nombre: { es: string; en: string };
@@ -36,6 +39,7 @@ export interface TemporadaFechada {
   /** Si las fechas exactas no son firmes, lo que se dice en su lugar. */
   fechasTexto?: { es: string; en: string };
   afluencia: Afluencia;
+  tema: TemaTemporada;
   nota: { es: string; en: string };
 }
 
@@ -45,6 +49,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     nombre: { es: "Puente de la Revolución", en: "Revolution Day long weekend" },
     desde: "2026-11-14", hasta: "2026-11-16",
     afluencia: "alta",
+    tema: "revolucion",
     nota: {
       es: "Fin de semana largo: los recorridos de sábado y domingo se llenan primero.",
       en: "Long weekend in Mexico: Saturday and Sunday tours fill up first.",
@@ -55,6 +60,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     nombre: { es: "Vacaciones de diciembre", en: "December holidays" },
     desde: "2026-12-19", hasta: "2027-01-06",
     afluencia: "muy-alta",
+    tema: "navidad",
     nota: {
       es: "Vacaciones escolares del 21 de diciembre al 5 de enero. Navidad y Año Nuevo se llenan primero: aparta con tiempo.",
       en: "Mexican school break, Dec 21 to Jan 5. Christmas and New Year's fill up first: book early.",
@@ -65,6 +71,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     nombre: { es: "Puente de la Constitución", en: "Constitution Day long weekend" },
     desde: "2027-01-30", hasta: "2027-02-01",
     afluencia: "alta",
+    tema: "constitucion",
     nota: {
       es: "Fin de semana largo con el lunes 1 de febrero de descanso.",
       en: "Long weekend in Mexico, with Monday, February 1 off.",
@@ -75,6 +82,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     nombre: { es: "Puente de Benito Juárez", en: "Benito Juárez long weekend" },
     desde: "2027-03-13", hasta: "2027-03-15",
     afluencia: "alta",
+    tema: "juarez",
     nota: {
       es: "Fin de semana largo con el lunes 15 de marzo de descanso, una semana antes de Semana Santa.",
       en: "Long weekend in Mexico, with Monday, March 15 off, a week before Holy Week.",
@@ -85,6 +93,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     nombre: { es: "Semana Santa y Pascua", en: "Holy Week and Easter" },
     desde: "2027-03-21", hasta: "2027-04-04",
     afluencia: "muy-alta",
+    tema: "semana-santa",
     nota: {
       es: "Las semanas más llenas del año. Vacaciones escolares del 22 de marzo al 2 de abril; Jueves y Viernes Santo son el 25 y el 26.",
       en: "The busiest weeks of the year. Mexican school break Mar 22 to Apr 2; Holy Thursday and Good Friday are Mar 25 and 26.",
@@ -96,6 +105,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     desde: "2027-07-10", hasta: "2027-08-29",
     fechasTexto: { es: "Julio y agosto", en: "July and August" },
     afluencia: "alta",
+    tema: "verano",
     nota: {
       es: "Las escuelas salen el 9 de julio. Es temporada de lluvias: si el río crece, reprogramamos sin costo.",
       en: "Mexican schools are out from July 9. It's the rainy season: if the river rises, we reschedule at no cost.",
@@ -106,6 +116,7 @@ export const TEMPORADAS: TemporadaFechada[] = [
     nombre: { es: "Xantolo", en: "Xantolo (Day of the Dead)" },
     desde: "2027-10-31", hasta: "2027-11-02",
     afluencia: "alta",
+    tema: "xantolo",
     nota: {
       es: "El Día de Muertos huasteco, con desfile y altares en Xilitla.",
       en: "The Huasteca's Day of the Dead, with a parade and altars in Xilitla.",
