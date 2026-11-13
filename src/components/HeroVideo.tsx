@@ -14,12 +14,12 @@ import { useEffect, useRef, useState } from "react";
 // siguiente y se cambia aquí. Sobrescribir el mismo nombre dejaría a quien ya
 // visitó el sitio viendo el viejo.
 const VIDEO = {
-  horizontal: "/video/hero-escritorio-v3.mp4",
-  vertical: "/video/hero-celular-v3.mp4",
+  horizontal: "/video/hero-escritorio-v4.mp4",
+  vertical: "/video/hero-celular-v4.mp4",
 };
 const POSTER = {
-  horizontal: "/video/hero-escritorio-v3.webp",
-  vertical: "/video/hero-celular-v3.webp",
+  horizontal: "/video/hero-escritorio-v4.webp",
+  vertical: "/video/hero-celular-v4.webp",
 };
 const APAISADA = "(orientation: landscape)";
 // Lo contrario exacto de APAISADA: un cuadrado cuenta como vertical, igual que

@@ -96,6 +96,8 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js)).*)",
+    // Videos, fuentes y avif tampoco pasan por aquí (13 nov 2026): no tienen idioma
+    // ni sesión, y el video del inicio se pide por rangos (206) varias veces.
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|mp4|webm|mov|woff2?)).*)",
   ],
 };
