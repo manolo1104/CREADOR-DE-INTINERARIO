@@ -4,7 +4,7 @@ import { huboToqueHumano, marcarToqueHumano } from "@/lib/toqueHumano";
 
 import { useState, useEffect, useRef } from "react";
 import { MSI_DESDE } from "@/lib/stripeMsi";
-import { leerCarrito, quitarDelCarrito, resumirCarrito, actualizarItem, agregarAlCarrito, pctACobrar, personasDeItem, type CarritoItem } from "@/lib/carrito";
+import { leerCarrito, quitarDelCarrito, resumirCarrito, actualizarItem, agregarAlCarrito, pctACobrar, personasDeItem, fechaMinimaCarrito, limpiarFechasPasadas, tomarFechasQuitadas, type CarritoItem, type FechaQuitada } from "@/lib/carrito";
 import { itemDesdeSlug, retarifarItem } from "@/lib/carritoItems";
 import { validarCarrito, type FalloCarrito } from "@/lib/carritoValidacion";
 import { leerExtras, guardarExtras } from "@/lib/carritoExtras";
@@ -119,6 +119,8 @@ export function useCarritoCheckout() {
   const renglonRefs = useRef<Record<string, HTMLDivElement | null>>({});
   /** Renglón que acaba de llegar por `?agregar`: se resalta un momento. */
   const [recienLlegado, setRecienLlegado] = useState<string | null>(null);
+  /** Las fechas que ya pasaron y se quitaron al abrir el carrito (13 nov 2026): se avisa una vez. */
+  const [fechasQuitadas, setFechasQuitadas] = useState<FechaQuitada[]>([]);
   /**
    * Renglones en los que la persona intentó bajar de su mínimo. El «−» se
    * quedaba mudo en el piso: en Clarity alguien lo tocó doce veces seguidas sin
@@ -187,6 +189,26 @@ export function useCarritoCheckout() {
 
     let carrito = leerCarrito();
 
+    // Lo que eligió y no son recorridos: hospedaje, traslado y sus datos. Vivía
+    // solo en memoria, así que salir a mirar otro tour y volver lo borraba todo.
+    // 🔴 Va ANTES del correo de rescate (13 nov 2026): después pisaba el hotel
+    // y el traslado que el rescate acababa de poner. De otra visita, todo llega
+    // apagado (`extrasDeOtraVisita`): ningún extra viene premarcado.
+    const ex = leerExtras();
+    setConHotel(ex.conHotel);
+    setHabs(ex.habs);
+    setCheckin(ex.checkin);
+    setCheckout(ex.checkout);
+    setConTraslado(ex.conTraslado);
+    if (ex.ciudadTraslado) setCiudadTraslado(ex.ciudadTraslado);
+    setPaxTraslado(ex.paxTraslado);
+    if (ex.name)   setName(ex.name);
+    if (ex.email)  setEmail(ex.email);
+    if (ex.phone)  setPhone(ex.phone);
+    if (ex.pickup) setPickup(ex.pickup);
+    if (ex.zona)   setZona(ex.zona);
+    setGuiaIngles(ex.guiaIngles);
+
     // `?recuperar=<token>` es el link de los correos de rescate. Va PRIMERO y
     // luego `?agregar`, porque los links viejos traen los dos con el mismo tour:
     // `/reservar-tour/<slug>?recuperar=<t>` redirige aquí como
@@ -205,7 +227,7 @@ export function useCarritoCheckout() {
           // `carritoJson` guarda { items, hospedaje, traslado }; los tokens
           // viejos guardaban solo el array de recorridos.
           const guardado = Array.isArray(c.items) ? { items: c.items, hospedaje: null, traslado: null } : (c.items ?? null);
-          if (guardado?.hospedaje?.habitaciones?.length) {
+          if (guardado?.hospedaje?.habitaciones?.length && !(guardado.hospedaje.checkin && guardado.hospedaje.checkin < fechaMinimaCarrito())) {
             setConHotel(true);
             setHabs(guardado.hospedaje.habitaciones);
             if (guardado.hospedaje.checkin)  setCheckin(guardado.hospedaje.checkin);
@@ -260,22 +282,6 @@ export function useCarritoCheckout() {
       // Se limpia la URL para que recargar no vuelva a hacer lo mismo.
       window.history.replaceState({}, "", lp("/reservar/carrito"));
     }
-    // Lo que eligió y no son recorridos: hospedaje, traslado y sus datos. Vivía
-    // solo en memoria, así que salir a mirar otro tour y volver lo borraba todo.
-    const ex = leerExtras();
-    setConHotel(ex.conHotel);
-    setHabs(ex.habs);
-    setCheckin(ex.checkin);
-    setCheckout(ex.checkout);
-    setConTraslado(ex.conTraslado);
-    if (ex.ciudadTraslado) setCiudadTraslado(ex.ciudadTraslado);
-    setPaxTraslado(ex.paxTraslado);
-    if (ex.name)   setName(ex.name);
-    if (ex.email)  setEmail(ex.email);
-    if (ex.phone)  setPhone(ex.phone);
-    if (ex.pickup) setPickup(ex.pickup);
-    if (ex.zona)   setZona(ex.zona);
-    setGuiaIngles(ex.guiaIngles);
     setExtrasListos(true);
 
     // Los subtotales guardados se recalculan con el catálogo de HOY: un carrito
@@ -285,6 +291,14 @@ export function useCarritoCheckout() {
       const retarifado = retarifarItem(it);
       if (retarifado.total !== it.total) carrito = actualizarItem(it.uid, { total: retarifado.total });
     }
+
+    // Lo que entró por el rescate o por la URL con una fecha que ya pasó.
+    const limpio = limpiarFechasPasadas(carrito, fechaMinimaCarrito());
+    for (const i of limpio.items) {
+      if (carrito.find((x) => x.uid === i.uid)?.tourDate !== i.tourDate) carrito = actualizarItem(i.uid, { tourDate: "" });
+    }
+    const avisar = [...tomarFechasQuitadas(), ...limpio.quitadas];
+    if (avisar.length) setFechasQuitadas(avisar.filter((f, k) => avisar.findIndex((g) => g.tourName === f.tourName && g.fecha === f.fecha) === k));
 
     setItems(carrito);
     setHidratando(false);
@@ -732,50 +746,7 @@ export function useCarritoCheckout() {
       const res = await fetch("/api/tours/carrito-payment-intent", {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerName:  name.trim(),
-          customerEmail: email.trim(),
-          sid:           sessionId(),
-          // Identidad de Google Analytics. Viaja hasta la metadata de Stripe
-          // porque el webhook —que es quien se entera SIEMPRE de la compra— no
-          // tiene cookies: sin esto la venta le llegaría a GA4 sin canal de
-          // origen, que es justo lo que se quiere medir.
-          gaClientId:    ga4ClientId(),
-          items,
-          hospedaje: conHotel
-            ? { habitaciones: habs, noches, checkin, checkout }
-            : null,
-          // Solo si hay tarifa para ese grupo. Arriba de 12 no la hay y se
-          // cotiza a mano: mandarlo igual hacía que el servidor rechazara el
-          // pago ENTERO, no solo el traslado.
-          traslado: conTraslado && rutaTraslado && precioDelTraslado !== null
-            ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
-            : null,
-          // El idioma viaja hasta la metadata de Stripe: si el cliente cierra la
-          // pestaña, el webhook levanta la reserva y necesita saber en qué
-          // idioma mandarle su confirmación.
-          locale,
-          paymentIntentIdPrevio: ultimoPagoRef.current,
-          // Su apartado: el cobro no lo cuenta en su contra, lo renueva 15
-          // minutos y lo deja en la metadata para soltarlo al crear la reserva.
-          apartadoId: apartado.apartadoId || null,
-          // Si eligió pagar completo. El servidor NO se fía: comprueba él mismo
-          // que el total llegue al umbral antes de cobrar el 100 %.
-          pagarTodo: pagarTodo && puedePagarTodo,
-          // En qué idioma tiene que salir el guía. Viaja hasta la metadata de
-          // Stripe porque el webhook —que es quien se entera SIEMPRE de la
-          // compra— es el que escribe la reserva si se cierra la pestaña.
-          guiaIngles,
-          // Teléfono y recogida viajan a la metadata del cobro: si el cliente
-          // cierra la pestaña, la reserva la arma el webhook y sin esto quedaba
-          // sin forma de contactarlo ni de saber dónde pasar por él.
-          customerPhone: phone.trim(),
-          recogida:      pickup.trim(),
-          // Solo la zona: el +$400 de Valles lo pone el servidor con el catálogo.
-          // Si el carrito ya no la pide, no se manda: una zona vieja guardada
-          // acabaría escrita en la reserva sin que nadie la haya visto.
-          zona:          pideZona && zona ? zona : null,
-        }),
+        body: JSON.stringify(cuerpoCobro({ name: name.trim(), email: email.trim(), phone: phone.trim() })),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -792,6 +763,84 @@ export function useCarritoCheckout() {
       setError(t.noSePudoConectar);
     }
     setCargando(false);
+  }
+
+  /**
+   * Lo que se le pide al servidor para crear el cobro. Lo usan «Ir al pago» y
+   * el PAGO EXPRÉS (13 nov 2026), que trae nombre, correo y teléfono de Apple
+   * Pay / Google Pay y va sin hotel, sin traslado y con el anticipo normal.
+   */
+  function cuerpoCobro(contacto: { name: string; email: string; phone: string }, expres = false) {
+    return {
+          customerName:  contacto.name,
+          customerEmail: contacto.email,
+          sid:           sessionId(),
+          // Identidad de Google Analytics. Viaja hasta la metadata de Stripe
+          // porque el webhook —que es quien se entera SIEMPRE de la compra— no
+          // tiene cookies: sin esto la venta le llegaría a GA4 sin canal de
+          // origen, que es justo lo que se quiere medir.
+          gaClientId:    ga4ClientId(),
+          items,
+          hospedaje: conHotel && !expres
+            ? { habitaciones: habs, noches, checkin, checkout }
+            : null,
+          // Solo si hay tarifa para ese grupo. Arriba de 12 no la hay y se
+          // cotiza a mano: mandarlo igual hacía que el servidor rechazara el
+          // pago ENTERO, no solo el traslado.
+          traslado: conTraslado && !expres && rutaTraslado && precioDelTraslado !== null
+            ? { ciudad: rutaTraslado.slug, personas: paxTraslado }
+            : null,
+          // El idioma viaja hasta la metadata de Stripe: si el cliente cierra la
+          // pestaña, el webhook levanta la reserva y necesita saber en qué
+          // idioma mandarle su confirmación.
+          locale,
+          paymentIntentIdPrevio: ultimoPagoRef.current,
+          // Su apartado: el cobro no lo cuenta en su contra, lo renueva 15
+          // minutos y lo deja en la metadata para soltarlo al crear la reserva.
+          apartadoId: apartado.apartadoId || null,
+          // Si eligió pagar completo. El servidor NO se fía: comprueba él mismo
+          // que el total llegue al umbral antes de cobrar el 100 %.
+          pagarTodo: !expres && pagarTodo && puedePagarTodo,
+          // En qué idioma tiene que salir el guía. Viaja hasta la metadata de
+          // Stripe porque el webhook —que es quien se entera SIEMPRE de la
+          // compra— es el que escribe la reserva si se cierra la pestaña.
+          guiaIngles,
+          // Teléfono y recogida viajan a la metadata del cobro: si el cliente
+          // cierra la pestaña, la reserva la arma el webhook y sin esto quedaba
+          // sin forma de contactarlo ni de saber dónde pasar por él.
+          customerPhone: contacto.phone,
+          recogida:      pickup.trim(),
+          // Solo la zona: el +$400 de Valles lo pone el servidor con el catálogo.
+          // Si el carrito ya no la pide, no se manda: una zona vieja guardada
+          // acabaría escrita en la reserva sin que nadie la haya visto.
+          zona:          pideZona && zona ? zona : null,
+    };
+  }
+
+  /**
+   * ¿Se ofrece el pago exprés en el paso 1? (13 nov 2026, «para un solo tour,
+   * Apple Pay o Google Pay desde el paso 1»). Solo con UN recorrido listo
+   * (fecha y elección puestas, sin fallos), sin hotel ni traslado y sin
+   * pregunta de zona pendiente: todo lo que la billetera no puede preguntar.
+   */
+  const expresDisponible = montado && !hidratando && !cobro && items.length === 1
+    && validarCarrito(items, locale).length === 0
+    && !conHotel && !conTraslado && (!pideZona || !!zona) && anticipo >= 10;
+
+  /** El cobro del pago exprés, con los datos que dio la billetera. null + `error` si no se pudo. */
+  async function cobroExpres(contacto: { name: string; email: string; phone: string }): Promise<{ cobro: Cobro | null; error: string }> {
+    try {
+      const res = await fetch("/api/tours/carrito-payment-intent", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cuerpoCobro(contacto, true)),
+      });
+      const data = await res.json();
+      if (!res.ok) return { cobro: null, error: data.error || t.noSePudoIniciar };
+      ultimoPagoRef.current = data.paymentIntentId ?? null;
+      return { cobro: data as Cobro, error: "" };
+    } catch {
+      return { cobro: null, error: t.noSePudoConectar };
+    }
   }
 
   return {
@@ -814,7 +863,7 @@ export function useCarritoCheckout() {
     cancelPropiaEnCarrito, waRescate, quitar, cambiar, cambiarAddOn,
     agregarDelCatalogo, cambiarVehiculo, cambiarPersonas, sinFechaItems, conFechaItems,
     sinFecha, guardarCotizacion, guardarSilencioso, irAlRenglon, irAlPago,
-    apartado, irAlSinLugar,
+    apartado, irAlSinLugar, fechasQuitadas, setFechasQuitadas, expresDisponible, cobroExpres,
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { TourCalendar } from "@/components/booking/TourCalendar";
 import { totalRecorrido, aceptaViajeroSolo, esViajeroSolo, minBookingDate, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
@@ -14,7 +14,7 @@ import { pctACobrar } from "@/lib/carrito";
 // Server Component y una constante importada de este archivo "use client" le
 // llegaba como objeto (`#[object Object]`). Ver la nota en ese archivo.
 import { ID_MODULO_RESERVA, abrirCalendario } from "@/lib/anclas";
-import { publicarSeleccion } from "@/lib/seleccionFicha";
+import { publicarSeleccion, guardarSeleccionSesion, leerSeleccionSesion, textoDiaBoton } from "@/lib/seleccionFicha";
 import { marcarToqueHumano } from "@/lib/toqueHumano";
 
 /**
@@ -121,7 +121,19 @@ export function ReservaFichaTour({
       const q = new URLSearchParams(window.location.search);
       const f = q.get("fecha");
       const a = q.get("adultos");
-      if (!f && !a) return;
+      if (!f && !a) {
+        // Sin nada en la URL: lo que ya había elegido en esta pestaña (13 nov
+        // 2026), para que recargar o volver no le borre la fecha.
+        const previa = leerSeleccionSesion(slug);
+        if (previa) {
+          if (previa.fecha && previa.fecha >= minBookingDate()) setFecha(previa.fecha);
+          if (previa.adultos >= minAdultos && previa.adultos + previa.ninosMid + previa.ninosSmall <= groupMax) {
+            setAdultos(previa.adultos);
+            if (!porGrupo && !soloMayores) { setNinosMid(previa.ninosMid); setNinosSmall(previa.ninosSmall); }
+          }
+        }
+        return;
+      }
       if (f && /^\d{4}-\d{2}-\d{2}$/.test(f) && f >= minBookingDate()) setFecha(f);
       const n = Number(a);
       if (Number.isInteger(n) && n >= minAdultos && n <= groupMax) setAdultos(n);
@@ -174,6 +186,13 @@ export function ReservaFichaTour({
   useEffect(() => {
     publicarSeleccion({ slug, fecha, adultos, ninosMid, ninosSmall, ninos: ninosMid + ninosSmall, total, sinLugar });
   }, [slug, fecha, adultos, ninosMid, ninosSmall, total, sinLugar]);
+  // Y se guarda en la pestaña, después de leer la anterior (el efecto de arriba
+  // del montaje corre primero): recargar no la borra.
+  const leida = useRef(false);
+  useEffect(() => {
+    if (!leida.current) { leida.current = true; return; }
+    guardarSeleccionSesion({ slug, fecha, adultos, ninosMid, ninosSmall });
+  }, [slug, fecha, adultos, ninosMid, ninosSmall]);
 
   // «Ver fechas disponibles» (arriba de la ficha) y «Reservar» (menú) son
   // anclas a este módulo; si todavía no hay fecha, además se abre el
@@ -252,7 +271,9 @@ export function ReservaFichaTour({
             trackDateSelected(nombre, ymd);
             trackTourEvent("DATE_SELECTED", { tour: tourId, ficha: true });
           }}
-          modo="compact"
+          // A la vista, con los lugares de cada día (13 nov 2026): antes había
+          // que tocar «Ver fechas disponibles» para descubrir el calendario.
+          modo="abierto"
           tema="oscuro"
           titulo={nombre}
           permitirLimpiar
@@ -344,7 +365,7 @@ export function ReservaFichaTour({
             }}
             className={BOTON_RESERVAR}
           >
-            {tf.reservarHoy(dinero(hoy))}
+            {tf.reservarCon(textoDiaBoton(fecha, locale === "en"), personas, dinero(total))}
           </Link>
         ) : (
           /* Sin fecha, «Elegir fecha y reservar» mandaba al carrito SIN fecha y

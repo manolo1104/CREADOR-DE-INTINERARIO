@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TourCalendar } from "@/components/booking/TourCalendar";
+import { minBookingDate } from "@/lib/tourBooking";
 import { TOURS_DB, salidaCorta, recogidaDeTour } from "@/lib/tours";
 import { computeVehiculoCharge } from "@/lib/tourPricing";
 import { agregarAlCarrito, pctACobrar } from "@/lib/carrito";
@@ -73,6 +74,22 @@ export function RzrBookingForm({
   const [unidades, setUnidades] = useState(1);
   const [sinLugar, setSinLugar] = useState(false);
 
+  // La fecha que trae el buscador del inicio (`?fecha=`), igual que el módulo
+  // por persona (13 nov 2026): antes el RZR la ignoraba y había que elegirla
+  // otra vez. Se valida y se limpia de la barra.
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search);
+      const f = q.get("fecha");
+      if (!f) return;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(f) && f >= minBookingDate()) setFecha(f);
+      q.delete("fecha");
+      q.delete("adultos");
+      const resto = q.toString();
+      window.history.replaceState(null, "", window.location.pathname + (resto ? `?${resto}` : "") + window.location.hash);
+    } catch { /* sin query, como siempre */ }
+  }, []);
+
   // «Ver fechas disponibles» (arriba) y «Reservar» (menú) son anclas a este
   // módulo: sin fecha, además se abre el calendario. Igual que en
   // `ReservaFichaTour`.
@@ -126,7 +143,8 @@ export function RzrBookingForm({
               trackTourEvent("DATE_SELECTED", { tour: tourId, ficha: true });
             }
           }}
-          modo="compact"
+          // A la vista, como en los demás recorridos (13 nov 2026).
+          modo="abierto"
           tema="oscuro"
           titulo={nombre}
           permitirLimpiar

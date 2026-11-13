@@ -28,6 +28,7 @@ import { BandaFoto } from "./BandaFoto";
 import { PasoAcordeon, type EstadoPaso } from "./PasoAcordeon";
 import { RespuestasRapidas } from "./RespuestasRapidas";
 import { LineaExtras } from "./LineaExtras";
+import { PagoExpres } from "./PagoExpres";
 import { DatosContacto } from "./DatosContacto";
 import { BarraPago } from "./BarraPago";
 import { ConfianzaJuntoAlBoton } from "./ConfianzaJuntoAlBoton";
@@ -184,6 +185,7 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
             {error && (
               <p className="mb-3 border border-terracota/40 bg-terracota/8 px-3 py-2.5 font-dm text-[12px] text-terracota">{error}</p>
             )}
+            <AvisoFechasPasadas quitadas={c.fechasQuitadas} en={c.en} onCerrar={() => c.setFechasQuitadas([])} />
             <div className="space-y-3">
               {sinFechaItems.length > 0 && (
                 <div>
@@ -206,7 +208,10 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
                 más sube el ticket, no un pie de página. */}
             <AgregarRecorrido c={c} />
             <RespuestasRapidas titulo={tc.respuestasTitulo} respuestas={respuestas} />
-            <LineaExtras c={c} />
+            {/* 🔴 Hotel y traslado ya NO van aquí (auditoría del 13 nov 2026:
+                «ofertas después, no antes»): estorbaban antes de «Continuar».
+                Viven en el paso ②, antes de «Ir al pago». */}
+            <PagoExpres c={c} />
 
             <button
               type="button"
@@ -263,6 +268,12 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
               zona={zona} cambiarZona={cambiarZona} errorZona={errorZona}
               errores={erroresDatos} onSalirDe={validarCampo}
             />
+            {/* Las ofertas, después de decidir (13 nov 2026): hotel y traslado
+                se ofrecen aquí, ANTES de crear el cobro, para que el importe ya
+                los lleve si los elige. */}
+            <div className="mt-5">
+              <LineaExtras c={c} />
+            </div>
             {/* 🔴 «Pagar completo» va AQUÍ y no en el paso ③: el importe se fija
                 al crear el PaymentIntent, que es lo que pasa al pulsar el botón
                 de abajo. Elegirlo después obligaría a rehacer el cobro.
@@ -353,6 +364,17 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
           {/* Calla: el de arriba ya habla (un lector de pantalla oiría dos). */}
           <ApartadoAviso a={c.apartado} locale={locale} anunciar={false} onCambiarFecha={cambiarFechaSinLugar} />
           <ResumenCarrito c={c} />
+          {/* El botón del paso, fijo también en escritorio (13 nov 2026): el
+              resumen no se mueve al bajar, y antes había que buscar el botón
+              al final del paso. Es la misma acción que la barra del celular. */}
+          <button
+            type="button"
+            onClick={accionBarra.fn}
+            disabled={cargando || (paso === 3 && !cobro)}
+            className="w-full bg-verde-selva text-crema py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors disabled:opacity-50"
+          >
+            {accionBarra.texto}
+          </button>
           <div className="border border-negro/10 bg-white px-5 pb-4 pt-1">
             <ConfianzaJuntoAlBoton resenas={t.resenasGoogle} cancelacion={cancelacion} pagoCifrado={tc.pagoCifrado} />
             {paso < 3 && <QuePasaDespues titulo={tc.queSigueTitulo} pasos={tc.queSigue(formatMXN(saldo))} />}
@@ -390,6 +412,26 @@ export function CheckoutCarritoV2({ c }: { c: CarritoCheckout }) {
         pagar, y lo que lee es que otras personas ya lo hicieron.
       */}
       {paso === 2 && <ReservasRecientes />}
+    </div>
+  );
+}
+
+/** «La fecha que tenías para … ya pasó» (13 nov 2026): el carrito la quitó al abrir. */
+function AvisoFechasPasadas({ quitadas, en, onCerrar }: { quitadas: { tourName: string; fecha: string }[]; en: boolean; onCerrar: () => void }) {
+  if (!quitadas.length) return null;
+  const fecha = (ymd: string) => new Date(`${ymd}T12:00:00`).toLocaleDateString(en ? "en-US" : "es-MX", { weekday: "long", day: "numeric", month: "long" });
+  const nombres = quitadas.map((q) => `${q.tourName.split("—")[0].trim()} (${fecha(q.fecha)})`);
+  const lista = nombres.length === 1 ? nombres[0] : `${nombres.slice(0, -1).join(", ")} ${en ? "and" : "y"} ${nombres.at(-1)}`;
+  const texto = en
+    ? `The date you had for ${lista} has already passed. Pick another day below.`
+    : quitadas.length === 1
+      ? `La fecha que tenías para ${lista} ya pasó. Elige otro día abajo.`
+      : `Las fechas que tenías para ${lista} ya pasaron. Elige otro día abajo.`;
+  return (
+    <div role="status" className="mb-3 flex items-start gap-2 border border-dorado/50 bg-dorado/10 px-3 py-2.5 font-dm text-[12px] text-negro/75">
+      <AlertCircle className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-dorado" aria-hidden="true" />
+      <p className="flex-1">{texto}</p>
+      <button type="button" onClick={onCerrar} aria-label={en ? "Close" : "Cerrar"} className="-mr-1 px-1 text-negro/40 hover:text-negro">×</button>
     </div>
   );
 }

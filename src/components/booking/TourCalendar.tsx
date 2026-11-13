@@ -407,9 +407,11 @@ function MonthGrid({ year, month, ...p }: { year: number; month: number } & DiaP
 function CalendarInner({
   value, monthStart, bloqueadas, motivoBloqueo,
   puedeRetroceder, puedeAvanzar, onPrev, onNext, onSelect, locale,
-  dias, cargando, personas, conProximosDias = true,
+  dias, cargando, personas, conProximosDias = true, unMes = false,
 }: {
   conProximosDias?: boolean;
+  /** Un solo mes en todos los tamaños: la columna de la ficha mide ~250 px (13 nov 2026). */
+  unMes?: boolean;
   value: string;
   monthStart: Date;
   bloqueadas: Set<string>;
@@ -519,7 +521,7 @@ function CalendarInner({
         {/* Las flechas van con el nombre del mes, como en cualquier calendario:
             antes vivían sueltas en una fila aparte, lejos de lo que mueven. En
             escritorio se ven dos meses y avanzar va en el segundo. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+        <div className={`grid grid-cols-1 ${unMes ? "" : "sm:grid-cols-2"} gap-x-6 gap-y-4`}>
           <div className="min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
               <button
@@ -539,14 +541,14 @@ function CalendarInner({
                 onClick={() => { setAviso(""); onNext(); }}
                 disabled={!puedeAvanzar}
                 aria-label={t.mesSiguiente}
-                className={`${botonMes} sm:invisible`}
+                className={`${botonMes} ${unMes ? "" : "sm:invisible"}`}
               >
                 <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
             <MonthGrid year={monthStart.getFullYear()} month={monthStart.getMonth()} {...diaProps} />
           </div>
-          <div className="hidden sm:block min-w-0">
+          <div className={`hidden ${unMes ? "" : "sm:block"} min-w-0`}>
             <div className="flex items-center justify-between gap-2 mb-1">
               <span aria-hidden="true" className="w-9 h-9 flex-shrink-0" />
               <p className="font-cormorant text-[rgb(var(--cal-titulo))] text-lg leading-none">
@@ -594,8 +596,12 @@ interface Props {
    * `compact` = botón + hoja en TODOS los tamaños. Es lo que necesita el
    * carrito: el calendario abierto mide ~500 px y con cuatro recorridos la
    * lista dejaba de ser una lista.
+   * `abierto` = la rejilla con los lugares de cada día, a la vista en TODOS los
+   * tamaños, sin botón (auditoría del 13 nov 2026: «muestra el calendario con
+   * disponibilidad sin tener que hacer clic»). Es el de la ficha del tour. Sobre
+   * el tema oscuro va en su propia tarjeta clara, como la hoja.
    */
-  modo?: "inline" | "compact";
+  modo?: "inline" | "compact" | "abierto";
   /** Días que ya ocupa otro recorrido del carrito. */
   fechasBloqueadas?: readonly string[];
   /** Qué decir de un día bloqueado (sale como tooltip). */
@@ -732,7 +738,8 @@ export function TourCalendar({
   // Se pregunta cuando hace falta: al abrir la hoja, o si ya hay fecha (para
   // avisar si dejó de caber). Así la ficha de un tour no consulta la base en
   // cada visita, solo cuando alguien va a elegir.
-  const { dias, cargando } = useDisponibilidad(slug, personas, !!slug && (abierto || modo === "inline" || !!value));
+  const { dias, cargando } = useDisponibilidad(slug, personas, !!slug && (abierto || modo === "inline" || modo === "abierto" || !!value));
+  const cajaRef = useRef<HTMLDivElement | null>(null);
   const estadoElegido = value && !cargando ? dias?.[value] : undefined;
   const elegidaSinLugar = !!estadoElegido && !SE_ELIGE.has(estadoElegido);
   useEffect(() => { onSinLugar?.(!!value && elegidaSinLugar); }, [value, elegidaSinLugar, onSinLugar]);
@@ -745,11 +752,13 @@ export function TourCalendar({
     const abrir = (e: Event) => {
       const d = (e as CustomEvent<{ slug?: string }>).detail;
       if (d?.slug && d.slug !== slug) return;
+      // Ya está a la vista: se le lleva ahí en vez de abrir una hoja encima.
+      if (modo === "abierto") { cajaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }); return; }
       setAbierto(true);
     };
     window.addEventListener(EVENTO_ABRIR_CALENDARIO, abrir);
     return () => window.removeEventListener(EVENTO_ABRIR_CALENDARIO, abrir);
-  }, [slug]);
+  }, [slug, modo]);
 
   useEffect(() => setMontado(true), []);
 
@@ -806,7 +815,10 @@ export function TourCalendar({
 
   const inner = (
     <CalendarInner
-      conProximosDias={proximosDias}
+      // Abierto en la columna de la ficha: un mes y sin la tira de «próximos
+      // días» (la rejilla ya enseña los lugares de cada día y así cabe).
+      conProximosDias={proximosDias && modo !== "abierto"}
+      unMes={modo === "abierto"}
       value={value} monthStart={monthStart}
       bloqueadas={bloqueadas} motivoBloqueo={motivoBloqueo}
       puedeRetroceder={puedeRetroceder} puedeAvanzar={puedeAvanzar}
@@ -994,6 +1006,24 @@ export function TourCalendar({
         )}
         {hoja}
       </>
+    );
+  }
+
+  // ── Abierto: la rejilla con sus lugares, siempre a la vista ──
+  if (modo === "abierto") {
+    return (
+      <div ref={cajaRef} className="scroll-mt-24">
+        <div className={tema === "oscuro" ? "bg-crema text-negro p-3 sm:p-4" : ""}>{inner}</div>
+        {value && lineaHora && (
+          <p className={`mt-2 flex items-start gap-1.5 font-dm text-[11px] leading-snug ${
+            tema === "oscuro" ? "text-crema/60" : "text-negro/50"
+          }`}>
+            <Clock className="w-3 h-3 flex-shrink-0 mt-px" aria-hidden="true" />
+            <span>{formatDisplay(value, locale)} · {lineaHora}</span>
+          </p>
+        )}
+        {avisoElegida}
+      </div>
     );
   }
 

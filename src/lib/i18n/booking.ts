@@ -429,6 +429,14 @@ export interface BookingMessages {
     total: string;
     /** Botón con fecha: el monto es lo que se paga HOY (el anticipo). */
     reservarHoy: (montoHoy: string) => string;
+    /**
+     * El botón que recuerda la elección (13 nov 2026): «Reservar sábado 14 ·
+     * 2 personas · $3,100» en vez de «Ver fechas disponibles». `dia` ya viene
+     * escrito (`textoDiaBoton`); `total` es el del viaje, sin moneda.
+     */
+    reservarCon: (dia: string, personas: number, total: string) => string;
+    /** La versión corta para la barra del celular: «Reservar sáb 14 · $3,100». */
+    reservarCorto: (dia: string, total: string) => string;
     /** Debajo del botón: qué porcentaje es y cuánto queda para el día del tour. */
     restoElDia: (pct: number, resto: string) => string;
     /** Eligió una fecha después de la promo de temporada baja. */
@@ -1071,6 +1079,8 @@ const es: BookingMessages = {
     // Sin «hoy pagas» ni candado (28 oct 2026): 16 de 17 personas que eligieron
     // fecha en la ficha no tocaron el botón; el monto va debajo, en `restoElDia`.
     reservarHoy: () => "Continuar con la reserva",
+    reservarCon: (dia, personas, total) => `Reservar ${dia} · ${personas} ${personas === 1 ? "persona" : "personas"} · ${total}`,
+    reservarCorto: (dia, total) => `Reservar ${dia} · ${total}`,
     restoElDia: (pct, resto) => `Apartas con el ${pct} %. El resto (${resto}) lo pagas el día del tour.`,
     sinPromoEnFecha: (hasta) => `Precio normal en esta fecha: la promo de temporada baja es para recorridos hasta el ${hasta}.`,
     continuar: "Elegir fecha y reservar",
@@ -1697,6 +1707,8 @@ const en: BookingMessages = {
     cuantosVan: "How many of you?",
     total: "Total",
     reservarHoy: () => "Continue booking",
+    reservarCon: (dia, personas, total) => `Book ${dia} · ${personas} ${personas === 1 ? "person" : "people"} · ${total} MXN`,
+    reservarCorto: (dia, total) => `Book ${dia} · ${total}`,
     // 🔴 En inglés, «MXN» detrás de cada importe que llega a secas (`$2,170`):
     // un lector de EE.UU. lo lee en dólares (auditoría del 10 nov 2026). Quien
     // llama pasa el número sin moneda (`dinero()` de la ficha).

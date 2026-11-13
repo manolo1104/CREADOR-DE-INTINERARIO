@@ -33,6 +33,7 @@ import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import { Star, Clock, Users, Lock, Shield, RefreshCw, Camera, Headphones, ChevronDown, Award, MapPin, Gauge, Baby, CreditCard, AlarmClock, Languages } from "lucide-react";
 import { InventoryBadge } from "@/components/booking/InventoryBadge";
 import { ReservaFichaTour } from "@/components/booking/ReservaFichaTour";
+import { CtaHeroFicha } from "@/components/booking/CtaHeroFicha";
 import { RzrBookingForm } from "@/components/booking/RzrBookingForm";
 import { WhatsAppFicha } from "@/components/booking/WhatsAppFicha";
 import { ID_MODULO_RESERVA } from "@/lib/anclas";
@@ -1050,17 +1051,16 @@ export default function TourDetailPage({ params }: Props) {
                 flotante está apagado a propósito en las fichas de tour— así que
                 la única acción posible estaba en el sidebar, fuera de pantalla.
                 Este ancla no necesita JavaScript: baja al módulo de reserva. */}
-            <a
-              href={`#${ID_MODULO_RESERVA}`}
-              /* Va DENTRO del `flex flex-wrap` del precio, a su derecha: en escritorio
-                 se leen juntos —cuánto cuesta y qué hacer— y en un teléfono el
-                 `flex-wrap` lo baja solo a su propia línea. Sin `mt-*`, que
-                 aquí solo lo desalinearía respecto al precio. */
+            {/* Va DENTRO del `flex flex-wrap` del precio, a su derecha: en escritorio
+                se leen juntos —cuánto cuesta y qué hacer— y en un teléfono el
+                `flex-wrap` lo baja solo a su propia línea. Sin `mt-*`, que
+                aquí solo lo desalinearía respecto al precio. Con fecha elegida
+                dice «Reservar sábado 14 · 2 personas · $3,100» (13 nov 2026). */}
+            <CtaHeroFicha
+              slug={tour.slug}
+              tourId={tour.id}
               className="inline-flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors"
-            >
-              <Lock className="w-3.5 h-3.5" aria-hidden="true" />
-              {locale === "en" ? "See available dates" : "Ver fechas disponibles"}
-            </a>
+            />
           </div>
         </div>
       </section>
@@ -1832,7 +1832,11 @@ export default function TourDetailPage({ params }: Props) {
               contenedor ocupa todo el hueco MENOS lo que necesita el bloque de
               abajo, así que el fijo se despega justo cuando el otro empieza. */}
           <div className="lg:flex-1 lg:min-h-0">
-            <div className="sticky top-24 space-y-4">
+            {/* 🔴 13 nov 2026: con el calendario ya abierto el bloque mide más
+                que una laptop (~1.100 px contra ~860), y `sticky` no enseña lo
+                que no cabe. En escritorio el bloque se recorre por dentro: el
+                botón de reservar siempre se alcanza. */}
+            <div className="sticky top-24 space-y-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 [scrollbar-width:thin]">
             <div className="border border-white/10 bg-negro/60 p-5">
               {promo && (
                 <div className="flex items-center gap-2 mb-2">

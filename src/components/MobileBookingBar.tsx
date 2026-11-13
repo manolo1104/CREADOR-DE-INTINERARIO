@@ -8,10 +8,9 @@ import { useCarritoSlugs } from "@/components/carrito/useCarritoSlugs";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getBooking } from "@/lib/i18n/booking";
 import { ID_MODULO_RESERVA, abrirCalendario } from "@/lib/anclas";
-import { useSeleccionFicha } from "@/lib/seleccionFicha";
+import { useSeleccionFicha, textoDiaBoton } from "@/lib/seleccionFicha";
 import { WA_MESSAGES, waLink } from "@/lib/whatsapp";
 import { marcarToqueHumano } from "@/lib/toqueHumano";
-import { pctACobrar } from "@/lib/carrito";
 
 interface Props {
   tourSlug: string;
@@ -56,7 +55,6 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   const hrefConSeleccion = sel && sel.fecha && !esVehiculo
     ? lp(`/reservar/carrito?agregar=${tourSlug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosMid=${sel.ninosMid}&ninosSmall=${sel.ninosSmall}`)
     : null;
-  const hoy = sel ? Math.round((sel.total * pctACobrar()) / 100) : 0;
   const dinero = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   // Esta barra es la ÚNICA de abajo en las fichas de tour EN EL CELULAR:
   // `BarraInferiorMovil` se aparta aquí (ver `lib/barrasFijas.ts`) porque las
@@ -141,7 +139,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
             }}
             className={ctaClass}
           >
-            {tf.reservarHoy(dinero(hoy))}
+            {tf.reservarCorto(textoDiaBoton(sel!.fecha, en, true), dinero(sel!.total))}
           </Link>
         ) : (
         <button

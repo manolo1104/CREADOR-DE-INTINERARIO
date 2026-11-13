@@ -55,6 +55,45 @@ function esItem(x: unknown): x is CarritoItem {
   );
 }
 
+/**
+ * Mañana en hora de México (`YYYY-MM-DD`): la primera fecha que se puede
+ * reservar. La misma cuenta que `minBookingDate()`; va repetida aquí para que
+ * el carrito (que carga la barra de todo el sitio) no arrastre el catálogo.
+ */
+export function fechaMinimaCarrito(ahora: Date = new Date()): string {
+  const hoy = ahora.toLocaleDateString("en-CA", { timeZone: "America/Mexico_City" });
+  const [y, m, d] = hoy.split("-").map(Number);
+  const manana = new Date(Date.UTC(y, m - 1, d + 1));
+  return manana.toISOString().slice(0, 10);
+}
+
+export interface FechaQuitada { tourName: string; fecha: string }
+
+/**
+ * 🔴 Las fechas que ya pasaron se quitan (auditoría del 13 nov 2026): un
+ * carrito de hace dos semanas regresaba con «sábado 1 de noviembre» y el
+ * cliente solo se enteraba al pagar, con un error del servidor. El renglón se
+ * queda, sin fecha, para que elija otra; `quitadas` alimenta el aviso.
+ */
+export function limpiarFechasPasadas(items: CarritoItem[], min: string): { items: CarritoItem[]; quitadas: FechaQuitada[] } {
+  const quitadas: FechaQuitada[] = [];
+  const limpios = items.map((i) => {
+    if (!i.tourDate || i.tourDate >= min) return i;
+    quitadas.push({ tourName: i.tourName, fecha: i.tourDate });
+    return { ...i, tourDate: "" };
+  });
+  return { items: limpios, quitadas };
+}
+
+let quitadasSinAvisar: FechaQuitada[] = [];
+
+/** Las fechas que el carrito quitó por viejas y nadie ha avisado todavía (las entrega una vez). */
+export function tomarFechasQuitadas(): FechaQuitada[] {
+  const q = quitadasSinAvisar;
+  quitadasSinAvisar = [];
+  return q;
+}
+
 export function leerCarrito(): CarritoItem[] {
   if (typeof window === "undefined") return [];
   try {
@@ -63,7 +102,14 @@ export function leerCarrito(): CarritoItem[] {
     const datos = JSON.parse(crudo);
     // Se filtra en vez de confiar: un localStorage viejo de otra versión del
     // sitio reventaría la página del carrito entera.
-    return Array.isArray(datos) ? datos.filter(esItem).slice(0, MAX_ITEMS) : [];
+    const lista = Array.isArray(datos) ? datos.filter(esItem).slice(0, MAX_ITEMS) : [];
+    const { items, quitadas } = limpiarFechasPasadas(lista, fechaMinimaCarrito());
+    if (quitadas.length) {
+      quitadasSinAvisar.push(...quitadas);
+      // Se guarda ya limpio (sin avisar al resto de la página: lo leerá igual).
+      try { window.localStorage.setItem(CARRITO_KEY, JSON.stringify(items)); } catch { /* sigue sin guardar */ }
+    }
+    return items;
   } catch {
     return [];
   }

@@ -23,6 +23,8 @@ const ES = {
   mas:           "Una persona más",
   verTours:      "Ver tours",
   irAlTour:      "Ver este tour",
+  // Con tour Y fecha: lleva directo al cuadro de reserva de la ficha, ya lleno (13 nov 2026).
+  irAReservar:   "Reservar",
 
   // ── Rejilla filtrable ──
   tituloRejilla: "Los recorridos",
@@ -75,6 +77,7 @@ const EN: BuscadorUI = {
   mas:           "One person more",
   verTours:      "See tours",
   irAlTour:      "See this tour",
+  irAReservar:   "Book",
 
   tituloRejilla: "The tours",
   buscar:        "Search: Tamul, Las Pozas, rafting…",

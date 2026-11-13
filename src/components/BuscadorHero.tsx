@@ -13,6 +13,7 @@ import type { EtiquetaTour } from "@/lib/etiquetasTour";
 import type { TourCategoria } from "@/lib/tours";
 import { anunciarIntencion, type FiltroQue } from "@/lib/intencionInicio";
 import { trackTourEvent } from "@/lib/tourTracker";
+import { ID_MODULO_RESERVA } from "@/lib/anclas";
 
 /**
  * El buscador del hero: «¿Qué quieres ver? · ¿Cuándo? · ¿Cuántos? → Ver tours».
@@ -164,11 +165,15 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
    * lee al montar. `/reservar` sigue con la intención por `sessionStorage`
    * porque ahí lo que viaja es un filtro, no una reserva.
    */
+  // Con tour, fecha y personas: directo al CUADRO DE RESERVA de la ficha, ya
+  // lleno y con el botón «Reservar sábado 14 · 2 personas · $3,100» (atajo
+  // pedido el 13 nov 2026). No al carrito: la ficha revisa el cupo de ese día
+  // y las opciones del tour (ruta, vehículo, Tamasopo) antes de cobrar.
   const destino = esTour
     ? lp(`/tours/${slug}`) + `?${new URLSearchParams({
         ...(fecha ? { fecha } : {}),
         adultos: String(personas),
-      })}`
+      })}` + (fecha ? `#${ID_MODULO_RESERVA}` : "")
     : lp("/reservar");
 
   function elegir(nuevo: string) {
@@ -366,7 +371,7 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
           onClick={alBuscar}
           className="flex min-h-[64px] items-center justify-center gap-2 bg-dorado px-7 font-dm text-[15px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-terracota hover:text-crema sm:min-h-0 sm:min-w-[170px]"
         >
-          {esTour ? ui.irAlTour : ui.verTours}
+          {esTour ? (fecha ? ui.irAReservar : ui.irAlTour) : ui.verTours}
           <span aria-hidden="true">→</span>
         </Link>
       </div>
