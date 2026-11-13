@@ -48,7 +48,7 @@ import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { toursCercaDe } from "@/lib/tourMapping";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
 import { temporadaDe, fechaInicioTexto } from "@/lib/temporada";
-import { enAuto, horasEnPalabras, MINUTOS_VALLES_XILITLA } from "@/lib/tiemposDeViaje";
+import { enAuto, horasEnPalabras, MINUTOS_VALLES_XILITLA, distancia } from "@/lib/tiemposDeViaje";
 import { CIUDADES_ORIGEN } from "@/lib/ciudadesOrigen";
 import { calcTourTotal } from "@/lib/tourBooking";
 import { NOCHE_XANTOLO } from "@/lib/nocheXantolo";
@@ -2592,7 +2592,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       {
         from:
           "La ruta carretera más directa desde CDMX a Xilitla cubre aproximadamente <strong>450 km</strong> y toma entre <strong>6 y 7 horas</strong> en automóvil.",
-        to: `La ruta carretera más directa desde CDMX a Xilitla cubre aproximadamente <strong>450 km</strong> y toma unas <strong>${enAuto("cdmx")}</strong> en automóvil.`,
+        to: `La ruta carretera más directa desde CDMX a Xilitla cubre aproximadamente <strong>${distancia("cdmx")}</strong> y toma unas <strong>${enAuto("cdmx")}</strong> en automóvil.`,
       },
       {
         from:

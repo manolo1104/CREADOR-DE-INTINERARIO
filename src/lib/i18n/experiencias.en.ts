@@ -1,7 +1,7 @@
 import type { Locale } from "./config";
 
 import { GRUPO_MAX, TOURS_DB } from "@/lib/tours";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { enAuto, enAutobus, distancia } from "@/lib/tiemposDeViaje";
 import { incluyeDesayuno } from "@/lib/catalogoResumen";
 import { GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 import { DESTINOS_DB } from "@/lib/destinos";
@@ -62,7 +62,7 @@ const excepcionTourEN = !ENTRADA_ES_TOUR.length
  *     JSON-LD — dice 376 m de caída libre y hasta 512 m de profundidad total.
  *     Un lector que abría la ficha desde esta misma página veía las dos.
  *   · "Desde CDMX son 6 horas por la 85D" y el autobús "8 h (~$600)". El
- *     trayecto son 430 km por la Mex-85 / MEX-70 y **6.5 a 7 horas** (dato de
+ *     trayecto son ~410 km (`distancia()`) por la Mex-85 / MEX-70 y **6.5 a 7 horas** (dato de
  *     Manolo, puesto en todas las páginas a la vez), y el ADO son ~8 h por
  *     $600–900. Ver la nota larga en `faq.en.ts`.
  *
@@ -208,7 +208,7 @@ const ES: ExperienciasContent = {
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde Ciudad de México?",
-      a: `Desde CDMX son 430 km por la autopista Mex-85 / MEX-70: unas ${enAuto("cdmx", "valles")} en coche. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son ${enAutobus("cdmx", "valles")} ($600–900 MXN en clase ejecutiva). Ciudad Valles es la base de operaciones de la región.`,
+      a: `Desde CDMX son ${distancia("cdmx", "valles")} por la autopista Mex-85 / MEX-70: unas ${enAuto("cdmx", "valles")} en coche. En autobús ADO desde la Terminal Norte hasta Ciudad Valles son ${enAutobus("cdmx", "valles")} ($600–900 MXN en clase ejecutiva). Ciudad Valles es la base de operaciones de la región.`,
     },
   ],
 
@@ -311,7 +311,7 @@ const EN: ExperienciasContent = {
     },
     {
       q: "How do I get to the Huasteca Potosina from Mexico City?",
-      a: `It's 267 miles (430 km) from Mexico City on the Mex-85 / MEX-70 toll highway — about ${enAuto("cdmx", "valles", true)} by car. By bus, ADO runs from Terminal Norte to Ciudad Valles in about ${enAutobus("cdmx", "valles", true)} ($600–900 MXN in executive class). Ciudad Valles is the region's base.`,
+      a: `It's ${distancia("cdmx", "valles", true)} from Mexico City on the Mex-85 / MEX-70 toll highway — about ${enAuto("cdmx", "valles", true)} by car. By bus, ADO runs from Terminal Norte to Ciudad Valles in about ${enAutobus("cdmx", "valles", true)} ($600–900 MXN in executive class). Ciudad Valles is the region's base.`,
     },
   ],
 

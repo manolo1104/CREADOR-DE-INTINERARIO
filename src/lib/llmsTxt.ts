@@ -56,7 +56,7 @@ import {
   type Tour,
 } from "@/lib/tours";
 import { excepcionesSalida, horaEnLista } from "@/lib/recogidaTexto";
-import { enAuto } from "@/lib/tiemposDeViaje";
+import { enAuto, distancia } from "@/lib/tiemposDeViaje";
 import { salidaDiaria } from "@/lib/faqTours";
 import { rangoGrupo, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { urlBlog } from "@/lib/blogDestinoMap";
@@ -372,13 +372,13 @@ const COMO_LLEGAR: Record<Locale, Bloque> = {
   Al llegar, un taxi de ~$60 MXN llega al Hotel Paraíso Encantado en unos 7 minutos.
 - Como llegas al amanecer, entregamos la habitación temprano para descansar y ese mismo día
   arranca el primer tour: el Día 1 del paquete NO se pierde.
-- En auto: ${enAuto("cdmx")} (aprox. 339 km) por carretera de sierra; se recomienda manejar de día.
+- En auto: ${enAuto("cdmx")} (aprox. ${distancia("cdmx")}) por carretera de sierra; se recomienda manejar de día.
 - En avión: el aeropuerto más práctico es Tampico (TAM), a ${enAuto("tampico")} de Xilitla.`,
   },
   en: {
     titulo: "How to reach Xilitla",
     cuerpo: `- Flying in: the most practical airport is Tampico (TAM), ${enAuto("tampico", "xilitla", true)} from Xilitla. Mexico City (MEX)
-  is the other common entry point, ${enAuto("cdmx", "xilitla", true)} away by road (about 339 km of mountain highway;
+  is the other common entry point, ${enAuto("cdmx", "xilitla", true)} away by road (about ${distancia("cdmx", "xilitla", true)} of mountain highway;
   driving in daylight is recommended).
 - By bus from Mexico City (what most package travelers do): an overnight departure from the
   Terminal Central del Norte around 10:15 PM (Servicios Coordinados / ETN), arriving in Xilitla

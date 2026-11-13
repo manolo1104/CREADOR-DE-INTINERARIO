@@ -4,7 +4,7 @@ import type { FAQCategory } from "@/components/FAQAccordion";
 import { GRUPO_MAX, TOURS_DB, partesRecogida, salidaCorta } from "@/lib/tours";
 import { fechaInicioTexto } from "@/lib/temporada";
 import { HOTEL_PROPIO, horarioRestaurante } from "@/lib/hotelPropio";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { enAuto, enAutobus, distancia } from "@/lib/tiemposDeViaje";
 import { HABITACIONES_HOTEL } from "@/lib/habitaciones";
 import { getTraslado, precioBase } from "@/lib/traslados";
 
@@ -375,7 +375,7 @@ const ES: InfoPracticaContent = {
     {
       titulo: "En coche",
       items: [
-        `Desde CDMX: 430km por autopista Mex-85 / MEX-70 — ${enAuto("cdmx", "valles")}`,
+        `Desde CDMX: ${distancia("cdmx", "valles")} por autopista Mex-85 / MEX-70 — ${enAuto("cdmx", "valles")}`,
         `Desde Monterrey: 340 km por la MEX-85, unas ${enAuto("monterrey", "valles")}`,
         `Desde San Luis Potosí capital: 260 km, unas ${enAuto("san-luis-potosi", "valles")}`,
         "Autopista de cuota recomendada: segura y rápida",
@@ -1011,7 +1011,7 @@ const EN: InfoPracticaContent = {
     {
       titulo: "By car",
       items: [
-        `From Mexico City: 430km (267 mi) on the Mex-85 / MEX-70 toll highway — ${enAuto("cdmx", "valles", true)}`,
+        `From Mexico City: ${distancia("cdmx", "valles", true)} on the Mex-85 / MEX-70 toll highway — ${enAuto("cdmx", "valles", true)}`,
         `From Monterrey: 340 km on the MEX-85, about ${enAuto("monterrey", "valles", true)}`,
         `From the city of San Luis Potosí: 260 km, about ${enAuto("san-luis-potosi", "valles", true)}`,
         "The toll motorway is recommended: safe and fast",

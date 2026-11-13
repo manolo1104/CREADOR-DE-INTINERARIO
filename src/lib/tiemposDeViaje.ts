@@ -63,6 +63,8 @@ export interface TiempoDesde {
   ciudadEn: string;
   /** Kilómetros hasta Ciudad Valles, cuando se conocen. */
   km?: number;
+  /** Kilómetros hasta Xilitla, cuando se conocen (13 nov 2026). */
+  kmXilitla?: number;
   /** En auto hasta Xilitla. */
   autoXilitla: string;
   autoXilitlaEn: string;
@@ -88,7 +90,12 @@ export const TIEMPOS_DE_VIAJE: TiempoDesde[] = [
     slug: "cdmx",
     ciudad: "Ciudad de México",
     ciudadEn: "Mexico City",
-    km: 430,
+    // 🔴 13 nov 2026 (auditoría: «unifica los kilómetros desde CDMX»): el sitio
+    // decía 339 y 450 km a Xilitla y 430 a Valles. Medido con OSRM por la
+    // Federal 85 (Pachuca–Tamazunchale, la ruta que describe el sitio): 352 km
+    // a Xilitla y 409 a Ciudad Valles. Todo el sitio los lee con `distancia()`.
+    km: 410,
+    kmXilitla: 350,
     autoXilitla: "7 h",
     autoXilitlaEn: "7 h",
     autoValles: "6.5 a 7 h",
@@ -145,6 +152,17 @@ export function enAuto(slug: string, destino: "xilitla" | "valles" = "xilitla", 
   if (!t) return "";
   if (destino === "valles") return en ? t.autoVallesEn : t.autoValles;
   return en ? t.autoXilitlaEn : t.autoXilitla;
+}
+
+/**
+ * «350 km» · en inglés «217 miles (350 km)». Xilitla por omisión, como `enAuto`.
+ * «» si no se conoce: nunca se inventa una cifra.
+ */
+export function distancia(slug: string, destino: "xilitla" | "valles" = "xilitla", en = false): string {
+  const t = tiempoDesde(slug);
+  const km = destino === "valles" ? t?.km : t?.kmXilitla;
+  if (!km) return "";
+  return en ? `${Math.round(km * 0.621371)} miles (${km} km)` : `${km} km`;
 }
 
 /** Devuelve «» cuando esa ciudad no tiene autobús directo, para no inventarlo. */

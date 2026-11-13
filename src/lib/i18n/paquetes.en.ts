@@ -1,7 +1,7 @@
 import type { Locale } from "./config";
 import { PAQUETES_DB, HABITACIONES, LOGISTICA, FAQS_PAQUETES, precioVisible, horasDeTour, galeriaPaquete, type Paquete, type Habitacion } from "@/lib/paquetes";
 import { TOURS_DB, esPorPersona } from "@/lib/tours";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { enAuto, enAutobus, distancia } from "@/lib/tiemposDeViaje";
 import { GOOGLE_RESENAS } from "@/lib/resenas";
 import { ventanaMejorTemporada, fechaInicioTexto } from "@/lib/temporada";
 import { localizeTour } from "./localize";
@@ -349,7 +349,7 @@ const LOGISTICA_EN = {
     {
       titulo: "By car",
       puntos: [
-        `From Mexico City: ${enAuto("cdmx", "xilitla", true)} (about 339 km).`,
+        `From Mexico City: ${enAuto("cdmx", "xilitla", true)} (about ${distancia("cdmx", "xilitla", true)}).`,
         "From the city of San Luis Potosí: ~5 hours.",
         "The approach to Xilitla is a mountain road with tight bends and fog: we recommend driving in daylight, slowly and with a full tank.",
       ],
@@ -494,8 +494,8 @@ function respuestaUnidad(locale: Locale): string {
   const en = locale === "en";
   const nombres = (ps: Paquete[]) => listaY(ps.map((p) => localizePaquete(p, locale).nombre), locale);
   const cola = en
-    ? "For groups, families or extra people we put together a quote tailored to you — message us on WhatsApp."
-    : "Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp.";
+    ? "If more people or kids are coming, you pick how many when booking (up to 12) and the price is worked out for you; for larger groups, message us on WhatsApp."
+    : "Si van más personas o niños, al reservar eliges cuántos van (hasta 12) y el precio se calcula solo; para grupos más grandes escríbenos por WhatsApp.";
   if (PAQ_POR_PERSONA.length === 0) {
     return en
       ? `Per couple: each package's figure is the total for two people sharing a room. ${cola}`
@@ -660,7 +660,7 @@ export function getLocalizedFaqs(
     },
     {
       q: "How do you confirm availability?",
-      a: "When you send us your enquiry on WhatsApp we check hotel availability and dates in real time. We reply in under 1 hour, and you don't need to pay anything up front to hold your dates.",
+      a: "When you book you pick your date on the calendar, which already shows each day's availability, and hold it with a 30 % deposit (or pay in full). If you prefer WhatsApp, we confirm the hotel and your dates in under 1 hour.",
     },
     ...faqsExtra("en"),
   ];
@@ -804,7 +804,7 @@ const UI_ES: PaquetesUI = {
   heroWaMsg: "Hola, estoy viendo los paquetes de la Huasteca. ¿Me ayudas a elegir el que me conviene?",
   get bannerTemporada() { return textoBannerTemporada("es"); },
   bannerTemporadaNota:
-    "Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora. Sin pago anticipado.",
+    "Aparta en línea con el 30 % (o paga todo), o escríbenos por WhatsApp y te confirmamos el hotel en menos de 1 hora.",
   googleReviews: "Google Reviews",
   resenasN: `${GOOGLE_RESENAS} reseñas`,
   cdmxEyebrow: "Si vienes de CDMX",
@@ -825,7 +825,7 @@ const UI_ES: PaquetesUI = {
   resenasTitulo: "Lo que dicen quienes ya vivieron la experiencia",
   resenasEnEspanol: "",
   notaWhatsapp:
-    "Reserva por WhatsApp y te confirmamos disponibilidad del hotel en menos de 1 hora. Sin pago anticipado.",
+    "Aparta en línea con el 30 % (o paga todo), o escríbenos por WhatsApp y te confirmamos el hotel en menos de 1 hora.",
   hotelEyebrow: "El hotel de los paquetes",
   hotelH2: "Hotel Paraíso Encantado ",
   hotelIntro:
@@ -877,7 +877,7 @@ const UI_EN: PaquetesUI = {
   heroWaMsg: "Hi, I'm looking at your Huasteca packages. Could you help me pick the right one?",
   get bannerTemporada() { return textoBannerTemporada("en"); },
   bannerTemporadaNota:
-    "Book on WhatsApp and we confirm hotel availability in under an hour. No prepayment.",
+    "Book online with a 30 % deposit (or pay in full), or message us on WhatsApp and we'll confirm the hotel in under an hour.",
   googleReviews: "Google Reviews",
   resenasN: `${GOOGLE_RESENAS} reviews`,
   cdmxEyebrow: "Coming from Mexico City",
@@ -900,7 +900,7 @@ const UI_EN: PaquetesUI = {
   resenasTitulo: "What travelers say on Google",
   resenasEnEspanol: "Reviews of our tours in general, translated from Spanish.",
   notaWhatsapp:
-    "Book on WhatsApp and we'll confirm hotel availability in under 1 hour. No payment up front.",
+    "Book online with a 30 % deposit (or pay in full), or message us on WhatsApp and we'll confirm the hotel in under an hour.",
   hotelEyebrow: "The hotel behind the packages",
   hotelH2: "Hotel Paraíso Encantado ",
   hotelIntro:
@@ -1140,7 +1140,7 @@ const DET_ES: PaqueteDetalleUI = {
   logisticaTitulo: "Logística del viaje",
   yaEnLaZona: "Ya en la zona",
   reservaTu: (nombre) => `Reserva tu ${nombre}`,
-  sinPagoAnticipado: "Sin pago anticipado · Confirmamos disponibilidad en <1 hora",
+  sinPagoAnticipado: "Apartas con el 30 % o pagas todo · Disponibilidad a la vista",
   loQuePagarias: "Lo que pagarías por separado",
   valorPorSeparado: "Valor por separado",
   precioDelPaquete: "Precio del paquete",
@@ -1225,7 +1225,7 @@ const DET_EN: PaqueteDetalleUI = {
   logisticaTitulo: "Trip logistics",
   yaEnLaZona: "Once you're in the area",
   reservaTu: (nombre) => `Book your ${nombre}`,
-  sinPagoAnticipado: "No payment up front · We confirm availability in <1 hour",
+  sinPagoAnticipado: "Hold it with 30 % or pay in full · Availability at a glance",
   loQuePagarias: "What you'd pay separately",
   valorPorSeparado: "Value if booked separately",
   precioDelPaquete: "Package price",

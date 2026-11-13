@@ -6,7 +6,7 @@
 import { TRASLADOS, precioBase } from "./traslados";
 import { TOURS_DB, tourCollage, tourDurRange, PROMO_TEMPORADA, promoVigente, fechaConPromo } from "./tours";
 import { HABITACIONES_HOTEL } from "./habitaciones";
-import { enAuto, enAutobus } from "./tiemposDeViaje";
+import { enAuto, enAutobus, distancia } from "./tiemposDeViaje";
 import { NOCHE_XANTOLO, haciaLa, horasEnFrase } from "./nocheXantolo";
 
 export interface ItinerarioDia {
@@ -335,7 +335,7 @@ export const LOGISTICA = {
       icon: "Car",
       titulo: "En auto",
       puntos: [
-        `Desde la Ciudad de México: ${enAuto("cdmx")} (aprox. 339 km).`,
+        `Desde la Ciudad de México: ${enAuto("cdmx")} (aprox. ${distancia("cdmx")}).`,
         `Desde la ciudad de San Luis Potosí: ${enAuto("san-luis-potosi")}.`,
         "El acceso a Xilitla es carretera de sierra, con curvas cerradas y neblina: te recomendamos manejar de día, despacio y con el tanque lleno.",
       ],
@@ -458,7 +458,7 @@ export function TRASLADOS_TEXTO(locale: "es" | "en" = "es"): string {
 export const FAQS_PAQUETES = [
   {
     q: "¿El precio es por persona o por pareja?",
-    a: "Los precios de los paquetes son por pareja (2 personas). Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp.",
+    a: "Los precios de los paquetes son por pareja (2 personas). Si van más personas o niños, al reservar eliges cuántos van (hasta 12) y el precio se calcula solo; para grupos más grandes escríbenos por WhatsApp.",
   },
   {
     q: "¿Cómo llego a Xilitla?",
@@ -481,7 +481,9 @@ export const FAQS_PAQUETES = [
   },
   {
     q: "¿Cómo confirman la disponibilidad?",
-    a: "Al enviarnos tu consulta por WhatsApp verificamos la disponibilidad del hotel y las fechas en tiempo real. Te respondemos en menos de 1 hora y no necesitas pago anticipado para apartar.",
+    // 🔴 13 nov 2026: decía «no necesitas pago anticipado» y el checkout cobra el
+    // 30 % (auditoría: «unifica el anticipo de paquetes»).
+    a: "Al reservar eliges tu fecha en el calendario, que ya enseña la disponibilidad de cada día, y apartas con el 30 % de anticipo (o pagas todo). Si prefieres WhatsApp, te confirmamos el hotel y las fechas en menos de 1 hora.",
   },
 ];
 

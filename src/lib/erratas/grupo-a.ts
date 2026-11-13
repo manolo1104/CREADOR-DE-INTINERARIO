@@ -654,6 +654,11 @@ export const ERRATAS_GRUPO_A: ErratasPorArticulo = {
       porque: "`destinos.ts` (Las Pozas, cómo llegar): «Taxi $1,200» desde Valles.",
     },
     {
+      from: `<tr><td>CDMX</td><td><strong>450 km</strong></td>`,
+      to: `<tr><td>CDMX</td><td><strong>{{km:cdmx}}</strong></td>`,
+      porque: "CDMX–Xilitla ≈ 350 km por la Federal 85 (OSRM, 13 nov 2026; `tiemposDeViaje.ts`). El sitio decía 339 en paquetes y 450 aquí.",
+    },
+    {
       from: `<td><strong>6–7 h</strong></td>`,
       to: `<td><strong>{{auto:cdmx}}</strong></td>`,
       porque: "CDMX–Xilitla: 7 h (`tiemposDeViaje.ts`); el mismo artículo dice 7 h arriba.",

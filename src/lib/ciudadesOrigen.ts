@@ -1,6 +1,6 @@
 import { PAQUETES_DB } from "@/lib/paquetes";
 import { DESAYUNOS, NOCHES_TEXTO, REGRESO_TEXTO } from "@/lib/viajeCdmx/config";
-import { enAuto, enAutobus, MINUTOS_VALLES_XILITLA, horasEnPalabras, tiempoDesde } from "@/lib/tiemposDeViaje";
+import { enAuto, enAutobus, MINUTOS_VALLES_XILITLA, horasEnPalabras, tiempoDesde, distancia } from "@/lib/tiemposDeViaje";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { TOURS_DB } from "@/lib/tours";
 import { etiquetaTramo, getTraslado, precioBase } from "@/lib/traslados";
@@ -108,7 +108,7 @@ export const CIUDADES_ORIGEN: CiudadOrigen[] = [
       {
         modo: "En auto",
         detalle:
-          `${enAuto("cdmx")} (aprox. 339 km). El tramo final es carretera de sierra con curvas cerradas y neblina: conviene manejar de día.`,
+          `${enAuto("cdmx")} (aprox. ${distancia("cdmx")}). El tramo final es carretera de sierra con curvas cerradas y neblina: conviene manejar de día.`,
       },
       {
         modo: "En avión",

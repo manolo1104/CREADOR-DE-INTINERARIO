@@ -2,7 +2,7 @@ import type { Locale } from "./config";
 import { TOURS_DB, promoVigente } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible, type Paquete } from "@/lib/paquetes";
 import { TRASLADOS } from "@/lib/traslados";
-import { enAuto, enAutobus } from "@/lib/tiemposDeViaje";
+import { enAuto, enAutobus, distancia } from "@/lib/tiemposDeViaje";
 import { formatMXN } from "@/lib/tourBooking";
 import { fmtMoney } from "./format";
 import { localizePaquete } from "./paquetes.en";
@@ -300,7 +300,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Cómo llegar a la Huasteca Potosina desde CDMX, Monterrey o Guadalajara?",
-      a: `En auto, con Ciudad Valles como destino: unas ${enAuto("cdmx", "valles")} desde Ciudad de México (430 km por la autopista de cuota Mex-85 / MEX-70) y unas ${enAuto("monterrey", "valles")} desde Monterrey. Desde Guadalajara se llega vía la ciudad de San Luis Potosí, de donde son 260 km / ${enAuto("san-luis-potosi", "valles")} del tramo final. En autobús hay salidas nocturnas desde la Terminal del Norte de CDMX: ${enAutobus("cdmx", "valles")} a Ciudad Valles y ${enAutobus("cdmx", "xilitla")} si vas directo a Xilitla. En avión, Tampico es el aeropuerto más práctico (${enAuto("tampico", "valles")} en auto a Ciudad Valles, ${enAuto("tampico")} a Xilitla); también puedes volar a la ciudad de San Luis Potosí (${enAuto("san-luis-potosi", "valles")}). Recomendamos manejar de día por la sierra.`,
+      a: `En auto, con Ciudad Valles como destino: unas ${enAuto("cdmx", "valles")} desde Ciudad de México (${distancia("cdmx", "valles")} por la autopista de cuota Mex-85 / MEX-70) y unas ${enAuto("monterrey", "valles")} desde Monterrey. Desde Guadalajara se llega vía la ciudad de San Luis Potosí, de donde son 260 km / ${enAuto("san-luis-potosi", "valles")} del tramo final. En autobús hay salidas nocturnas desde la Terminal del Norte de CDMX: ${enAutobus("cdmx", "valles")} a Ciudad Valles y ${enAutobus("cdmx", "xilitla")} si vas directo a Xilitla. En avión, Tampico es el aeropuerto más práctico (${enAuto("tampico", "valles")} en auto a Ciudad Valles, ${enAuto("tampico")} a Xilitla); también puedes volar a la ciudad de San Luis Potosí (${enAuto("san-luis-potosi", "valles")}). Recomendamos manejar de día por la sierra.`,
     },
     {
       // La regla de temporada.ts, con su fecha (7 oct 2026). Decía «seca de
@@ -423,7 +423,7 @@ const EN: FaqContent = {
     },
     {
       q: "How do I get there from Mexico City or Monterrey?",
-      a: `By car, with Ciudad Valles as your destination: about ${enAuto("cdmx", "valles", true)} from Mexico City — 267 miles (430 km) on the Mex-85 / MEX-70 toll highway — and about ${enAuto("monterrey", "valles", true)} from Monterrey. By bus, there are overnight departures from Mexico City's Terminal del Norte: roughly ${enAutobus("cdmx", "valles", true)} to Ciudad Valles, or ${enAutobus("cdmx", "xilitla", true)} if you ride straight through to Xilitla. By air, Tampico is the most practical airport (about ${enAuto("tampico", "valles", true)} by road to Ciudad Valles, ${enAuto("tampico", "xilitla", true)} to Xilitla); San Luis Potosí is another option at about ${enAuto("san-luis-potosi", "valles", true)}. Drive the mountain stretches in daylight.`,
+      a: `By car, with Ciudad Valles as your destination: about ${enAuto("cdmx", "valles", true)} from Mexico City — ${distancia("cdmx", "valles", true)} on the Mex-85 / MEX-70 toll highway — and about ${enAuto("monterrey", "valles", true)} from Monterrey. By bus, there are overnight departures from Mexico City's Terminal del Norte: roughly ${enAutobus("cdmx", "valles", true)} to Ciudad Valles, or ${enAutobus("cdmx", "xilitla", true)} if you ride straight through to Xilitla. By air, Tampico is the most practical airport (about ${enAuto("tampico", "valles", true)} by road to Ciudad Valles, ${enAuto("tampico", "xilitla", true)} to Xilitla); San Luis Potosí is another option at about ${enAuto("san-luis-potosi", "valles", true)}. Drive the mountain stretches in daylight.`,
     },
     {
       q: "When is the best time to visit the Huasteca Potosina?",

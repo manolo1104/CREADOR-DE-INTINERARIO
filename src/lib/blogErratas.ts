@@ -17,7 +17,7 @@
  */
 import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
-import { MINUTOS_VALLES_XILITLA, horasEnPalabras, enAuto } from "@/lib/tiemposDeViaje";
+import { MINUTOS_VALLES_XILITLA, horasEnPalabras, enAuto, distancia } from "@/lib/tiemposDeViaje";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
 import type { Errata, ErratasPorArticulo } from "@/lib/erratas/tipos";
 import { ERRATAS_GRUPO_A } from "@/lib/erratas/grupo-a";
@@ -41,6 +41,8 @@ export function resuelveMarcas(texto: string): string {
       v = enAuto(arg, "xilitla") || undefined;
     } else if (tipo === "autoValles" && arg) {
       v = enAuto(arg, "valles") || undefined;
+    } else if (tipo === "km" && arg) {
+      v = distancia(arg, "xilitla") || undefined;
     }
     if (v === undefined) {
       if (process.env.NODE_ENV !== "production") throw new Error(`[blogErratas] marca desconocida: ${todo}`);

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { enAuto } from "@/lib/tiemposDeViaje";
+import { enAuto, distancia } from "@/lib/tiemposDeViaje";
 import Link from "next/link";
 import { CONTACTO } from "@/lib/contacto";
 import { TOURS_DB } from "@/lib/tours";
@@ -207,7 +207,7 @@ export default function PressPage() {
             {[
               ["Where", "Xilitla and Ciudad Valles, San Luis Potosí, Mexico"],
               ["Nearest airport", `Tampico (TAM) — about ${enAuto("tampico", "xilitla", true)} by road to Xilitla`],
-              ["From Mexico City", `430 km (267 miles) to Ciudad Valles, about ${enAuto("cdmx", "valles", true)} by road`],
+              ["From Mexico City", `${distancia("cdmx", "valles", true)} to Ciudad Valles, about ${enAuto("cdmx", "valles", true)} by road`],
               ["Tallest waterfall", "Tamul — 344 feet (105 m), the tallest in San Luis Potosí"],
               ["Las Pozas", "Open Wednesday–Monday, 09:00–18:00. Closed Tuesdays. Entry $180 MXN"],
               ["Company founded", "Guiding since 2010; incorporated in 2019"],
