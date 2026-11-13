@@ -1,4 +1,32 @@
 /** @type {import('next').NextConfig} */
+/**
+ * La política de contenido (13 nov 2026). Compatible con las páginas en caché
+ * (ISR): un nonce obligaría a armar cada página en cada visita, así que los
+ * scripts en línea de Next, GA4 y Clarity van con 'unsafe-inline' y lo que se
+ * cierra es DE DÓNDE se carga todo lo demás. Orígenes sacados del código:
+ * GA4/GTM, Clarity (+ c.bing.com), Stripe (js, api, hooks, m.stripe.network),
+ * mapas de Google y YouTube en iframes, OSRM del planeador, Google Fonts en los
+ * PDF del panel (ventanas nuevas heredan esta política). Imágenes de cualquier
+ * https: las portadas del blog vienen de la base.
+ */
+const CSP = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://*.clarity.ms https://js.stripe.com https://*.js.stripe.com",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https://fonts.gstatic.com",
+  "connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://*.clarity.ms https://c.bing.com https://api.stripe.com https://*.stripe.com https://*.stripe.network https://router.project-osrm.org",
+  "frame-src 'self' https://js.stripe.com https://*.js.stripe.com https://hooks.stripe.com https://www.google.com https://www.youtube.com https://www.youtube-nocookie.com https://www.googletagmanager.com",
+  "media-src 'self' blob:",
+  "worker-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'self'",
+  "upgrade-insecure-requests",
+  "report-uri /api/csp-report",
+].join("; ");
+
 const nextConfig = {
   // `src/instrumentation.ts`: el reloj de los recordatorios de seguimiento (3 nov 2026).
   experimental: { instrumentationHook: true },
@@ -22,6 +50,18 @@ const nextConfig = {
           { key: "X-DNS-Prefetch-Control", value: "on" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
+          // ── Seguridad (13 nov 2026, auditoría: «añade HSTS y CSP») ──
+          // HSTS: el navegador ya nunca entra por http. Un año y subdominios
+          // (revisado con dig: solo existe www; el correo es MX, no web). Sin
+          // preload: esa lista no tiene marcha atrás rápida.
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "Permissions-Policy", value: 'camera=(), microphone=(), geolocation=(self), payment=(self "https://js.stripe.com")' },
+          // CSP: lo que la página puede cargar. Sale en «solo reporte» mientras
+          // no se vean los reportes de producción (/api/csp-report, en los logs
+          // de Railway): un origen olvidado bloquearía el pago de Stripe. Con la
+          // variable CSP_APLICAR=1 al construir, se aplica de verdad.
+          { key: process.env.CSP_APLICAR === "1" ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only", value: CSP },
         ],
       },
       {

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { headers } from "next/headers";
 import { Cormorant_Garamond, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
@@ -7,7 +6,7 @@ import { ItinerarioProvider } from "@/context/ItinerarioContext";
 import { PublicShell } from "@/components/NavbarWrapper";
 import { Analytics } from "@/components/Analytics";
 import WhatsAppClickTracker from "@/components/WhatsAppClickTracker";
-import { asLocale } from "@/lib/i18n/config";
+import { metadataRaiz } from "@/lib/metadataRaiz";
 
 // La itálica se sigue precargando a propósito (7 oct 2026): la segunda línea
 // del h1 del inicio («Potosina», HeroTypewriter) es Cormorant 300 itálica, a
@@ -52,62 +51,16 @@ const mono = JetBrains_Mono({
  * cambiaba—, así que una ruta inglesa sin metadata propia se anunciaba en
  * español. Le pasaba al 404: `/en/blog` servía "Descubre la Huasteca Potosina…".
  */
-const FALLBACK = {
-  es: {
-    title: "Tours Huasteca Potosina — Turismo, Cascadas & Aventura | México",
-    // Sin "Planea tu viaje con IA": /planear está en noindex mientras el
-    // generador devuelva 503, y el respaldo lo prometía en cada página que lo
-    // heredaba. Ahora dice lo mismo que el inglés.
-    description: "Descubre la Huasteca Potosina: cascadas turquesas, jardines surrealistas y cañones imposibles. Tours guiados desde Xilitla, San Luis Potosí, México.",
-    ogDescription: "Cascadas turquesas, jardines surrealistas y cañones imposibles. Tours guiados en San Luis Potosí, México.",
-    imageAlt: "Cascadas turquesas de la Huasteca Potosina, México",
-    keywords: ["Huasteca Potosina", "turismo San Luis Potosí", "cascadas México", "Xilitla", "Ciudad Valles", "Las Pozas", "Cascada de Tamul", "itinerario"],
-  },
-  en: {
-    title: "Huasteca Potosina Tours — Waterfalls, Caves & Adventure | Mexico",
-    description: "Discover the Huasteca Potosina: turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours from Xilitla, San Luis Potosí, Mexico.",
-    ogDescription: "Turquoise waterfalls, a surrealist jungle garden and impossible canyons. Guided tours in San Luis Potosí, Mexico.",
-    imageAlt: "Turquoise waterfalls of the Huasteca Potosina, Mexico",
-    keywords: ["Huasteca Potosina", "Mexico waterfalls", "Xilitla", "Las Pozas Edward James", "Tamul waterfall", "San Luis Potosi tours", "Mexico adventure travel"],
-  },
-} as const;
+export const metadata: Metadata = metadataRaiz("es");
 
-export function generateMetadata(): Metadata {
-  const locale = asLocale(headers().get("x-locale"));
-  const f = FALLBACK[locale];
-  return {
-    metadataBase: new URL("https://www.huasteca-potosina.com"),
-    title: f.title,
-    description: f.description,
-    keywords: [...f.keywords],
-    openGraph: {
-      title: f.title,
-      description: f.ogDescription,
-      url: "https://www.huasteca-potosina.com",
-      siteName: "Tours Huasteca Potosina",
-      locale: locale === "en" ? "en_US" : "es_MX",
-      type: "website",
-      images: [{ url: "/og-image.jpg", width: 1200, height: 630, alt: f.imageAlt }],
-    },
-    // Solo el tipo de tarjeta. Con título, descripción e imagen fijos aquí,
-    // toda página que no declarara su propio `twitter` (los 82 destinos,
-    // /paquetes, /reservar, /desde/*…) salía en X con los genéricos del sitio
-    // en vez de los suyos. Sin ellos, Next rellena cada página con SU og:title,
-    // og:description y og:image (resolve-metadata.js, postProcessMetadata).
-    // 🔴 No devolver `images` aquí: Next ve un twitter con imágenes heredado y
-    // deja de rellenar desde el og en TODO el sitio. La otra cara: una página
-    // que declara su propio `openGraph` SIN `images` reemplaza el de aquí
-    // entero y sale sin og:image ni twitter:image; se arregla poniendo
-    // `images` en el openGraph de esa página (/contacto, /terminos…).
-    twitter: { card: "summary_large_image" },
-  };
-}
+/** Pone `lang="en"` en /en antes de pintar (el HTML en caché es el mismo para los dos idiomas). */
+const LANG_EN = `(function(){var p=location.pathname;if(p==="/en"||p.indexOf("/en/")===0)document.documentElement.lang="en"})()`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = asLocale(headers().get("x-locale"));
   return (
-    <html lang={locale} className={`${cormorant.variable} ${dmSans.variable} ${mono.variable}`}>
+    <html lang="es" suppressHydrationWarning className={`${cormorant.variable} ${dmSans.variable} ${mono.variable}`}>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: LANG_EN }} />
         {/* Ícono «versión E» (11 nov 2026): golondrina simplificada del kit; v=3 para que el navegador suelte el viejo. */}
         <link rel="icon" href="/favicon.ico?v=3" sizes="32x32" />
         <link rel="icon" href="/favicon.svg?v=3" type="image/svg+xml" />

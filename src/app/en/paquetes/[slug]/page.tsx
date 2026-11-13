@@ -1,7 +1,10 @@
-// Versión en inglés de la ficha de paquete (itinerario día por día).
-export { default, generateMetadata, generateStaticParams } from "../../../paquetes/[slug]/page";
+// Inglés: la misma plantilla con su idioma como dato (13 nov 2026).
+// Sin leer la petición, la página se guarda en caché (ISR) y se rehace cada 60 min.
+import { Pagina, metadataPagina, generateStaticParams } from "../../../paquetes/[slug]/PaginaPaquete";
 
-// Los precios de la promo de temporada baja se apagan solos al terminar (ver
-// `TOURS_DB` en lib/tours.ts); esta página estática se regenera cada hora para
-// que lo que anuncia no se quede congelado desde el último despliegue.
+export { generateStaticParams };
 export const revalidate = 3600;
+
+type Props = { params: { slug: string } };
+export function generateMetadata({ params }: Props) { return metadataPagina({ params }, "en"); }
+export default function Page({ params }: Props) { return <Pagina params={params} locale="en" />; }

@@ -1,3 +1,8 @@
-// Home en inglés. Reutiliza la MISMA página; el locale ("en") lo resuelve vía el
-// header x-locale del middleware.
-export { default, generateMetadata } from "../page";
+// Inglés: la misma plantilla con su idioma como dato (13 nov 2026).
+// Sin leer la petición, la página se guarda en caché (ISR) y se rehace cada 5 min.
+import { Pagina, metadataPagina } from "../PaginaInicio";
+
+export const revalidate = 300;
+
+export function generateMetadata() { return metadataPagina("en"); }
+export default function Page() { return <Pagina locale="en" />; }

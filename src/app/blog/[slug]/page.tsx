@@ -18,7 +18,13 @@ import { ANTICIPO_PCT } from "@/lib/carrito";
 import { PROSE_ARTICULO } from "@/components/blog/estilosArticulo";
 import { slugEnDe, urlBlogEn } from "@/lib/blogEn";
 
-export const dynamic = "force-dynamic";
+// ISR (13 nov 2026): cada artículo se arma en su primera visita y se guarda una
+// hora. Nada se consulta al construir (la lista vacía), y lo nuevo que publique
+// el robot sale solo en su primera visita.
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
+}
 
 const SITE = "https://www.huasteca-potosina.com";
 
@@ -456,8 +462,11 @@ async function getPost(slug: string) {
     }
 
     return null;
-  } catch {
-    return null;
+  } catch (e) {
+    // 🔴 Con caché, un null aquí guardaría un 404 durante una hora por un tropiezo
+    // de la base. Mejor un error (no se guarda) y la siguiente visita lo reintenta.
+    console.error("blog getPost:", (e as Error)?.message);
+    throw e;
   }
 }
 

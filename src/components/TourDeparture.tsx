@@ -101,8 +101,12 @@ const MEDIA_LUNA = {
   },
 };
 
-export function TourDeparture({ tourId }: { tourId?: string }) {
-  const en = headers().get("x-locale") === "en";
+/**
+ * `locale` lo pasa la ficha (13 nov 2026): leer la petición con headers()
+ * sacaba la página de la caché (ISR). Sin él, se lee como antes.
+ */
+export function TourDeparture({ tourId, locale }: { tourId?: string; locale?: "es" | "en" }) {
+  const en = (locale ?? headers().get("x-locale")) === "en";
   const tour = TOURS_DB.find((t) => t.id === tourId);
   // 🔴 La variante sale del CATÁLOGO, no de una lista de ids escrita a mano.
   // Estaba repetida en cuatro archivos y ya se habían desincronizado: el Edén

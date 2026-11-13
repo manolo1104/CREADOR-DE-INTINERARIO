@@ -37,6 +37,11 @@ function ScrollProgressBar() {
 
 export function PublicShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  // `lang` al navegar entre idiomas sin recargar (13 nov 2026, ISR): el layout
+  // ya no lo sabe en el servidor; el script del <head> lo pone al cargar.
+  useEffect(() => {
+    document.documentElement.lang = pathname === "/en" || pathname?.startsWith("/en/") ? "en" : "es";
+  }, [pathname]);
   const isAdmin = pathname.startsWith("/admin");
   // Durante el pago no se pone pie de página: cualquier enlace ahí es una
   // salida del embudo justo en el paso que menos conviene interrumpir.
