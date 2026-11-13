@@ -1130,12 +1130,22 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     return urlRecordatorio(q, venceDe(q));
   }
 
-  function recordar(q: TourQuote) {
-    const url = waRecordatorio(q);
-    if (!url) return;
+  async function recordar(q: TourQuote) {
+    const sinLiga = waRecordatorio(q);
+    if (!sinLiga) return;
     playClick();
-    // Se abre primero: si la marca fallara, el mensaje igual sale.
-    window.open(url, "_blank", "noopener,noreferrer");
+    // La pestaña se abre YA (si se abre después de esperar al servidor, el
+    // navegador la bloquea) y se le pone el mensaje con la liga de pago de la
+    // cotización cuando llega (13 nov 2026). Sin liga, sale el de siempre.
+    const w = window.open("about:blank", "_blank");
+    let url = sinLiga;
+    try {
+      const r = await fetch(`/api/admin/cotizaciones/${q.id}/liga`, { method: "POST" });
+      const d = r.ok ? await r.json() : null;
+      if (d?.url) url = urlRecordatorio(q, venceDe(q), undefined, d.url) ?? sinLiga;
+    } catch { /* sin liga: el mensaje de siempre */ }
+    if (w) { w.opener = null; w.location.href = url; }
+    else window.open(url, "_blank", "noopener,noreferrer");
     const ahora = new Date().toISOString();
     setQuotes(qs => qs.map(x => {
       if (x.id !== q.id) return x;
@@ -1325,6 +1335,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${s.cls}`}>{s.label}</span>
                 </div>
               </div>
+              <ChipPagoEnLinea monto={pagadasSinReserva[q.id]} folio={folioReserva(q)} />
               <p className="text-[#1B4332] font-medium">{q.customerName}</p>
               <p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p>
               <div className="flex items-center justify-between mt-1.5">
@@ -1397,6 +1408,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
                         {esDelBot(q) && <ChipBot />}
                       </div>
+                      <ChipPagoEnLinea monto={pagadasSinReserva[q.id]} folio={folioReserva(q)} />
                       {vence && (
                         <p className={`text-[11px] font-dm mt-1 whitespace-nowrap ${claseVence(diasParaVencer(vence, hoy))}`}
                           title={`Fecha límite: ${fDate(vence)}`}>
@@ -2063,5 +2075,23 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
         );
       })()}
     </div>
+  );
+}
+
+/**
+ * «Pagó en línea $1,860 · HP-M-…» (13 nov 2026): la cotización cuya liga se
+ * pagó (la del correo o una de Cobros) se ve pagada en la lista, con la reserva
+ * en la que quedó. El folio lleva a Reservas.
+ */
+function ChipPagoEnLinea({ monto, folio }: { monto?: number; folio: string | null }) {
+  if (!monto || monto <= 0) return null;
+  return (
+    <p className="mt-1.5 flex flex-wrap items-center gap-1.5 font-dm text-[11px]">
+      <span className="px-1.5 py-0.5 rounded bg-[#40916C]/12 text-[#1B4332] font-semibold">💳 Pagó en línea ${monto.toLocaleString("es-MX")}</span>
+      {folio && (
+        <a href={`/admin/reservas?folio=${encodeURIComponent(folio)}`} onClick={(e) => e.stopPropagation()}
+          className="text-[#40916C] underline underline-offset-2 hover:text-[#1B4332]">{folio}</a>
+      )}
+    </p>
   );
 }

@@ -153,7 +153,7 @@ export interface DatosRecordatorio {
  * El WhatsApp de «tu cotización vence…», ya escrito, o `null` sin teléfono.
  * Lo usan el panel (botón «Recordar») y el aviso diario al equipo.
  */
-export function urlRecordatorio(q: DatosRecordatorio, venceEl: string, hoy: string = hoyMX()): string | null {
+export function urlRecordatorio(q: DatosRecordatorio, venceEl: string, hoy: string = hoyMX(), liga?: string | null): string | null {
   const ph = telefonoWhatsapp(q.customerPhone);
   if (!ph) return null;
   const pila = nombreDePila(q.customerName);
@@ -161,6 +161,8 @@ export function urlRecordatorio(q: DatosRecordatorio, venceEl: string, hoy: stri
   const fecha = esYMD(q.tourDate)
     ? ` para el ${new Date(`${q.tourDate}T12:00:00`).toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" }).replace(",", "")}`
     : "";
-  const texto = `Hola${pila ? ` ${pila}` : ""}, te escribimos de Tours Huasteca Potosina. Tu cotización *${q.quoteNumber}* de *${tour}*${fecha} vence ${cuandoVence(venceEl, "es", hoy)}. ¿Te la apartamos? Con el anticipo queda apartado tu lugar y el resto se paga el día del recorrido.`;
+  const texto = `Hola${pila ? ` ${pila}` : ""}, te escribimos de Tours Huasteca Potosina. Tu cotización *${q.quoteNumber}* de *${tour}*${fecha} vence ${cuandoVence(venceEl, "es", hoy)}. ¿Te la apartamos? Con el anticipo queda apartado tu lugar y el resto se paga el día del recorrido.`
+    // La liga de la cotización (13 nov 2026): al pagarla pasa sola a reserva.
+    + (liga ? `\n\nPuedes apartar aquí con tarjeta: ${liga}` : "");
   return `https://wa.me/${ph}?text=${encodeURIComponent(texto)}`;
 }

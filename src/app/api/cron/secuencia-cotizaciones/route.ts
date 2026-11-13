@@ -16,7 +16,8 @@ import {
   type MetaCotizacion,
 } from "@/lib/quoteFollowUp";
 import { actividad, logger } from "@/lib/logger";
-import { ligaVivaDeCotizacion, revisarReservaPosterior } from "@/lib/cotizaciones/estadoCotizacion";
+import { revisarReservaPosterior } from "@/lib/cotizaciones/estadoCotizacion";
+import { ligaParaCorreo } from "@/lib/cotizaciones/enviar";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -239,7 +240,7 @@ export async function POST(req: NextRequest) {
             // Con extras, descuento o precio a mano el carrito no cobra lo cotizado:
             // va su liga de anticipo o WhatsApp (lote 4, 5 nov 2026).
             extraItems:   q.extraItems,
-            ligaPago:     await ligaVivaDeCotizacion(q.id),
+            ligaPago:     await ligaParaCorreo(q.id, q.customerEmail),
             tourSlug:     q.tourSlug,
             venceEl,
             cuando:       cuandoVence(venceEl, locale, hoy),
@@ -300,7 +301,7 @@ export async function POST(req: NextRequest) {
         lineItems:    q.lineItems,
         packageItems: q.packageItems,
         extraItems:   q.extraItems,
-        ligaPago:     await ligaVivaDeCotizacion(q.id),
+        ligaPago:     await ligaParaCorreo(q.id, q.customerEmail),
         tourSlug:     q.tourSlug,
       });
       await sendBrevoEmail({ to: [{ email: q.customerEmail, name: q.customerName }], subject, htmlContent: html });

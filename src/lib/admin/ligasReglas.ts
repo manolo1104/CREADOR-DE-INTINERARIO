@@ -358,3 +358,84 @@ export function tituloViajeSinAnticipo(p: { folio: string; cliente: string }): s
     `El viaje CDMX ${p.folio} se pagó en línea y no tiene su anticipo registrado: revísalo en Stripe. No le mandé la liga del saldo.`,
   );
 }
+
+// ── La liga que va en el correo de la cotización (13 nov 2026) ──────────────
+
+/**
+ * Quién crea las ligas que salen solas en el correo de la cotización y en sus
+ * recordatorios. Las que hace una persona en Cobros llevan su nombre: esas se
+ * respetan (es el monto que esa persona acordó con el cliente).
+ */
+export const CREADOR_LIGA_COTIZACION = "Sistema (cotización)";
+
+export type DecisionLigaCotizacion =
+  | { accion: "nada"; motivo: string }
+  | { accion: "reusar"; ligaId: string }
+  | { accion: "crear"; monto: number; apagar: string[] };
+
+/**
+ * Qué liga lleva el botón «Reservar» del correo de una cotización (pedido de
+ * Manolo, 13 nov 2026: «que el botón mande a pagar en Stripe el monto acordado
+ * en la cotización»). El monto es el anticipo acordado (`anticipoDe`).
+ *
+ *  · Solo una cotización abierta (borrador o enviada), sin reemplazo y sin
+ *    reserva viva lleva liga: a quien ya es reserva no se le vuelve a cobrar.
+ *  · Si una liga suya ya se pagó, no se hace otra: ese pago ya la convirtió.
+ *  · Una liga viva hecha A MANO en Cobros manda: es lo que se habló con el cliente.
+ *  · La automática con el mismo monto se reusa (el mismo enlace en el correo y
+ *    en los recordatorios); si se editó la cotización y cambió el monto, se
+ *    apaga la vieja y nace otra con el monto nuevo.
+ */
+export function decidirLigaDeCotizacion(p: {
+  status: string;
+  reemplazada: boolean;
+  conReserva: boolean;
+  monto: number;
+  /** Las ligas de la cotización, la más reciente primero. */
+  ligas: { id: string; monto: number; estado: string; creadoPor: string | null }[];
+}): DecisionLigaCotizacion {
+  if (p.status !== "borrador" && p.status !== "enviada") return { accion: "nada", motivo: `la cotización está ${p.status}` };
+  if (p.reemplazada) return { accion: "nada", motivo: "la reemplazó otra cotización" };
+  if (p.conReserva) return { accion: "nada", motivo: "ya es una reserva" };
+  if (p.ligas.some((l) => l.estado === "pagado")) return { accion: "nada", motivo: "ya pagó una liga" };
+  if (!(p.monto >= 10)) return { accion: "nada", motivo: "el anticipo es menor a $10" };
+  const vivas = p.ligas.filter((l) => l.estado === "activo");
+  const aMano = vivas.find((l) => l.creadoPor !== CREADOR_LIGA_COTIZACION);
+  if (aMano) return { accion: "reusar", ligaId: aMano.id };
+  const igual = vivas.find((l) => l.monto === p.monto);
+  if (igual) return { accion: "reusar", ligaId: igual.id };
+  return { accion: "crear", monto: p.monto, apagar: vivas.map((l) => l.id) };
+}
+
+const MESES_LIGA = ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"];
+
+/**
+ * El concepto y la línea chica que el cliente ve en la página de pago de
+ * Stripe: los mismos que arma Cobros a mano («Anticipo de Expedición Tamul»,
+ * «Ana López · 4 personas · sale el 14 de noviembre · COT-…»).
+ */
+export function textosLigaDeCotizacion(q: {
+  quoteNumber: string; customerName: string; tourName: string; tourDate: string; personas: number; total: number; monto: number;
+}, anoActual = new Date().getFullYear()): { titulo: string; detalle: string } {
+  const partes = String(q.tourName || "").split(" + ");
+  const primero = partes[0].split("—")[0].split(":")[0].trim() || "tu tour";
+  const corto = partes.length > 1 ? `${primero} y ${partes.length - 1} tour${partes.length > 2 ? "s" : ""} más` : primero.slice(0, 48);
+  const tituloLiga = (q.monto >= q.total ? `Pago de ${corto}` : `Anticipo de ${corto}`).slice(0, 120);
+  const det = [recorta(q.customerName, 60)];
+  if (q.personas > 0) det.push(`${q.personas} ${q.personas === 1 ? "persona" : "personas"}`);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(q.tourDate || "");
+  if (m) det.push(`sale el ${Number(m[3])} de ${MESES_LIGA[Number(m[2]) - 1]}${Number(m[1]) !== anoActual ? ` de ${m[1]}` : ""}`);
+  det.push(q.quoteNumber);
+  return { titulo: tituloLiga, detalle: det.filter(Boolean).join(" · ").slice(0, 200) };
+}
+
+/**
+ * La liga con el correo del cliente ya escrito en la página de pago de Stripe
+ * (`prefilled_email`): un campo menos en el teléfono, y el pago llega con el
+ * mismo correo de la cotización.
+ */
+export function ligaConCorreo(url: string, correo: string | null | undefined): string {
+  const c = String(correo ?? "").trim();
+  if (!c || !c.includes("@") || c.endsWith("@desconocido")) return url;
+  return `${url}${url.includes("?") ? "&" : "?"}prefilled_email=${encodeURIComponent(c)}`;
+}

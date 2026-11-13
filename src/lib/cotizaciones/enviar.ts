@@ -19,7 +19,18 @@ import { hoyMX } from "@/lib/dates";
 import { registrarEnBitacora, pesos, type Actor } from "@/lib/admin/bitacora";
 import type { ResultadoEnvio } from "./tipos";
 import { esPrimerEnvio, modoDeEnvio } from "./reglasEnvio";
-import { ligaVivaDeCotizacion, reservaVivaDeCotizacion } from "./estadoCotizacion";
+import { reservaVivaDeCotizacion } from "./estadoCotizacion";
+import { asegurarLigaDeCotizacion } from "@/lib/admin/linksPago";
+import { ligaConCorreo } from "@/lib/admin/ligasReglas";
+
+/**
+ * La liga del botón del correo, con el correo del cliente ya escrito en la
+ * página de pago. La usan el envío y los recordatorios del cron. No lanza.
+ */
+export async function ligaParaCorreo(quoteId: string, correo: string | null | undefined): Promise<{ url: string; monto: number } | null> {
+  const l = await asegurarLigaDeCotizacion(quoteId);
+  return l ? { url: ligaConCorreo(l.url, correo), monto: l.monto } : null;
+}
 
 const esYMD = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
@@ -80,8 +91,9 @@ export async function enviarCotizacionPorCorreo(quoteId: string, actor?: Actor):
       // Idioma del cliente, guardado en el `_meta` de la cotización.
       locale:       meta.locale,
       venceEl:      copia ? undefined : venceEl,
-      // Si el carrito no cobraría lo cotizado, el botón es su liga de pago (si tiene).
-      ligaPago:     copia ? null : await ligaVivaDeCotizacion(q.id),
+      // El botón cobra el anticipo acordado con la liga de ESTA cotización: la
+      // hace aquí si no la tiene (13 nov 2026). Al pagarla, pasa sola a reserva.
+      ligaPago:     copia ? null : await ligaParaCorreo(q.id, q.customerEmail),
       copia,
     });
 

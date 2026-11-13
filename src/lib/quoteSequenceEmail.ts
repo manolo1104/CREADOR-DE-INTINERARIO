@@ -259,7 +259,10 @@ function destino(
 ): { href: string; tipo: "web" | "liga" | "wa" } {
   const wa = { href: `https://wa.me/${WA}?text=${encodeURIComponent(T.waTexto(tourName))}`, tipo: "wa" as const };
   const liga = d.ligaPago?.url ? { href: esc(d.ligaPago.url), tipo: "liga" as const } : null;
-  const otraVia = liga ?? wa;
+  // 🔴 13 nov 2026: la liga de la cotización va primero (cobra el anticipo
+  // acordado y, pagada, la convierte en reserva con su confirmación).
+  if (liga) return liga;
+  const otraVia = wa;
   if (!cobraComoLaWeb(d)) return otraVia;
   const paquete = paqueteDe(d.packageItems, d.tourSlug);
   if (paquete) return { href: `${BASE}/reservar-paquete/${encodeURIComponent(paquete)}`, tipo: "web" };

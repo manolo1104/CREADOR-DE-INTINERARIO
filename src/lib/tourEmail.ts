@@ -796,7 +796,13 @@ export function buildTourQuoteEmailHtml(data: {
   // sin descuento, precio a mano, extras cobrados ni conceptos a mano. El
   // carrito solo recibe los recorridos y cobraba otro precio. Una copia de
   // una cotización ya aceptada no lleva botón de pago: ya pagó.
-  const comoLaWeb = !data.copia && cobraComoLaWeb({ lineItems: lineas, packageItems: data.packageItems, extraItems: data.extraItems, totalAmount: data.totalAmount });
+  // 🔴 13 nov 2026 (pedido de Manolo): el botón cobra el anticipo acordado con
+  // la liga de ESTA cotización, que nace sola al enviarla. Va PRIMERO: al
+  // pagarla la cotización pasa a reserva y le llega la confirmación. El carrito
+  // (abajo) queda solo si no hubo liga (sin Stripe): su reserva nacía sin la
+  // cotización y esta no se marcaba pagada.
+  const ligaPrimero = !data.copia && data.ligaPago?.url ? data.ligaPago : null;
+  const comoLaWeb = !data.copia && !ligaPrimero && cobraComoLaWeb({ lineItems: lineas, packageItems: data.packageItems, extraItems: data.extraItems, totalAmount: data.totalAmount });
   const tourUrl: string | null = !comoLaWeb
     ? null
     : esPaquete

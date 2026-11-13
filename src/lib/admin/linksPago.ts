@@ -9,9 +9,11 @@ import { SISTEMA, pesos, registrarEnBitacora } from "@/lib/admin/bitacora";
 import { RESPONSABLE_COBROS } from "@/lib/admin/automatizaciones";
 import { tituloTareaLigaPagada } from "@/lib/cotizaciones/reglasConversion";
 import {
-  avisoTrasAbonarLiga, motivoParaApagarLiga, reservasParaPagoRestante, tituloLigaDeOtraCuenta, tituloLigaSinDestino,
+  avisoTrasAbonarLiga, CREADOR_LIGA_COTIZACION, decidirLigaDeCotizacion, motivoParaApagarLiga, reservasParaPagoRestante,
+  textosLigaDeCotizacion, tituloLigaDeOtraCuenta, tituloLigaSinDestino,
   type HechosLiga, type SesionPagadaLiga,
 } from "@/lib/admin/ligasReglas";
+import { anticipoDe } from "@/lib/admin/totalesCotizacion";
 
 /**
  * Cobros sueltos: título, monto y una liga que se manda por WhatsApp.
@@ -242,8 +244,11 @@ export async function crearLinkDePago(datos: DatosLink, creadoPor: string): Prom
     after_completion: {
       type: "hosted_confirmation",
       hosted_confirmation: {
-        custom_message:
-          "¡Listo! Tu pago quedó registrado. Te escribimos por WhatsApp para confirmar los detalles.",
+        // La de una cotización la convierte en reserva y manda la confirmación
+        // sola (13 nov 2026): se le dice que la busque en su correo.
+        custom_message: datos.cotizacionId
+          ? "¡Listo! Tu pago quedó registrado. En unos minutos te llega a tu correo la confirmación de tu reserva."
+          : "¡Listo! Tu pago quedó registrado. Te escribimos por WhatsApp para confirmar los detalles.",
       },
     },
   });
@@ -282,6 +287,60 @@ export async function crearLinkDePago(datos: DatosLink, creadoPor: string): Prom
       "La liga no se pudo guardar y se canceló en Stripe para que nadie la pague por error. " +
       "Vuelve a intentarlo.",
     );
+  }
+}
+
+/**
+ * La liga del botón «Reservar» del correo de una cotización y de sus
+ * recordatorios (13 nov 2026): cobra el anticipo acordado y, al pagarse, la
+ * cotización pasa sola a reserva con su correo de confirmación
+ * (`convertirPorLigaPagada`). La regla de cuándo se reusa, se cambia o no se
+ * hace es `decidirLigaDeCotizacion`.
+ *
+ * Nunca lanza: sin llave de Stripe (en local), con Stripe caído o con la
+ * cotización ya cerrada devuelve la liga viva que ya tuviera, o null, y el
+ * correo sale con el botón de WhatsApp de siempre.
+ */
+export async function asegurarLigaDeCotizacion(quoteId: string): Promise<{ url: string; monto: number } | null> {
+  try {
+    const q = await prisma.tourQuote.findUnique({ where: { id: quoteId } });
+    if (!q) return null;
+    const pkgs = Array.isArray(q.packageItems) ? (q.packageItems as Record<string, unknown>[]) : [];
+    const meta = (pkgs.find((p) => !!p && typeof p === "object" && p._meta === true) ?? {}) as { anticipo?: number; reemplazadaPor?: unknown; numPersonas?: unknown };
+    const { anticipo } = anticipoDe(q.totalAmount, meta);
+    const ligas = await prisma.linkPago.findMany({
+      where: { cotizacionId: q.id }, orderBy: { createdAt: "desc" },
+      select: { id: true, monto: true, estado: true, creadoPor: true, url: true },
+    });
+    const { reservaVivaDeCotizacion } = await import("@/lib/cotizaciones/estadoCotizacion");
+    const reserva = await reservaVivaDeCotizacion(q);
+    const d = decidirLigaDeCotizacion({
+      status: q.status, reemplazada: typeof meta.reemplazadaPor === "string" && !!meta.reemplazadaPor,
+      conReserva: !!reserva, monto: anticipo, ligas,
+    });
+    if (d.accion === "reusar") {
+      const l = ligas.find((x) => x.id === d.ligaId)!;
+      return { url: l.url, monto: l.monto };
+    }
+    if (d.accion === "nada" || !process.env.STRIPE_SECRET_KEY) return null;
+    // La automática de antes cobraba otro monto (se editó la cotización): se apaga primero.
+    for (const id of d.apagar) {
+      const vieja = await prisma.linkPago.findUnique({ where: { id } });
+      if (vieja) await apagarLiga(vieja, "cambió el monto de su cotización");
+    }
+    const personas = Number(meta.numPersonas) || q.adults + q.children;
+    const t = textosLigaDeCotizacion({
+      quoteNumber: q.quoteNumber, customerName: q.customerName, tourName: q.tourName, tourDate: q.tourDate,
+      personas, total: q.totalAmount, monto: d.monto,
+    });
+    const creada = await crearLinkDePago({
+      titulo: t.titulo, detalle: t.detalle, monto: d.monto, cliente: q.customerName, cotizacionId: q.id,
+      nota: "Liga automática del correo de la cotización",
+    }, CREADOR_LIGA_COTIZACION);
+    return { url: creada.url, monto: creada.monto };
+  } catch (e) {
+    console.error("asegurarLigaDeCotizacion:", (e as Error)?.message);
+    return null;
   }
 }
 
@@ -650,6 +709,13 @@ async function convertirPorLigaPagada(q: TourQuote, link: LinkPago, montoPagado:
       await tarea(titulo, `liga-sin-destino:${link.id}`, RESPONSABLE_COBROS);
     } else {
       await tarea(tituloTareaLigaPagada({ cliente: q.customerName, folio: conv.reserva.confirmationNumber, monto: montoPagado, revisar: conv.revisar }), `liga-pagada:${q.id}`);
+      // 🔴 El correo de confirmación (pedido de Manolo, 13 nov 2026): antes la
+      // liga pagada dejaba la reserva hecha, pero el cliente no recibía nada
+      // hasta que alguien lo mandaba a mano desde el panel. Solo si ESTE pago
+      // entró a la reserva: un reintento de Stripe ya no abona y no lo repite.
+      if (conv.abonadoPorLiga > 0) {
+        await confirmarPagoDeLiga(conv.reserva, link, q, tarea);
+      }
     }
   } catch (e) {
     // Ni así se pudo: la cotización queda «aceptada» (ya hay dinero: sale de la
@@ -662,4 +728,37 @@ async function convertirPorLigaPagada(q: TourQuote, link: LinkPago, montoPagado:
     await tarea(`Pagó la liga de ${q.quoteNumber} (${q.customerName}, $${montoPagado.toLocaleString("es-MX")}) pero no se pudo pasar a reserva sola: ${(e as Error)?.message ?? "revisar"}. Conviértela desde Cotizaciones.`, `liga-pagada-revisar:${q.id}`);
   }
   if (oportunidadId) await import("./crmDatos").then(m => m.sincronizarProximoPaso(oportunidadId!)).catch(() => {});
+}
+
+const correoUsable = (c: string | null | undefined): c is string =>
+  !!c && c.includes("@") && !c.endsWith("@desconocido");
+
+/**
+ * Tras el pago de la liga de una cotización: la reserva recibe su correo de
+ * confirmación (el mismo que se manda desde el panel). Si la cotización no
+ * tenía correo, se usa el que el cliente escribió en la página de pago de
+ * Stripe. Si no sale, queda una tarea para que una persona lo mande. No lanza.
+ */
+async function confirmarPagoDeLiga(
+  reserva: { id: string; confirmationNumber: string; customerEmail: string | null },
+  link: LinkPago,
+  q: TourQuote,
+  tarea: (titulo: string, clave: string) => Promise<unknown>,
+): Promise<void> {
+  try {
+    if (!correoUsable(reserva.customerEmail) && correoUsable(link.correoDelPagador)) {
+      await prisma.tourBooking.update({ where: { id: reserva.id }, data: { customerEmail: link.correoDelPagador.trim().toLowerCase() } });
+    }
+    const { enviarConfirmacionReserva } = await import("@/lib/cotizaciones/convertir");
+    const correo = await enviarConfirmacionReserva(reserva.id, SISTEMA);
+    if (correo.emailEnviado) return;
+    await tarea(
+      correo.motivo === "sin-correo"
+        ? `${q.customerName} pagó la liga de ${q.quoteNumber} y ya es la reserva ${reserva.confirmationNumber}, pero no tiene correo: mándale la confirmación por WhatsApp.`
+        : `${q.customerName} pagó la liga de ${q.quoteNumber} (reserva ${reserva.confirmationNumber}), pero el correo de confirmación no salió: reenvíalo desde Reservas.`,
+      `confirmacion-liga:${reserva.id}`,
+    );
+  } catch (e) {
+    console.error("confirmación tras liga pagada:", (e as Error)?.message);
+  }
 }
