@@ -64,6 +64,23 @@ const nextConfig = {
   },
   async redirects() {
     return [
+      // ── Paquetes al checkout del carrito (13 nov 2026) ──────────────────
+      // «Pasa los paquetes al mismo checkout que los tours»: la página vieja
+      // de pago de paquetes manda al carrito con el paquete. Con `?recuperar`
+      // (enlaces de correos de rescate ya enviados) se queda la vieja, que
+      // sigue sabiendo restaurar su carrito.
+      {
+        source: "/reservar-paquete/:slug",
+        missing: [{ type: "query", key: "recuperar" }],
+        destination: "/reservar/carrito?paquete=:slug",
+        permanent: false,
+      },
+      {
+        source: "/en/reservar-paquete/:slug",
+        missing: [{ type: "query", key: "recuperar" }],
+        destination: "/en/reservar/carrito?paquete=:slug",
+        permanent: false,
+      },
       // ── Ligas cortas de la campaña del curso ────────────────────────────
       // Van a mano en mensajes de WhatsApp y en 26 correos: /taller se teclea
       // y se dicta mucho mejor que /curso/webinar. Son redirects y no

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { disponibilidadDeTour, CUPO_DIARIO, RANGO_MAX_DIAS } from "@/lib/cupoTour";
+import { disponibilidadDeTour, disponibilidadDePaquete, CUPO_DIARIO, RANGO_MAX_DIAS } from "@/lib/cupoTour";
+import { getPaquete } from "@/lib/paquetes";
 import { TOURS_DB } from "@/lib/tours";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
 import { rateLimit } from "@/lib/rateLimit";
@@ -37,7 +38,11 @@ export async function GET(req: NextRequest) {
 
   const q = req.nextUrl.searchParams;
   const slug = (q.get("slug") ?? "").trim();
-  if (!slug || !TOURS_DB.some((t) => t.slug === slug)) {
+  // Un paquete del catálogo también (13 nov 2026): el checkout de paquetes usa
+  // el mismo calendario que los tours. Los de evento tienen su fecha fija.
+  const paquete = getPaquete(slug);
+  const esPaquete = !!paquete && !paquete.evento;
+  if (!slug || (!esPaquete && !TOURS_DB.some((t) => t.slug === slug))) {
     return NextResponse.json({ error: "Recorrido desconocido." }, { status: 404 });
   }
 
@@ -65,7 +70,9 @@ export async function GET(req: NextRequest) {
   if (hasta < desde) return NextResponse.json({ dias: {} });
 
   try {
-    const dias = await disponibilidadDeTour(slug, desde, hasta, personas, esIdApartado(apartado) ? apartado : undefined);
+    const dias = esPaquete
+      ? await disponibilidadDePaquete(paquete!, desde, hasta, personas)
+      : await disponibilidadDeTour(slug, desde, hasta, personas, esIdApartado(apartado) ? apartado : undefined);
     return NextResponse.json(
       { dias },
       // Corto a propósito: un minuto viejo no le cambia la vida a nadie y el

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Elements } from "@stripe/react-stripe-js";
 import { ChevronLeft, Lock, MapPin, Clock, ShieldCheck, Star, Users, AlertCircle } from "lucide-react";
@@ -17,6 +17,7 @@ import { PagoCarrito } from "@/components/carrito/PagoCarrito";
 import { useCarritoCheckout } from "@/components/carrito/useCarritoCheckout";
 import { useCheckoutV2 } from "@/components/checkout/useCheckoutV2";
 import { CheckoutCarritoV2 } from "@/components/checkout/CheckoutCarritoV2";
+import { CheckoutPaquete, SLUGS_PAQUETE_CHECKOUT } from "@/components/checkout/CheckoutPaquete";
 import { RenglonCarrito } from "@/components/carrito/RenglonCarrito";
 import { HospedajeCarrito } from "@/components/carrito/HospedajeCarrito";
 import { TrasladoCarrito } from "@/components/carrito/TrasladoCarrito";
@@ -35,7 +36,23 @@ import { trackBeginCheckout, renglonDeCarrito } from "@/lib/analytics";
 
 // ── Página ───────────────────────────────────────────────────────────────────
 
+/**
+ * `?paquete=<slug>` abre el checkout de un PAQUETE en esta misma página (13 nov
+ * 2026: «pasa los paquetes al mismo checkout que los tours»). Sin él, el
+ * carrito de recorridos de siempre. Se decide al montar: el HTML del servidor
+ * no conoce la query.
+ */
 export default function CarritoPage() {
+  const [paquete, setPaquete] = useState<string | null | undefined>(undefined);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("paquete");
+    setPaquete(q && SLUGS_PAQUETE_CHECKOUT.has(q) ? q : null);
+  }, []);
+  if (paquete === undefined) return <main className="min-h-screen bg-crema pt-32" />;
+  return paquete ? <CheckoutPaquete slug={paquete} /> : <CarritoTours />;
+}
+
+function CarritoTours() {
   // Primero la bandera: lee `?checkout=v2` antes de que el carrito limpie la URL.
   const v2 = useCheckoutV2();
   // La lógica vive en `useCarritoCheckout`; aquí solo se pinta.

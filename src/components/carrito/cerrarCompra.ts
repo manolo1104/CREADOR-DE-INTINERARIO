@@ -20,13 +20,19 @@ import { leerApartadoId, olvidarApartado } from "@/components/carrito/useApartad
 
 export interface DatosCompra { name: string; email: string; phone: string; pickup: string; checkin?: string; checkout?: string; guiaIngles?: boolean }
 
-export async function cerrarCompraCarrito({ cobro, datos, locale, onListo, irA }: {
+export async function cerrarCompraCarrito({ cobro, datos, locale, onListo, irA, vaciar = true }: {
   cobro: Cobro;
   datos: DatosCompra;
   locale: Locale;
   onListo: () => void;
   /** A dónde ir al terminar (ya con el prefijo de idioma lo pone quien llama). */
   irA: (ruta: string) => void;
+  /**
+   * Vaciar el carrito de recorridos al terminar. El checkout de PAQUETE no lo
+   * vacía (13 nov 2026): el paquete se paga aparte y los tours que la persona
+   * tenía guardados siguen ahí.
+   */
+  vaciar?: boolean;
 }): Promise<void> {
   const t = getBooking(locale).carrito;
   const primero = cobro.lineItems[0];
@@ -229,8 +235,10 @@ export async function cerrarCompraCarrito({ cobro, datos, locale, onListo, irA }
   // suelta el servidor después de crearla; ver `olvidarApartado`). Antes de
   // vaciar el carrito, o el carrito vacío lo soltaría desde aquí.
   olvidarApartado();
-  vaciarCarrito();
-  limpiarExtras();
+  if (vaciar) {
+    vaciarCarrito();
+    limpiarExtras();
+  }
   onListo();
   irA("/reservar-tour/confirmacion");
 }

@@ -599,3 +599,40 @@ export async function cupoDeTourEnDia(slug: string, fecha: string): Promise<Cupo
   const cerrada = cerradas.has(fecha);
   return { slug, personas, cupo, cerrada, estado: estadoDia(personas, { cupo, cerrada, privada: esPrivadaDelDia(t) }) };
 }
+
+// ── Disponibilidad de un PAQUETE (13 nov 2026) ─────────────────────────────
+
+/** De menos a más grave: el día de un paquete vale lo que su peor recorrido. */
+const GRAVEDAD: EstadoDia[] = ["libre", "con-reservas", "casi-lleno", "no-cabe", "sin-cupo", "cerrada"];
+
+/** El peor de varios estados (`libre` si no hay ninguno). */
+export function peorEstado(estados: (EstadoDia | undefined)[]): EstadoDia {
+  let peor = 0;
+  for (const e of estados) if (e) peor = Math.max(peor, GRAVEDAD.indexOf(e));
+  return GRAVEDAD[peor];
+}
+
+/**
+ * El color de cada fecha de INICIO de un paquete en el calendario: el peor de
+ * sus recorridos en el día que le toca a cada uno (`toursDePaquete`). Así el
+ * calendario del checkout de paquetes (el mismo de los tours) no ofrece un
+ * arranque en el que la Expedición Tamul del día 2 ya está llena.
+ */
+export async function disponibilidadDePaquete(
+  p: Pick<Paquete, "itinerario" | "eleccionTour">, desde: string, hasta: string, grupo: number, elegidos: string[] = [],
+): Promise<Record<string, EstadoDia>> {
+  const muestra = toursDePaquete(p, desde, elegidos);
+  if (!muestra.length) return {};
+  const ultimo = Math.max(...muestra.map((t) => diffDiasYMD(desde, t.fecha)));
+  const finRango = addDaysYMD(hasta, ultimo);
+  const slugs = Array.from(new Set(muestra.map((t) => t.slug)));
+  const porSlug = new Map<string, Record<string, EstadoDia>>();
+  for (const s of slugs) porSlug.set(s, await disponibilidadDeTour(s, desde, finRango, grupo));
+  const dias: Record<string, EstadoDia> = {};
+  const n = Math.min(diffDiasYMD(desde, hasta), RANGO_MAX_DIAS);
+  for (let i = 0; i <= n; i++) {
+    const inicio = addDaysYMD(desde, i);
+    dias[inicio] = peorEstado(toursDePaquete(p, inicio, elegidos).map((t) => porSlug.get(t.slug)?.[t.fecha]));
+  }
+  return dias;
+}

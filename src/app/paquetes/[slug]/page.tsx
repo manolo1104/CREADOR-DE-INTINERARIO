@@ -391,7 +391,12 @@ export default function PaqueteDetallePage({ params }: Props) {
             </p>
           )}
 
-          <div>
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Reservar en línea, por el checkout de los tours (13 nov 2026). */}
+            <Link href={`${lp("/reservar/carrito")}?paquete=${p.slug}`}
+              className="inline-flex items-center gap-2.5 bg-dorado hover:bg-terracota hover:text-crema text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+              {locale === "en" ? "Book · pick date and room" : "Reservar · elige fecha y habitación"}
+            </Link>
             <a href={waLink(waMsg)} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors">
               {t.reservarWhatsapp}
@@ -681,6 +686,12 @@ export default function PaqueteDetallePage({ params }: Props) {
           <div className="border border-white/10 bg-negro/50 p-6">
             <h2 className="font-cormorant text-crema text-2xl mb-1">{t.reservaTu(p.nombre)}</h2>
             <p className="text-crema/50 font-dm text-xs mb-5">{t.sinPagoAnticipado}</p>
+            {/* Primero reservar en línea (13 nov 2026); la consulta por WhatsApp, debajo. */}
+            <Link href={`${lp("/reservar/carrito")}?paquete=${p.slug}`}
+              className="flex items-center justify-center w-full mb-4 bg-dorado hover:bg-terracota hover:text-crema text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+              {locale === "en" ? "Book online · pick date and room" : "Reservar en línea · fecha y habitación"}
+            </Link>
+            <p className="mb-4 text-center font-dm text-[11px] text-crema/40">{locale === "en" ? "or ask us first on WhatsApp" : "o pregúntanos antes por WhatsApp"}</p>
             <PaqueteFormCta packageName={p.nombre} price={p.precio} destacado={p.destacado} />
           </div>
         </div>
@@ -758,6 +769,10 @@ export default function PaqueteDetallePage({ params }: Props) {
       <section className="bg-verde-profundo/40 border-t border-white/6 py-14 px-6 text-center">
         <h2 className="font-cormorant text-crema text-2xl mb-3">{t.ctaH2a}<em className="text-dorado">{p.nombre.replace(/^Paquete |\s*Package$/g, "")}</em>{t.ctaH2b}</h2>
         <p className="text-crema/50 font-dm text-sm mb-7 max-w-md mx-auto">{t.ctaTexto}</p>
+        <Link href={`${lp("/reservar/carrito")}?paquete=${p.slug}`}
+          className="inline-flex items-center gap-2.5 mr-3 mb-3 bg-dorado hover:bg-terracota hover:text-crema text-negro px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+          {locale === "en" ? "Book online" : "Reservar en línea"}
+        </Link>
         <a href={waLink(waMsg)} target="_blank" rel="noopener noreferrer"
           className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors">
           {t.reservarWhatsapp}

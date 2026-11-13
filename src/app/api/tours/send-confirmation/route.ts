@@ -12,6 +12,7 @@ import { actividad, mxn, nombreCorto, nombreParaLog, enmascararTexto } from "@/l
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import { armarReservaWeb, productoDelPago, PAGO_DE_OTRO_PRODUCTO } from "@/lib/reservaWeb";
+import { registrarReservaPaquete } from "@/lib/reservaPaquete";
 import fs from "fs";
 import path from "path";
 
@@ -60,6 +61,18 @@ export async function POST(req: NextRequest) {
     // aquí una reserva de tour «pagada». Ninguno se pierde: el webhook y la
     // conciliación arman cada uno con su producto.
     const producto = productoDelPago(pi.metadata);
+    // Un PAQUETE pagado desde el checkout del carrito (13 nov 2026): lo arma
+    // `registrarReservaPaquete`, igual que la pantalla vieja de paquetes y el webhook.
+    if (producto === "paquete" && pi.metadata?.carrito === "paquete") {
+      const rp = await registrarReservaPaquete(pi, { email, customerName, customerPhone, notes, locale }, "pantalla");
+      if (rp.estado === "error") {
+        return NextResponse.json(
+          { error: "Tu pago entró. Estamos registrando tu reserva y te llega el correo con tu folio en unos minutos.", pagoRecibido: true },
+          { status: 503 },
+        );
+      }
+      return NextResponse.json({ status: "ok", confirmationNumber: rp.confirmationNumber, cobrado: rp.cobrado, totalFull: rp.totalFull, pendiente: rp.pendiente });
+    }
     if (producto !== "tour") {
       console.warn(`⚠️ send-confirmation tour: ${paymentIntentId} es de «${producto}» — no se crea reserva aquí`);
       return NextResponse.json({ error: PAGO_DE_OTRO_PRODUCTO }, { status: 400 });

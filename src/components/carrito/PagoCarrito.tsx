@@ -14,12 +14,14 @@ import { cerrarCompraCarrito } from "@/components/carrito/cerrarCompra";
 
 // ── Formulario de pago del carrito ───────────────────────────────────────────
 
-export function PagoCarrito({ cobro, datos, onListo, formId }: {
+export function PagoCarrito({ cobro, datos, onListo, formId, conservarCarrito = false }: {
   /** Para que la barra fija del celular pueda enviar este formulario. */
   formId?: string;
   cobro: Cobro;
   datos: { name: string; email: string; phone: string; pickup: string; checkin?: string; checkout?: string; guiaIngles?: boolean };
   onListo: () => void;
+  /** El checkout de paquete no vacía el carrito de recorridos (13 nov 2026). */
+  conservarCarrito?: boolean;
 }) {
   const stripe   = useStripe();
   const elements = useElements();
@@ -107,7 +109,7 @@ export function PagoCarrito({ cobro, datos, onListo, formId }: {
     }
 
     if (paymentIntent?.status === "succeeded") {
-      await cerrarCompraCarrito({ cobro, datos, locale, onListo, irA: (ruta) => router.push(lp(ruta)) });
+      await cerrarCompraCarrito({ cobro, datos, locale, onListo, irA: (ruta) => router.push(lp(ruta)), vaciar: !conservarCarrito });
     }
   }
 

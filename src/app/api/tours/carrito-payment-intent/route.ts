@@ -3,7 +3,8 @@ import { opcionesMsi, MSI_DESDE } from "@/lib/stripeMsi";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { tarifarRecorridos, zonaValida, nombreZona, carritoPideZona } from "@/lib/tourPricing";
-import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
+import { mensajeSinCupo, pedidosSinCupo, toursDePaquete } from "@/lib/cupoTour";
+import { metadataPaquete, validarPedidoPaquete } from "@/lib/cobroPaquete";
 import { esIdApartado, renovarApartado } from "@/lib/apartadosAlmacen";
 import { rateLimit } from "@/lib/rateLimit";
 import { logger, actividad, mxn, nombreParaLog } from "@/lib/logger";
@@ -34,7 +35,13 @@ export async function POST(req: NextRequest) {
   if (limited) return limited;
 
   try {
-    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles, customerPhone, recogida, zona: zonaPedida } = await req.json();
+    const cuerpo = await req.json();
+    const { customerEmail, customerName, items, sid, gaClientId, hospedaje, traslado, locale, paymentIntentIdPrevio, apartadoId, pagarTodo, guiaIngles, customerPhone, recogida, zona: zonaPedida } = cuerpo;
+
+    // ── Un PAQUETE, por el mismo checkout (13 nov 2026) ──────────────────
+    if (cuerpo?.paquete && typeof cuerpo.paquete === "object") {
+      return await cobrarPaquete(cuerpo);
+    }
 
     if (!Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: "El carrito está vacío." }, { status: 400 });
@@ -334,4 +341,86 @@ export async function POST(req: NextRequest) {
     logger.error("carrito_payment_intent_error", { message: e.message });
     return NextResponse.json({ error: "No se pudo iniciar el pago. Intenta de nuevo." }, { status: 500 });
   }
+}
+
+/**
+ * El cobro de un paquete del catálogo desde el checkout del carrito (13 nov
+ * 2026): misma pantalla, mismo Stripe y misma regla de anticipo que los tours
+ * (30 % o todo). La validación, el importe y la metadata viven en
+ * `lib/cobroPaquete.ts`; la reserva la arma `registrarReservaPaquete` (la
+ * pantalla vía `send-confirmation` y, si cierra la pestaña, el webhook).
+ */
+async function cobrarPaquete(cuerpo: Record<string, unknown>) {
+  const { customerEmail, customerName, sid, gaClientId, locale, paymentIntentIdPrevio, pagarTodo, customerPhone, notas } = cuerpo as Record<string, string | undefined> & { pagarTodo?: unknown };
+  const v = validarPedidoPaquete(cuerpo.paquete as Record<string, unknown>, pagarTodo);
+  if (!v.ok) return NextResponse.json({ error: v.error }, { status: v.status });
+
+  // Sus recorridos ocupan su salida de cada día igual que comprados sueltos.
+  const sinLugar = await pedidosSinCupo(toursDePaquete(v.paquete, v.fecha, v.elegidos).map((r) => ({ ...r, personas: v.cobro.personas })));
+  if (sinLugar.length) {
+    logger.warn("paquete_sin_cupo", { slug: v.paquete.slug, dias: sinLugar.map((x) => `${x.slug} ${x.fecha}`).join("; ") });
+    return NextResponse.json({ error: sinLugar.map((x) => mensajeSinCupo(x, locale === "en" ? "en" : "es")).join(" ") }, { status: 409 });
+  }
+
+  const sidCorto = typeof sid === "string" ? sid.slice(0, 60) : "";
+  const metadata = metadataPaquete(v, {
+    customerEmail: typeof customerEmail === "string" ? customerEmail : "",
+    customerName:  typeof customerName === "string" ? customerName : "",
+    customerPhone: typeof customerPhone === "string" ? customerPhone.trim() : "",
+    notas:         typeof notas === "string" ? notas.trim() : "",
+    locale:        locale === "en" ? "en" : "es",
+    gaClientId:    typeof gaClientId === "string" ? gaClientId : "",
+    sid:           sidCorto,
+    equipo:        metadataDelEquipo(peticionDelEquipo()),
+  });
+  const datosCobro = {
+    amount:        Math.round(v.cobrar * 100),
+    description:   `Paquete Huasteca Potosina — ${v.paquete.nombre} (${v.pct}%) · ${customerName || ""}`,
+    receipt_email: (typeof customerEmail === "string" && customerEmail) || undefined,
+    ...opcionesMsi(v.cobrar),
+    metadata,
+  };
+
+  // Se reusa el cobro previo solo si es de un PAQUETE de esta visita y sigue sin pagar.
+  let paymentIntent: Stripe.PaymentIntent | null = null;
+  if (typeof paymentIntentIdPrevio === "string" && paymentIntentIdPrevio.startsWith("pi_") && sidCorto) {
+    try {
+      const previo = await stripe.paymentIntents.retrieve(paymentIntentIdPrevio);
+      if (previo.status === "requires_payment_method" && previo.metadata?.carrito === "paquete" && previo.metadata?.sid === sidCorto) {
+        paymentIntent = await stripe.paymentIntents.update(previo.id, datosCobro);
+      }
+    } catch { /* se crea uno nuevo */ }
+  }
+  paymentIntent ??= await stripe.paymentIntents.create({
+    ...datosCobro,
+    currency: "mxn",
+    automatic_payment_methods: { enabled: true, allow_redirects: "never" },
+  });
+
+  await trackServerEvent("PAYMENT_INITIATED", {
+    sid: sidCorto || null, tourSlug: v.paquete.slug, amount: v.cobrar,
+    data: { paquete: true, carrito: true, pct: v.pct, total: v.cobro.total, personas: v.cobro.personas, paymentIntentId: paymentIntent.id },
+  });
+  actividad("💳  LLEGÓ AL PAGO (PAQUETE, CARRITO)", v.paquete.nombre, v.pct === 100 ? "pago completo" : `anticipo ${v.pct}%`,
+    `${mxn(v.cobrar)} de ${mxn(v.cobro.total)}`, `${v.cobro.personas} personas`, nombreParaLog(String(customerName ?? "")), customerEmail, v.fecha, paymentIntent.id);
+
+  // La misma forma que el cobro de tours (`Cobro`): un renglón con el paquete
+  // entero. El hotel va DENTRO del paquete: `hospedaje` va vacío para no
+  // pintarlo dos veces.
+  return NextResponse.json({
+    clientSecret:    paymentIntent.client_secret,
+    paymentIntentId: paymentIntent.id,
+    amount:          v.cobrar,
+    total:           v.cobro.total,
+    saldo:           v.saldo,
+    pct:             v.pct,
+    lineItems: [{
+      tourSlug: v.paquete.slug, tourName: `Paquete · ${v.paquete.nombre}`, tourDate: v.fecha,
+      adults: v.cobro.adultos, children: v.cobro.childrenMid + v.cobro.childrenSmall,
+      childrenMid: v.cobro.childrenMid, childrenSmall: v.cobro.childrenSmall, subtotal: v.cobro.total,
+    }],
+    hospedaje: null,
+    traslado:  null,
+    paquete: { slug: v.paquete.slug, habitacion: v.habitacionNombre, noches: v.cobro.nochesTotales },
+  });
 }
