@@ -34,6 +34,11 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
   const ligasPagadas = await prisma.linkPago.findMany({ where: { estado: "pagado", reservaId: null, cotizacionId: { not: null } }, select: { cotizacionId: true, montoPagado: true, monto: true } }).catch(() => []);
   const pagadasSinReserva: Record<string, number> = {};
   for (const l of ligasPagadas) pagadasSinReserva[l.cotizacionId!] = (pagadasSinReserva[l.cotizacionId!] ?? 0) + (l.montoPagado ?? l.monto);
+  // Lo que cada cotización pagó en línea con su liga, ya sea reserva o no
+  // (13 nov 2026): la pastilla «Pagó en línea» de la lista.
+  const ligasCobradas = await prisma.linkPago.findMany({ where: { estado: "pagado", cotizacionId: { in: quotes.map(q => q.id) } }, select: { cotizacionId: true, montoPagado: true, monto: true } }).catch(() => []);
+  const pagadoEnLinea: Record<string, number> = {};
+  for (const l of ligasCobradas) pagadoEnLinea[l.cotizacionId!] = (pagadoEnLinea[l.cotizacionId!] ?? 0) + (l.montoPagado ?? l.monto);
   // La reserva viva de cada aceptada (lote 4, 5 nov 2026): «Editar» la abre
   // para ver y dice qué reserva cambiar; sin reserva se ofrece «Regresar a Enviada».
   const aceptadas = quotes.filter(q => q.status === "aceptada");
@@ -68,7 +73,7 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
   return (
     <CotizacionesClient
       initialQuotes={verCostos ? quotes : quotes.map(sinCostosDeExtras)} presetsExtras={verCostos ? presetsExtras : presetsSinCosto(presetsExtras)} verCostos={verCostos} quien={sesion?.nombre ?? "Admin"}
-      guiasConocidos={guias.map(g => (g.guia ?? "").trim()).filter(Boolean)} leads={leads} inicio={inicio} pagadasSinReserva={pagadasSinReserva}
+      guiasConocidos={guias.map(g => (g.guia ?? "").trim()).filter(Boolean)} leads={leads} inicio={inicio} pagadasSinReserva={pagadasSinReserva} pagadoEnLinea={pagadoEnLinea}
       reservasDeCotizaciones={reservasDeCotizaciones}
     />
   );

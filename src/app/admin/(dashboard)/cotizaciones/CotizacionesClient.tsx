@@ -133,8 +133,8 @@ export interface InicioCotizaciones {
 export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
 
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, reservasDeCotizaciones = {} }:
-  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, pagadoEnLinea = {}, reservasDeCotizaciones = {} }:
+  { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; pagadoEnLinea?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
 ) {
   const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
@@ -1335,7 +1335,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                   <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${s.cls}`}>{s.label}</span>
                 </div>
               </div>
-              <ChipPagoEnLinea monto={pagadasSinReserva[q.id]} folio={folioReserva(q)} />
+              <ChipPagoEnLinea monto={pagadoEnLinea[q.id]} folio={folioReserva(q)} />
               <p className="text-[#1B4332] font-medium">{q.customerName}</p>
               <p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p>
               <div className="flex items-center justify-between mt-1.5">
@@ -1408,7 +1408,7 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
                         {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
                         {esDelBot(q) && <ChipBot />}
                       </div>
-                      <ChipPagoEnLinea monto={pagadasSinReserva[q.id]} folio={folioReserva(q)} />
+                      <ChipPagoEnLinea monto={pagadoEnLinea[q.id]} folio={folioReserva(q)} />
                       {vence && (
                         <p className={`text-[11px] font-dm mt-1 whitespace-nowrap ${claseVence(diasParaVencer(vence, hoy))}`}
                           title={`Fecha límite: ${fDate(vence)}`}>
