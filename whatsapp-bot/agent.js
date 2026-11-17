@@ -36,8 +36,9 @@ const {
 // que no trae los campos, NO se pone cifra: mejor ninguna que una inventada.
 const { empresa: EMPRESA_DATA = {} } = require("./data.json");
 // Mensaje de confianza («Estructura de oro»: 7 clientes pidieron redes o
-// reseñas antes de pagar, y uno dudó por ver tres nombres de marca). Sale de
-// data.json → empresa.confianza; lo que esté vacío no se menciona.
+// reseñas antes de pagar). Sale de data.json → empresa.confianza; lo que esté
+// vacío no se menciona. Solo existe la marca Huasteca Potosina Tours (Manolo,
+// 17 nov): el bot no explica ni comenta otros nombres.
 const CONFIANZA = (EMPRESA_DATA && EMPRESA_DATA.confianza) || {};
 const RESENA_URL = CONFIANZA.dejarResena || "";
 const CONFIANZA_TEXTO = [
@@ -46,9 +47,8 @@ const CONFIANZA_TEXTO = [
   CONFIANZA.resenasGoogle ? `• Nuestras reseñas en Google: ${CONFIANZA.resenasGoogle}` : null,
   CONFIANZA.facebook ? `• Facebook: ${CONFIANZA.facebook}` : null,
   CONFIANZA.instagram ? `• Instagram: ${CONFIANZA.instagram}` : null,
-  CONFIANZA.marcas ? `• Sobre los nombres que ve: ${CONFIANZA.marcas}` : null,
   "Si pregunta por qué la cuenta está a nombre de una persona: es la de nuestro fundador, Manolo Covarrubias; y si prefiere, puede pagar con la liga de tarjeta (Stripe), que es segura y sin comisión.",
-  CONFIANZA.marcas ? null : "Si pregunta por otro nombre de marca y no sabes la respuesta, no la inventes: «te lo confirma el equipo» y escalar_a_humano (pregunta_sin_respuesta, avisar, normal).",
+  "Somos solo Huasteca Potosina Tours: no menciones, expliques ni compares otros nombres de marca. Si el cliente pregunta por otro nombre, contesta «Somos Huasteca Potosina Tours» y sigue con su viaje.",
 ].filter(Boolean).join("\n");
 
 const CALIFICACION_GOOGLE =

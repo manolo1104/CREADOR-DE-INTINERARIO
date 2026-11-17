@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Simulador del bot — Tours Huasteca</title>
+<title>Tének · simulador</title>
 <style>
   :root{
     --verde:#075e54; --verde2:#128c7e; --burbuja-mia:#d9fdd3; --burbuja-bot:#fff;
@@ -82,6 +82,15 @@
   details.ficha{margin-top:10px;border:1px solid #e3e3e3;border-radius:8px;padding:7px 9px;background:#fafafa}
   details.ficha summary{cursor:pointer;font-weight:600;font-size:12.5px}
   details.ficha pre{margin:7px 0 0;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#333;max-height:220px;overflow-y:auto}
+  .b.media{padding:4px 4px 5px}
+  .b.media img{display:block;max-width:100%;border-radius:6px;max-height:320px;object-fit:cover}
+  .b.media .pie{padding:5px 5px 0}
+  .doc{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.045);border-radius:6px;padding:10px;text-decoration:none;color:inherit;min-width:230px}
+  .doc .ico{width:34px;height:40px;border-radius:4px;background:#e5534b;color:#fff;font-size:10px;font-weight:700;display:grid;place-items:center;flex:0 0 auto}
+  .doc b{display:block;font-size:13.5px;font-weight:600;word-break:break-all}
+  .doc small{display:block;font-size:11.5px;color:var(--gris);margin-top:2px}
+  .doc:hover{background:rgba(0,0,0,.08)}
+  .panel button.prim{background:#e7f6ee;border-color:#a8d8bb}
   @media(max-width:820px){body{flex-direction:column;padding:8px;height:auto}.panel{width:100%;max-width:440px}.telefono{height:78vh}}
 </style>
 </head>
@@ -91,7 +100,7 @@
   <header>
     <div class="avatar">🌿</div>
     <div class="quien">
-      <b>Tours Huasteca Potosina</b>
+      <b>Huasteca Potosina Tours</b>
       <small id="estadoChat">en línea</small>
     </div>
     <button class="btn-h" id="btnLimpiar">Reiniciar</button>
@@ -99,15 +108,16 @@
   <div class="pausa" id="pausa"><span id="pausaTexto"></span><button id="btnReanudarFranja">Reanudar</button></div>
   <div id="chat"></div>
   <footer>
-    <button id="adjuntar" title="Mandar comprobante (foto de prueba)">📎</button>
+    <button id="adjuntar" title="Mandar una foto o un PDF de tu compu">📎</button>
+    <input type="file" id="archivo" accept="image/*,application/pdf" hidden>
     <textarea id="texto" rows="1" placeholder="Escribe un mensaje" autofocus></textarea>
     <button id="enviar" title="Enviar">➤</button>
   </footer>
 </div>
 
 <div class="panel">
-  <h2>Simulador del bot</h2>
-  <p class="sub">Eres el cliente. Escribe como escribiría alguien por WhatsApp — y manda varios mensajes seguidos para ver cómo el bot los junta.</p>
+  <h2>Tének · simulador</h2>
+  <p class="sub">Eres el cliente. Escribe como escribiría alguien por WhatsApp: el bot es el de verdad (mismo modelo, mismo guion y mismas herramientas). Con 📎 mandas una foto o un PDF tuyo, y el bot lo ve o lo lee como comprobante.</p>
 
   <div class="fila"><b>Modo</b><span id="pModo">…</span></div>
   <div class="fila"><b>Modelo</b><span id="pModelo" title="">…</span></div>
@@ -129,8 +139,16 @@
   <button id="btnRafaga"><b>Mandar una ráfaga</b><small>4 mensajes seguidos, uno cada 4 s</small></button>
   <button id="btnInterrumpir"><b>Escribir mientras contesta</b><small>Manda uno, y otro cuando ya está pensando</small></button>
 
+  <h3>Adelantar el reloj</h3>
+  <button data-tiempo="3h"><b>⏩ Pasaron 3 horas sin contestar</b><small>1.er seguimiento: debe nombrar tu tour o tu fecha y hacer una pregunta fácil</small></button>
+  <button data-tiempo="24h"><b>⏩ Pasó un día</b><small>2.º seguimiento</small></button>
+  <button data-tiempo="72h"><b>⏩ Pasaron 3 días</b><small>Último: cálido, sin presión</small></button>
+  <button data-tiempo="agendado"><b>⏩ Llegó la hora acordada</b><small>Si aceptaste «¿te escribo mañana a las 6?»</small></button>
+  <button data-tiempo="postviaje"><b>⏩ Día siguiente del tour</b><small>«¿Cómo les fue?». Contesta «increíble» y debe pedirte la reseña de Google</small></button>
+
   <h3>Pagos (lo que pasa en WhatsApp)</h3>
-  <button id="btnComprobante"><b>📎 Mandar comprobante (foto de prueba)</b><small>Va por el mismo camino que una foto real: acuse al cliente y aviso a Manolo. Si escribiste algo en la caja, va como pie de foto.</small></button>
+  <button id="btnPagoLiga" class="prim"><b>💳 Pagar con la liga (como Stripe)</b><small>Entra el anticipo por tarjeta: te llega la confirmación con su PDF y a Manolo el aviso. Con una liga por persona, paga la siguiente parte</small></button>
+  <button id="btnComprobante"><b>🧾 Mandar comprobante (foto de prueba)</b><small>Va por el mismo camino que una foto real: acuse al cliente y aviso a Manolo. Si escribiste algo en la caja, va como pie de foto.</small></button>
   <button id="btnPagoRafaga"><b>Pago en la misma ráfaga</b><small>«ahorita hago el pago» y, enseguida, la foto. Primero sale el acuse y el bot NO te pide el comprobante (primero cotiza algo)</small></button>
   <button id="btnPagoDurante"><b>Pago mientras contesta</b><small>«ahorita hago el pago»; cuando el bot ya está pensando, la foto. Su respuesta no te pide el comprobante y el acuse sale enseguida</small></button>
   <div class="confirma">
@@ -141,16 +159,23 @@
   <button id="btnReanudar"><b>▶️ Reanudar el bot</b><small>Como /reanuda: el bot vuelve a contestar y recuerda la plática</small></button>
 
   <h3>Frases para probar</h3>
-  <button class="frase"><b>"hola"</b><small>Debe pedir fecha y personas en 2 líneas</small></button>
-  <button class="frase" data-t="somos 2 personas y queremos hacer rafting el próximo mes"><b>Grupo muy chico</b><small>Debe avisar que el rafting pide mínimo 5</small></button>
+  <button class="frase"><b>"hola"</b><small>Se presenta como Tének y pide fechas y personas</small></button>
+  <button class="frase" data-t="Hola, quiero información de los tours"><b>"información general"</b><small>3 opciones según el tipo de viajero</small></button>
+  <button class="frase" data-t="Somos 4 adultos, llegamos a Xilitla el viernes y nos vamos el domingo. Nos gustan las cascadas"><b>Ya trae fecha y personas</b><small>Propuesta día por día con fotos y precio; pide nombre y correo</small></button>
+  <button class="frase" data-t="¿pasan por nosotros al hotel?"><b>"¿pasan por nosotros?"</b><small>Recogida en su hospedaje según el tour</small></button>
+  <button class="frase" data-t="lo platico con mi pareja y te aviso"><b>"lo platico con mi pareja"</b><small>PDF para compartir y acuerda hora para escribirte</small></button>
+  <button class="frase" data-t="¿tienen redes o reseñas? me da desconfianza depositarle a una persona"><b>"¿son de fiar?"</b><small>Reseñas de Google, Facebook, Instagram y la liga segura</small></button>
   <button class="frase" data-t="uf, está muy caro"><b>"está caro"</b><small>Debe desglosar, no inventar descuentos</small></button>
-  <button class="frase" data-t="déjame lo pienso y te aviso"><b>"lo voy a pensar"</b><small>Debe usar las 48 h y volver a cerrar</small></button>
+  <button class="frase" data-t="déjame lo pienso y te aviso"><b>"lo voy a pensar"</b><small>Vigencia de 7 días y ofrece escribirte</small></button>
+  <button class="frase" data-t="somos 3 y cada quien quiere pagar su parte con tarjeta"><b>"cada quien paga lo suyo"</b><small>Una liga por persona</small></button>
+  <button class="frase" data-t="somos 2 personas y queremos hacer rafting el próximo mes"><b>Grupo muy chico</b><small>Debe avisar que el rafting pide mínimo 5</small></button>
   <button class="frase" data-t="puedo pagar todo el mero día del tour?"><b>"pago el día del tour"</b><small>Debe decir que no, se aparta con el 30 %</small></button>
   <button class="frase" data-t="quiero hablar con una persona"><b>Pide un humano</b><small>Pasa el chat sin el modelo y te avisa</small></button>
   <button class="frase" data-t="¿me puedes marcar?"><b>"¿me puedes marcar?"</b><small>Igual: pasa el chat y pregunta a qué hora</small></button>
   <button class="frase" data-t="¿tienen algún tour para hoy? somos 2"><b>"¿algo para hoy?"</b><small>Debe escalar urgente y ofrecer mañana</small></button>
   <button class="frase" data-t="ya pagué, ¿ya quedó mi reserva?"><b>"¿ya quedó?"</b><small>Nunca debe decir «confirmada»: eso lo hace /confirma</small></button>
   <button class="frase" data-t="Hi! We'd like to book the Tamul tour for 2 adults"><b>Cliente en inglés</b><small>Debe contestar en inglés, en MXN y con el 30 %</small></button>
+  <button class="frase" data-t="somos un grupo de 25 alumnos de una escuela, queremos ir en marzo"><b>Grupo de 25</b><small>Más de 10: saluda, pide lo que falta y pasa el chat al equipo</small></button>
 
   <h3>Detalle</h3>
   <label style="display:flex;gap:7px;align-items:center;margin-bottom:12px;cursor:pointer">
@@ -198,6 +223,47 @@ function bot(texto, pie, costo) {
   const extra = costo ? ` · <span class="costo">${escaparHtml(costo)}</span>` : "";
   d.innerHTML = formatoWhatsApp(texto) + `<span class="meta">${hora()}${pie ? " · " + escaparHtml(pie) : ""}${extra}</span>`;
   chat.appendChild(d); abajo();
+}
+function foto(url, caption) {
+  const d = document.createElement("div");
+  d.className = "b bot media";
+  const img = document.createElement("img");
+  img.src = url; img.alt = caption || "foto"; img.loading = "lazy";
+  img.onerror = () => { img.replaceWith(Object.assign(document.createElement("div"), { className: "pie", textContent: "🖼️ (la foto no cargó: " + url + ")" })); };
+  img.onload = abajo;
+  d.appendChild(img);
+  const pie = document.createElement("div");
+  pie.className = "pie";
+  pie.innerHTML = (caption ? formatoWhatsApp(caption) : "") + `<span class="meta">${hora()}</span>`;
+  d.appendChild(pie);
+  chat.appendChild(d); abajo();
+}
+function documento(url, nombre, kb, mio) {
+  const d = document.createElement("div");
+  d.className = "b media " + (mio ? "mia" : "bot");
+  const a = document.createElement(url ? "a" : "div");
+  a.className = "doc";
+  if (url) { a.href = url; a.target = "_blank"; a.rel = "noopener"; }
+  a.innerHTML = `<span class="ico">PDF</span><span><b>${escaparHtml(nombre)}</b><small>${kb ? kb + " kB · " : ""}PDF${url ? " · tócalo para abrirlo" : ""}</small></span>`;
+  d.appendChild(a);
+  const m = document.createElement("span");
+  m.className = "meta"; m.style.padding = "0 5px";
+  m.innerHTML = hora() + (mio ? ' <span class="tick">✓✓</span>' : "");
+  d.appendChild(m);
+  chat.appendChild(d); abajo();
+  if (mio) burbujasMias.push(d);
+}
+function fotoMia(dataUrl, caption) {
+  const d = document.createElement("div");
+  d.className = "b mia media";
+  const img = document.createElement("img"); img.src = dataUrl; img.onload = abajo;
+  d.appendChild(img);
+  const pie = document.createElement("div");
+  pie.className = "pie";
+  pie.innerHTML = (caption ? escaparHtml(caption) : "") + `<span class="meta">${hora()} <span class="tick">✓✓</span></span>`;
+  d.appendChild(pie);
+  chat.appendChild(d); abajo();
+  burbujasMias.push(d);
 }
 function dueno(texto) {
   const d = document.createElement("div");
@@ -260,6 +326,8 @@ function mostrarEscribiendo(mensajes) {
   if (alPensar) { const fn = alPensar; alPensar = null; setTimeout(fn, 1200); }
 }
 let alPensar = null;
+// Entre las fotos y el texto el bot sigue «escribiendo».
+function mostrarEscribiendoSiPensando() { $("#estadoChat").textContent = "escribiendo…"; }
 
 // ── Conexión con el servidor ──────────────────────────────────
 const es = new EventSource("/eventos");
@@ -271,6 +339,8 @@ es.onmessage = (e) => {
   if (ev.tipo === "herramienta") { herramienta(ev.nombre, ev.entrada, ev.salida); return; }
   if (ev.tipo === "aviso") { sistema(ev.texto); return; }
   if (ev.tipo === "dueno") { dueno(ev.texto); return; }
+  if (ev.tipo === "foto") { quitarEspera(); quitarEscribiendo(); marcarLeidas(); foto(ev.url, ev.caption); mostrarEscribiendoSiPensando(); return; }
+  if (ev.tipo === "pdf") { quitarEspera(); quitarEscribiendo(); marcarLeidas(); documento(ev.url, ev.nombre, ev.kb, false); mostrarEscribiendoSiPensando(); return; }
   if (ev.tipo === "pausa") { pintarPausa(ev.activa, ev.texto); return; }
   if (ev.tipo === "error") { sistema("⚠️ " + ev.texto); quitarEspera(); quitarEscribiendo(); return; }
   if (ev.tipo === "bot") {
@@ -303,7 +373,7 @@ function pintarEstado(s) {
     : " /confirma está apagado: solo corre con <code>SITE_API_URL</code> local y <code>SIMULADOR_CONFIRMA=1</code>.";
   $("#nota").innerHTML = s.modo === "real"
     ? `<b>Modo real.</b> Lo que cierres aquí crea folios de verdad en el panel y manda correos. Habla con ${escaparHtml(s.sitio)}.${confirma}`
-    : "<b>Modo simulacro.</b> Los folios son de mentiras y no se escribe nada en el panel ni se manda ningún correo. Lo que le llegaría a tu WhatsApp sale en las burbujas amarillas. Para probar de verdad: <code>npm run chat -- --real</code>";
+    : "<b>Modo simulacro.</b> El bot y su modelo son los de verdad; el sitio es de prueba: los folios (COT-SIM…) son de mentiras, no se escribe nada en el panel, no se manda ningún correo y las ligas de Stripe no abren (págalas con «💳 Pagar con la liga»). El PDF sí es el mismo diseño que le llega al cliente. Lo que le llegaría a tu WhatsApp sale en las burbujas amarillas.";
 }
 // ── Enviar ────────────────────────────────────────────────────
 async function enviar(texto) {
@@ -325,8 +395,41 @@ async function mandarComprobante() {
   const r = await (await fetch("/comprobante", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caption: pie }) })).json();
   if (r.folio) $("#pFolio").textContent = r.folio;
 }
-$("#adjuntar").onclick = mandarComprobante;
 $("#btnComprobante").onclick = mandarComprobante;
+
+// 📎 Una foto o un PDF de tu compu: va por el mismo camino que en WhatsApp.
+$("#adjuntar").onclick = () => $("#archivo").click();
+$("#archivo").onchange = () => {
+  const f = $("#archivo").files[0];
+  $("#archivo").value = "";
+  if (!f) return;
+  if (f.size > 5 * 1024 * 1024) { sistema("Ese archivo pesa más de 5 MB: el bot no lo puede leer (en WhatsApp le pediría otro)."); return; }
+  const pie = caja.value.trim();
+  caja.value = ""; caja.style.height = "auto";
+  const lector = new FileReader();
+  lector.onload = async () => {
+    const dataUrl = String(lector.result);
+    const mimetype = f.type || (f.name.toLowerCase().endsWith(".pdf") ? "application/pdf" : "image/jpeg");
+    if (/^image\//.test(mimetype)) fotoMia(dataUrl, pie);
+    else { documento(null, f.name, Math.round(f.size / 1024), true); if (pie) mia(pie); }
+    const r = await (await fetch("/archivo", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mimetype, data: dataUrl.split(",")[1] || "", filename: f.name, caption: pie }) })).json();
+    if (r.folio) $("#pFolio").textContent = r.folio;
+  };
+  lector.readAsDataURL(f);
+};
+
+document.querySelectorAll("[data-tiempo]").forEach((b) => {
+  b.onclick = async () => {
+    const s = await (await fetch("/tiempo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ que: b.dataset.tiempo }) })).json();
+    pintarEstado(s);
+  };
+});
+$("#btnPagoLiga").onclick = async () => {
+  sistema("El cliente abre la liga de pago y paga con tarjeta…");
+  const s = await (await fetch("/pagoLiga", { method: "POST" })).json();
+  pintarEstado(s);
+};
 
 // El orden del comprobante (lo que falló en la prueba del 6 oct): el acuse
 // sale primero y el bot ya no pide el comprobante que acaba de llegar.
@@ -397,7 +500,7 @@ $("#btnInterrumpir").onclick = async () => {
   await enviar("ah y somos 6, se me olvidaba");
 };
 
-sistema("Escribe abajo como si fueras el cliente. Prueba mandar varios mensajes seguidos.");
+sistema("Escribe abajo como si fueras el cliente. El bot espera 15 s a que termines de escribir (como en WhatsApp); para ir más rápido, elige «5 segundos» en el panel.");
 </script>
 </body>
 </html>

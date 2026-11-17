@@ -176,7 +176,7 @@ function construir(locale: Locale): TerminosContent {
                 // cobro real es un reclamo esperando.
                 [`Toda reserva se aparta con un anticipo del ${ANTICIPO_PCT} % del total; el saldo se liquida el día del tour, en efectivo o con tarjeta. Si lo prefieres, puedes pagar el 100 % al reservar.`],
                 ["Los pagos con tarjeta se procesan a través de Stripe. No almacenamos los datos de tu tarjeta en ningún momento."],
-                ["El saldo del día del tour se puede cubrir en efectivo o con tarjeta. Los pagos con tarjeta en sitio pueden llevar una comisión del 3 %."],
+                ["El saldo se cubre antes de iniciar el tour, en efectivo, por transferencia o con tarjeta mediante una liga de pago, sin comisión."],
                 ["Algunos destinos cobran cuotas locales en efectivo (accesos ejidales, pangas). Cuando así sea, viene indicado en la página del tour o del destino."],
                 // `totalRecorrido` cobra la tarifa del grupo completo y el RZR, por
                 // vehículo: ninguno tiene tramos de menor.
@@ -354,7 +354,7 @@ function construir(locale: Locale): TerminosContent {
               ["All prices are in Mexican pesos (MXN) and include what each tour details on its page."],
               [`Every booking is secured with a deposit of ${ANTICIPO_PCT}% of the total; the balance is paid on the day of the tour, in cash or by card. If you prefer, you can pay 100% when you book.`],
               ["Card payments are processed through Stripe. We never store your card details."],
-              ["The balance on the day of the tour can be paid in cash or by card. On-site card payments may carry a 3% fee."],
+              ["The balance is paid before the tour starts, in cash, by bank transfer or by card through a payment link, with no fee."],
               ["Some destinations charge local fees in cash (ejido access fees, pangas, which are small boats). When that's the case, it's stated on the tour or destination page."],
               [
                 "Children's prices go by age: ages 6 to 10 pay 70% of the adult price and children under 6 pay 50%. We may ask for ID on the day of the tour." +

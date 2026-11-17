@@ -2017,6 +2017,9 @@ async function ejecutarSeguimiento(chatId, d) {
     seg.postViajeAt = Date.now();
     const texto = seguimiento.textoPostViaje(s);
     await enviar(chatId, texto);
+    // Sin esta nota el modelo seguía con lo pendiente de antes del viaje
+    // («¿en qué hotel se hospedan?») en vez de pedir la reseña.
+    pushHistory(chatId, "user", seguimiento.NOTA_POST_VIAJE);
     pushHistory(chatId, "assistant", texto);
     marcarAtendido(chatId);
     etiquetas.ponerEtapa(chatId, "post_viaje").catch(() => {});

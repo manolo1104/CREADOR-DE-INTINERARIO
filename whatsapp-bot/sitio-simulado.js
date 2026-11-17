@@ -364,9 +364,22 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     L.push(en
       ? `You book it with ${mx(reg.anticipo)} (${PCT_ANTICIPO} %) and the rest, ${mx(reg.saldo)}, is paid ${cuando}.`
       : `Apartas con ${mx(reg.anticipo)} (${PCT_ANTICIPO} %) y el resto, ${mx(reg.saldo)}, se paga ${cuando}.`);
-    L.push("", en
-      ? `⏳ Valid for 7 days: until ${fechaLarga(reg.venceEl, reg.locale)}.`
-      : `⏳ Vale 7 días: hasta el ${fechaLarga(reg.venceEl, reg.locale)}.`);
+    // Como lineaVigencia del sitio: topada en la víspera no dice «7 días».
+    const fechaVence = en ? fechaLarga(reg.venceEl, reg.locale) : fechaLarga(reg.venceEl, reg.locale).toLowerCase();
+    const primera = [...reg.recorridos.map((l) => l.tourDate), reg.paquete && reg.paquete.fecha].filter(Boolean).sort()[0];
+    if (reg.venceEl === hoy()) {
+      L.push("", primera === sumarDias(hoy(), 1)
+        ? (en ? "⏳ The tour is tomorrow: book it today before 10 pm." : "⏳ El tour es mañana: apártalo hoy antes de las 10 pm.")
+        : (en ? "⏳ Valid until today." : "⏳ Vale solo hoy."));
+    } else if (primera && reg.venceEl === sumarDias(primera, -1)) {
+      L.push("", en
+        ? `⏳ Valid until ${fechaVence}, the day before the tour.`
+        : `⏳ Vale hasta el ${fechaVence}, la víspera del tour.`);
+    } else {
+      L.push("", en
+        ? `⏳ Valid for 7 days: until ${fechaVence}.`
+        : `⏳ Vale 7 días: hasta el ${fechaVence}.`);
+    }
     L.push(en ? `🧾 Payment reference: ${reg.folio}` : `🧾 Concepto de tu pago: ${reg.folio}`);
     return L.join("\n");
   }
@@ -409,7 +422,13 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     const reg = {
       folio, status: "enviada", etiqueta, locale,
       total: cuenta.total, anticipo: cuenta.anticipo, saldo: cuenta.saldo,
-      venceEl: sumarDias(hoy(), VIGENCIA_DIAS),
+      // Como calcularVencimiento del sitio: 7 días, pero nunca después de la
+      // víspera del primer tour (y nunca antes de hoy).
+      venceEl: (() => {
+        let v = sumarDias(hoy(), VIGENCIA_DIAS);
+        if (fechas[0] && sumarDias(fechas[0], -1) < v) v = sumarDias(fechas[0], -1);
+        return v < hoy() ? hoy() : v;
+      })(),
       tourName, tourDate: fechas[0] || "",
       adults, children,
       recorridos: cuenta.lineas, paquete: cuenta.paquete || null, hospedaje: cuenta.hospedaje || null,
@@ -575,7 +594,7 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       ligaPago: !reg.reservaFolio && etapa !== "vencida" ? reg.ligaPago || null : null,
       ...(reg.ligaPago ? { ligaMonto: reg.anticipo } : {}),
       ...(reg.partes && reg.partes.length ? { partes: reg.partes } : {}),
-      pagadaConLiga: false,
+      pagadaConLiga: reg.pagadaConLiga || 0,
     };
   }
 
@@ -805,12 +824,47 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     },
   };
 
+  /**
+   * Lo que haría Stripe al pagarse la liga del folio (solo el simulador):
+   * con una liga por persona paga la siguiente parte; la primera que entra
+   * convierte la cotización en reserva y las demás se abonan a esa reserva
+   * (como convertirPorLigaPagada y abonarLigasDeCotizacion del sitio).
+   * @returns {{ ok: boolean, error?: string, folio?: string, reservaFolio?: string, monto?: number }}
+   */
+  async function pagarLiga(folio) {
+    const f = String(folio || "").trim().toUpperCase();
+    const cot = cotizaciones.get(f);
+    if (!cot) return { ok: false, error: `No existe la cotización ${f}.` };
+    const parte = Array.isArray(cot.partes) && cot.partes.length ? cot.partes.find((p) => !p.pagada) : null;
+    if (Array.isArray(cot.partes) && cot.partes.length && !parte) return { ok: false, error: `Las ${cot.partes.length} ligas de ${f} ya están pagadas.` };
+    if (!parte && !cot.ligaPago) return { ok: false, error: `${f} no tiene liga de pago viva${cot.reservaFolio ? ` (ya es la reserva ${cot.reservaFolio})` : ""}.` };
+    const monto = parte ? parte.monto : cot.anticipo;
+    if (cot.reservaFolio) {
+      // Otra parte de la misma reserva: se abona directo (como el sitio), sin
+      // el candado de «pago igual en menos de 15 min» de /confirma: las partes
+      // suelen ser del mismo monto.
+      const res = reservas.get(cot.reservaFolio);
+      if (!res) return { ok: false, error: `No encontré la reserva ${cot.reservaFolio}.` };
+      const pago = Math.min(Math.round(monto), res.saldo);
+      res.cobros.push({ monto: pago, metodo: "stripe", at: ahora() });
+      res.pagado += pago;
+      res.saldo -= pago;
+    } else {
+      const r = await api.confirmarReserva(f, monto, { metodo: "stripe", confirmadoPor: "stripe" });
+      if (!r.ok) return { ok: false, error: (r.data && r.data.error) || `respondió ${r.status}` };
+    }
+    if (parte) parte.pagada = true;
+    else cot.ligaPago = null;
+    cot.pagadaConLiga = (cot.pagadaConLiga || 0) + 1;
+    return { ok: true, folio: f, reservaFolio: cot.reservaFolio, monto };
+  }
+
   /** Vacía el registro de llamadas (los folios se quedan). */
   function reiniciarLlamadas() {
     for (const k of Object.keys(calls)) calls[k].length = 0;
   }
 
-  return { api, calls, cotizaciones, reservas, calcular, reiniciarLlamadas };
+  return { api, calls, cotizaciones, reservas, calcular, reiniciarLlamadas, pagarLiga };
 }
 
 module.exports = { crearSitioSimulado, PCT_ANTICIPO, telefonoComparable, puedeReemplazar };

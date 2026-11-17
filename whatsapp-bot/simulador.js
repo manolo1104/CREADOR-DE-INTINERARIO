@@ -27,9 +27,18 @@
 // La memoria del bot vive solo aquí, en memoria: el simulador nunca toca el
 // archivo de producción (.wwebjs_auth/estado-bot.json). Las fotos de prueba
 // van a una carpeta temporal del sistema.
+//
+// Tének (17 nov 2026): el chat se ve como WhatsApp de verdad. Las fotos de los
+// tours salen como fotos; la cotización y la confirmación salen en PDF con el
+// MISMO generador del sitio (simulador-documento.mjs, impreso con el Chrome de
+// la compu); puedes mandar una foto o un PDF tuyo (el bot lo ve, o lo toma
+// como comprobante y lo lee); y el panel trae botones para adelantar el reloj
+// (seguimiento a las 3 h, 24 h y 72 h, la hora acordada y el «¿cómo les
+// fue?» del día siguiente) y para pagar con la liga como si fuera Stripe.
 // ════════════════════════════════════════════════════════════════════
 
-require("dotenv").config();
+// BOT_ENV_FILE: el .env de otra carpeta (p. ej. el del bot en producción) sin copiarlo aquí.
+require("dotenv").config({ path: process.env.BOT_ENV_FILE || require("path").join(__dirname, ".env") });
 
 // ── El modelo (--modelo): ANTES de requerir agent.js ──────────
 // agent.js lee BOT_MODEL al cargarse (y index.js lo carga también): ponerlo
@@ -100,6 +109,8 @@ const estado = require("./estado"); // sin iniciar(): solo en memoria
 const medios = require("./medios");
 const adjuntos = require("./adjuntos");
 const horario = require("./horario");
+const seguimiento = require("./seguimiento");
+const { spawn } = require("child_process");
 const { crearSitioSimulado } = require("./sitio-simulado");
 // Los textos de producción (aviso al dueño, confirmación al cliente, cómo se
 // lee /confirma). Requerir index.js NO arranca WhatsApp: solo `node index.js`.
@@ -206,8 +217,168 @@ const comprobantes = medios.createProofProcessor({
   almacen: estado,
   dir: DIR_COMPROBANTES,
   enviarAlDueno: alDueno,
+  // Como index.js: monto, banco y concepto leídos con IA para el aviso.
+  ...(typeof agente.leerComprobante === "function" ? { leerComprobante: (media) => agente.leerComprobante(media) } : {}),
   log: console,
 });
+
+// ── Fotos y PDF que el modelo SÍ ve (como index.js) ───────────
+const visualesPendientes = [];
+function guardarVisual(media) {
+  if (!media || !media.data || !media.mimetype) return false;
+  const ahora = Date.now();
+  const vivas = visualesPendientes.filter((v) => ahora - v.at < 10 * 60 * 1000).slice(-2);
+  visualesPendientes.length = 0;
+  visualesPendientes.push(...vivas, { mimetype: media.mimetype, data: media.data, at: ahora });
+  return true;
+}
+function tomarVisuales() {
+  const ahora = Date.now();
+  const lista = visualesPendientes.filter((v) => ahora - v.at < 10 * 60 * 1000);
+  visualesPendientes.length = 0;
+  return lista;
+}
+
+// ── El PDF y las fotos, como le llegan al cliente ─────────────
+// El PDF sale del MISMO generador del sitio (simulador-documento.mjs) y se
+// imprime con el Chrome de la compu; los logos y fotos se sirven de ../public.
+const DIR_PUBLICO = path.resolve(__dirname, "..", "public");
+const ORIGEN_LOCAL = `http://127.0.0.1:${PUERTO}/sitio`;
+const SITIO_PUBLICO = "https://www.huasteca-potosina.com";
+const pdfs = new Map(); // folio → { buf, nombre }
+const RUTAS_CHROME = [
+  process.env.CHROME_PATH,
+  process.env.PUPPETEER_EXECUTABLE_PATH,
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+  "/Applications/Chromium.app/Contents/MacOS/Chromium",
+].filter(Boolean);
+
+/** Lo que guarda el sitio (TourQuote / TourBooking) armado con un folio del simulacro. */
+function datosParaPdf(folio) {
+  const f = String(folio || "").trim().toUpperCase();
+  const cot = sitio.cotizaciones.get(f);
+  const res = sitio.reservas.get(f);
+  const reg = cot || res;
+  if (!reg) return null;
+  const lineas = (reg.recorridos || []).map((l) => ({
+    tourSlug: l.slug, tourName: l.nombre, tourDate: l.tourDate || "",
+    adults: l.adultos || 0, childrenMid: l.ninosMid || 0, childrenSmall: l.ninosSmall || 0, subtotal: l.total,
+    ...(l.cobro === "vehiculo" ? { ruta: l.ruta, vehiculo: l.vehiculo, unidades: l.unidades } : {}),
+  }));
+  const p = reg.paquete;
+  const habitaciones = p ? [{
+    habitacion: p.habitacion || p.nombre, hotel: "Hotel Paraíso Encantado", noches: p.noches || 1,
+    habitaciones: p.habitaciones || 1, precioPorNoche: Math.round(p.total / Math.max(1, p.noches || 1)),
+    checkin: p.checkin || p.fecha, checkout: p.checkout || p.fecha, subtotal: p.total, huespedes: p.personas,
+  }] : [];
+  const comunes = {
+    tourName: reg.tourName, tourSlug: (reg.recorridos[0] || {}).slug || (p && p.slug) || "",
+    tourDate: reg.tourDate || (p && p.fecha) || "", adults: reg.adults || 0, children: reg.children || 0,
+    customerName: reg.customerName, customerEmail: reg.customerEmail, customerPhone: reg.telefono,
+    createdAt: new Date(reg.creadaAt).toISOString(),
+  };
+  if (cot) {
+    return {
+      tipo: "cotizacion",
+      q: {
+        ...comunes, quoteNumber: f, status: cot.status === "aceptada" ? "enviada" : cot.status, totalAmount: cot.total,
+        lineItems: [...lineas, { _meta: true, venceEl: cot.venceEl }],
+        packageItems: [...habitaciones, { _meta: true, vigencia: "7dias" }],
+      },
+    };
+  }
+  const ultimo = res.cobros[res.cobros.length - 1] || {};
+  const metodo = { stripe: "Tarjeta (liga de pago)", transferencia: "Transferencia", deposito: "Depósito OXXO", efectivo: "Efectivo" }[ultimo.metodo] || "Transferencia";
+  return {
+    tipo: "confirmacion",
+    q: {
+      ...comunes, confirmationNumber: f, totalAmount: res.totalAmount, depositoPagado: res.pagado,
+      lineItems: [...lineas, { _meta: true, metodoPago: metodo, folioPago: res.origen || f }],
+      packageItems: habitaciones,
+    },
+  };
+}
+
+/** El HTML del sitio: el de verdad (--real) o el del generador con datos del simulacro. */
+async function htmlDelDocumento(folio) {
+  if (REAL) {
+    const r = await api.documento(folio);
+    return r && r.ok && r.html ? r.html : null;
+  }
+  const datos = datosParaPdf(folio);
+  if (!datos) return null;
+  return new Promise((resolve) => {
+    const hijo = spawn(process.execPath, ["--experimental-transform-types", "--no-warnings", path.join(__dirname, "simulador-documento.mjs")], { stdio: ["pipe", "pipe", "pipe"] });
+    let html = "";
+    let err = "";
+    hijo.stdout.on("data", (c) => { html += c; });
+    hijo.stderr.on("data", (c) => { err += c; });
+    hijo.on("close", (code) => {
+      if (code !== 0 || !html) { console.error(`📄 el generador del sitio falló (${code}): ${err.trim().split("\n").slice(-3).join(" | ")}`); resolve(null); }
+      else resolve(html);
+    });
+    hijo.stdin.end(JSON.stringify({ ...datos, origen: ORIGEN_LOCAL }));
+  });
+}
+
+let navegadorPdf = null;
+async function imprimirPdf(html) {
+  if (!navegadorPdf) {
+    const puppeteer = require("puppeteer");
+    const executablePath = RUTAS_CHROME.find((r) => { try { return fs.statSync(r).isFile(); } catch { return false; } });
+    // Sin los manejadores de señales de puppeteer: se quedaban con Ctrl+C y el
+    // simulador ya no se cerraba (los de abajo cierran Chrome y salen).
+    navegadorPdf = await puppeteer.launch({
+      headless: true, handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false,
+      ...(executablePath ? { executablePath } : {}),
+    });
+  }
+  const page = await navegadorPdf.newPage();
+  try {
+    await page.setContent(html, { waitUntil: "networkidle0", timeout: 30000 });
+    return Buffer.from(await page.pdf({ format: "A4", printBackground: true, preferCSSPageSize: true }));
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
+for (const senal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.once(senal, async () => {
+    try { if (navegadorPdf) await navegadorPdf.close(); } catch { /* ya se fue */ }
+    process.exit(0);
+  });
+}
+
+/** Una foto del sitio: si está en ../public se sirve de aquí (los logos nuevos aún no están en producción). */
+function urlDeFoto(url) {
+  const u = String(url || "");
+  if (!u.startsWith(SITIO_PUBLICO)) return u;
+  const ruta = decodeURIComponent(u.slice(SITIO_PUBLICO.length).split("?")[0]);
+  const local = path.join(DIR_PUBLICO, ruta);
+  return local.startsWith(DIR_PUBLICO) && fs.existsSync(local) ? `/sitio${ruta}` : u;
+}
+
+/** Lo que en WhatsApp sale antes del texto: fotos como fotos y el PDF como documento. */
+async function mostrarAdjuntos(lista) {
+  for (const a of lista || []) {
+    if (a.tipo === "foto") {
+      emitir({ tipo: "foto", url: urlDeFoto(a.url), caption: a.caption || "" });
+      continue;
+    }
+    if (a.tipo !== "pdf") continue;
+    try {
+      const html = await htmlDelDocumento(a.folio);
+      if (!html) { emitir({ tipo: "aviso", texto: `📄 No pude armar el PDF de ${a.folio} (en WhatsApp saldría solo el texto).` }); continue; }
+      const buf = await imprimirPdf(html);
+      const nombre = a.nombre || `${a.folio}.pdf`;
+      pdfs.set(String(a.folio).toUpperCase(), { buf, nombre });
+      emitir({ tipo: "pdf", url: `/pdf/${encodeURIComponent(String(a.folio).toUpperCase())}`, nombre, kb: Math.max(1, Math.round(buf.length / 1024)) });
+    } catch (e) {
+      console.error("📄 PDF:", e && e.message);
+      emitir({ tipo: "aviso", texto: `📄 No pude imprimir el PDF de ${a.folio}: ${e && e.message}` });
+    }
+  }
+}
 
 /** Como en index.js: la ficha del viaje se entera del comprobante y del pago. Nunca rompe el flujo. */
 function anotarEnFicha(funcion, ...args) {
@@ -435,7 +606,7 @@ async function atenderRafagaSinEstado(chatId, texto, info = {}) {
   costo.llamadasTurno = 0;
   let enviado = null;
   try {
-    const respuesta = await processMessage(chatId, plan.textoParaModelo);
+    const respuesta = await processMessage(chatId, plan.textoParaModelo, { visuales: tomarVisuales() });
     enviado = respuesta;
     // El comprobante ya llegó (en esta ráfaga o MIENTRAS el modelo pensaba):
     // el MISMO filtro de index.js.
@@ -453,9 +624,7 @@ async function atenderRafagaSinEstado(chatId, texto, info = {}) {
     }
     const pieCosto = costo.llamadasTurno ? textoCostoTurno() : "";
     // Las fotos y el PDF que en WhatsApp salen antes del texto (adjuntos.js).
-    for (const a of adjuntos.tomar(chatId)) {
-      emitir({ tipo: "aviso", texto: a.tipo === "pdf" ? `📎 PDF: ${a.nombre || a.folio}` : `🖼️ Foto: ${a.caption || ""} · ${a.url}` });
-    }
+    await mostrarAdjuntos(adjuntos.tomar(chatId));
     if (enviado) {
       emitir({
         tipo: "bot", texto: enviado, mensajes: info.mensajes, esperaMs: info.esperaMs, pensoMs: Date.now() - t0,
@@ -492,7 +661,8 @@ function montarGestor() {
 montarGestor();
 
 // ── Comprobante de prueba: el MISMO camino que una foto en WhatsApp ──
-async function mandarComprobante(caption = "") {
+async function mandarComprobante(caption = "", archivo = null) {
+  const media = archivo && archivo.data && archivo.mimetype ? { mimetype: archivo.mimetype, data: archivo.data, filename: archivo.filename || "archivo" } : { ...FOTO_PRUEBA };
   // Cuándo llegó: entra a la ráfaga hasta que se buscó su cotización, y con
   // esto queda en SU lugar (como index.js).
   const llegoAt = Date.now();
@@ -504,7 +674,7 @@ async function mandarComprobante(caption = "") {
     const locale = s.locale || medios.idiomaProbable(pie) || medios.idiomaDeSesion(s);
     // La MISMA regla de index.js: cierra la ficha a cambios solo con señales de pago.
     const conSenalesDePago = medios.pareceComprobanteDePago({
-      mimetype: FOTO_PRUEBA.mimetype,
+      mimetype: media.mimetype,
       caption,
       history: s.history,
       textos: rafagas.elementosEnEspera(CHAT).filter((e) => e && e.tipo === "texto").map((e) => e.texto),
@@ -516,8 +686,8 @@ async function mandarComprobante(caption = "") {
       // Sin «/noespago»: el simulador no tiene ese comando (en producción sí sale).
       numero: null,
       sessionFolio: s.lastFolio,
-      media: { ...FOTO_PRUEBA },
-      mimetype: FOTO_PRUEBA.mimetype,
+      media,
+      mimetype: media.mimetype,
       caption: pie,
       paused: Boolean(pausa),
       locale,
@@ -537,6 +707,146 @@ async function mandarComprobante(caption = "") {
   } finally {
     comprobantesEnCamino--;
   }
+}
+
+// ── Una foto o un PDF tuyo: el MISMO reparto de index.js (atenderArchivo) ──
+async function mandarArchivo({ mimetype = "", data = "", filename = "", caption = "" } = {}) {
+  const s = getSession(CHAT);
+  const debeAlgo = Boolean(s.lastFolio) && s.saldoPendiente !== 0;
+  const tipoMsg = /^image\//.test(mimetype) ? "image" : "document";
+  const kind = medios.classifyIncomingMedia({ mimetype, caption, hasPendingQuote: debeAlgo, messageType: tipoMsg });
+  if (kind === "proof") {
+    emitir({ tipo: "aviso", texto: "🧾 El bot lo toma como comprobante de pago: acuse al cliente y aviso a Manolo con lo que leyó del archivo." });
+    return mandarComprobante(caption, { mimetype, data, filename });
+  }
+  if (kind === "unsupported") {
+    const aviso = medios.textoArchivoNoSoportado(medios.idiomaDeSesion(s));
+    pushHistory(CHAT, "user", "[archivo que el bot no puede leer]");
+    pushHistory(CHAT, "assistant", aviso);
+    emitir({ tipo: "bot", texto: aviso, pie: "archivo que no lee: sin modelo" });
+    return {};
+  }
+  // 'text': el pie se contesta como mensaje normal y el modelo VE la foto o el PDF.
+  let nota = "";
+  if ((/^image\//.test(mimetype) || /pdf/.test(mimetype)) && guardarVisual({ mimetype, data })) {
+    const loc = medios.idiomaDeSesion(s);
+    const que = /pdf/.test(mimetype) ? (loc === "en" ? "a PDF" : "un PDF") : (loc === "en" ? "a photo" : "una foto");
+    nota = `[El cliente mandó ${que}; la ves arriba. Si es un comprobante de pago, dile que ya lo recibimos y llama escalar_a_humano (otro, avisar, hoy) con lo que dice.]`;
+  }
+  const texto = [caption, nota].filter(Boolean).join("\n");
+  if (!texto) return {};
+  if (pausaActiva(CHAT)) {
+    pushHistory(CHAT, "user", texto);
+    emitir({ tipo: "aviso", texto: "⏸️ El chat está con una persona: el bot no contesta, pero lo guarda en el historial." });
+    return {};
+  }
+  rafagas.recibir(CHAT, texto);
+  return {};
+}
+
+// ── Adelantar el reloj: seguimiento y post-viaje (como ejecutarSeguimiento) ──
+async function simularTiempo(que) {
+  const s = getSession(CHAT);
+  if (!s.history.length) return emitir({ tipo: "aviso", texto: "Primero platica con el bot: el seguimiento solo sale en chats donde ya hubo propuesta o cotización." });
+  if (pausaActiva(CHAT)) return emitir({ tipo: "aviso", texto: "⏸️ El chat está con una persona: el bot no manda seguimientos encima del equipo." });
+  if (que === "postviaje") {
+    const f = s.ficha || {};
+    if (!Array.isArray(f.recorridos) || !f.recorridos.length) return emitir({ tipo: "aviso", texto: "No hay tour en la ficha del viaje: el «¿cómo les fue?» sale al día siguiente del último tour de una reserva." });
+    const texto = seguimiento.textoPostViaje({ ...s, nombre: f.nombre || "" });
+    pushHistory(CHAT, "user", seguimiento.NOTA_POST_VIAJE);
+    pushHistory(CHAT, "assistant", texto);
+    s.seguimiento = { ...(s.seguimiento || {}), postViajeAt: Date.now() };
+    emitir({ tipo: "aviso", texto: "🕘 Al día siguiente del tour, 10 am:" });
+    return emitir({ tipo: "bot", texto, pie: "post-viaje: mensaje fijo, sin modelo" });
+  }
+  const agendado = que === "agendado";
+  const ag = s.seguimiento && s.seguimiento.agendado;
+  if (agendado && !ag) return emitir({ tipo: "aviso", texto: "No hay hora acordada: sale cuando el bot le propone «¿te escribo mañana a las 6?» y el cliente acepta." });
+  const paso = { "3h": 1, "24h": 2, "72h": 3 }[que] || 1;
+  emitir({ tipo: "aviso", texto: agendado ? `🕘 Llegó la hora acordada${ag && ag.at ? ` (${new Date(ag.at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", weekday: "long", hour: "numeric", minute: "2-digit" })})` : ""}:` : `🕘 ${paso === 1 ? "Pasaron 3 horas" : paso === 2 ? "Pasó un día" : "Pasaron 3 días"} sin que el cliente contestara:` });
+  emitir({ tipo: "escribiendo" });
+  costo.turno = 0;
+  costo.llamadasTurno = 0;
+  let respuesta = null;
+  try {
+    respuesta = await processMessage(CHAT, seguimiento.notaParaElModelo(agendado ? 1 : paso, s, { agendado }));
+    await mostrarAdjuntos(adjuntos.tomar(CHAT));
+    if (respuesta) emitir({ tipo: "bot", texto: respuesta, pie: agendado ? "seguimiento acordado" : `seguimiento #${paso}`, costo: costo.llamadasTurno ? textoCostoTurno() : "", platica: textoPlatica() });
+  } catch (e) {
+    emitir({ tipo: "error", texto: e.message });
+  } finally {
+    adjuntos.tomar(CHAT);
+    s.seguimiento = s.seguimiento || {};
+    if (agendado) s.seguimiento.agendado = null;
+    else s.seguimiento.enviados = [...(s.seguimiento.enviados || []), Date.now()];
+    emitir({ tipo: "estado", ...estadoSimulador() });
+  }
+  await aplicarEscalacion(CHAT, { textoCliente: "", respuestaBot: respuesta }).catch(() => {});
+}
+
+// ── El cliente paga con la liga (lo que haría Stripe) ─────────
+/** La cotización a la que pertenece el folio de la sesión (COT- o la HP-M- en que se convirtió). */
+function cotizacionDeLaSesion(s) {
+  const f = String((s.ficha && s.ficha.folioVigente) || s.lastFolio || "").toUpperCase();
+  if (sitio.cotizaciones.has(f)) return f;
+  for (const [folio, c] of sitio.cotizaciones) if (c.reservaFolio === f) return folio;
+  return null;
+}
+
+async function simularPagoLiga() {
+  if (REAL) return alDueno("💳 En modo --real la liga se paga en Stripe de verdad: el simulador no la puede pagar.");
+  const s = getSession(CHAT);
+  const folio = cotizacionDeLaSesion(s);
+  if (!folio) return emitir({ tipo: "aviso", texto: "Primero pide una cotización: la liga de pago es de un folio COT-." });
+  const r = await sitio.pagarLiga(folio);
+  if (!r.ok) return emitir({ tipo: "aviso", texto: `💳 ${r.error}` });
+  emitir({ tipo: "aviso", texto: `💳 Stripe: entró ${medios.mx(r.monto)} por la liga de ${folio}. El bot lo nota en su siguiente revisión (cada 15 min en producción).` });
+  const v = await api.consultarReserva(folio);
+  if (v.ok && v.data) await avisarPagoConLiga(s, v.data);
+  emitir({ tipo: "estado", ...estadoSimulador() });
+}
+
+/** Igual que avisarPagoConLiga de index.js, pintado en el simulador. */
+async function avisarPagoConLiga(s, d) {
+  const reserva = d.reservaFolio;
+  if (!reserva || !d.pagadaConLiga) return;
+  const seg = s.seguimiento || (s.seguimiento = {});
+  const en = medios.idiomaDeSesion(s) === "en";
+  const partes = Array.isArray(d.partes) ? d.partes : [];
+  const pagadas = partes.filter((p) => p && p.pagada).length;
+  if (partes.length && pagadas < (partes[0].de || partes.length)) {
+    if (pagadas <= (seg.partesAvisadas || 0)) return;
+    seg.partesAvisadas = pagadas;
+    const de = partes[0].de || partes.length;
+    const texto = en
+      ? `✅ We received ${pagadas} of ${de} payments for ${reserva}. ${de - pagadas === 1 ? "One more to go" : `${de - pagadas} more to go`} — once they're in, I'll send your confirmation. 🌿`
+      : `✅ Recibimos ${pagadas} de ${de} pagos de ${reserva}. ${de - pagadas === 1 ? "Falta uno" : `Faltan ${de - pagadas}`}; en cuanto entren te mando tu confirmación. 🌿`;
+    pushHistory(CHAT, "assistant", texto);
+    return emitir({ tipo: "bot", texto, pie: "pago parcial con liga: sin modelo" });
+  }
+  anotarEnFicha("marcarPagoEnFicha", CHAT, d.folio, reserva);
+  s.lastFolio = reserva;
+  const r = await api.consultarReserva(reserva);
+  const b = (r.ok && r.data) || {};
+  if (Number.isFinite(Number(b.saldo))) s.saldoPendiente = Math.max(0, Math.round(Number(b.saldo)));
+  const pagado = Number(b.pagado) > 0 ? medios.mx(b.pagado) : null;
+  const saldo = Number(b.saldo) > 0 ? medios.mx(b.saldo) : null;
+  const texto = (en
+    ? [
+        `✅ *We received your card payment!* Your booking *${reserva}* is confirmed.`,
+        pagado ? `💰 Paid: ${pagado}${saldo ? ` · Balance: ${saldo}, paid before the tour starts` : " · Fully paid"}` : null,
+        "Here's your confirmation in PDF. Where are you staying? That way your guide can pick you up. 🌿",
+      ]
+    : [
+        `✅ *¡Recibimos tu pago con tarjeta!* Tu reserva *${reserva}* está confirmada.`,
+        pagado ? `💰 Pagado: ${pagado}${saldo ? ` · Saldo: ${saldo}, se paga antes de iniciar el tour` : " · Liquidado"}` : null,
+        "Te mando tu confirmación en PDF. ¿En qué hotel o lugar se hospedan? Así el guía pasa por ustedes. 🌿",
+      ]).filter(Boolean).join("\n");
+  await mostrarAdjuntos([{ tipo: "pdf", folio: reserva, nombre: adjuntos.nombrePdf(reserva, en ? "en" : "es") }]);
+  emitir({ tipo: "bot", texto, pie: "pago con liga: mensaje fijo, sin modelo" });
+  pushHistory(CHAT, "user", `[sistema] Pagó con la liga de tarjeta: ${d.folio} ya es la reserva ${reserva}. Ya se le mandó la confirmación con el PDF y se le preguntó dónde se hospeda: cuando lo diga, llama escalar_a_humano (recogida, avisar, normal) con el hotel y el folio ${reserva}.`);
+  pushHistory(CHAT, "assistant", texto);
+  await alDueno(`💳 Pagó con la liga: ${NOMBRE_CLIENTE} · ${d.folio} → ${reserva}${pagado ? ` · ${pagado}` : ""}. Ya le llegó su confirmación con el PDF.`);
 }
 
 // ── /confirma, como lo escribiría el dueño ────────────────────
@@ -581,7 +891,9 @@ async function confirmar(textoComando) {
   const locale = b.locale === "en" || b.locale === "es" ? b.locale : medios.idiomaDeSesion(s);
   const mensaje = b.yaConfirmada ? textos.textoPagoRegistrado(b, locale) : textos.textoConfirmacionCliente(b, locale);
 
-  // Lo que recibe el cliente, y lo que queda en su historial (igual que index.js).
+  // Lo que recibe el cliente, y lo que queda en su historial (igual que index.js):
+  // la confirmación en PDF y el mensaje.
+  if (b.reservaFolio && !b.yaConfirmada) await mostrarAdjuntos([{ tipo: "pdf", folio: b.reservaFolio, nombre: adjuntos.nombrePdf(b.reservaFolio, locale) }]);
   emitir({ tipo: "bot", texto: mensaje, pie: "confirmación de /confirma" });
   if (b.reservaFolio) s.lastFolio = b.reservaFolio;
   if (Number.isFinite(Number(b.saldo))) s.saldoPendiente = Math.max(0, Math.round(Number(b.saldo)));
@@ -623,6 +935,40 @@ const servidor = http.createServer(async (req, res) => {
       const html = fs.readFileSync(path.join(__dirname, "simulador.html"), "utf8");
       res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
       return res.end(html);
+    }
+
+    // Logos y fotos del sitio (../public), para el PDF y las fotos de los tours.
+    if (url.pathname.startsWith("/sitio/")) {
+      const ruta = path.join(DIR_PUBLICO, decodeURIComponent(url.pathname.slice("/sitio".length)));
+      if (!ruta.startsWith(DIR_PUBLICO + path.sep) || !fs.existsSync(ruta) || !fs.statSync(ruta).isFile()) { res.writeHead(404); return res.end(); }
+      const tipos = { ".svg": "image/svg+xml", ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp", ".avif": "image/avif", ".woff2": "font/woff2" };
+      res.writeHead(200, { "Content-Type": tipos[path.extname(ruta).toLowerCase()] || "application/octet-stream" });
+      return fs.createReadStream(ruta).pipe(res);
+    }
+
+    if (url.pathname.startsWith("/pdf/")) {
+      const doc = pdfs.get(decodeURIComponent(url.pathname.slice(5)).toUpperCase());
+      if (!doc) { res.writeHead(404); return res.end("Ese PDF ya no está (¿reiniciaste el simulador?)."); }
+      res.writeHead(200, { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${doc.nombre.replace(/"/g, "")}"` });
+      return res.end(doc.buf);
+    }
+
+    if (url.pathname === "/archivo" && req.method === "POST") {
+      const cuerpo = await leerCuerpo(req);
+      console.log(`👤 📎 ${cuerpo.filename || cuerpo.mimetype}${cuerpo.caption ? ` · ${cuerpo.caption}` : ""}`);
+      const r = await mandarArchivo(cuerpo);
+      return json(res, { folio: (r && r.folio) || null });
+    }
+
+    if (url.pathname === "/tiempo" && req.method === "POST") {
+      const { que } = await leerCuerpo(req);
+      await simularTiempo(String(que || ""));
+      return json(res, estadoSimulador());
+    }
+
+    if (url.pathname === "/pagoLiga" && req.method === "POST") {
+      await simularPagoLiga();
+      return json(res, estadoSimulador());
     }
 
     if (url.pathname === "/eventos") {
@@ -683,6 +1029,8 @@ const servidor = http.createServer(async (req, res) => {
     if (url.pathname === "/reiniciar" && req.method === "POST") {
       rafagas.descartar(CHAT);
       clearSession(CHAT);
+      tomarVisuales();
+      adjuntos.tomar(CHAT);
       estado.quitarPausa(CHAT);
       avisarPausa();
       Object.assign(costo, { turno: 0, llamadasTurno: 0, platica: 0, llamadas: 0, modelo: MODELO });

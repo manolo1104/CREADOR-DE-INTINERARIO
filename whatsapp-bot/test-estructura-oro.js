@@ -237,12 +237,22 @@ const ESCENARIOS = [
   },
   {
     id: "15-confianza",
-    doc: "Freno: confianza y marcas; datos bancarios a nombre de una persona → mensaje fijo de confianza con web, Google y redes.",
+    doc: "Freno: confianza; datos bancarios a nombre de una persona → mensaje fijo de confianza con web, Google y redes.",
     mensajes: ["¿Tienen redes o reseñas? Me da desconfianza depositarle a una persona."],
     reglas: [
       ["manda reseñas de Google", (t) => /maps\.app\.goo\.gl|google/i.test(t[0].bot)],
       ["manda la página o Facebook", (t) => /huasteca-potosina\.com|facebook/i.test(t[0].bot)],
       ["explica el titular o la liga segura", (t) => /fundador|Manolo|liga|tarjeta|Stripe/i.test(t[0].bot)],
+      ["no menciona otras marcas", (t) => !/Sorprendente|4x4/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "15b-otra-marca",
+    doc: "Solo existe Huasteca Potosina Tours: no explica otros nombres (Manolo, 17 nov).",
+    mensajes: ["¿Ustedes son los mismos de Sorprendente Tour o de Xilitla 4x4?"],
+    reglas: [
+      ["dice que son Huasteca Potosina Tours", (t) => /Huasteca Potosina Tours/i.test(t[0].bot)],
+      ["no explica ni compara la otra marca", (t) => !/(Sorprendente|4x4)[^.]{0,80}(es|son|somos|marca|empresa|hermana|también)/i.test(t[0].bot)],
     ],
   },
   {
@@ -455,6 +465,10 @@ const ESCENARIOS = [
       s.ficha.recorridos = [{ slug: "expedicion-tamul", nombre: "Expedición Tamul", fecha: "2026-11-14" }];
       s.ficha.pagoValidado = true;
       s.ficha.reservaFolio = "HP-M-0999";
+      // Quedó pendiente la pregunta del hotel de la confirmación: tras el viaje ya no aplica.
+      s.history.push({ role: "user", content: "[sistema] Pagó con la liga de tarjeta: COT-0999 ya es la reserva HP-M-0999. Ya se le mandó la confirmación con el PDF y se le preguntó dónde se hospeda: cuando lo diga, llama escalar_a_humano (recogida, avisar, normal) con el hotel y el folio HP-M-0999." });
+      s.history.push({ role: "assistant", content: "✅ ¡Recibimos tu pago con tarjeta! Tu reserva HP-M-0999 está confirmada.\nTe mando tu confirmación en PDF. ¿En qué hotel o lugar se hospedan? Así el guía pasa por ustedes. 🌿" });
+      s.history.push({ role: "user", content: seguimiento.NOTA_POST_VIAJE });
       s.history.push({ role: "assistant", content: seguimiento.textoPostViaje({ locale: "es", nombre: "Ana", ficha: s.ficha }) });
       s.botAt = Date.now();
     },
@@ -462,6 +476,7 @@ const ESCENARIOS = [
     reglas: [
       ["pide la reseña con el enlace EXACTO de Google", (t) => t[0].bot.includes("https://g.page/r/CZg8hdQa_GI9EBM/review")],
       ["agradece", (t) => /gracias|qu[eé] gusto|nos alegra/i.test(t[0].bot)],
+      ["ya no pregunta por el hotel ni la recogida", (t) => !/hotel|hosped|recog|pase por/i.test(t[0].bot)],
     ],
   },
   {
@@ -471,6 +486,7 @@ const ESCENARIOS = [
       const s = getSession(chatId);
       s.ficha.recorridos = [{ slug: "expedicion-tamul", nombre: "Expedición Tamul", fecha: "2026-11-14" }];
       s.ficha.pagoValidado = true;
+      s.history.push({ role: "user", content: seguimiento.NOTA_POST_VIAJE });
       s.history.push({ role: "assistant", content: seguimiento.textoPostViaje({ locale: "es", nombre: "Ana", ficha: s.ficha }) });
       s.botAt = Date.now();
     },

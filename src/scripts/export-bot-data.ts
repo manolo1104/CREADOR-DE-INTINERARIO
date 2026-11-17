@@ -471,14 +471,13 @@ const empresa = {
   rating: GOOGLE_RATING,
   resenas: GOOGLE_RESENAS,
   // Mensaje de confianza («Estructura de oro», 16 nov 2026): lo manda Tének
-  // cuando piden redes o reseñas, o dudan antes de pagar. `instagram` y
-  // `marcas` los da Manolo; vacíos = el bot no los menciona.
+  // cuando piden redes o reseñas, o dudan antes de pagar. Solo la marca
+  // Huasteca Potosina Tours: no se explican otros nombres (Manolo, 17 nov).
   confianza: {
     resenasGoogle: "https://maps.app.goo.gl/SWGyihBFTiykTFFM6",
     dejarResena: "https://g.page/r/CZg8hdQa_GI9EBM/review",
     facebook: "https://www.facebook.com/huastecatours",
-    instagram: "",
-    marcas: "",
+    instagram: "https://www.instagram.com/huasteca_potosina_tours_/",
   },
 };
 

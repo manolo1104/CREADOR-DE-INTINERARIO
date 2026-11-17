@@ -137,6 +137,9 @@ function notaParaElModelo(paso, s, { agendado = false } = {}) {
     + (paso === 3 ? "Es el último recordatorio: déjale la puerta abierta con calidez." : "");
 }
 
+/** Lo que queda en el historial antes del «¿cómo les fue?»: el modelo ya no sigue con lo de antes del viaje. */
+const NOTA_POST_VIAJE = "[sistema] POST-VIAJE: su tour ya pasó y este mensaje lo inicias tú para saber cómo les fue. Ya no preguntes por recogida, hospedaje ni pagos de ese viaje. Si les fue bien: gracias y el enlace de reseña en Google; si hay una queja: disculpa breve y pásalo al equipo.";
+
 /** El mensaje de post-viaje (fijo: no necesita modelo). */
 function textoPostViaje(s) {
   const en = s && s.locale === "en";
@@ -156,4 +159,5 @@ module.exports = {
   horaMX,
   PASOS_MS,
   NO_QUIERE_RE,
+  NOTA_POST_VIAJE,
 };
