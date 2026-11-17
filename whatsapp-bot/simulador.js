@@ -4,7 +4,7 @@
 //   npm run chat                     → simulacro: NO escribe nada en el panel real
 //   npm run chat -- --real           → habla con el sitio de verdad (crea folios reales)
 //   npm run chat -- --modelo sonnet  → otro modelo SIN tocar el .env:
-//                                      haiku | sonnet | opus | fable
+//                                      haiku55 | haiku | sonnet | opus | fable
 //
 // Usa el MISMO código que corre en producción: buffer.js para la espera de
 // 15 s, agent.js para la conversación, medios.js para los comprobantes (y su
@@ -35,12 +35,13 @@ require("dotenv").config();
 // agent.js lee BOT_MODEL al cargarse (y index.js lo carga también): ponerlo
 // después ya no cambiaría nada.
 const MODELOS = {
+  haiku55: "claude-haiku-5-5",
   haiku: "claude-haiku-4-5-20251001",
   sonnet: "claude-sonnet-5-5",
   opus: "claude-opus-5-5",
   fable: "claude-fable-5-1",
 };
-const MODELO_POR_OMISION = MODELOS.haiku; // el de agent.js sin BOT_MODEL
+const MODELO_POR_OMISION = MODELOS.haiku55; // el de agent.js sin BOT_MODEL
 
 /** `--modelo sonnet` o `--modelo=sonnet` → { id } · sin la opción → { id: null } · mal escrito → { error }. */
 function leerModelo(args = []) {

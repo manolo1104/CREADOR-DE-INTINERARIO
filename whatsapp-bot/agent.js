@@ -39,7 +39,9 @@ const CALIFICACION_GOOGLE =
     ? `${EMPRESA_DATA.rating}★ con ${EMPRESA_DATA.resenas} reseñas en Google`
     : null;
 
-const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5-20251001";
+// 16 nov 2026: Haiku 5.5 por omisión. Cuesta ~10× menos que Haiku 4.5 ($0.10 /
+// $0.50 por millón contra $1 / $5) y sigue mejor las instrucciones largas.
+const MODEL = process.env.BOT_MODEL || "claude-haiku-5-5";
 
 // ── Configuración por modelo ──────────────────────────────────
 // 🔴 Antes una sola expresión (PIENSA_POR_DEFAULT) mandaba
@@ -47,6 +49,9 @@ const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5-20251001";
 // rechazan con un 400: con BOT_MODEL en cualquiera de los dos, CADA mensaje
 // habría fallado. Ahora una tabla explícita con lo que acepta cada modelo
 // (platform.claude.com, 6 oct 2026):
+//   · Haiku 5.5: razonamiento adaptativo + esfuerzo (medium por omisión). No
+//     acepta `budget_tokens` ni `temperature`; el razonamiento cuenta en
+//     max_tokens, por eso lleva 4096.
 //   · Haiku 4.5: sin `thinking` ni esfuerzo (no acepta `effort`).
 //   · Sonnet 5.5: `between_tools` (lo más bajo que acepta: no razona, y sus
 //     notas entre herramientas llegan como bloques thinking) + esfuerzo. Con
@@ -66,6 +71,7 @@ const TOPE_MAX_TOKENS = 20000;
 /** A qué renglón de la tabla pertenece un id ("claude-haiku-4-5-20251001" → "haiku"). */
 function familiaDeModelo(modelId) {
   const m = String(modelId || "").trim().toLowerCase().replace(/^anthropic\./, "");
+  if (/^claude-haiku-5-5(-|$)/.test(m)) return "haiku-5-5";
   if (/^claude-haiku-/.test(m)) return "haiku";
   if (/^claude-sonnet-5-5(-|$)/.test(m)) return "sonnet-5-5";
   if (/^claude-(opus-5-5|fable-5-1|mythos-5-1)(-|$)/.test(m)) return "razona-siempre";
@@ -90,7 +96,10 @@ function configModelo(modelId, opciones = {}) {
     ? Math.min(Math.round(maxPedido), TOPE_MAX_TOKENS)
     : familia === "haiku" ? 2048 : 4096;
   const cfg = { model, max_tokens };
-  if (familia === "sonnet-5-5") {
+  if (familia === "haiku-5-5") {
+    cfg.thinking = { type: "adaptive" };
+    cfg.output_config = { effort: esfuerzo || "medium" };
+  } else if (familia === "sonnet-5-5") {
     cfg.thinking = { type: "between_tools" };
     cfg.output_config = { effort: esfuerzo === "xhigh" || esfuerzo === "max" ? "high" : esfuerzo || "medium" };
   } else if (familia === "razona-siempre") {
@@ -106,6 +115,8 @@ function configModelo(modelId, opciones = {}) {
 // escritura de caché de 1 h (la que pide el bot) y lectura de caché. Si la API
 // reporta escritura de 5 min, esa cuesta 1.25× la entrada.
 const PRECIOS = {
+  // Haiku 5.5: tarifa de prompts de hasta 100 mil tokens (el bot manda ~20 mil).
+  "claude-haiku-5-5":  { entrada: 0.10, salida: 0.50, cache1h: 0.20, lectura: 0.01 },
   "claude-haiku-4-5":  { entrada: 1,  salida: 5,  cache1h: 2,  lectura: 0.10 },
   "claude-sonnet-5-5": { entrada: 2,  salida: 10, cache1h: 4,  lectura: 0.20 },
   "claude-sonnet-5":   { entrada: 2,  salida: 10, cache1h: 4,  lectura: 0.20 },
@@ -120,6 +131,7 @@ function preciosDeModelo(modelo) {
   if (PRECIOS[id]) return PRECIOS[id];
   // Uno que no está en la tabla se cobra como su familia; uno desconocido,
   // como Opus 5 (mejor pasarse que quedarse corto).
+  if (/haiku-5-5/.test(id)) return PRECIOS["claude-haiku-5-5"];
   if (/haiku/.test(id)) return PRECIOS["claude-haiku-4-5"];
   if (/sonnet/.test(id)) return PRECIOS["claude-sonnet-5-5"];
   if (/fable|mythos/.test(id)) return PRECIOS["claude-fable-5-1"];

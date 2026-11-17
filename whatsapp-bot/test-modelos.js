@@ -26,6 +26,7 @@ function prueba(nombre, fn) {
 }
 
 const HAIKU = "claude-haiku-4-5-20251001";
+const HAIKU55 = "claude-haiku-5-5";
 const SONNET55 = "claude-sonnet-5-5";
 const OPUS55 = "claude-opus-5-5";
 const FABLE51 = "claude-fable-5-1";
@@ -34,6 +35,17 @@ const FABLE51 = "claude-fable-5-1";
 const casiIgual = (a, b, msg) => assert.ok(Math.abs(a - b) < 1e-6, `${msg}: ${a} ≠ ${b}`);
 
 console.log("\n🧠 Configuración por modelo (lo que se manda a la API)\n");
+
+prueba("Haiku 5.5: razonamiento adaptativo + esfuerzo medium, 4096 tokens", () => {
+  const c = configModelo(HAIKU55);
+  assert.deepEqual(c, { model: HAIKU55, max_tokens: 4096, thinking: { type: "adaptive" }, output_config: { effort: "medium" } });
+  assert.ok(!("temperature" in c), "Haiku 5.5 da 400 con temperature");
+});
+
+prueba("Haiku 5.5: el esfuerzo pedido manda", () => {
+  assert.equal(configModelo(HAIKU55, { effort: "low" }).output_config.effort, "low");
+  assert.equal(configModelo("anthropic.claude-haiku-5-5", { effort: "high" }).output_config.effort, "high");
+});
 
 prueba("Haiku 4.5: sin thinking ni esfuerzo, 2048 tokens (como siempre)", () => {
   const c = configModelo(HAIKU);
@@ -126,13 +138,13 @@ prueba("los ids del simulador (--modelo) son los del contrato y todos tienen con
   const src = fs.readFileSync(path.join(__dirname, "simulador.js"), "utf8");
   const bloque = (src.match(/const MODELOS = \{([\s\S]*?)\};/) || [])[1] || "";
   const ids = Object.fromEntries([...bloque.matchAll(/(\w+):\s*"([^"]+)"/g)].map((m) => [m[1], m[2]]));
-  assert.deepEqual(ids, { haiku: HAIKU, sonnet: SONNET55, opus: OPUS55, fable: FABLE51 });
+  assert.deepEqual(ids, { haiku55: HAIKU55, haiku: HAIKU, sonnet: SONNET55, opus: OPUS55, fable: FABLE51 });
   for (const id of Object.values(ids)) assert.equal(configModelo(id).model, id);
 });
 
 if (sinBOT_MODEL) {
-  prueba("sin BOT_MODEL el bot sigue en Haiku 4.5 (decisión de Manolo)", () => {
-    assert.equal(MODEL, HAIKU);
+  prueba("sin BOT_MODEL el bot corre en Haiku 5.5 (16 nov 2026)", () => {
+    assert.equal(MODEL, HAIKU55);
   });
 }
 
@@ -142,6 +154,11 @@ console.log("\n💲 Costo de cada llamada (USD)\n");
 // otra que la LEE (los siguientes).
 const ESCRIBE = { input_tokens: 1000, output_tokens: 500, cache_creation_input_tokens: 15000, cache_read_input_tokens: 0 };
 const LEE = { input_tokens: 200, output_tokens: 300, cache_creation_input_tokens: 0, cache_read_input_tokens: 15000 };
+
+prueba("Haiku 5.5: $0.10 / $0.50, caché 1 h $0.20, lectura $0.01", () => {
+  casiIgual(costoDeUso(HAIKU55, ESCRIBE), (1000 * 0.10 + 500 * 0.50 + 15000 * 0.20) / 1e6, "escribe");
+  casiIgual(costoDeUso(HAIKU55, LEE), (200 * 0.10 + 300 * 0.50 + 15000 * 0.01) / 1e6, "lee");
+});
 
 prueba("Haiku 4.5: $1 / $5, caché 1 h $2, lectura $0.10", () => {
   casiIgual(costoDeUso(HAIKU, ESCRIBE), (1000 * 1 + 500 * 5 + 15000 * 2) / 1e6, "escribe");

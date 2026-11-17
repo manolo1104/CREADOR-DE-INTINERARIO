@@ -1,8 +1,9 @@
 require("dotenv").config();
-const { buildSystemPrompt, tools } = require("./agent");
+const { buildSystemPrompt, tools, MODEL } = require("./agent");
 const Anthropic = require("@anthropic-ai/sdk");
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5";
+// Mínimo de tokens para que el caché guarde algo, según el modelo.
+const MINIMO_CACHE = /haiku-4-5/.test(MODEL) ? 4096 : 512;
 
 (async () => {
   const sys = buildSystemPrompt();
@@ -15,9 +16,9 @@ const MODEL = process.env.BOT_MODEL || "claude-haiku-4-5";
   });
   console.log(`Modelo: ${MODEL}`);
   console.log(`Prefijo cacheable (prompt + ${tools.length} herramientas): ${r.input_tokens} tokens`);
-  console.log(r.input_tokens >= 4096
-    ? "✅ Arriba del mínimo de caché de Haiku 4.5 (4,096) — el caché SÍ va a funcionar"
-    : "🔴 DEBAJO de 4,096: con Haiku el caché NO guarda nada y cada mensaje se paga completo");
+  console.log(r.input_tokens >= MINIMO_CACHE
+    ? `✅ Arriba del mínimo de caché de ${MODEL} (${MINIMO_CACHE}) — el caché SÍ va a funcionar`
+    : `🔴 DEBAJO de ${MINIMO_CACHE}: el caché NO guarda nada y cada mensaje se paga completo`);
   // Sanidad: que no quedaran interpolaciones sin resolver ni markdown prohibido
   for (const [nombre, re] of [["${ sin resolver", /\$\{/], ["dobles asteriscos", /\*\*/], ["títulos ###", /^###/m]]) {
     if (re.test(sys)) console.log(`⚠️  el prompt contiene ${nombre}`);

@@ -199,12 +199,10 @@ Eso regenera `whatsapp-bot/data.json` y el bot queda al día. La única capa man
 > hay que volver a desplegar el servicio del bot en Railway.
 
 ## Modelo y costo
-Corre en **Haiku 4.5** (`BOT_MODEL=claude-haiku-4-5`): $1 por millón de tokens de
-entrada, $5 de salida. El prompt fijo (~14 mil tokens) va con **caché de 1 hora**, así
-que del segundo mensaje en adelante se lee a una décima parte del precio.
-
-⚠️ Haiku solo cachea prefijos de **4,096 tokens o más**. Si algún día se recorta mucho
-el prompt, córrele `npm run medir-prompt`: por debajo de ese número el caché deja de
-funcionar **en silencio** y cada mensaje se paga completo.
+Corre en **Haiku 5.5** (`BOT_MODEL=claude-haiku-5-5`, desde el 16 nov 2026): $0.10 por
+millón de tokens de entrada y $0.50 de salida, con razonamiento adaptativo y esfuerzo
+`medium` (`BOT_EFFORT` lo cambia). El prompt fijo va con **caché de 1 hora**, así que del
+segundo mensaje en adelante se lee a una décima parte del precio. Haiku 5.5 cachea desde
+512 tokens. Haiku 4.5 sigue disponible con `BOT_MODEL=claude-haiku-4-5`.
 
 Para probar sin WhatsApp: `npm test` (usa la `ANTHROPIC_API_KEY` del `.env`).
