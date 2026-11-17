@@ -41,7 +41,7 @@ function montoMx(n) {
  * Nunca dice que la reserva ya está confirmada: eso pasa al validar el pago.
  *
  * @param {{folio?:string, monto?:number, locale?:"es"|"en", liga?:string|null,
- *   ligas?:{parte:number, de:number, url:string, monto:number, pagada?:boolean}[]}} datos
+ *   ligas?:{parte:number, de:number, url:string, monto:number, pagada?:boolean, nombre?:string}[]}} datos
  */
 function mensajeDatosPago({ folio, monto, locale, liga, ligas } = {}) {
   const en = String(locale || "").toLowerCase().startsWith("en");
@@ -68,7 +68,7 @@ function mensajeDatosPago({ folio, monto, locale, liga, ligas } = {}) {
   const tarjeta = partes.length
     ? [
         en ? "💳 *By card, one link per person (no fee):*" : "💳 *Con tarjeta, una liga por persona (sin comisión):*",
-        ...partes.map((l) => `${en ? "Part" : "Parte"} ${l.parte}/${l.de} · ${montoMx(l.monto)}\n${l.url}`),
+        ...partes.map((l) => `${l.nombre ? `*${l.nombre}*` : `${en ? "Part" : "Parte"} ${l.parte}/${l.de}`} · ${montoMx(l.monto)}\n${l.url}`),
       ]
     : liga
       ? [en ? "💳 *By card (no fee):*" : "💳 *Con tarjeta (sin comisión):*", liga]

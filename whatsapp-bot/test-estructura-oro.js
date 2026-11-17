@@ -91,6 +91,7 @@ const ESCENARIOS = [
     mensajes: ["Hola, buenas noches"],
     reglas: [
       ["se presenta como Tének", (t) => /T[ée]nek/i.test(t[0].bot)],
+      ["dice que es asistente virtual y ayuda con toda la reserva", (t) => /asistente virtual/i.test(t[0].bot) && /reserva/i.test(t[0].bot)],
       ["pide fechas", (t) => /fecha|cu[aá]ndo|d[ií]as/i.test(t[0].bot)],
       ["pide cuántos son", (t) => /cu[aá]nt[oa]s|personas|son\b/i.test(t[0].bot)],
       ["no suelta el catálogo", (t) => !/Expedici[oó]n Tamul[\s\S]*Ruta Surrealista[\s\S]*Rafting/i.test(t[0].bot)],
@@ -263,6 +264,7 @@ const ESCENARIOS = [
       ["pasa el chat al equipo (grupo)", (t) => escalo(t[0], "grupo", "pasar")],
       ["no contesta solo «te escribe alguien»: saluda y pide lo que falta", (t) => t[0].bot.split("\n").filter(Boolean).length >= 2 && /\?/.test(t[0].bot)],
       ["no inventa descuento", (t) => !/\d+\s?%\s*de descuento|descuento de \$/i.test(t[0].bot)],
+      ["pregunta si necesitan factura", (t) => /factura/i.test(t[0].bot)],
     ],
   },
   {
@@ -285,19 +287,20 @@ const ESCENARIOS = [
     doc: "Freno: pago con tarjeta o dividido → link de pago, uno por persona si lo piden.",
     mensajes: [
       `Somos 3 adultos para la Expedición Tamul el ${SABADO_TXT}, nos quedamos en Ciudad Valles. Soy Carla Prueba, carla@test.invalid`,
-      "Cada quien quiere pagar su parte con tarjeta, ¿se puede?",
+      "Cada quien quiere pagar su parte con tarjeta: Carla, Luis y Ana. ¿Se puede?",
     ],
     reglas: [
       ["cotiza", (t) => usó(t[0], "crear_cotizacion")],
       ["manda una liga por persona", (t) => usó(t[1], "enviar_link_pago") && Number(entradaDe(t[1], "enviar_link_pago").partes) === 3],
       ["las ligas llegan al chat, exactas", (t) => (t[1].bot.match(/buy\.stripe\.com\/test_COT-SIM\d+_\d/g) || []).length >= 3],
+      ["cada liga lleva el nombre de quien paga", (t) => /Luis[^\n]*\n\s*https:\/\/buy\.stripe/i.test(t[1].bot) && /Ana[^\n]*\n\s*https:\/\/buy\.stripe/i.test(t[1].bot)],
     ],
   },
   {
     id: "20-eres-bot",
     doc: "Honestidad: si preguntan en serio si es un bot, decirlo con naturalidad.",
     mensajes: ["Hola, ¿eres un bot o una persona?"],
-    reglas: [["dice que es el asistente del equipo", (t) => /asistente|bot|automatizad/i.test(t[0].bot) && !/soy una persona|no soy un bot/i.test(t[0].bot)]],
+    reglas: [["dice que es el asistente virtual", (t) => /asistente virtual|virtual/i.test(t[0].bot) && !/soy una persona|no soy un bot/i.test(t[0].bot)]],
   },
   {
     id: "21-precio-con-incluye",
@@ -371,11 +374,37 @@ const ESCENARIOS = [
   },
   {
     id: "28-para-hoy",
-    doc: "Para hoy: no lo confirma el bot; pasa al equipo y ofrece mañana.",
+    doc: "Para hoy (Manolo, 17 nov): solo RZR, Travesía del Café y Gruta de Xilo; los demás, desde mañana.",
     mensajes: ["¿Hay algún tour para hoy? Somos 2 y estamos en Xilitla."],
     reglas: [
-      ["pasa al equipo (para hoy)", (t) => escalo(t[0], "para_hoy")],
+      ["ofrece los del mismo día o mañana", (t) => /RZR|Caf[eé]|Xilo|mañana/i.test(t[0].bot)],
+      ["no ofrece Tamul ni otro tour para hoy", (t) => !/(Tamul|Surrealista|Meco|Rafting|Puente de Dios)[^.\n]{0,40}\bhoy\b/i.test(t[0].bot)],
       ["no confirma que sí hay lugar hoy", (t) => !/s[ií] hay lugar (para )?hoy|queda confirmado/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "28b-tamul-hoy",
+    doc: "Tour que no va el mismo día: lo dice claro, ofrece mañana; no cotiza para hoy y no escala.",
+    mensajes: ["Queremos ir hoy a la Expedición Tamul, somos 2 adultos en Ciudad Valles."],
+    reglas: [
+      ["dice que hoy no se puede", (t) => /no (se )?(puede|alcanza|agenda|es posible)|ya no|desde mañana|anticipaci[oó]n/i.test(t[0].bot)],
+      ["ofrece mañana u otra fecha", (t) => /mañana|otra fecha|otro d[ií]a/i.test(t[0].bot)],
+      ["no cotiza Tamul para hoy", (t) => !usó(t[0], "crear_cotizacion")],
+      ["no pasa el chat al equipo", (t) => !escalo(t[0], "para_hoy", "pasar")],
+    ],
+  },
+  {
+    id: "28c-gruta-hoy",
+    doc: "Gruta de Xilo sí va el mismo día: se cotiza y el equipo confirma lugar y hora.",
+    mensajes: [
+      "¿Podemos hacer la Gruta de Xilo hoy en la noche? Somos 2 adultos y nos quedamos en Xilitla.",
+      "Va, soy Eva Prueba, eva@test.invalid",
+    ],
+    reglas: [
+      ["no dice que hoy no se puede", (t) => !/no (se )?(puede|agenda) (para )?hoy|desde mañana/i.test(t[0].bot)],
+      ["cotiza para hoy", (t) => usó(t[1], "crear_cotizacion")],
+      ["avisa al equipo (para hoy)", (t) => escalo(t[0], "para_hoy") || escalo(t[1], "para_hoy")],
+      ["no dice que ya quedó", (t) => !/queda confirmad|ya qued[oó]/i.test(t[0].bot + t[1].bot)],
     ],
   },
   {
@@ -424,11 +453,41 @@ const ESCENARIOS = [
   },
   {
     id: "33-viajero-solo",
-    doc: "Bajo el mínimo: tarifa normal, salida compartida, se confirma 7 días antes o se devuelve el 100 %.",
+    doc: "Bajo el mínimo (Manolo, 17 nov): el mínimo es mínimo; no se cotiza y se ofrece alternativa.",
     mensajes: [`Voy yo solo, quiero hacer la Expedición Tamul el ${SABADO_TXT}, me quedo en Xilitla.`],
     reglas: [
-      ["explica la salida compartida", (t) => /compartid|sumamos|grupo/i.test(t[0].bot)],
-      ["confirmación 7 días antes o reembolso", (t) => /7 d[ií]as|100\s?%|reembols|devuelve/i.test(t[0].bot)],
+      ["dice el mínimo de 2", (t) => /m[ií]nimo|desde 2|2 personas|dos personas/i.test(t[0].bot)],
+      ["no cotiza", (t) => !usó(t[0], "crear_cotizacion")],
+      ["no ofrece sumarlo a otro grupo", (t) => !/(te|lo|los) sumamos|sumarte a|unirte a (una|otra) salida|con otros viajeros/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "33b-rafting-3",
+    doc: "Rafting pide 5: con 3 no se cotiza (lo que falló en las pruebas de Manolo).",
+    mensajes: [`Somos 3 adultos y queremos hacer el rafting el ${SABADO_TXT}, nos quedamos en Ciudad Valles.`],
+    reglas: [
+      ["dice el mínimo de 5", (t) => /5 personas|cinco|m[ií]nimo de 5|desde 5/i.test(t[0].bot)],
+      ["no cotiza el rafting", (t) => !usó(t[0], "crear_cotizacion")],
+      ["no ofrece salida compartida ni reembolso", (t) => !/salida compartida|te sumamos|lo sumamos|se (les )?devuelve el 100/i.test(t[0].bot)],
+      ["ofrece una alternativa", (t) => /Tamul|Meco|Puente de Dios|Micos|RZR|otra opci[oó]n|alternativa|completar/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "33c-pagar-todo-el-dia",
+    doc: "«¿Podemos pagar todo el día del tour?» → claro: hoy se aparta con el 30 %, el resto ese día antes de empezar.",
+    mensajes: [`Somos 2 para la Expedición Tamul el ${SABADO_TXT}. ¿Podemos pagar todo el día del tour?`],
+    reglas: [
+      ["dice que se aparta con el 30 %", (t) => /30\s?%|anticipo/i.test(t[0].bot) && /apart/i.test(t[0].bot)],
+      ["no se contradice («no el día del tour» y luego «el resto ese día»)", (t) => !/no (es |se paga )?el d[ií]a del tour/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "33d-empresa",
+    doc: "Grupo de empresa: además de pasarlo, pregunta si necesitan factura.",
+    mensajes: ["Hola, somos 15 personas de una empresa y queremos ir en enero a Xilitla."],
+    reglas: [
+      ["pasa el chat (grupo)", (t) => escalo(t[0], "grupo")],
+      ["pregunta si necesitan factura", (t) => /factura/i.test(t[0].bot)],
     ],
   },
   {

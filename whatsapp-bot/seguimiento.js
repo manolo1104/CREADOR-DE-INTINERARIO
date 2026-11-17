@@ -111,6 +111,17 @@ function decidirSeguimiento(s, { ahora, pausa = false } = {}) {
   ].filter((f) => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
   if (fechas.length && fechas[fechas.length - 1] < hoyMX(new Date(ahora))) return { accion: "nada", motivo: "el viaje ya pasó" };
 
+  // Un día antes de que venza su cotización (día 6 de 7): «vence mañana».
+  // Va aunque ya salieron los 3 recordatorios (pruebas de Manolo, 17 nov: el
+  // de los 3 días se despedía y la cotización seguía viva 4 días más).
+  const vc = s.venceCotizacion;
+  if (vc && vc.folio && /^\d{4}-\d{2}-\d{2}$/.test(String(vc.venceEl || "")) && seg.venceAvisado !== vc.folio) {
+    const hoy = hoyMX(new Date(ahora));
+    const [y, m, d] = hoy.split("-").map(Number);
+    const manana = new Date(Date.UTC(y, m - 1, d + 1, 12)).toISOString().slice(0, 10);
+    if (vc.venceEl === manana && horaMX(ahora) >= 10) return { accion: "vence_manana", folio: vc.folio, venceEl: vc.venceEl };
+  }
+
   const base = seg.base && seg.base >= clienteAt ? seg.base : s.botAt;
   // Más de 4 días desde nuestro último mensaje: ya no es seguimiento, es spam.
   if (ahora - base > 4 * 24 * HORA) return { accion: "nada", motivo: "plática vieja" };
@@ -134,7 +145,14 @@ function notaParaElModelo(paso, s, { agendado = false } = {}) {
     + "Escríbele UN mensaje corto (2 o 3 líneas) que mencione algo concreto de SU viaje —su fecha, su tour o un lugar— "
     + "y termine con una pregunta fácil de contestar que avance a la siguiente etapa. "
     + "Nunca «¿qué te pareció la propuesta?», nunca presiones ni inventes escasez, y no repitas la cotización ni los datos de pago completos. "
-    + (paso === 3 ? "Es el último recordatorio: déjale la puerta abierta con calidez." : "");
+    + (paso === 3 ? "Déjale la puerta abierta con calidez; su cotización sigue vigente, así que no te despidas ni digas que es el último mensaje." : "");
+}
+
+/** La nota del aviso «tu cotización vence mañana» (día 6). */
+function notaVenceManana(s, { folio, venceEl } = {}) {
+  return `[sistema] SEGUIMIENTO: el cliente NO escribió nada; este mensaje lo inicias tú. Su cotización ${folio || ""} vence MAÑANA (${venceEl || "mañana"}). `
+    + "Escríbele UN mensaje corto (2 o 3 líneas): que mañana vence su cotización de SU tour y fecha, que el lugar se aparta con el anticipo y una pregunta fácil (¿te mando los datos para apartarlo?). "
+    + "Nada de presión ni escasez inventada, y no repitas la cotización ni los datos de pago completos.";
 }
 
 /** Lo que queda en el historial antes del «¿cómo les fue?»: el modelo ya no sigue con lo de antes del viaje. */
@@ -146,14 +164,20 @@ function textoPostViaje(s) {
   const nombre = String((s && (s.nombre || (s.ficha && s.ficha.nombre))) || "").trim().split(/\s+/)[0];
   const tour = s && s.ficha && Array.isArray(s.ficha.recorridos) && s.ficha.recorridos[0] && s.ficha.recorridos[0].nombre;
   const corto = String(tour || "").split("—")[0].trim();
-  return en
-    ? `Hi${nombre ? ` ${nombre}` : ""}! 🌿 How was ${corto || "your trip to the Huasteca"}? We'd love to hear how it went.`
+  // Quien viajó solo: en singular (pruebas de Manolo, 17 nov: «¿cómo les fue?» a una persona).
+  const r0 = s && s.ficha && Array.isArray(s.ficha.recorridos) ? s.ficha.recorridos[0] : null;
+  const personas = r0 ? (Number(r0.adultos) || 0) + (Number(r0.ninosMid) || 0) + (Number(r0.ninosSmall) || 0) : 0;
+  const solo = personas === 1;
+  if (en) return `Hi${nombre ? ` ${nombre}` : ""}! 🌿 How was ${corto || "your trip to the Huasteca"}? We'd love to hear how it went.`;
+  return solo
+    ? `¡Hola${nombre ? ` ${nombre}` : ""}! 🌿 ¿Cómo te fue en ${corto || "tu viaje por la Huasteca"}? Nos encantaría saber cómo la pasaste.`
     : `¡Hola${nombre ? ` ${nombre}` : ""}! 🌿 ¿Cómo les fue en ${corto || "su viaje por la Huasteca"}? Nos encantaría saber cómo la pasaron.`;
 }
 
 module.exports = {
   decidirSeguimiento,
   notaParaElModelo,
+  notaVenceManana,
   textoPostViaje,
   ultimoTextoDelCliente,
   horaMX,

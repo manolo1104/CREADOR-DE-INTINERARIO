@@ -1,9 +1,14 @@
 {
-  "generatedAt": "2026-11-17T04:47:35.416Z",
+  "generatedAt": "2026-11-17T17:15:49.115Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
     "confirmaSalidaDias": 7,
+    "toursMismoDia": [
+      "rzr-xilitla",
+      "travesia-del-cafe",
+      "gruta-de-xilo"
+    ],
     "sitio": "https://www.huasteca-potosina.com",
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
     "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
@@ -4079,7 +4084,7 @@
     {
       "tema": "para-manana",
       "titulo": "Tours para mañana o para hoy",
-      "texto": "Para MAÑANA sí se cotiza, pero el anticipo tiene que quedar pagado antes de las 10:00 pm de hoy, para organizar la logística de la mañana; el equipo confirma que haya salida armada para esa fecha y zona. Para HOY no lo confirmes tú: di que el equipo lo revisa y te responde, y ofrece la fecha de mañana como opción.",
+      "texto": "Para MAÑANA sí se cotiza, pero el anticipo tiene que quedar pagado antes de las 10:00 pm de hoy, para organizar la logística de la mañana; el equipo confirma que haya salida armada para esa fecha y zona. Para HOY (el mismo día) NO se agendan tours, salvo Recorrido en RZR por Xilitla, Travesía del Café y Gruta de Xilo. Si piden otro tour para hoy, dilo claro y ofrece mañana u otra fecha, o uno de esos 3. Si es uno de esos, se cotiza para hoy y el equipo confirma lugar y hora: avísale al equipo y nunca digas que ya quedó.",
       "claves": [
         "mañana",
         "para mañana",
@@ -4157,7 +4162,7 @@
     {
       "tema": "minimos-y-viajero-solo",
       "titulo": "Mínimos de personas y viajero solo",
-      "texto": "Cada tour tiene mínimo y máximo de personas (`groupMin` y `groupMax` de su ficha). Quien va BAJO el mínimo sí puede reservar en línea: paga la tarifa normal por persona y se le suma a una salida compartida. Se le confirma 7 días antes de la fecha y, si no se junta el grupo, se le devuelve el 100 %. Los de mínimo alto, dilo al vender: Rappel en la Cascada de Tamul, desde 4 personas y Rafting en el Río Tampaón, desde 5 personas. NUNCA le prometas que la salida ya está armada: eso lo confirma el equipo.",
+      "texto": "Cada tour tiene mínimo y máximo de personas (`groupMin` y `groupMax` de su ficha). Por WhatsApp el mínimo SÍ es mínimo: con menos personas NO se cotiza ni se reserva. Dilo al vender, sobre todo en los de mínimo alto: Rappel en la Cascada de Tamul, desde 4 personas y Rafting en el Río Tampaón, desde 5 personas. Si no les alcanza, ofrece una alternativa: otro tour cuyo mínimo sí cumplan, que completen el grupo, o el tour privado si su ficha lo permite (lo cotiza el equipo). Una excepción al mínimo no la decides tú: la decide el equipo.",
       "claves": [
         "mínimo",
         "mínimo de personas",
@@ -4370,7 +4375,7 @@
     {
       "tema": "rafting",
       "titulo": "Rafting en el Río Tampaón",
-      "texto": "Incluye una comida, que el cliente elige tomar antes o después del descenso (no lleva el desayuno buffet de los otros tours). Se firma una responsiva. Sale con mínimo de 5 personas: dilo al vender; si no se junta el grupo, el equipo ofrece otra actividad o la devolución. Depende del nivel del río: en lluvias la salida se confirma según el río ese día; si no es seguro, se reprograma o se propone una alternativa. No hace falta saber nadar: se va con chaleco y casco, y el guía va dentro de la balsa. La edad mínima está en su ficha.",
+      "texto": "Incluye una comida, que el cliente elige tomar antes o después del descenso (no lleva el desayuno buffet de los otros tours). Se firma una responsiva. Sale con mínimo de 5 personas: dilo al vender; con menos NO se cotiza (ofrece otra actividad o que completen el grupo). Depende del nivel del río: en lluvias la salida se confirma según el río ese día; si no es seguro, se reprograma o se propone una alternativa. No hace falta saber nadar: se va con chaleco y casco, y el guía va dentro de la balsa. La edad mínima está en su ficha.",
       "claves": [
         "rafting",
         "balsa",

@@ -2,7 +2,8 @@
 // mensaje de pago único y los adjuntos. Corre con: node test-seguimiento.js
 const assert = require("assert");
 const { etapaDe } = require("./etapas");
-const { decidirSeguimiento, notaParaElModelo, textoPostViaje, PASOS_MS } = require("./seguimiento");
+const seguimiento = require("./seguimiento");
+const { decidirSeguimiento, notaParaElModelo, textoPostViaje, PASOS_MS } = seguimiento;
 const { mensajeDatosPago } = require("./payment");
 const adjuntos = require("./adjuntos");
 
@@ -80,6 +81,31 @@ prueba("después del tercero, ya no se escribe", () => {
   const base = MEDIODIA - 80 * HORA;
   const s = sesion({ botAt: MEDIODIA - 20 * HORA, seguimiento: { base, enviados: [base + 1, base + 2, base + 3] } });
   assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).motivo, "ya van los 3");
+});
+prueba("un día antes de que venza la cotización: «vence mañana», aunque ya salieron los 3", () => {
+  const base = MEDIODIA - 140 * HORA;
+  const s = sesion({
+    // revisadoPagoAt: la revisión de la liga (cada 15 min) ya se hizo en este tick.
+    botAt: MEDIODIA - 70 * HORA, seguimiento: { base, enviados: [base + 1, base + 2, base + 3], revisadoPagoAt: MEDIODIA },
+    ficha: { recorridos: [{ slug: "expedicion-tamul", fecha: "2026-12-19" }], folioVigente: "COT-1", fechasDichas: [] },
+    venceCotizacion: { folio: "COT-1", venceEl: "2026-11-18" },
+  });
+  assert.deepEqual(decidirSeguimiento(s, { ahora: MEDIODIA }), { accion: "vence_manana", folio: "COT-1", venceEl: "2026-11-18" });
+  s.seguimiento.venceAvisado = "COT-1";
+  assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).accion, "nada", "solo una vez por folio");
+  const otroDia = sesion({ ficha: s.ficha, venceCotizacion: { folio: "COT-1", venceEl: "2026-11-20" } });
+  assert.notEqual(decidirSeguimiento(otroDia, { ahora: MEDIODIA }).accion, "vence_manana", "faltan 3 días: todavía no");
+});
+prueba("el de los 3 días ya no se despide (la cotización sigue viva)", () => {
+  const n = seguimiento.notaParaElModelo(3, sesion());
+  assert.ok(!/último recordatorio/i.test(n));
+  assert.match(seguimiento.notaVenceManana(sesion(), { folio: "COT-1", venceEl: "2026-11-18" }), /vence MAÑANA/);
+});
+prueba("post-viaje en singular para quien viajó solo", () => {
+  const solo = seguimiento.textoPostViaje({ locale: "es", nombre: "Ana", ficha: { recorridos: [{ nombre: "Expedición Tamul", adultos: 1 }] } });
+  assert.match(solo, /¿Cómo te fue/);
+  const dos = seguimiento.textoPostViaje({ locale: "es", nombre: "Ana", ficha: { recorridos: [{ nombre: "Expedición Tamul", adultos: 2 }] } });
+  assert.match(dos, /¿Cómo les fue/);
 });
 prueba("con el bot apagado varios días, sale UNO (el más reciente) y cuenta los brincados", () => {
   const s = sesion({ botAt: MEDIODIA - 80 * HORA });

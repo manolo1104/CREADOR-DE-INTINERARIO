@@ -600,6 +600,9 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
 
   function vistaReserva(r) {
     const pctPagado = r.totalAmount ? Math.round((r.pagado / r.totalAmount) * 100) : 0;
+    // Como el sitio: la reserva trae las ligas por persona de su cotización.
+    const cot = r.origen ? cotizaciones.get(r.origen) : null;
+    const partes = cot && Array.isArray(cot.partes) && cot.partes.length ? cot.partes : null;
     const cuando = r.esPaquete ? "al hacer check-in" : "antes de iniciar el tour, en efectivo o transferencia";
     return {
       tipo: "reserva", folio: r.folio, tourName: r.tourName, tourSlug: r.tourSlug, tourDate: r.tourDate,
@@ -609,6 +612,7 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
         ? `Pagado: ${mx(r.pagado)} MXN · Falta: ${mx(r.saldo)} MXN, se paga ${cuando}.`
         : `Pagado completo: ${mx(r.pagado)} MXN.`,
       customerName: r.customerName, customerPhone: r.telefono, createdAt: new Date(r.creadaAt).toISOString(),
+      ...(partes ? { partes } : {}),
     };
   }
 
@@ -749,8 +753,11 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       });
       if (r.saldo <= 0) return sinDinero(`${f} ya está liquidada: no registré nada.`);
       if (monto === null) return sinDinero(`${f} ya tiene pago: dime el monto que entró.`);
-      const repetido = r.cobros.find((c) => c.monto === Math.round(monto) && ahora() - c.at < COBRO_REPETIDO_MS);
-      if (repetido) return sinDinero(`Ya registré un pago igual de ${mx(monto)} en ${f} hace menos de 15 min: si fue otro, regístralo en el panel.`);
+      // Como el sitio desde el 17 nov: solo cuenta un cobro igual del MISMO
+      // método (la liga de una persona y la transferencia de otra no son el
+      // mismo pago), y «forzar» lo registra de todos modos.
+      const repetido = !forzar && r.cobros.find((c) => c.monto === Math.round(monto) && c.metodo === m && ahora() - c.at < COBRO_REPETIDO_MS);
+      if (repetido) return sinDinero(`Ya se había registrado un pago de ${mx(monto)} en ${f} hace unos minutos: no se duplicó. Si de verdad entró OTRO pago igual, repite con «forzar» al final.`);
       const pago = Math.min(Math.round(monto), r.saldo);
       r.cobros.push({ monto: pago, metodo: m, at: ahora() });
       r.pagado += pago;

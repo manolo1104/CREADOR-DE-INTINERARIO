@@ -21,7 +21,7 @@ import { getToursFaqs } from "../lib/faqTours";
 import { queLlevarDe } from "../lib/tourRequisitos";
 import { ANTICIPO_PCT } from "../lib/carrito";
 import { CONFIRMA_SALIDA_DIAS } from "../lib/tourBooking";
-import { POLITICAS_BOT } from "../lib/bot/politicas";
+import { POLITICAS_BOT, TOURS_MISMO_DIA } from "../lib/bot/politicas";
 // 🔴 `FAQS_PAQUETES_ES`, no el `FAQS_PAQUETES` pelado del catálogo: la respuesta
 // de «¿el precio es por persona o por pareja?» sigue diciendo allí «son por
 // pareja (2 personas)». Camila lee estas FAQ tal cual, así que con la del
@@ -441,6 +441,8 @@ const empresa = {
   // Días antes del tour en que se le confirma (o se le cancela con reembolso)
   // la salida a quien va bajo el mínimo. El bot lo lee de aquí, no lo escribe.
   confirmaSalidaDias: CONFIRMA_SALIDA_DIAS,
+  // Los únicos tours que se agendan para el mismo día (Manolo, 17 nov 2026).
+  toursMismoDia: [...TOURS_MISMO_DIA],
   sitio: "https://www.huasteca-potosina.com",
   zona: "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
   // La regla y TODAS sus excepciones, armadas del catálogo. 🔴 Estaba escrita a

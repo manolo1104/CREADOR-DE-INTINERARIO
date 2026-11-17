@@ -759,25 +759,31 @@ async function simularTiempo(que) {
     emitir({ tipo: "aviso", texto: "🕘 Al día siguiente del tour, 10 am:" });
     return emitir({ tipo: "bot", texto, pie: "post-viaje: mensaje fijo, sin modelo" });
   }
+  const vence = que === "vence";
+  const vc = s.venceCotizacion;
+  if (vence && !vc) return emitir({ tipo: "aviso", texto: "Todavía no hay cotización: el aviso «vence mañana» sale el día 6 de una cotización sin pagar." });
   const agendado = que === "agendado";
   const ag = s.seguimiento && s.seguimiento.agendado;
   if (agendado && !ag) return emitir({ tipo: "aviso", texto: "No hay hora acordada: sale cuando el bot le propone «¿te escribo mañana a las 6?» y el cliente acepta." });
   const paso = { "3h": 1, "24h": 2, "72h": 3 }[que] || 1;
-  emitir({ tipo: "aviso", texto: agendado ? `🕘 Llegó la hora acordada${ag && ag.at ? ` (${new Date(ag.at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", weekday: "long", hour: "numeric", minute: "2-digit" })})` : ""}:` : `🕘 ${paso === 1 ? "Pasaron 3 horas" : paso === 2 ? "Pasó un día" : "Pasaron 3 días"} sin que el cliente contestara:` });
+  emitir({ tipo: "aviso", texto: vence ? `🕘 Un día antes de que venza ${vc.folio} (vence el ${vc.venceEl}):` : agendado ? `🕘 Llegó la hora acordada${ag && ag.at ? ` (${new Date(ag.at).toLocaleString("es-MX", { timeZone: "America/Mexico_City", weekday: "long", hour: "numeric", minute: "2-digit" })})` : ""}:` : `🕘 ${paso === 1 ? "Pasaron 3 horas" : paso === 2 ? "Pasó un día" : "Pasaron 3 días"} sin que el cliente contestara:` });
   emitir({ tipo: "escribiendo" });
   costo.turno = 0;
   costo.llamadasTurno = 0;
   let respuesta = null;
   try {
-    respuesta = await processMessage(CHAT, seguimiento.notaParaElModelo(agendado ? 1 : paso, s, { agendado }));
+    respuesta = await processMessage(CHAT, vence
+      ? seguimiento.notaVenceManana(s, vc)
+      : seguimiento.notaParaElModelo(agendado ? 1 : paso, s, { agendado }));
     await mostrarAdjuntos(adjuntos.tomar(CHAT));
-    if (respuesta) emitir({ tipo: "bot", texto: respuesta, pie: agendado ? "seguimiento acordado" : `seguimiento #${paso}`, costo: costo.llamadasTurno ? textoCostoTurno() : "", platica: textoPlatica() });
+    if (respuesta) emitir({ tipo: "bot", texto: respuesta, pie: vence ? "aviso «vence mañana»" : agendado ? "seguimiento acordado" : `seguimiento #${paso}`, costo: costo.llamadasTurno ? textoCostoTurno() : "", platica: textoPlatica() });
   } catch (e) {
     emitir({ tipo: "error", texto: e.message });
   } finally {
     adjuntos.tomar(CHAT);
     s.seguimiento = s.seguimiento || {};
     if (agendado) s.seguimiento.agendado = null;
+    else if (vence) s.seguimiento.venceAvisado = vc.folio;
     else s.seguimiento.enviados = [...(s.seguimiento.enviados || []), Date.now()];
     emitir({ tipo: "estado", ...estadoSimulador() });
   }
@@ -817,10 +823,20 @@ async function avisarPagoConLiga(s, d) {
   if (partes.length && pagadas < (partes[0].de || partes.length)) {
     if (pagadas <= (seg.partesAvisadas || 0)) return;
     seg.partesAvisadas = pagadas;
+    // La cotización ya es la reserva: el comprobante de quien pague su parte
+    // por transferencia se liga a ella (🔴 antes el bot le pedía el folio), y
+    // /confirma avisa si queda viva la liga de esa parte.
+    seg.ligaPartes = { cot: d.folio, reserva };
+    s.lastFolio = reserva;
     const de = partes[0].de || partes.length;
+    // Con los nombres de las ligas (enviar_link_pago con `nombres`): quién ya pagó y quién falta.
+    const nl = s.nombresLigas && s.nombresLigas.folio === d.folio && Array.isArray(s.nombresLigas.nombres) ? s.nombresLigas.nombres : [];
+    const quien = (p) => nl[(Number(p.parte) || 0) - 1] || null;
+    const ya = partes.filter((p) => p && p.pagada).map(quien).filter(Boolean);
+    const faltan = partes.filter((p) => p && !p.pagada).map(quien).filter(Boolean);
     const texto = en
-      ? `✅ We received ${pagadas} of ${de} payments for ${reserva}. ${de - pagadas === 1 ? "One more to go" : `${de - pagadas} more to go`} — once they're in, I'll send your confirmation. 🌿`
-      : `✅ Recibimos ${pagadas} de ${de} pagos de ${reserva}. ${de - pagadas === 1 ? "Falta uno" : `Faltan ${de - pagadas}`}; en cuanto entren te mando tu confirmación. 🌿`;
+      ? `✅ We received ${ya.length ? `${ya.join(" and ")}'s payment (${pagadas} of ${de})` : `${pagadas} of ${de} payments`} for ${reserva}. ${faltan.length ? `${faltan.join(" and ")} still ${faltan.length === 1 ? "has" : "have"} to pay` : de - pagadas === 1 ? "One more to go" : `${de - pagadas} more to go`} — once it's in, I'll send your confirmation. 🌿`
+      : `✅ Recibimos ${ya.length ? `el pago de ${ya.join(" y ")} (${pagadas} de ${de})` : `${pagadas} de ${de} pagos`} de ${reserva}. ${faltan.length ? `Falta el de ${faltan.join(" y ")}` : de - pagadas === 1 ? "Falta uno" : `Faltan ${de - pagadas}`}: con liga o con transferencia (mándame el comprobante); en cuanto entre te mando tu confirmación. 🌿`;
     pushHistory(CHAT, "assistant", texto);
     return emitir({ tipo: "bot", texto, pie: "pago parcial con liga: sin modelo" });
   }
@@ -831,15 +847,18 @@ async function avisarPagoConLiga(s, d) {
   if (Number.isFinite(Number(b.saldo))) s.saldoPendiente = Math.max(0, Math.round(Number(b.saldo)));
   const pagado = Number(b.pagado) > 0 ? medios.mx(b.pagado) : null;
   const saldo = Number(b.saldo) > 0 ? medios.mx(b.saldo) : null;
+  const llevar = textos.queLlevarDeSesion(s);
   const texto = (en
     ? [
         `✅ *We received your card payment!* Your booking *${reserva}* is confirmed.`,
         pagado ? `💰 Paid: ${pagado}${saldo ? ` · Balance: ${saldo}, paid before the tour starts` : " · Fully paid"}` : null,
+        llevar.length ? `🎒 *What to bring:* ${llevar.join(", ")}` : null,
         "Here's your confirmation in PDF. Where are you staying? That way your guide can pick you up. 🌿",
       ]
     : [
         `✅ *¡Recibimos tu pago con tarjeta!* Tu reserva *${reserva}* está confirmada.`,
         pagado ? `💰 Pagado: ${pagado}${saldo ? ` · Saldo: ${saldo}, se paga antes de iniciar el tour` : " · Liquidado"}` : null,
+        llevar.length ? `🎒 *Qué llevar:* ${llevar.join(", ")}` : null,
         "Te mando tu confirmación en PDF. ¿En qué hotel o lugar se hospedan? Así el guía pasa por ustedes. 🌿",
       ]).filter(Boolean).join("\n");
   await mostrarAdjuntos([{ tipo: "pdf", folio: reserva, nombre: adjuntos.nombrePdf(reserva, en ? "en" : "es") }]);
@@ -889,11 +908,15 @@ async function confirmar(textoComando) {
   else if (comprobante && b.comprobanteGuardado === false) nota = `⚠️ El comprobante NO quedó en el panel (${comprobante.filename}): súbelo a mano.`;
   const s = getSession(CHAT);
   const locale = b.locale === "en" || b.locale === "es" ? b.locale : medios.idiomaDeSesion(s);
-  const mensaje = b.yaConfirmada ? textos.textoPagoRegistrado(b, locale) : textos.textoConfirmacionCliente(b, locale);
+  // Como index.js: el pago que completa una liga por persona lleva la confirmación completa.
+  const lp = s.seguimiento && s.seguimiento.ligaPartes;
+  const completaPartes = Boolean(lp && lp.reserva === (b.reservaFolio || p.folio) && Number(b.cobroRegistrado) > 0);
+  const confirmacionCompleta = !b.yaConfirmada || completaPartes;
+  const mensaje = confirmacionCompleta ? textos.textoConfirmacionCliente(b, locale) : textos.textoPagoRegistrado(b, locale);
 
   // Lo que recibe el cliente, y lo que queda en su historial (igual que index.js):
   // la confirmación en PDF y el mensaje.
-  if (b.reservaFolio && !b.yaConfirmada) await mostrarAdjuntos([{ tipo: "pdf", folio: b.reservaFolio, nombre: adjuntos.nombrePdf(b.reservaFolio, locale) }]);
+  if (b.reservaFolio && confirmacionCompleta) await mostrarAdjuntos([{ tipo: "pdf", folio: b.reservaFolio, nombre: adjuntos.nombrePdf(b.reservaFolio, locale) }]);
   emitir({ tipo: "bot", texto: mensaje, pie: "confirmación de /confirma" });
   if (b.reservaFolio) s.lastFolio = b.reservaFolio;
   if (Number.isFinite(Number(b.saldo))) s.saldoPendiente = Math.max(0, Math.round(Number(b.saldo)));
@@ -901,6 +924,15 @@ async function confirmar(textoComando) {
     `[sistema] El equipo validó el pago de ${p.folio}${b.reservaFolio && b.reservaFolio !== p.folio ? ` (reserva ${b.reservaFolio})` : ""}: pagado ${medios.mx(b.pagado)}, saldo ${medios.mx(b.saldo)}. Ya se le mandó la confirmación.` +
     (b.pideHospedaje ? ` Se le preguntó en qué hotel se hospeda: cuando lo diga, llama escalar_a_humano (recogida, avisar, normal) con el hotel y el folio ${b.reservaFolio || p.folio}.` : ""));
   pushHistory(CHAT, "assistant", mensaje);
+
+  // Como index.js: la liga por persona que nadie pagó sigue viva.
+  let ligasVivas = "";
+  if (completaPartes) {
+    const rc = await api.consultarReserva(lp.cot).catch(() => null);
+    const vivas = rc && rc.ok && rc.data && Array.isArray(rc.data.partes) ? rc.data.partes.filter((x) => x && !x.pagada) : [];
+    if (vivas.length) ligasVivas = `⚠️ Sigue${vivas.length === 1 ? "" : "n"} viva${vivas.length === 1 ? "" : "s"} ${vivas.length === 1 ? "la liga" : `${vivas.length} ligas`} por persona de ${lp.cot} (${vivas.map((x) => medios.mx(x.monto)).join(", ")}): desactíva${vivas.length === 1 ? "la" : "las"} en el panel para que nadie pague dos veces.`;
+    s.seguimiento.ligaPartes = null;
+  }
 
   return alDueno([
     b.yaConfirmada
@@ -910,8 +942,9 @@ async function confirmar(textoComando) {
     nota,
     ...(b.emailEnviado === true ? ["📧 Correo de confirmación enviado."] : []),
     ...(Array.isArray(b.avisos) ? b.avisos.filter(Boolean).map((a) => `⚠️ ${a}`) : []),
+    ligasVivas,
     `📨 Mensaje enviado a ${b.customerName || NOMBRE_CLIENTE}.`,
-  ].join("\n"));
+  ].filter(Boolean).join("\n"));
 }
 
 // ── Servidor ──────────────────────────────────────────────────

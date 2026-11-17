@@ -16,7 +16,7 @@
  *
  * 🔴 Ninguna cifra que el sitio ya calcula se escribe a mano: el anticipo sale
  * de `ANTICIPO_PCT` (el que cobra el servidor), los mínimos de `groupMin`, los
- * traslados de `TRASLADOS` y quién acepta viajero solo de `aceptaViajeroSolo`.
+ * traslados de `TRASLADOS`.
  * Lo que NO está confirmado no se escribe: el recargo de la liga de pago, si el
  * RZR cruza ríos, una tabla de descuentos de grupo. Ahí el bot dice «te lo
  * confirmo» y avisa al equipo.
@@ -27,7 +27,6 @@
  * `data.json` y se vuelve a desplegar el bot.
  */
 import { TOURS_DB, partesRecogida, recogidaDeTour, cargoVallesDe, type Tour } from "@/lib/tours";
-import { aceptaViajeroSolo, CONFIRMA_SALIDA_DIAS } from "@/lib/tourBooking";
 import { enAuto } from "@/lib/tiemposDeViaje";
 import { TRASLADOS } from "@/lib/traslados";
 import { ANTICIPO_PCT } from "@/lib/carrito";
@@ -64,8 +63,12 @@ const minimo = (slug: string) => tour(slug)?.groupMin ?? 0;
  */
 const MINIMOS_ALTOS = TOURS_DB.filter((t) => t.groupMin > 2).map((t) => `${t.nombreCorto}, desde ${t.groupMin} personas`);
 
-/** Los tours donde un viajero solo puede unirse a la salida compartida. */
-const CON_VIAJERO_SOLO = TOURS_DB.filter(aceptaViajeroSolo).map((t) => t.nombreCorto);
+/**
+ * Los únicos tours que el bot agenda para el MISMO día (Manolo, 17 nov 2026):
+ * el RZR, la Travesía del Café y la Gruta de Xilo. Los demás, desde mañana.
+ */
+export const TOURS_MISMO_DIA = ["rzr-xilitla", "travesia-del-cafe", "gruta-de-xilo"] as const;
+const NOMBRES_MISMO_DIA = TOURS_MISMO_DIA.map((s) => tour(s)?.nombreCorto ?? s);
 
 /** El cupo más grande de una salida normal. */
 const GRUPO_MAX = Math.max(...TOURS_DB.map((t) => t.groupMax));
@@ -207,7 +210,9 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Tours para mañana o para hoy",
     texto:
       "Para MAÑANA sí se cotiza, pero el anticipo tiene que quedar pagado antes de las 10:00 pm de hoy, para organizar la logística de la mañana; el equipo confirma que haya salida armada para esa fecha y zona. " +
-      "Para HOY no lo confirmes tú: di que el equipo lo revisa y te responde, y ofrece la fecha de mañana como opción.",
+      `Para HOY (el mismo día) NO se agendan tours, salvo ${listaY(NOMBRES_MISMO_DIA)}. ` +
+      `Si piden otro tour para hoy, dilo claro y ofrece mañana u otra fecha, o uno de esos ${NOMBRES_MISMO_DIA.length}. ` +
+      "Si es uno de esos, se cotiza para hoy y el equipo confirma lugar y hora: avísale al equipo y nunca digas que ya quedó.",
     claves: ["mañana", "para mañana", "hoy", "para hoy", "mismo día", "última hora", "urgente", "ahorita", "tomorrow", "today", "tonight"],
   },
   {
@@ -254,13 +259,13 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Mínimos de personas y viajero solo",
     texto:
       `Cada tour tiene mínimo y máximo de personas (\`groupMin\` y \`groupMax\` de su ficha). ` +
-      // 🔴 8 oct 2026: cambió la regla. Antes, quien iba bajo el mínimo pagaba
-      // el precio de dos personas menos $2; ahora paga TARIFA NORMAL y lo que
-      // protege el margen es que la salida no corre si no se llena.
-      `Quien va BAJO el mínimo sí puede reservar en línea: paga la tarifa normal por persona y se le suma a una salida compartida. ` +
-      `Se le confirma ${CONFIRMA_SALIDA_DIAS} días antes de la fecha y, si no se junta el grupo, se le devuelve el 100 %. ` +
-      (MINIMOS_ALTOS.length ? `Los de mínimo alto, dilo al vender: ${listaY(MINIMOS_ALTOS)}. ` : "") +
-      "NUNCA le prometas que la salida ya está armada: eso lo confirma el equipo.",
+      // 🔴 17 nov 2026, Manolo: por WhatsApp el mínimo SÍ es mínimo. Desde el
+      // 8 oct se vendía bajo el mínimo (tarifa normal, salida compartida y
+      // reembolso si no se juntaba); el bot le aceptó 3 al rafting, que pide 5.
+      "Por WhatsApp el mínimo SÍ es mínimo: con menos personas NO se cotiza ni se reserva. " +
+      (MINIMOS_ALTOS.length ? `Dilo al vender, sobre todo en los de mínimo alto: ${listaY(MINIMOS_ALTOS)}. ` : "") +
+      "Si no les alcanza, ofrece una alternativa: otro tour cuyo mínimo sí cumplan, que completen el grupo, o el tour privado si su ficha lo permite (lo cotiza el equipo). " +
+      "Una excepción al mínimo no la decides tú: la decide el equipo.",
     claves: ["mínimo", "mínimo de personas", "solo", "sola", "viajo solo", "una persona", "1 persona", "me puedo unir", "unirme", "grupo armado", "solo traveler", "alone", "minimum"],
   },
   {
@@ -357,7 +362,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Rafting en el Río Tampaón",
     texto:
       "Incluye una comida, que el cliente elige tomar antes o después del descenso (no lleva el desayuno buffet de los otros tours). " +
-      `Se firma una responsiva. Sale con mínimo de ${minimo("rafting-rio-tampaon")} personas: dilo al vender; si no se junta el grupo, el equipo ofrece otra actividad o la devolución. ` +
+      `Se firma una responsiva. Sale con mínimo de ${minimo("rafting-rio-tampaon")} personas: dilo al vender; con menos NO se cotiza (ofrece otra actividad o que completen el grupo). ` +
       "Depende del nivel del río: en lluvias la salida se confirma según el río ese día; si no es seguro, se reprograma o se propone una alternativa. " +
       "No hace falta saber nadar: se va con chaleco y casco, y el guía va dentro de la balsa. La edad mínima está en su ficha.",
     claves: ["rafting", "balsa", "rápidos", "tampaón", "descenso en río", "comida rafting", "whitewater"],

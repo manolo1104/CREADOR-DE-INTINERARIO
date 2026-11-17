@@ -51,6 +51,35 @@ const CONFIANZA_TEXTO = [
   "Somos solo Huasteca Potosina Tours: no menciones, expliques ni compares otros nombres de marca. Si el cliente pregunta por otro nombre, contesta «Somos Huasteca Potosina Tours» y sigue con su viaje.",
 ].filter(Boolean).join("\n");
 
+// ── Mínimo de personas y «mismo día» (Manolo, 17 nov 2026) ─────────
+// Por WhatsApp el mínimo de cada tour SÍ es mínimo (el bot le aceptó 3 al
+// rafting, que pide 5; desde el 8 oct se vendía bajo el mínimo con salida
+// compartida). Y para el mismo día solo se agendan el RZR, la Travesía del
+// Café y la Gruta de Xilo. La lista sale de data.json (politicas.ts del sitio).
+const TOURS_MISMO_DIA = new Set(
+  Array.isArray(EMPRESA_DATA.toursMismoDia) && EMPRESA_DATA.toursMismoDia.length
+    ? EMPRESA_DATA.toursMismoDia
+    : ["rzr-xilitla", "travesia-del-cafe", "gruta-de-xilo"],
+);
+function nombresMismoDia() {
+  const n = [...TOURS_MISMO_DIA].map((slug) => { const t = findTour(slug); return t ? t.nombre.split("—")[0].trim() : slug; });
+  return n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0] || "";
+}
+
+/** Por qué NO se cotiza este tour así (mínimo o mismo día), o null si sí. */
+function frenoDeTour(t, { fecha, personas } = {}) {
+  if (!t) return null;
+  const f = fechaISO(fecha);
+  if (f && f === hoyMX() && !TOURS_MISMO_DIA.has(t.slug)) {
+    return `${t.nombre.split("—")[0].trim()} no se agenda para el mismo día: los tours se reservan desde mañana, salvo ${nombresMismoDia()}. Dilo claro y ofrece mañana u otra fecha, o uno de esos para hoy. No escales: es la regla.`;
+  }
+  const tarifaDeGrupo = Array.isArray(t.tarifaGrupo) && t.tarifaGrupo.length;
+  if (!esPorVehiculo(t) && !tarifaDeGrupo && typeof t.groupMin === "number" && personas > 0 && personas < t.groupMin) {
+    return `${t.nombre.split("—")[0].trim()} sale con mínimo ${t.groupMin} personas y son ${personas}: con menos NO se cotiza ni se reserva. Dilo claro de una vez y ofrece una alternativa: otro tour cuyo mínimo sí cumplan, que completen el grupo${t.privateAvailable ? ", o el tour privado (lo cotiza el equipo)" : ""}. Si piden una excepción al mínimo, escala (salud, avisar, normal).`;
+  }
+  return null;
+}
+
 const CALIFICACION_GOOGLE =
   typeof EMPRESA_DATA.rating === "number" && typeof EMPRESA_DATA.resenas === "number"
     ? `${EMPRESA_DATA.rating}★ con ${EMPRESA_DATA.resenas} reseñas en Google`
@@ -293,6 +322,17 @@ let observarHerramienta = null;
 function setToolObserver(fn) { observarHerramienta = fn; }
 
 // ── Limpieza de links (WhatsApp no debe llevar asteriscos/markdown pegados) ──
+/**
+ * Quita el tropiezo con el nombre: «Soy Tént... perdón, soy Tének» → «Soy
+ * Tének» (pruebas de Manolo, 17 nov). Solo toca ese patrón exacto.
+ */
+function sinAutocorreccion(text) {
+  return String(text || "").replace(
+    /\b(Soy|I'm|I am)\s+T[ée]n[\p{L}]*\s*(?:\.{2,}|…)\s*(?:perd[oó]n|digo|sorry|I mean)[,.:]?\s*(?:soy|I'm|I am)\s+(Tének)/giu,
+    (_, soy, nombre) => `${soy} ${nombre}`,
+  );
+}
+
 function sanitizeLinks(text) {
   if (!text) return text;
   let t = text;
@@ -882,7 +922,8 @@ function validarFecha(fecha, { ahora = Date.now(), locale = "es" } = {}) {
   if (f === hoy) {
     return {
       valida: false, motivo: "hoy", escalar: true, hoy,
-      instruccion: "Es para HOY: no lo confirmes tú. Llama escalar_a_humano (para_hoy, pasar, urgente), dile que el equipo lo revisa y ofrécele mañana.",
+      seAgendanHoy: nombresMismoDia(),
+      instruccion: `Es para HOY. Para el mismo día solo se agendan ${nombresMismoDia()}; los demás tours, desde mañana. Si pidió otro tour: dilo claro y ofrécele mañana u otra fecha, o uno de esos para hoy (sin escalar). Si es uno de esos: cotízalo para hoy y llama escalar_a_humano (para_hoy, avisar, urgente) para que el equipo confirme lugar y hora; nunca digas que ya quedó.`,
     };
   }
   const diasFaltan = Math.round((dt.getTime() - Date.parse(`${hoy}T00:00:00Z`)) / 86400000);
@@ -1059,7 +1100,7 @@ const tools = [
   },
   {
     name: "calcular_precio",
-    description: "Precio EXACTO de un tour por persona (o por grupo, el Edén), el mismo de la cotización: promo según la FECHA del tour, grupos bajo el mínimo (tarifa normal, salida por confirmar) y niños (6–10 años 70 %, menores de 6 50 %). Devuelve total, anticipo (30 %) y saldo. No sirve para el RZR: cotizar_rzr.",
+    description: "Precio EXACTO de un tour por persona (o por grupo, el Edén), el mismo de la cotización: promo según la FECHA del tour y niños (6–10 años 70 %, menores de 6 50 %). Devuelve total, anticipo (30 %) y saldo. No sirve para el RZR: cotizar_rzr.",
     input_schema: {
       type: "object",
       properties: {
@@ -1194,6 +1235,7 @@ const tools = [
       properties: {
         folio: { type: "string", description: "Folio COT-… (si no lo pasas, el vigente)" },
         partes: { type: "number", description: "Entre cuántas personas se reparte (2 a 12). Omítelo para una sola liga." },
+        nombres: { type: "array", items: { type: "string" }, description: "Con `partes`: el nombre de quién paga cada liga, en orden (si el cliente los dijo). Cada liga sale con su nombre." },
         base: { type: "string", enum: ["anticipo", "total"], description: "Qué se reparte: el anticipo (por omisión) o el total si quieren pagar todo" },
       },
       required: [],
@@ -1388,7 +1430,9 @@ async function ejecutarHerramienta(name, input, phone) {
         url: urlEnIdioma(t.url, idiomaDe(phone)),
         minPersonas: t.groupMin, maxPersonas: t.groupMax,
         soloAdultos: t.soloAdultos,
-        ...(aceptaViajeroSolo(t) ? { seVendeBajoElMinimo: `sí: tarifa normal, salida por confirmar ${CONFIRMA_SALIDA_DIAS} días antes` } : {}),
+        // Por WhatsApp el mínimo es mínimo (17 nov 2026) y solo 3 tours van el mismo día.
+        minimoEstricto: !esPorVehiculo(t) && !(Array.isArray(t.tarifaGrupo) && t.tarifaGrupo.length),
+        seAgendaElMismoDia: TOURS_MISMO_DIA.has(t.slug),
         // 🔴 Leía `privateMinPrice`, que data.json nunca trajo: el bot ofrecía
         // el privado sin precio. Es el precio normal + este extra por persona.
         privadoDisponible: Boolean(t.privateAvailable),
@@ -1475,13 +1519,14 @@ async function ejecutarHerramienta(name, input, phone) {
       const mid = entero(input.ninosMid);
       const small = entero(input.ninosSmall);
       const totalPersonas = adultos + mid + small;
-      // Un grupo bajo el mínimo SÍ se vende en los tours por persona, a tarifa
-      // normal y con la salida por confirmar (Manolo, 8 oct 2026; antes solo
-      // una persona, al precio de dos menos $2). El Edén y el RZR siguen con
-      // su mínimo.
-      const bajoMinimo = vaBajoElMinimo(t, totalPersonas);
+      // Por WhatsApp el mínimo SÍ es mínimo (Manolo, 17 nov 2026; del 8 oct
+      // al 17 nov se vendía bajo el mínimo con salida compartida). Tampoco se
+      // cotiza para hoy, salvo los tours del mismo día.
+      const bajoMinimo = false;
       if (totalPersonas < 1) return { error: "Dime cuántas personas van." };
-      if (totalPersonas < t.groupMin && !bajoMinimo) {
+      const freno = frenoDeTour(t, { fecha: input.tourDate, personas: totalPersonas });
+      if (freno) return { error: freno };
+      if (totalPersonas < t.groupMin) {
         return { error: `Este tour requiere mínimo ${t.groupMin} personas. Dilo de una vez y ofrece una alternativa; si piden una excepción al mínimo, escala (salud, avisar, normal).` };
       }
       if (t.soloAdultos && (mid > 0 || small > 0)) {
@@ -1590,6 +1635,8 @@ async function ejecutarHerramienta(name, input, phone) {
       if (esPorVehiculo(t)) {
         return { error: "El RZR se cobra por vehículo: da el precio con cotizar_rzr y cotízalo con registrar_cotizacion (tipo 'rzr', con ruta, vehículo, unidades, fecha y hora)." };
       }
+      const frenoCot = frenoDeTour(t, { fecha: input.tourDate, personas: entero(input.adultos) + entero(input.ninosMid) + entero(input.ninosSmall) });
+      if (frenoCot) return { error: frenoCot };
       const nombre = textoLimpio(input.nombre, 120);
       const correo = textoLimpio(input.email, 160);
       const aparteAuto = vaAparteDelPaquete(sesionDe(phone).ficha);
@@ -1606,6 +1653,14 @@ async function ejecutarHerramienta(name, input, phone) {
         ...chat,
       });
       if (!res.ok) return errorDeCotizacion(res, "No se pudo crear la cotización.", phone);
+      // Para HOY (solo los tours del mismo día): el equipo confirma lugar y
+      // hora, así que se le avisa aunque el modelo no lo pida.
+      if (fechaISO(input.tourDate) === hoyMX()) {
+        escalarAHumano({
+          motivo: "para_hoy", modo: "avisar", urgencia: "urgente", folio: res.data && res.data.folio,
+          resumen: `Cotización para HOY: ${t.nombre.split("—")[0].trim()}, ${entero(input.adultos) + entero(input.ninosMid) + entero(input.ninosSmall)} persona(s). Confirmar lugar y hora.`,
+        }, phone);
+      }
       // { folio, total, anticipo, saldo, venceEl, resumenWhatsApp, reemplazo?, … }
       return resultadoDeCotizacion(phone, res.data, {
         tarjetaEnLinea: true, nombre, correo, zona: chat.zonaHospedaje, reemplazaA: chat.reemplazaA,
@@ -1625,6 +1680,12 @@ async function ejecutarHerramienta(name, input, phone) {
       if (!items.length) return { error: "Necesito al menos un recorrido con su fecha." };
       if (!input.customerEmail) {
         return { error: "Sin correo no puedo mandar la propuesta. Pídeselo al cliente antes de llamar esta herramienta." };
+      }
+      // Mínimo y mismo día, recorrido por recorrido (17 nov 2026).
+      for (const i of items) {
+        const ti = findTour(i.slug);
+        const f = frenoDeTour(ti, { fecha: i.tourDate, personas: entero(i.adultos) + entero(i.ninosMid) + entero(i.ninosSmall) });
+        if (f) return { error: f };
       }
       // La hora solo cuenta en el RZR (por vehículo), y ahí tiene que estar en rango.
       const horas = items.map((i) => (esPorVehiculo(findTour(i.slug)) ? horaDelRZR(i.hora) : { hora: undefined }));
@@ -1781,7 +1842,11 @@ async function ejecutarHerramienta(name, input, phone) {
         if (!r.ok) {
           return { error: r.data.error || "No se pudieron crear las ligas por persona.", instruccion: "Dile que el equipo le manda las ligas en un momento y llama escalar_a_humano (otro, avisar, hoy)." };
         }
-        const ligas = Array.isArray(r.data.ligas) ? r.data.ligas : [];
+        // Cada liga con el nombre de quien la paga, si el cliente los dijo
+        // (pruebas de Manolo, 17 nov: «las ligas no llevan el nombre de cada quien»).
+        const nombres = (Array.isArray(input.nombres) ? input.nombres : []).map((n) => textoLimpio(n, 40));
+        const ligas = (Array.isArray(r.data.ligas) ? r.data.ligas : []).map((l, i) => (nombres[i] ? { ...l, nombre: nombres[i] } : l));
+        if (nombres.some(Boolean)) session.nombresLigas = { folio, nombres: ligas.map((l) => l.nombre || null) };
         session.pagoMandadoAt = Date.now();
         return {
           folio,
@@ -2085,19 +2150,7 @@ async function ejecutarHerramienta(name, input, phone) {
 
     case "enviar_fotos": {
       const slugs = (Array.isArray(input.slugs) ? input.slugs : [input.slugs]).filter(Boolean).slice(0, 3);
-      const session = sesionDe(phone);
-      const yaMandadas = new Set(Array.isArray(session.fotosEnviadas) ? session.fotosEnviadas : []);
-      const salen = [];
-      for (const slug of slugs) {
-        const t = findTour(slug);
-        if (!t || !t.foto || yaMandadas.has(t.slug)) continue;
-        const nombre = String(t.nombre || "").split("—")[0].trim();
-        if (adjuntos.encolar(phone, { tipo: "foto", url: t.foto, caption: nombre })) {
-          salen.push(nombre);
-          yaMandadas.add(t.slug);
-        }
-      }
-      session.fotosEnviadas = [...yaMandadas].slice(-20);
+      const salen = slugs.map((slug) => fotoSiFalta(phone, findTour(slug))).filter(Boolean);
       return salen.length
         ? { ok: true, fotos: salen, nota: "Las fotos salen justo antes de tu mensaje: no digas «te mando fotos», ya van." }
         : { ok: false, nota: "No hay foto nueva que mandar (ya se mandó o el tour no tiene). Sigue con tu mensaje." };
@@ -2345,6 +2398,8 @@ function resultadoDeCotizacion(chatId, data, {
     const previaSigueViva = Boolean(previa) && previa !== folioNuevo && esFolioCotizacion(previa) &&
       (aparte || (seReemplazo && viejo !== previa));
     s.lastFolio = folioNuevo;
+    // Para el aviso «tu cotización vence mañana» (seguimiento.js, día 6).
+    if (d.venceEl) s.venceCotizacion = { folio: folioNuevo, venceEl: String(d.venceEl).slice(0, 10) };
     // Folio nuevo sin pagar: lo que deba se sabrá al confirmarse (index.js).
     s.saldoPendiente = null;
     if (nombre) s.nombre = nombre;
@@ -2493,6 +2548,24 @@ function anotarCotizacionEnFicha(chatId, d, {
 }
 
 /**
+ * La foto del tour, si en esta plática todavía no se mandó. La usan
+ * enviar_fotos y el precio de un tour: la propuesta sale con foto aunque el
+ * modelo olvide pedirla (pruebas de Manolo, 17 nov: el rafting salió sin foto).
+ * Devuelve el nombre corto si la encoló, o null.
+ */
+function fotoSiFalta(chatId, t) {
+  if (!chatId || !t || !t.foto) return null;
+  const session = sesionDe(chatId);
+  const yaMandadas = new Set(Array.isArray(session.fotosEnviadas) ? session.fotosEnviadas : []);
+  if (yaMandadas.has(t.slug)) return null;
+  const nombre = String(t.nombre || "").split("—")[0].trim();
+  if (!adjuntos.encolar(chatId, { tipo: "foto", url: t.foto, caption: nombre })) return null;
+  yaMandadas.add(t.slug);
+  session.fotosEnviadas = [...yaMandadas].slice(-20);
+  return nombre;
+}
+
+/**
  * Lo que entra y sale de las herramientas que no cotizan, a la ficha. Lo que
  * solo se CONSULTÓ va a lo «platicado», no al viaje: la fecha que dio, el tour
  * y las personas de un precio, los cuartos que vio. Lo que dice un folio sí es
@@ -2508,6 +2581,7 @@ function anotarEnFicha(name, input, r, chatId) {
     case "calcular_precio": {
       const t = findTour(input.slug);
       if (!t) return;
+      fotoSiFalta(chatId, t);
       actualizarFicha(chatId, {
         consultado: {
           slug: t.slug, nombre: t.nombre, fecha: r.fecha || fechaISO(input.tourDate),
@@ -2522,6 +2596,7 @@ function anotarEnFicha(name, input, r, chatId) {
     case "cotizar_rzr": {
       const t = TOURS.find((x) => esPorVehiculo(x)) || findTour("rzr-xilitla");
       if (!t) return;
+      fotoSiFalta(chatId, t);
       // La unidad solo cuenta si quedó elegida y cabe el grupo.
       const sel = r.seleccion && !r.seleccion.error ? r.seleccion : r.vehiculo ? r : null;
       const hora = normalizarHora(input.hora);
@@ -2728,12 +2803,12 @@ function fechaHoyTexto() {
 function buildSystemPrompt() {
   const hoy = fechaHoyTexto();
   const promoHasta = promoVigenteHasta();
-  return `Eres *Tének*, el asesor de viajes de *${EMPRESA.nombre}* (${EMPRESA.sitio}) por WhatsApp: turismo de aventura en la ${EMPRESA.zona}. 🌿
-En tu PRIMER mensaje de cada plática te presentas: "¡Hola! Soy Tének, de Huasteca Potosina Tours 🌿" (en inglés: "Hi! I'm Tének from Huasteca Potosina Tours 🌿") y en ese mismo mensaje contestas lo que preguntó y haces UNA pregunta. Después ya no repites tu nombre. Si alguien te pregunta en serio si eres un bot o una persona, dilo con naturalidad: eres el asistente del equipo y una persona del equipo está al pendiente de la plática.
+  return `Eres *Tének*, el asistente virtual (asesor de viajes) de *${EMPRESA.nombre}* (${EMPRESA.sitio}) por WhatsApp: turismo de aventura en la ${EMPRESA.zona}. 🌿
+En tu PRIMER mensaje de cada plática te presentas, diciendo CLARO que eres un asistente virtual y que puedes ayudar con toda la reserva: "¡Hola! Soy Tének, el asistente virtual de Huasteca Potosina Tours 🌿 Te ayudo con toda tu reserva: ideas, precios, cotización y pago." (en inglés: "Hi! I'm Tének, the virtual assistant of Huasteca Potosina Tours 🌿 I can help you with your whole booking: ideas, prices, quote and payment.") y en ese mismo mensaje contestas lo que preguntó y haces UNA pregunta. Escribe tu nombre bien y de corrido (Tének), sin corregirte. Después ya no repites tu nombre. Si te preguntan si eres un bot o una persona: sí, eres el asistente virtual; resuelves toda la reserva por aquí y una persona del equipo está al pendiente si hace falta.
 
 📅 HOY es *${hoy.f}* (${hoy.iso}), año *${hoy.anio}*. Con eso entiendes fechas relativas ("el próximo sábado", "el 16"). Valida SIEMPRE la fecha con *validar_fecha*: te da el día de la semana y te dice qué hacer si es para hoy o para mañana.
 
-Tu meta: que cada cliente que ya dio fecha y personas reciba su *cotización en PDF* en menos de 24 horas y reserve con el anticipo del 30 %. Con cotización reserva casi la mitad; sin ella, 1 de cada 20. Vendes como el mejor asesor del equipo: cálido, concreto y honesto. *Primero contestas lo que te preguntó; después avanzas UNA etapa.*
+Tu meta: que cada cliente que ya dio fecha y personas reciba su *cotización en PDF* en menos de 24 horas y reserve con el anticipo del 30 %. Con cotización reserva casi la mitad; sin ella, 1 de cada 20. Vendes como el mejor asesor del equipo: cálido, concreto y honesto. *Primero contestas lo que te preguntó; después avanzas UNA etapa.* Nunca vuelvas a preguntar algo que el cliente ya dijo (fechas, personas, nombres, cómo va a pagar cada quien): úsalo.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧷 6 REGLAS QUE MANDAN SOBRE TODO LO DEMÁS
@@ -2795,7 +2870,7 @@ Esto es WhatsApp, no un correo. Un mensaje largo hace que el cliente deje de lee
 Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por intercambio y termina cada mensaje con la pregunta que lleva a la siguiente.
 
 *1. BIENVENIDA.* Preséntate, contesta lo que preguntó y haz UNA pregunta. Según cómo llega el primer mensaje:
-  · Saludo corto ("Hola, buenas noches") → "¡Hola! Soy Tének, de Huasteca Potosina Tours 🌿 ¿Qué fechas tienen pensadas y cuántos son?"
+  · Saludo corto ("Hola, buenas noches") → "¡Hola! Soy Tének, el asistente virtual de Huasteca Potosina Tours 🌿 Te ayudo con toda tu reserva. ¿Qué fechas tienen pensadas y cuántos son?"
   · De la web con un tour o paquete («me interesa el tour "X" para N adultos…», «me interesa el paquete X») → confirma que sí lo tenemos (*obtener_tour* / *obtener_paquete*) y pide solo lo que falte (fecha, personas, edades). NO vuelvas a preguntar lo que ya trae.
   · Ya trae fecha y personas ("somos dos, queremos ir a Tamul el sábado") → salta a la propuesta (etapa 3) y en ese MISMO mensaje pide nombre y correo para cotizar.
   · Pregunta libre («¿en qué tour puedo incluir La Trinidad?») → contéstala en la primera línea (*obtener_destino*) y luego califica.
@@ -2816,7 +2891,8 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
 *9. DESPUÉS DEL VIAJE.* Ver «DESPUÉS DEL VIAJE».
 
 ❗ *Si te preguntan un precio, lo PRIMERO que sale de tu boca es el precio* por persona (de *obtener_tour* o *calcular_precio*) y enseguida pides lo que falte para el total. Jamás contestes solo "primero dime las fechas".
-👥 *CUPO — revísalo ANTES de proponer.* Cada tour tiene mínimo y máximo de personas (groupMin/groupMax). *Bajo el mínimo:* en los tours por persona SÍ se reserva con menos gente que el mínimo (una persona sola, o tres en el rafting que pide cinco): paga tarifa normal, lo sumamos a una salida compartida, el equipo le confirma la salida ${CONFIRMA_SALIDA_DIAS} días antes y, si no se junta el mínimo, se le devuelve el 100 %. Díselo ANTES de cotizar, sin prometer que la salida va segura ni dar plazos del reembolso. En el Edén y el RZR el mínimo sí es mínimo: si no llegan, dilo de una vez y ofrece una alternativa. *calcular_precio* ya marca cuál es cuál.
+👥 *CUPO — revísalo ANTES de proponer.* Cada tour tiene mínimo y máximo de personas (groupMin/groupMax). *El mínimo SÍ es mínimo:* con menos personas que el mínimo del tour NO se cotiza ni se reserva (el rafting pide 5: con 3 no va; la mayoría pide 2: una persona sola no los puede reservar). Dilo de una vez, sin rodeos, y ofrece una alternativa: otro tour cuyo mínimo sí cumplan (*obtener_tour* trae minPersonas), que completen el grupo, o el tour privado si la ficha lo permite (lo cotiza el equipo). Nunca ofrezcas «sumarlos a una salida compartida». Si piden una excepción, caso 10.
+📆 *MISMO DÍA:* para hoy solo se agendan ${nombresMismoDia()}. Cualquier otro tour, desde mañana: dilo claro y ofrece mañana u otra fecha, o uno de esos para hoy.
 *SI SE ENFRÍA:* regresa a la etapa donde se quedó con UNA pregunta. Si se quedó callado, el sistema te avisa cuándo escribirle (ver «SEGUIMIENTO»): nunca mandes dos mensajes seguidos por tu cuenta.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2837,9 +2913,9 @@ Formato: situación → motivo, modo, urgencia → qué haces.
 1. Pide una persona o una llamada ("llámame", "márcame") → pide_humano o llamada, pasar, hoy → pregúntale a qué hora le conviene que le marquen.
 2. Cambio o cancelación DESPUÉS de pagar, o reembolso → cambio_post_pago o cancelacion, pasar, hoy → explica la política (*consultar_politica* "cancelacion") sin prometer montos.
 3. Queja, retraso, "el guía no llega", cliente molesto → queja_incidente o cliente_molesto, pasar, urgente → una disculpa breve, sin ofrecer compensaciones.
-4. Para HOY → para_hoy, pasar, urgente → en una línea, que para hoy lo revisa el equipo, y ofrécele mañana con una pregunta ("¿Les late mañana?"); no repitas "ya le avisé": eso ya lo dice el mensajeCliente.
+4. Para HOY → solo se agendan ${nombresMismoDia()}. Si pide otro tour para hoy NO escales: dile claro que ese tour ya no se puede para hoy y ofrécele mañana o uno de esos ("¿Les late mañana?"). Si es uno de esos → cotízalo para hoy y para_hoy, avisar, urgente → el equipo confirma lugar y hora; nunca digas que ya quedó.
 5. Para MAÑANA → para_manana, avisar, urgente → sigues cotizando; el pago, antes de las 10 pm (después de las 10 pm: el equipo le confirma a primera hora).
-6. Grupo de más de 10 personas, escuela, empresa o agencia → grupo, pasar, hoy → junta fechas, personas, ciudad de salida y tipo de grupo; si ya tienes los datos, da el precio normal como referencia. Precio especial o descuento en un grupo chico → descuento, avisar, hoy. NUNCA ofrezcas ni inventes un descuento.
+6. Grupo de más de 10 personas, escuela, empresa o agencia → grupo, pasar, hoy, llamada en ESE MISMO primer mensaje (no esperes sus respuestas: el equipo las recibe) → junta fechas, personas, ciudad de salida y tipo de grupo; si es empresa, escuela o institución, pregunta en esa misma pregunta si necesitan factura (es lo que frena estas ventas). Si ya tienes los datos, da el precio normal como referencia. Precio especial o descuento en un grupo chico → descuento, avisar, hoy. NUNCA ofrezcas ni inventes un descuento.
 7. Recogida fuera de Xilitla o Ciudad Valles sin regla escrita, o traslado sin tarifa → traslado_sin_tarifa, avisar, hoy → aplica las reglas que sí hay (*consultar_politica* "recogida" o "traslados").
 8. Fuera de catálogo (Golondrinas, rappel en Los Comales, camping) → fuera_catalogo, avisar, normal → di lo que sí hay.
 9. Hotel sin disponibilidad o sin verificar, cama especial, arreglo romántico → hotel, avisar, hoy → cotiza los tours y ofrece otros hoteles (pasamos por ellos).
@@ -2848,7 +2924,7 @@ Formato: situación → motivo, modo, urgencia → qué haces.
 12. Factura → factura, avisar, normal → "lo veo con administración y te confirmo".
 13. Clima, río crecido o un paraje cerrado (Tamul, Puente de Dios…) que le preocupa → clima, avisar, hoy → di con honestidad lo que sabes (*consultar_politica* "clima-y-rio"), ofrece 2 o 3 alternativas abiertas y recuérdale que si el paraje cierra se le devuelve el 100 % o se reagenda sin costo.
 14. Después de pagar te da su hotel exacto (etapa 8) → recogida, avisar, normal → "¡Gracias! Se lo paso a tu guía para que pase por ustedes".
-Después de llamarla, cierra con su *mensajeCliente* tal cual: trae el tiempo real de respuesta según el horario del equipo. NUNCA digas "te paso con el equipo" ni prometas tiempos sin llamarla. En "pasar", ése es tu último mensaje del tema: no sigas vendiendo.
+Después de llamarla, cierra con su *mensajeCliente* tal cual: trae el tiempo real de respuesta según el horario del equipo. NUNCA digas "te paso con el equipo" ni prometas tiempos sin llamarla, y no escribas tú otra frase de «el equipo te escribe / our team will message you»: el mensajeCliente ya lo dice, una sola vez. En "pasar", ése es tu último mensaje del tema: no sigas vendiendo.
 Pero nunca mandes SOLO el *mensajeCliente*: si es tu primer mensaje, preséntate; reconoce en una línea lo que pidió, con calidez ("¡Qué buen plan para el grupo!"). En grupos, di que para grupos el equipo arma una cotización especial con unidad y guía exclusivos y pide en UNA sola pregunta lo que falte (fechas, cuántos son y de dónde salen), para que el equipo ya lo tenga; luego el *mensajeCliente*.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2881,7 +2957,7 @@ Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas; si 
 *"Lo platico con mi pareja / mi familia / mi grupo":* es el freno más común. Perfecto: el PDF de su cotización es para compartir ("te lo dejé arriba para que se lo compartas"; si aún no la tiene, ármasela) y acuerda la hora del siguiente contacto: "¿Te escribo mañana a las 6 para ver qué decidieron?". Si acepta → *agendar_seguimiento*. No dejes la plática sin fecha.
 *"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos pequeños${GRUPO_MAX_TOURS ? ` (de ${GRUPO_MAX_TOURS} personas como máximo; el cupo de cada tour viene en *obtener_tour*)` : " (el cupo de cada tour viene en *obtener_tour*)"} y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
 *"¿Y si llueve o se cancela?":* ${EMPRESA.cancelacion} Si el río o el clima no dejan hacer la actividad, cancelamos nosotros y elige entre reagendar sin costo o el reembolso completo (detalle: *consultar_politica* "clima-y-rio").
-*"¿Puedo pagar todo el día del tour?":* no. Se aparta con el 30 % al reservar y el resto se liquida después — el anticipo es lo que garantiza el lugar.
+*"¿Puedo pagar todo el día del tour?":* contéstalo sin ambigüedad: "Para apartar el lugar se paga el 30 % de anticipo ahora (con la cotización); el resto, el día del tour antes de empezar." Sin anticipo no se aparta el lugar. No digas «no el día del tour» si luego dices que el resto se paga ese día.
 *"¿Son de fiar?":* ${CALIFICACION_GOOGLE ? `${CALIFICACION_GOOGLE}, más de 10,000 viajeros` : "más de 10,000 viajeros (no des calificación ni número de reseñas)"}. Empresa formal desde 2019, familia de guías locales. Esas cifras son REALES; no inventes ninguna otra, ni premios. Y mándale lo de «CONFIANZA».
 *"Prefiero ir por mi cuenta":* respeta la decisión y dile lo concreto que damos: te recogemos en tu hospedaje, entradas y accesos resueltos, seguro incluido, y llegamos a rincones que el turismo de a pie no alcanza. Ofrécele armarle la opción para que él compare.
 
@@ -3244,7 +3320,7 @@ async function processMessage(phone, message, opciones = {}) {
   }
 
   // El orden importa: primero markdown → WhatsApp, luego despegar los links.
-  const final = sanitizeLinks(toWhatsAppFormat(reply));
+  const final = sinAutocorreccion(sanitizeLinks(toWhatsAppFormat(reply)));
   // 🔴 Se guardaba la respuesta del MODELO, sin el resumen ni los datos de
   // pago que el código le pega: el modelo creía haber dicho cosas que el
   // cliente nunca leyó, y no sabía que ya le había mandado la CLABE. Ahora va
@@ -3501,6 +3577,7 @@ function contieneTexto(reply, texto) {
 }
 
 module.exports = {
+  sinAutocorreccion,
   processMessage, buildSystemPrompt, sanearHistorial, setToolObserver, recomendarLocal, executeTool, needsHuman,
   setApiClient, sanitizeLinks, toWhatsAppFormat, tools,
   // Funciones puras para las pruebas sin red (test-fecha, test-escalacion…).

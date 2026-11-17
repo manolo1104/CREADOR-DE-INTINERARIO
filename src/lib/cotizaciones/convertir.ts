@@ -817,11 +817,17 @@ function leerComprobante(c: ComprobanteBot | null | undefined, folio: string): C
  */
 const VENTANA_REPETIDO_MS = 15 * 60 * 1000;
 
-async function cobroRepetido(reservaId: string, monto: number): Promise<boolean> {
+async function cobroRepetido(reservaId: string, monto: number, metodo: string): Promise<boolean> {
   const n = await prisma.movimiento.count({
     where: {
       reservaId, tipo: "cobro", anulado: false, monto,
       createdAt: { gte: new Date(Date.now() - VENTANA_REPETIDO_MS) },
+      // 17 nov 2026: un cobro igual que entró por OTRO camino no es el mismo
+      // pago. Con una liga por persona, Laura pagó su mitad con la liga
+      // (stripe) y Jorge la otra mitad, del mismo monto, por transferencia: el
+      // /confirma de Jorge se frenaba como «repetido» y el cliente se quedaba
+      // sin confirmar. Un cobro sin método (capturas viejas) sí cuenta.
+      OR: [{ metodoPago: metodo }, { metodoPago: null }],
     },
   });
   return n > 0;
@@ -935,7 +941,7 @@ export async function confirmarPagoCotizacion(p: ConfirmarPagoInput): Promise<Co
         avisos.push(`La reserva ${reserva.confirmationNumber} ya tiene ${pesos(yaCobrado)} registrados: para sumar otro pago di el monto.`);
       } else if (aCobrar > saldo) {
         throw new ErrorCotizacion(400, `La reserva ${reserva.confirmationNumber} solo debe ${pesos(saldo)} y ${pesos(aCobrar)} es más. Revisa el monto.`);
-      } else if (!forzar && await cobroRepetido(reserva.id, aCobrar)) {
+      } else if (!forzar && await cobroRepetido(reserva.id, aCobrar, metodo)) {
         repetido = true;
         avisos.push(`Ya se había registrado un pago de ${pesos(aCobrar)} en ${reserva.confirmationNumber} hace unos minutos: no se duplicó. Si de verdad entró OTRO pago igual, repite con «forzar» al final.`);
       } else {

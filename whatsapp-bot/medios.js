@@ -315,6 +315,11 @@ function normalizarCotizacion(d, folioPedido) {
   const status = d.status ? String(d.status) : null;
   const esPaquete = d.esPaquete === true || /^HP-P-/.test(folio) || /paquete|hospedaje|hotel/i.test(tourName);
   const base = { folio, status, tourName, tourDate, customerName: d.customerName || null, venceEl: d.venceEl || null, esPaquete };
+  // Una liga por persona: lo que falta de las partes es lo que se espera del
+  // siguiente comprobante (17 nov: Laura pagó su mitad con liga y Jorge mandó
+  // la transferencia de la otra; se esperaba todo el saldo y «no cuadraba»).
+  const partes = Array.isArray(d.partes) ? d.partes.filter((x) => x && typeof x === "object") : [];
+  const faltaDePartes = partes.filter((x) => !x.pagada).reduce((a, x) => a + (Number(x.monto) || 0), 0);
 
   // Una reserva trae `totalAmount` (la cotización, `total` y tipo "cotizacion").
   const esReserva = d.tipo === "reserva" || (d.tipo !== "cotizacion" && d.totalAmount !== undefined);
@@ -324,7 +329,9 @@ function normalizarCotizacion(d, folioPedido) {
     const saldo = num(d.saldo) ?? (pagado !== null ? Math.max(0, total - pagado) : null);
     return {
       ...base, tipo: "reserva", total, pagado, saldo,
-      esperado: saldo !== null && saldo > 0 ? saldo : null,
+      esperado: faltaDePartes > 0 && (saldo === null || faltaDePartes <= saldo)
+        ? Math.round(faltaDePartes)
+        : saldo !== null && saldo > 0 ? saldo : null,
       // Liquidada no espera ningún pago: las fotos del paseo que manda después
       // del tour no son «comprobante del saldo $0».
       vigente: status !== "cancelled" && saldo !== 0, vencida: false,
@@ -336,11 +343,15 @@ function normalizarCotizacion(d, folioPedido) {
   const saldo = num(d.saldo) ?? Math.max(0, total - anticipo);
   // Reemplazada por otra (el cliente cambió algo): el sitio la da SIN montos.
   const reemplazadaPor = typeof d.reemplazadaPor === "string" && d.reemplazadaPor.trim() ? d.reemplazadaPor.trim().toUpperCase() : null;
+  const reservaFolio = typeof d.reservaFolio === "string" && d.reservaFolio.trim() ? d.reservaFolio.trim().toUpperCase() : null;
   return {
-    ...base, tipo: "cotizacion", total, anticipo, saldo, esperado: anticipo,
-    vigente: !reemplazadaPor && (!status || ESTADOS_VIVOS.has(status)),
+    ...base, tipo: "cotizacion", total, anticipo, saldo,
+    esperado: faltaDePartes > 0 ? Math.round(faltaDePartes) : anticipo,
+    vigente: !reemplazadaPor && !reservaFolio && (!status || ESTADOS_VIVOS.has(status)),
     vencida: status === "expirada",
     reemplazadaPor,
+    reservaFolio,
+    faltaDePartes: faltaDePartes > 0 ? Math.round(faltaDePartes) : 0,
   };
 }
 
@@ -359,6 +370,17 @@ async function buscarCotizacion({ api, chatId, telefono, sessionFolio, log = con
       if (r && r.ok) {
         const c = normalizarCotizacion(r.data, sessionFolio);
         if (c && c.vigente) return c;
+        // La cotización ya es reserva (pagó una parte con la liga, o el equipo
+        // la convirtió): el comprobante es de esa reserva. 🔴 Antes se quedaba
+        // sin folio y el bot le pedía el folio al cliente.
+        if (c && c.tipo === "cotizacion" && c.reservaFolio) {
+          const rr = await api.consultarReserva(c.reservaFolio);
+          const res = rr && rr.ok ? normalizarCotizacion(rr.data, c.reservaFolio) : null;
+          if (res && res.vigente) {
+            if (c.faltaDePartes > 0 && (res.saldo === null || c.faltaDePartes <= res.saldo)) res.esperado = c.faltaDePartes;
+            return res;
+          }
+        }
         if (c && c.vencida) respaldo = c;
       }
     } catch (e) {
@@ -535,7 +557,11 @@ function textoAvisoComprobante(cot = {}, { nombre, telefono, kind, n, ahora = Da
   if (cot.tipo === "reserva") {
     const pagado = cot.pagado !== null && cot.pagado !== undefined ? mxCorto(cot.pagado) : "¿?";
     const saldo = cot.saldo !== null && cot.saldo !== undefined ? mxCorto(cot.saldo) : "¿?";
-    L.push(`💰 Reserva ya confirmada · total ${mxCorto(cot.total)} · pagado ${pagado} · esperado (saldo) ${saldo}`);
+    // Con una liga por persona a medias, lo esperado es la parte que falta, no todo el saldo.
+    const porPartes = Number.isFinite(Number(cot.esperado)) && Number(cot.esperado) > 0 && cot.saldo !== null && Number(cot.esperado) < Number(cot.saldo);
+    L.push(porPartes
+      ? `💰 Reserva ya confirmada · total ${mxCorto(cot.total)} · pagado ${pagado} · esperado ${mxCorto(cot.esperado)} (la parte que falta del anticipo) · saldo ${saldo}`
+      : `💰 Reserva ya confirmada · total ${mxCorto(cot.total)} · pagado ${pagado} · esperado (saldo) ${saldo}`);
   } else {
     L.push(`💰 Total ${mxCorto(cot.total)} · esperado ${mxCorto(cot.anticipo)} (anticipo) · saldo ${mxCorto(cot.saldo)}`);
   }

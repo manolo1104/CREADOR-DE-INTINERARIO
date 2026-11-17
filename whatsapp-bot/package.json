@@ -21,7 +21,8 @@
     "test-ficha": "node test-ficha.js",
     "medir-prompt": "node medir-prompt.js",
     "test-seguimiento": "node test-seguimiento.js",
-    "test-oro": "node test-estructura-oro.js"
+    "test-oro": "node test-estructura-oro.js",
+    "test-pago-dividido": "node test-pago-dividido.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",
