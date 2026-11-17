@@ -552,6 +552,34 @@ function textoAvisoComprobante(cot = {}, { nombre, telefono, kind, n, ahora = Da
 }
 
 /**
+ * Lo que la IA leyó del comprobante (16 nov 2026), en un mensaje aparte para
+ * el dueño: le ahorra abrir la foto. NO valida nada: el pago lo confirma él en
+ * su banco con /confirma. Marca si el monto o el concepto no cuadran.
+ */
+function textoLecturaComprobante(l, cot = {}) {
+  if (!l || typeof l !== "object") return null;
+  if (l.esComprobante === false) return `🔎 ${cot.folio || "Comprobante"}: la IA dice que eso NO parece un comprobante de pago. Revísalo en el chat.`;
+  const L = [`🔎 *Lo que dice el comprobante${cot.folio ? ` de ${cot.folio}` : ""}:*`];
+  const monto = Number(l.monto);
+  const esperado = Number(cot.esperado);
+  if (Number.isFinite(monto) && monto > 0) {
+    const cuadra = Number.isFinite(esperado) && esperado > 0 ? (Math.round(monto) === Math.round(esperado) ? " ✓ cuadra con lo esperado" : ` ⚠️ se esperaba ${mxCorto(esperado)}`) : "";
+    L.push(`💵 ${mxCorto(monto)}${cuadra}`);
+  } else {
+    L.push("💵 No se lee el monto.");
+  }
+  if (l.fecha) L.push(`📅 ${String(l.fecha).slice(0, 60)}`);
+  if (l.banco) L.push(`🏦 ${String(l.banco).slice(0, 60)}`);
+  if (l.titularDestino) L.push(`👤 A nombre de: ${String(l.titularDestino).slice(0, 80)}`);
+  if (l.concepto) {
+    const traeFolio = cot.folio && String(l.concepto).toUpperCase().replace(/\s+/g, "").includes(String(cot.folio).toUpperCase().replace(/\s+/g, ""));
+    L.push(`📝 Concepto: ${String(l.concepto).slice(0, 80)}${cot.folio && !traeFolio ? " ⚠️ no trae el folio" : ""}`);
+  }
+  L.push("_(lo leyó la IA: confírmalo en tu banco antes del /confirma)_");
+  return L.join("\n");
+}
+
+/**
  * Un mensaje APARTE para el dueño, para cuando el archivo no era un pago. Va
  * solo a propósito: WhatsApp copia el mensaje entero, y pegado junto al aviso
  * se ejecutaría el primer comando que trae, que es el /confirma.
@@ -998,6 +1026,8 @@ function createProofProcessor({
   now = () => Date.now(),
   dedupeWindowMs = 10 * 60 * 1000,
   noQuoteRateLimitMs = 30 * 60 * 1000,
+  // (media) => Promise<{monto, fecha, banco, concepto…} | null>: la lectura con IA (agent.leerComprobante).
+  leerComprobante = null,
 } = {}) {
   const ultimoAvisoPorFolio = new Map(); // folio -> ms del último aviso completo
   const ultimoSinCotizacion = new Map(); // chat -> ms del último aviso «sin cotización»
@@ -1049,6 +1079,14 @@ function createProofProcessor({
       // Con `numero` (index.js lo pasa cuando el archivo SÍ cierra la ficha a
       // cambios): cómo deshacerlo si no era un pago, en su propio mensaje.
       if (!duplicate && numero) await enviar("no es pago", textoNoEsPago(numero));
+      // Lo que dice el comprobante, leído con IA, en un mensaje aparte. Sin
+      // esperar: el acuse al cliente sale ya y la lectura llega segundos después.
+      if (!duplicate && descargado && typeof leerComprobante === "function") {
+        Promise.resolve()
+          .then(() => leerComprobante(media))
+          .then((l) => { const t = textoLecturaComprobante(l, cot); return t ? enviar("lectura", t) : null; })
+          .catch(() => {});
+      }
 
       // Al cliente SIEMPRE se le contesta (salvo en pausa): el freno es solo del aviso al dueño.
       const ackText = paused
@@ -1081,6 +1119,7 @@ function createProofProcessor({
 }
 
 module.exports = {
+  textoLecturaComprobante,
   FISCAL_RE,
   PAYMENT_RE,
   BARE_FILENAME_RE,

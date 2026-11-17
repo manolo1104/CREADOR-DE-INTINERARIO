@@ -462,7 +462,7 @@ const empresa = {
   ].join(" "),
   cancelacion: "Cancela gratis hasta 48 h antes.",
   ninos: [
-    "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.)",
+    "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni a los que se cobran por grupo.)",
     edadesMinimasTexto(),
   ].filter(Boolean).join(" "),
   // 🔴 La calificación del NEGOCIO en Google, de `resenas.ts`. El prompt de
@@ -737,7 +737,7 @@ const info = {
   alimentos: [
     "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (parada en El Taco Loco, camino a los destinos); la comida de mediodía no está incluida.",
     ...TOURS_DB.filter((t) => ALIMENTOS[t.slug]?.comida).map((t) => `Excepción: ${t.nombreCorto}. ${ALIMENTOS[t.slug].detalle}`),
-    "El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
+    "El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
   ].join(" "),
   transporte: transporteResumen(),
   hotelHabitacionesUrl: HOTEL_HABITACIONES_URL,
@@ -762,7 +762,7 @@ const info = {
     // ⚠️ El desayuno del hotel NO va incluido en la tarifa de la habitación.
     // El desayuno que sí incluyen los tours es una parada en El Taco Loco,
     // camino a los destinos — no es en el hotel y solo aplica los días de tour.
-    desayuno: "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR, el rappel y el buceo no incluyen ningún alimento.",
+    desayuno: "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR y el rappel no incluyen ningún alimento.",
     mascotas: "No se admiten mascotas.",
     fumar: "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera.",
     checkIn: "3:00 pm",

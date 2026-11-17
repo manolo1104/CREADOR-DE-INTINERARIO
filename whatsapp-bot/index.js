@@ -13,7 +13,7 @@ const fs = require("fs");
 const path = require("path");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
-const { processMessage, needsHuman } = require("./agent");
+const { processMessage, needsHuman, leerComprobante } = require("./agent");
 const api = require("./api-client");
 const sessions = require("./sessions");
 const { getSession, pushHistory, clearSession, sesionExistente } = sessions;
@@ -683,8 +683,29 @@ const comprobantes = medios.createProofProcessor({
   almacen: estado,
   dir: estado.COMPROBANTES_DIR,
   enviarAlDueno: (contenido, opciones) => avisarAlDueno(contenido, opciones),
+  // Monto, banco y concepto leídos con IA para el aviso (no valida nada).
+  leerComprobante: (media) => leerComprobante(media),
   log: console,
 });
+
+// ── Fotos y PDF que el modelo SÍ ve (16 nov 2026) ─────────────
+// Una foto o un PDF con texto que no es pago (una captura de un tour, una
+// pregunta sobre una imagen, una constancia) llega al modelo como imagen en
+// el turno que la trae. Aquí esperan a que la ráfaga se conteste.
+const visualesPendientes = new Map(); // chatId -> [{mimetype, data, at}]
+function guardarVisual(chatId, media) {
+  if (!media || !media.data || !media.mimetype) return false;
+  const ahora = Date.now();
+  const lista = (visualesPendientes.get(chatId) || []).filter((v) => ahora - v.at < 10 * 60 * 1000).slice(-2);
+  lista.push({ mimetype: media.mimetype, data: media.data, at: ahora });
+  visualesPendientes.set(chatId, lista);
+  return true;
+}
+function tomarVisuales(chatId) {
+  const lista = visualesPendientes.get(chatId) || [];
+  visualesPendientes.delete(chatId);
+  return lista;
+}
 
 /**
  * La ficha del viaje (sessions.js) se entera del comprobante o del pago
@@ -738,7 +759,16 @@ async function atenderAudio(chatId, pausa) {
     anotarHistorial(chatId, "user", "[El cliente mandó una nota de voz; el equipo la escucha en el teléfono]");
     return;
   }
-  if (avisoLimitado(`${chatId}|audio`)) return;
+  // Al equipo, una vez cada 10 min por chat (documento: las notas de voz las
+  // atiende una persona). 🔴 Antes no se enteraba nadie.
+  if (!avisoLimitado(`${chatId}|audio-dueno`)) {
+    avisarAlDueno(`🎤 *Nota de voz* · ${etiquetaChat(chatId)}\nEscúchala en el teléfono del negocio; el bot le pidió que la escriba.`).catch(() => {});
+  }
+  if (avisoLimitado(`${chatId}|audio`)) {
+    // 🔴 La segunda nota en 10 min se perdía entera: ahora queda en el historial.
+    anotarHistorial(chatId, "user", "[nota de voz]");
+    return;
+  }
   const aviso = medios.textoAudio(medios.idiomaDeSesion(sesionExistente(chatId)));
   try {
     await enviar(chatId, aviso);
@@ -870,8 +900,18 @@ async function atenderArchivo(msg, chatId, contacto, pausa, llegoAt = Date.now()
   }
 
   // 'text': el pie de foto se contesta como un mensaje normal (una foto con
-  // una pregunta, una constancia fiscal…).
-  return { listo: false, texto: caption || rawCaption };
+  // una pregunta, una constancia fiscal…), y ahora el modelo VE la foto o el
+  // PDF (agent.bloqueVisual decide si el formato se puede).
+  let nota = "";
+  if (/^image\//.test(mimetype) || /pdf/.test(mimetype)) {
+    if (!media) media = await bajarArchivo(msg, chatId);
+    if (media && guardarVisual(chatId, media)) {
+      const loc = medios.idiomaDeSesion(ses);
+      const que = /pdf/.test(mimetype) ? (loc === "en" ? "a PDF" : "un PDF") : (loc === "en" ? "a photo" : "una foto");
+      nota = `[El cliente mandó ${que}; la ves arriba. Si es un comprobante de pago, dile que ya lo recibimos y llama escalar_a_humano (otro, avisar, hoy) con lo que dice.]`;
+    }
+  }
+  return { listo: false, texto: [caption || rawCaption, nota].filter(Boolean).join("\n") };
 }
 
 // ── Mensajes ENTRANTES (clientes y el dueño) ──────────────────
@@ -1125,7 +1165,7 @@ async function responderConModelo(chatId, textoModelo, { textoCliente = textoMod
       chat.sendStateTyping().catch(() => {});
       escribiendo = setInterval(() => chat.sendStateTyping().catch(() => {}), 10000);
     }
-    const respuesta = await processMessage(chatId, textoModelo);
+    const respuesta = await processMessage(chatId, textoModelo, { visuales: tomarVisuales(chatId) });
     enviado = respuesta;
     // 🔴 El comprobante ya llegó (en esta ráfaga, o MIENTRAS el modelo
     // pensaba): la respuesta no sale pidiendo el comprobante, la
@@ -1218,6 +1258,8 @@ const ETIQUETAS_MOTIVO = {
   pago_fallido: "El pago con tarjeta falló",
   falla_bot: "El bot no pudo responder",
   recogida: "Hotel para la recogida",
+  clima: "Clima o paraje cerrado",
+  nota_de_voz: "Mandó una nota de voz",
   humano: "Alguien del equipo escribió en el chat",
   comando: "Pausado con /pausa",
   otro: "Otro",

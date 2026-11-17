@@ -98,6 +98,7 @@ const sessions = require("./sessions");
 const { clearSession, getSession, pushHistory } = sessions;
 const estado = require("./estado"); // sin iniciar(): solo en memoria
 const medios = require("./medios");
+const adjuntos = require("./adjuntos");
 const horario = require("./horario");
 const { crearSitioSimulado } = require("./sitio-simulado");
 // Los textos de producción (aviso al dueño, confirmación al cliente, cómo se
@@ -451,6 +452,10 @@ async function atenderRafagaSinEstado(chatId, texto, info = {}) {
       }
     }
     const pieCosto = costo.llamadasTurno ? textoCostoTurno() : "";
+    // Las fotos y el PDF que en WhatsApp salen antes del texto (adjuntos.js).
+    for (const a of adjuntos.tomar(chatId)) {
+      emitir({ tipo: "aviso", texto: a.tipo === "pdf" ? `📎 PDF: ${a.nombre || a.folio}` : `🖼️ Foto: ${a.caption || ""} · ${a.url}` });
+    }
     if (enviado) {
       emitir({
         tipo: "bot", texto: enviado, mensajes: info.mensajes, esperaMs: info.esperaMs, pensoMs: Date.now() - t0,

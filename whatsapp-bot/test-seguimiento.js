@@ -148,5 +148,21 @@ prueba("nombre del archivo según folio e idioma", () => {
   assert.equal(adjuntos.nombrePdf("HP-M-3", "en"), "Booking confirmation HP-M-3.pdf");
 });
 
+console.log("\n🔎 Lectura del comprobante (aviso al dueño)\n");
+const { textoLecturaComprobante } = require("./medios");
+
+prueba("monto que cuadra y concepto con el folio", () => {
+  const t = textoLecturaComprobante({ esComprobante: true, monto: 930, banco: "BBVA", concepto: "COT-1234" }, { folio: "COT-1234", esperado: 930 });
+  assert.ok(/\$930/.test(t) && /cuadra/.test(t) && !/no trae el folio/.test(t) && /confírmalo en tu banco/.test(t));
+});
+prueba("monto distinto y concepto sin folio: los dos avisos", () => {
+  const t = textoLecturaComprobante({ esComprobante: true, monto: 500, concepto: "tour" }, { folio: "COT-1234", esperado: 930 });
+  assert.ok(/se esperaba \$930/.test(t) && /no trae el folio/.test(t));
+});
+prueba("si no parece comprobante lo dice; sin lectura, nada", () => {
+  assert.ok(/NO parece un comprobante/.test(textoLecturaComprobante({ esComprobante: false }, { folio: "COT-1" })));
+  assert.equal(textoLecturaComprobante(null, {}), null);
+});
+
 console.log(fallas ? `\n❌ ${fallas} fallaron\n` : "\n✅ Todas pasaron\n");
 process.exit(fallas ? 1 : 0);

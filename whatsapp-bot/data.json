@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T04:18:52.561Z",
+  "generatedAt": "2026-11-17T04:47:35.416Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -8,7 +8,7 @@
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
     "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
-    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
+    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni a los que se cobran por grupo.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
     "rating": 4.7,
     "resenas": 168,
     "confianza": {
@@ -3944,7 +3944,7 @@
       "Fotografías y video del recorrido que toma tu guía"
     ],
     "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
-    "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (parada en El Taco Loco, camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de El Taco Loco de los otros tours. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
+    "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (parada en El Taco Loco, camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de El Taco Loco de los otros tours. El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
     "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "hotelServicios": {
@@ -3959,7 +3959,7 @@
         "Terraza con vista a la sierra y a la selva"
       ],
       "spaPrivado": "4 de las 13 suites tienen piscina spa o tina de hidromasaje PRIVADA (no compartida). De las que ofrecemos en los paquetes, la Jungla es la que la trae.",
-      "desayuno": "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR, el rappel y el buceo no incluyen ningún alimento.",
+      "desayuno": "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR y el rappel no incluyen ningún alimento.",
       "mascotas": "No se admiten mascotas.",
       "fumar": "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera.",
       "checkIn": "3:00 pm",
@@ -3968,7 +3968,7 @@
     },
     "mejorTemporada": "Se puede venir todo el año. Del 30 de octubre a mayo el agua baja clara; el turquesa más intenso es de marzo a mayo, y es cuando más gente hay. Junio es de transición: llegan las primeras lluvias. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; el rafting depende del nivel del río ese día y, si el río crece, se reprograma sin costo. Del 30 de octubre a diciembre es «la mejor temporada para venir» (aflojan las lluvias, el agua se aclara y todavía no llegan las multitudes de primavera), pero el turquesa más intenso es de marzo a mayo: no lo prometas para esas fechas.",
     "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
-    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
+    "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni a los que se cobran por grupo.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "cancelacionCompleta": [
       "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua.",
