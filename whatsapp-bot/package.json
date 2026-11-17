@@ -10,7 +10,7 @@
     "start": "node index.js",
     "chat": "node simulador.js",
     "test": "node test-chat.js",
-    "check": "node --check index.js && node --check agent.js && node --check buffer.js && node --check catalog.js && node --check knowledge.js && node --check api-client.js && node --check sessions.js && node --check estado.js && node --check medios.js && node --check horario.js && node --check payment.js && node --check sitio-simulado.js && node --check simulador.js && node --check medir-prompt.js && node --check test-chat.js && node --check test-espera.js && node --check test-historial.js && node --check test-medios.js && node --check test-escalacion.js && node --check test-estado.js && node --check test-fecha.js && node --check test-modelos.js && node --check test-ficha.js",
+    "check": "node --check index.js && node --check agent.js && node --check buffer.js && node --check catalog.js && node --check knowledge.js && node --check api-client.js && node --check sessions.js && node --check estado.js && node --check medios.js && node --check horario.js && node --check payment.js && node --check sitio-simulado.js && node --check simulador.js && node --check medir-prompt.js && node --check test-chat.js && node --check test-espera.js && node --check test-historial.js && node --check test-medios.js && node --check test-escalacion.js && node --check test-estado.js && node --check test-fecha.js && node --check test-modelos.js && node --check test-ficha.js && node --check adjuntos.js && node --check documentos.js && node --check etapas.js && node --check seguimiento.js && node --check etiquetas.js && node --check test-seguimiento.js",
     "test-espera": "node test-espera.js",
     "test-historial": "node test-historial.js",
     "test-medios": "node test-medios.js",
@@ -19,7 +19,8 @@
     "test-fecha": "node test-fecha.js",
     "test-modelos": "node test-modelos.js",
     "test-ficha": "node test-ficha.js",
-    "medir-prompt": "node medir-prompt.js"
+    "medir-prompt": "node medir-prompt.js",
+    "test-seguimiento": "node test-seguimiento.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.37.0",

@@ -132,6 +132,33 @@ async function cotizacionActiva({ chatId, telefono } = {}) {
   return get(`/api/bot/cotizacion-activa?${qs.toString()}`);
 }
 
+/**
+ * El HTML del PDF de un folio (COT- = cotización, HP-M- = confirmación), el
+ * mismo que descarga el panel. documentos.js lo pasa a PDF con Chromium.
+ * Devuelve { ok, status, html } o { ok:false, status, data:{error} }. No lanza.
+ */
+async function documento(folio) {
+  const url = `${SITE_API_URL}/api/bot/documento/${encodeURIComponent(String(folio || ""))}`;
+  try {
+    const res = await fetch(url, { headers: headers(), signal: senalDeTiempo(TIMEOUT_CONSULTA_MS) });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      return { ok: false, status: res.status, data };
+    }
+    return { ok: true, status: res.status, html: await res.text() };
+  } catch (e) {
+    return { ok: false, status: 0, data: { error: `No pude traer el documento: ${(e && e.message) || e}` } };
+  }
+}
+
+/**
+ * Una liga de Stripe por persona (el anticipo repartido en `partes`, o el
+ * total con base "total"). 200 { folio, ligas:[{parte, de, url, monto, pagada}] }.
+ */
+async function ligasPorPersona(folio, partes, base = "anticipo") {
+  return post(`/api/bot/cotizaciones/${encodeURIComponent(String(folio || ""))}/ligas`, { partes, base }, { timeoutMs: TIMEOUT_MS });
+}
+
 // Disponibilidad de habitaciones en el hotel (solo lectura, endpoint público del hotel).
 async function checkHotelAvailability(checkin, checkout, rooms) {
   return pedir(`${HOTEL_API_URL}/api/check-availability`, {
@@ -151,6 +178,8 @@ module.exports = {
   consultarReserva,
   escalacion,
   cotizacionActiva,
+  documento,
+  ligasPorPersona,
   checkHotelAvailability,
   SITE_API_URL,
   HOTEL_API_URL,

@@ -158,11 +158,33 @@ function crearGestorDeRafagas({ debounceMs, maxMs, responder, onError = () => {}
     return buf ? ordenarPorLlegada(buf.elementos) : [];
   }
 
+  /**
+   * Corre `fn` con el MISMO candado de las respuestas: si el chat está
+   * contestando o tiene mensajes esperando, no corre y devuelve false. Lo usa
+   * el seguimiento (seguimiento.js): un recordatorio nunca se cruza con la
+   * respuesta a lo que el cliente acaba de escribir.
+   */
+  async function ejecutarExclusivo(chatId, fn) {
+    if (respondiendo.has(chatId) || buffers.has(chatId)) return false;
+    respondiendo.add(chatId);
+    try {
+      await fn();
+      return true;
+    } catch (e) {
+      onError(e);
+      return false;
+    } finally {
+      respondiendo.delete(chatId);
+      if (buffers.has(chatId)) agendar(chatId);
+    }
+  }
+
   return {
     recibir,
     recibirElemento,
     descartar,
     elementosEnEspera,
+    ejecutarExclusivo,
     ocupado: (chatId) => respondiendo.has(chatId),
     enEspera: () => buffers.size,
   };

@@ -18,6 +18,7 @@ const {
 // (el sitio dejó de mandarlos). `mensajeDatosPago` se lee al usarse: con un
 // payment.js anterior, que solo trae PAGO, el mensaje se arma aquí.
 const pago = require("./payment");
+const adjuntos = require("./adjuntos");
 const { PAGO } = pago;
 
 // Servicios del Hotel Paraíso Encantado. Salen del exportador (data.json), no
@@ -718,7 +719,12 @@ function errorDeCotizacion(res, porOmision, chatId) {
 const cotizacionesRecientes = new Map();
 function recordarCotizacion(d) {
   if (!d || !d.folio) return;
-  cotizacionesRecientes.set(String(d.folio).toUpperCase(), { total: d.total, anticipo: d.anticipo, saldo: d.saldo, venceEl: d.venceEl });
+  cotizacionesRecientes.set(String(d.folio).toUpperCase(), {
+    total: d.total, anticipo: d.anticipo, saldo: d.saldo, venceEl: d.venceEl,
+    // La liga de Stripe del folio (por el anticipo, sin comisión), si el sitio la dio.
+    liga: d.linkPagoTipo === "liga" && d.linkPago ? d.linkPago : null,
+    ligaMonto: d.linkPagoTipo === "liga" ? entero(d.linkPagoMonto) || null : null,
+  });
   if (cotizacionesRecientes.size > 300) cotizacionesRecientes.delete(cotizacionesRecientes.keys().next().value);
 }
 
@@ -770,13 +776,35 @@ function mensajeEspera({ urgencia, locale }) {
 }
 
 /**
- * Los datos de pago listos para pegar: banco, CLABE, OXXO, el MONTO y el
- * folio como concepto. Los arma payment.js; con uno anterior, aquí.
+ * La liga de tarjeta de un folio: la que dio el sitio al cotizar (en memoria)
+ * o, tras un reinicio, la que devuelve /api/bot/booking. También las ligas por
+ * persona que sigan sin pagar. Nunca lanza.
+ * @returns {Promise<{liga: string|null, ligaMonto: number|null, ligas: any[]}>}
  */
-function mensajeDePago({ folio, monto, locale }) {
+async function ligaDelFolio(folio, recordada) {
+  const vacio = { liga: null, ligaMonto: null, ligas: [] };
+  if (!folio || !/^COT-/.test(String(folio))) return vacio;
+  try {
+    const r = await api.consultarReserva(folio);
+    const d = (r && r.ok && r.data) || {};
+    const ligas = Array.isArray(d.partes) ? d.partes.filter((p) => p && p.url && !p.pagada) : [];
+    const liga = d.ligaPago || (recordada && recordada.liga) || null;
+    const ligaMonto = entero(d.ligaMonto) || (recordada && recordada.ligaMonto) || null;
+    return { liga: ligas.length ? null : liga, ligaMonto, ligas };
+  } catch (e) {
+    console.error("❌ liga del folio:", e && e.message);
+    return recordada && recordada.liga ? { liga: recordada.liga, ligaMonto: recordada.ligaMonto || null, ligas: [] } : vacio;
+  }
+}
+
+/**
+ * Los datos de pago listos para pegar: banco, CLABE, OXXO, el MONTO, el folio
+ * como concepto y la liga de tarjeta. Los arma payment.js; con uno anterior, aquí.
+ */
+function mensajeDePago({ folio, monto, locale, liga = null, ligas = null }) {
   try {
     if (typeof pago.mensajeDatosPago === "function") {
-      const m = pago.mensajeDatosPago({ folio, monto, locale });
+      const m = pago.mensajeDatosPago({ folio, monto, locale, liga, ligas });
       if (m && String(m).trim()) return String(m).trim();
     }
   } catch (e) {
@@ -786,6 +814,7 @@ function mensajeDePago({ folio, monto, locale }) {
   const en = locale === "en";
   return [
     en ? "*Payment details*" : "*Datos para tu pago*",
+    liga ? `${en ? "Card (no fee)" : "Tarjeta (sin comisión)"}: ${liga}` : null,
     `${en ? "Bank" : "Banco"}: ${PAGO.banco}`,
     `${en ? "Account holder" : "Titular"}: ${PAGO.titular}`,
     `CLABE: ${PAGO.clabe}`,
@@ -890,7 +919,7 @@ function horaDelRZR(txt) {
 const MOTIVOS_ESCALACION = [
   "pide_humano", "llamada", "cambio_post_pago", "cancelacion", "queja_incidente", "cliente_molesto",
   "para_hoy", "para_manana", "grupo", "descuento", "fuera_catalogo", "traslado_sin_tarifa", "hotel",
-  "salud", "pregunta_sin_respuesta", "factura", "recogida", "otro",
+  "salud", "pregunta_sin_respuesta", "factura", "recogida", "clima", "nota_de_voz", "otro",
 ];
 const RANGO_URGENCIA = { normal: 0, hoy: 1, urgente: 2 };
 const pesoEscalacion = (e) => (e.modo === "pasar" ? 10 : 0) + (RANGO_URGENCIA[e.urgencia] || 0);
@@ -1139,11 +1168,15 @@ const tools = [
   },
   {
     name: "enviar_link_pago",
-    description: "Devuelve el link del sitio para reservar y pagar con tarjeta (confirmación instantánea). Solo para tours cobrados por persona. Úsalo cuando el cliente prefiere pagar con tarjeta en línea.",
+    description: "La liga de pago con tarjeta (Stripe, sin comisión) de su COTIZACIÓN: sirve para tours, RZR, paquetes y viajes a la medida, y al pagarse se confirma sola. Con `partes` (2 a 12) reparte el anticipo en una liga por persona, para cuando cada quien paga lo suyo. Normalmente NO hace falta: datos_pago ya trae la liga junto con la transferencia y el OXXO.",
     input_schema: {
       type: "object",
-      properties: { slug: { type: "string" } },
-      required: ["slug"],
+      properties: {
+        folio: { type: "string", description: "Folio COT-… (si no lo pasas, el vigente)" },
+        partes: { type: "number", description: "Entre cuántas personas se reparte (2 a 12). Omítelo para una sola liga." },
+        base: { type: "string", enum: ["anticipo", "total"], description: "Qué se reparte: el anticipo (por omisión) o el total si quieren pagar todo" },
+      },
+      required: [],
     },
   },
   {
@@ -1161,7 +1194,7 @@ const tools = [
   },
   {
     name: "datos_pago",
-    description: "Mensaje con los datos para pagar por transferencia u OXXO, con el MONTO y el folio como concepto, listo para pegar TAL CUAL. Úsala después de mandarle el resumen de su cotización. Si el folio que pasas ya fue reemplazado, sale el vigente con su monto.",
+    description: "EL mensaje de pago, listo para pegar TAL CUAL: transferencia, OXXO y la liga de tarjeta sin comisión, juntos, con el MONTO y el folio como concepto, y cierra con «Quedo en espera de tu comprobante». Úsala cuando diga que sí a «¿te envío los pasos para reservar?» o pregunte cómo pagar. Si el folio que pasas ya fue reemplazado, sale el vigente con su monto.",
     input_schema: {
       type: "object",
       properties: {
@@ -1247,6 +1280,29 @@ const tools = [
       type: "object",
       properties: { tema: { type: "string", description: "Tema del índice o la duda en pocas palabras" } },
       required: ["tema"],
+    },
+  },
+  {
+    name: "enviar_fotos",
+    description: "Manda por WhatsApp una foto de cada tour que estás proponiendo (máximo 3), justo antes de tu mensaje. Úsala en la PROPUESTA (PASO 4), una vez por tour: el catálogo solo no cierra, pero con la propuesta día por día sí ayuda. No la repitas para un tour cuya foto ya mandaste.",
+    input_schema: {
+      type: "object",
+      properties: {
+        slugs: { type: "array", items: { type: "string" }, description: "Los slugs de los tours propuestos (1 a 3)" },
+      },
+      required: ["slugs"],
+    },
+  },
+  {
+    name: "agendar_seguimiento",
+    description: "Agenda cuándo le vuelves a escribir porque así lo acordaron (\"¿te escribo mañana a las 6 para ver qué decidieron?\" → sí). Manda sobre el seguimiento automático. Solo con una hora que el cliente aceptó.",
+    input_schema: {
+      type: "object",
+      properties: {
+        cuando: { type: "string", description: "Fecha y hora de México, AAAA-MM-DDTHH:MM (ej. 2026-11-17T18:00)" },
+        motivo: { type: "string", description: "Qué quedó pendiente (ej. \"lo platica con su pareja\")" },
+      },
+      required: ["cuando"],
     },
   },
   {
@@ -1687,12 +1743,38 @@ async function ejecutarHerramienta(name, input, phone) {
     }
 
     case "enviar_link_pago": {
-      const t = findTour(input.slug);
-      if (!t) return { error: `No existe el tour "${input.slug}".` };
-      if (esPorVehiculo(t)) {
-        return { error: "El RZR no tiene pago con tarjeta en línea: se cotiza con registrar_cotizacion y se paga por transferencia u OXXO. Si insiste en tarjeta, escala (otro, avisar, hoy) para que el equipo le mande la liga." };
+      // La liga de Stripe del FOLIO (16 nov 2026): sirve para cualquier
+      // cotización —tour, RZR, paquete o viaje a la medida— y al pagarse se
+      // convierte sola en reserva. Con `partes`, una liga por persona.
+      const session = sesionDe(phone);
+      const ficha = session.ficha || {};
+      const folio = folioNormal(textoLimpio(input.folio, 40) || ficha.folioVigente || session.lastFolio);
+      if (!folio || !/^COT-/.test(folio)) {
+        return { error: "No hay una cotización (COT-…) a la cual cobrarle. Primero cotiza (PASO 6) y luego manda la liga." };
       }
-      return { link: urlEnIdioma(`${EMPRESA.sitio}/reservar-tour/${t.slug}`, idiomaDe(phone)), tour: t.nombre };
+      if (ficha.comprobanteRecibido && !ficha.pagoValidado) {
+        return { yaMandoComprobante: true, instruccion: "NO le mandes liga: ya mandó su comprobante y el equipo lo está validando." };
+      }
+      const partes = entero(input.partes);
+      if (partes >= 2) {
+        const r = await api.ligasPorPersona(folio, partes, input.base === "total" ? "total" : "anticipo");
+        if (!r.ok) {
+          return { error: r.data.error || "No se pudieron crear las ligas por persona.", instruccion: "Dile que el equipo le manda las ligas en un momento y llama escalar_a_humano (otro, avisar, hoy)." };
+        }
+        const ligas = Array.isArray(r.data.ligas) ? r.data.ligas : [];
+        session.pagoMandadoAt = Date.now();
+        return {
+          folio,
+          mensaje: mensajeDePago({ folio, locale: idiomaDe(phone), ligas }),
+          instruccion: "Pega «mensaje» TAL CUAL: trae una liga por persona y los datos de transferencia y OXXO. Cada quien paga su parte.",
+        };
+      }
+      const { liga } = await ligaDelFolio(folio, cotizacionesRecientes.get(folio) || null);
+      if (!liga) {
+        return { error: "Esta cotización no tiene liga de tarjeta todavía.", instruccion: "Dile que el equipo le manda la liga en un momento y llama escalar_a_humano (otro, avisar, hoy)." };
+      }
+      session.pagoMandadoAt = Date.now();
+      return { folio, link: liga, instruccion: "Manda la liga como URL simple en su propia línea, sin asteriscos ni paréntesis. Es por el anticipo y no lleva comisión." };
     }
 
     case "consultar_reserva": {
@@ -1775,14 +1857,21 @@ async function ejecutarHerramienta(name, input, phone) {
       const recordada = folio ? cotizacionesRecientes.get(folio) : null;
       const montoPedido = entero(input.monto);
       const { monto, notaMonto } = montoParaPagar({ folio, montoPedido, recordada, reemplazado });
-      const mensaje = mensajeDePago({ folio, monto, locale: idiomaDe(phone) });
+      // La liga de tarjeta va en el MISMO mensaje que el banco y el OXXO
+      // («Estructura de oro»). Es por el anticipo: si paga otra cifra (el
+      // total), no se ofrece una liga que cobraría otro monto.
+      const { liga, ligaMonto, ligas } = await ligaDelFolio(folio, recordada);
+      const ligaVale = Boolean(liga) && (!monto || !ligaMonto || monto === ligaMonto);
+      const mensaje = mensajeDePago({ folio, monto, locale: idiomaDe(phone), liga: ligaVale ? liga : null, ligas: ligas.length ? ligas : null });
+      if (phone) session.pagoMandadoAt = Date.now(); // etapa «pago pendiente» (etapas.js)
       return {
         mensaje,
         folio: folio || null,
         monto: monto || null,
+        conLigaDeTarjeta: Boolean(ligaVale || ligas.length),
         ...(reemplazado ? { folioReemplazado: reemplazado, nota: `La ${reemplazado} ya fue reemplazada: estos datos son de la ${folio}, la vigente.${monto ? "" : " Dile el monto con el anticipo de su resumen."}` } : {}),
         ...(notaMonto ? { notaMonto } : {}),
-        instruccion: "Pega «mensaje» TAL CUAL, completo y sin cambiar una sola cifra, después del resumen de su cotización. No escribas datos bancarios de memoria.",
+        instruccion: "Pega «mensaje» TAL CUAL, completo y sin cambiar una sola cifra ni una liga. Ya lleva transferencia, OXXO y tarjeta juntos y cierra con «Quedo en espera de tu comprobante»: no agregues otra pregunta. No escribas datos bancarios de memoria.",
       };
     }
 
@@ -1973,6 +2062,39 @@ async function ejecutarHerramienta(name, input, phone) {
 
     case "escalar_a_humano":
       return escalarAHumano(input, phone);
+
+    case "enviar_fotos": {
+      const slugs = (Array.isArray(input.slugs) ? input.slugs : [input.slugs]).filter(Boolean).slice(0, 3);
+      const session = sesionDe(phone);
+      const yaMandadas = new Set(Array.isArray(session.fotosEnviadas) ? session.fotosEnviadas : []);
+      const salen = [];
+      for (const slug of slugs) {
+        const t = findTour(slug);
+        if (!t || !t.foto || yaMandadas.has(t.slug)) continue;
+        const nombre = String(t.nombre || "").split("—")[0].trim();
+        if (adjuntos.encolar(phone, { tipo: "foto", url: t.foto, caption: nombre })) {
+          salen.push(nombre);
+          yaMandadas.add(t.slug);
+        }
+      }
+      session.fotosEnviadas = [...yaMandadas].slice(-20);
+      return salen.length
+        ? { ok: true, fotos: salen, nota: "Las fotos salen justo antes de tu mensaje: no digas «te mando fotos», ya van." }
+        : { ok: false, nota: "No hay foto nueva que mandar (ya se mandó o el tour no tiene). Sigue con tu mensaje." };
+    }
+
+    case "agendar_seguimiento": {
+      const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{1,2}):(\d{2})/.exec(String(input.cuando || "").trim());
+      if (!m) return { error: "Pasa la hora como AAAA-MM-DDTHH:MM (hora de México)." };
+      // México centro no cambia de horario desde 2022: UTC-6 fijo.
+      const at = Date.parse(`${m[1]}T${m[2].padStart(2, "0")}:${m[3]}:00-06:00`);
+      const ahora = Date.now();
+      if (!Number.isFinite(at) || at < ahora + 10 * 60 * 1000) return { error: "Esa hora ya pasó o es en menos de 10 minutos." };
+      if (at > ahora + 8 * 86400000) return { error: "Agenda a 8 días como máximo." };
+      const session = sesionDe(phone);
+      session.seguimiento = { ...(session.seguimiento || {}), agendado: { at, motivo: textoLimpio(input.motivo, 160) || null, creado: ahora } };
+      return { ok: true, nota: "Listo: a esa hora le escribes tú. Confírmale en una línea («¡Va! Te escribo mañana a las 6 🙌»)." };
+    }
 
     default:
       return { error: `Herramienta desconocida: ${name}` };
@@ -2261,7 +2383,7 @@ function resultadoDeCotizacion(chatId, data, {
       : null,
     "1) Copia resumenWhatsApp TAL CUAL (si no viene, arma el resumen: folio, recorridos con fecha y precio, personas, total, anticipo, saldo y vigencia).",
     "2) Si emailEnviado es true, di que también se la mandaste a su correo; si no, no menciones el correo.",
-    `3) Pregunta cómo prefiere pagar: transferencia u OXXO → datos_pago con el folio y el anticipo; tarjeta → ${tarjetaEnLinea ? "enviar_link_pago" : "escalar_a_humano (otro, avisar, hoy) para que el equipo le mande la liga"}.`,
+    "3) El PDF de la cotización ya sale solo en el chat (no lo menciones como pendiente). Cierra con «¿Deseas que te envíe los pasos para reservar?». Con su sí → datos_pago con el folio y el anticipo: trae transferencia, OXXO y la liga de tarjeta juntos. Si van varios y cada quien paga lo suyo → enviar_link_pago con `partes`.",
   ].filter(Boolean);
   return {
     ...d,
@@ -3115,6 +3237,7 @@ async function turnoConElModelo(phone, session, llamar) {
       // cual — vale igual para un tour suelto que para un paquete a medida.
       // (El folio de la sesión ya lo dejó resultadoDeCotizacion.)
       if (result && result.folio && result.resumenWhatsApp) {
+        adjuntos.encolar(phone, { tipo: "pdf", folio: result.folio, nombre: adjuntos.nombrePdf(result.folio, idiomaDe(phone)) });
         resumenes.push({
           folio: result.folio, texto: result.resumenWhatsApp, total: result.total, anticipo: result.anticipo,
           reemplazaA: folioNormal(result.reemplazaA),

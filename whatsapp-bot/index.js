@@ -20,6 +20,11 @@ const { getSession, pushHistory, clearSession, sesionExistente } = sessions;
 const { crearGestorDeRafagas } = require("./buffer");
 const estado = require("./estado");
 const medios = require("./medios");
+const adjuntos = require("./adjuntos");
+const { crearDocumentos } = require("./documentos");
+const seguimiento = require("./seguimiento");
+const { etapaDe } = require("./etapas");
+const { crearEtiquetas } = require("./etiquetas");
 const horario = require("./horario");
 
 // ── Configuración ─────────────────────────────────────────────
@@ -247,6 +252,11 @@ async function enviar(chatId, contenido, opciones) {
   anotarTextoDelBot(seguro);
   return enviarRobusto(chatId, seguro, opciones);
 }
+
+// El PDF de la cotización o de la confirmación y las fotos de los tours
+// (16 nov 2026, «Tének»): salen ANTES del texto del turno.
+const documentos = crearDocumentos({ client, api, enviar });
+const etiquetas = crearEtiquetas({ client });
 
 /** Aviso (texto o archivo) al WhatsApp del dueño. Devuelve si llegó; nunca lanza. */
 async function avisarAlDueno(contenido, opciones) {
@@ -938,6 +948,9 @@ client.on("message", async (msg) => {
       }
     }
 
+    // El cliente escribió: el seguimiento (seguimiento.js) se reinicia.
+    marcarCliente(chatId);
+
     // 4) Archivos, audios y ubicaciones: ANTES del corte por texto vacío.
     const pausa = pausaActiva(chatId);
     let texto = body;
@@ -1127,15 +1140,21 @@ async function responderConModelo(chatId, textoModelo, { textoCliente = textoMod
         console.log(`   🧾 [${etiquetaChat(chatId)}] ${durante ? "llegó un comprobante mientras el modelo contestaba" : "la ráfaga traía el comprobante"}: quité de la respuesta lo que pedía el pago${enviado ? "" : " (no quedó nada que mandar)"}${corregido ? "" : " · ⚠️ no encontré esa respuesta en el historial para corregirla"}.`);
       }
     }
+    // Fotos de los tours propuestos y el PDF de la cotización: antes del
+    // texto, para que la pregunta de cierre sea lo último que lee.
+    const extras = adjuntos.tomar(chatId);
+    if (extras.length) await documentos.enviarAdjuntos(chatId, extras);
     if (enviado) {
       await enviar(chatId, enviado);
       marcarAtendido(chatId);
     }
+    etiquetas.ponerEtapa(chatId, etapaDe(getSession(chatId))).catch(() => {});
   } catch (e) {
     console.error(`❌ procesando ${chatId}:`, primeraLinea(e));
     await fallaAlResponder(chatId, e, textoCliente);
   } finally {
     if (escribiendo) clearInterval(escribiendo);
+    adjuntos.tomar(chatId); // lo que quedó de un turno que falló no se manda después
   }
   // 6) Si el modelo decidió pasar el chat al equipo (escalar_a_humano), se
   // aplica DESPUÉS de contestar. También si la respuesta falló: el aviso al
@@ -1847,6 +1866,11 @@ async function confirmarPago(ctx, arg, responder) {
     } catch (e) {
       console.error(`❌ confirmación a ${destino}:`, primeraLinea(e));
     }
+    // El PDF de confirmación (HP-M-…), el mismo del panel («Estructura de
+    // oro», etapa 8). Solo en la primera confirmación, no en cada abono.
+    if (enviado && !b.yaConfirmada && b.reservaFolio) {
+      await documentos.enviarAdjuntos(destino, [{ tipo: "pdf", folio: b.reservaFolio, nombre: adjuntos.nombrePdf(b.reservaFolio, locale) }]);
+    }
   }
   if (enviado) {
     // Los comprobantes que lleguen después (el saldo) se ligan a la reserva, y
@@ -1878,6 +1902,147 @@ async function confirmarPago(ctx, arg, responder) {
   return responder(L.filter(Boolean).join("\n"));
 }
 
+// ── Seguimiento: Tének vuelve a escribir (seguimiento.js) ─────
+// Revisa cada 5 min. Los recordatorios los redacta el modelo con una nota de
+// sistema; el pago con liga y el «¿cómo les fue?» son mensajes fijos.
+// SEGUIMIENTO=0 lo apaga sin tocar el código.
+const SEGUIMIENTO_CADA_MS = Number(process.env.SEGUIMIENTO_CADA_MS || 5 * 60 * 1000);
+const SEGUIMIENTO_APAGADO = process.env.SEGUIMIENTO === "0";
+let whatsappListo = false;
+let revisandoSeguimiento = false;
+let relojSeguimiento = null;
+
+/** El cliente escribió: se reinicia su seguimiento (lo recién acordado se respeta). */
+function marcarCliente(chatId) {
+  const s = getSession(chatId);
+  const ahora = Date.now();
+  s.clienteAt = ahora;
+  if (s.seguimiento) {
+    const ag = s.seguimiento.agendado;
+    // El «sí, va» que lo agendó llega justo antes: lo acordado hace menos de
+    // 10 min sigue en pie; uno viejo se cae porque la plática ya siguió.
+    const sigue = ag && ag.at > ahora && ahora - (ag.creado || 0) < 10 * 60 * 1000;
+    s.seguimiento = { ...s.seguimiento, enviados: [], base: null, agendado: sigue ? ag : null };
+  }
+}
+
+async function revisarSeguimientos() {
+  if (SEGUIMIENTO_APAGADO || revisandoSeguimiento || !whatsappListo) return;
+  revisandoSeguimiento = true;
+  try {
+    const todas = estado.sesiones() || {};
+    for (const chatId of Object.keys(todas)) {
+      const s = todas[chatId];
+      if (!s || !s.botAt) continue;
+      const d = seguimiento.decidirSeguimiento(s, { ahora: Date.now(), pausa: Boolean(pausaActiva(chatId)) });
+      if (d.accion === "nada") continue;
+      await rafagas.ejecutarExclusivo(chatId, () => ejecutarSeguimiento(chatId, d));
+    }
+  } catch (e) {
+    console.error("❌ seguimiento:", primeraLinea(e));
+  } finally {
+    revisandoSeguimiento = false;
+  }
+}
+
+async function ejecutarSeguimiento(chatId, d) {
+  const s = getSession(chatId);
+  const seg = s.seguimiento || (s.seguimiento = {});
+
+  if (d.accion === "revisar_pago") {
+    seg.revisadoPagoAt = Date.now();
+    const r = await api.consultarReserva(d.folio);
+    if (r.ok && r.data) await avisarPagoConLiga(chatId, s, r.data);
+    return;
+  }
+
+  if (d.accion === "post_viaje") {
+    seg.postViajeAt = Date.now();
+    const texto = seguimiento.textoPostViaje(s);
+    await enviar(chatId, texto);
+    pushHistory(chatId, "assistant", texto);
+    marcarAtendido(chatId);
+    etiquetas.ponerEtapa(chatId, "post_viaje").catch(() => {});
+    console.log(`🔔 [${etiquetaChat(chatId)}] post-viaje: ¿cómo les fue?`);
+    return;
+  }
+
+  // Recordatorio (3 h, 24 h, 72 h) o la hora acordada: lo redacta el modelo.
+  if (d.accion === "recordar" && !seg.base) seg.base = s.botAt;
+  const nota = seguimiento.notaParaElModelo(d.accion === "agendado" ? 1 : d.paso, s, { agendado: d.accion === "agendado" });
+  let respuesta = null;
+  try {
+    respuesta = await processMessage(chatId, nota);
+    const extras = adjuntos.tomar(chatId);
+    if (extras.length) await documentos.enviarAdjuntos(chatId, extras);
+    if (respuesta) {
+      await enviar(chatId, respuesta);
+      marcarAtendido(chatId);
+    }
+  } finally {
+    adjuntos.tomar(chatId);
+    if (d.accion === "agendado") seg.agendado = null;
+    // Los pasos que se brincaron (bot apagado) cuentan como hechos.
+    else seg.enviados = [...(seg.enviados || []), ...Array(1 + (d.saltados || 0)).fill(Date.now())];
+  }
+  console.log(`🔔 [${etiquetaChat(chatId)}] seguimiento ${d.accion === "agendado" ? "acordado" : `#${d.paso}`}${d.saltados ? ` (${d.saltados} se brincaron)` : ""}`);
+  await aplicarEscalacion(chatId, { textoCliente: "", respuestaBot: respuesta }).catch(() => {});
+}
+
+/**
+ * La cotización ya es reserva: pagó con la liga de tarjeta (Stripe la
+ * convirtió sola). Le llega su confirmación con el PDF, como con /confirma.
+ * Con una liga por persona, mientras falten partes se le dice cuántas van.
+ */
+async function avisarPagoConLiga(chatId, s, d) {
+  const reserva = d.reservaFolio;
+  if (!reserva) return;
+  const seg = s.seguimiento || (s.seguimiento = {});
+  const en = medios.idiomaDeSesion(s) === "en";
+  const partes = Array.isArray(d.partes) ? d.partes : [];
+  const pagadas = partes.filter((p) => p && p.pagada).length;
+  if (partes.length && pagadas < (partes[0].de || partes.length)) {
+    if (pagadas <= (seg.partesAvisadas || 0)) return;
+    seg.partesAvisadas = pagadas;
+    const de = partes[0].de || partes.length;
+    const texto = en
+      ? `✅ We received ${pagadas} of ${de} payments for ${reserva}. ${de - pagadas === 1 ? "One more to go" : `${de - pagadas} more to go`} — once they're in, I'll send your confirmation. 🌿`
+      : `✅ Recibimos ${pagadas} de ${de} pagos de ${reserva}. ${de - pagadas === 1 ? "Falta uno" : `Faltan ${de - pagadas}`}; en cuanto entren te mando tu confirmación. 🌿`;
+    await enviar(chatId, texto);
+    pushHistory(chatId, "assistant", texto);
+    marcarAtendido(chatId);
+    return;
+  }
+
+  anotarEnFicha("marcarPagoEnFicha", chatId, d.folio, reserva);
+  s.lastFolio = reserva;
+  const r = await api.consultarReserva(reserva);
+  const b = (r.ok && r.data) || {};
+  if (Number.isFinite(Number(b.saldo))) s.saldoPendiente = Math.max(0, Math.round(Number(b.saldo)));
+  const pagado = Number(b.pagado) > 0 ? medios.mx(b.pagado) : null;
+  const saldo = Number(b.saldo) > 0 ? medios.mx(b.saldo) : null;
+  const texto = en
+    ? [
+        `✅ *We received your card payment!* Your booking *${reserva}* is confirmed.`,
+        pagado ? `💰 Paid: ${pagado}${saldo ? ` · Balance: ${saldo}, paid before the tour starts` : " · Fully paid"}` : null,
+        "Here's your confirmation in PDF. Where are you staying? That way your guide can pick you up. 🌿",
+      ]
+    : [
+        `✅ *¡Recibimos tu pago con tarjeta!* Tu reserva *${reserva}* está confirmada.`,
+        pagado ? `💰 Pagado: ${pagado}${saldo ? ` · Saldo: ${saldo}, se paga antes de iniciar el tour` : " · Liquidado"}` : null,
+        "Te mando tu confirmación en PDF. ¿En qué hotel o lugar se hospedan? Así el guía pasa por ustedes. 🌿",
+      ];
+  await documentos.enviarAdjuntos(chatId, [{ tipo: "pdf", folio: reserva, nombre: adjuntos.nombrePdf(reserva, en ? "en" : "es") }]);
+  const mensaje = texto.filter(Boolean).join("\n");
+  await enviar(chatId, mensaje);
+  pushHistory(chatId, "user", `[sistema] Pagó con la liga de tarjeta: ${d.folio} ya es la reserva ${reserva}. Ya se le mandó la confirmación con el PDF y se le preguntó dónde se hospeda: cuando lo diga, llama escalar_a_humano (recogida, avisar, normal) con el hotel y el folio ${reserva}.`);
+  pushHistory(chatId, "assistant", mensaje);
+  marcarAtendido(chatId);
+  etiquetas.ponerEtapa(chatId, "confirmado").catch(() => {});
+  await avisarAlDueno(`💳 Pagó con la liga: ${etiquetaChat(chatId)} · ${d.folio} → ${reserva}${pagado ? ` · ${pagado}` : ""}. Ya le llegó su confirmación con el PDF.`);
+  console.log(`💳 [${etiquetaChat(chatId)}] pagó con liga: ${d.folio} → ${reserva}`);
+}
+
 // ── Eventos de conexión ───────────────────────────────────────
 client.on("qr", (qr) => {
   console.log("\n📱 Escanea este QR con el WhatsApp del negocio (Dispositivos vinculados):\n");
@@ -1895,11 +2060,16 @@ client.on("qr", (qr) => {
 });
 client.on("authenticated", () => console.log("🔐 Autenticado."));
 client.on("ready", () => {
+  whatsappListo = true;
+  if (!relojSeguimiento && !SEGUIMIENTO_APAGADO) {
+    relojSeguimiento = setInterval(() => { revisarSeguimientos().catch(() => {}); }, SEGUIMIENTO_CADA_MS);
+    console.log(`🔔 Seguimiento activo: revisa cada ${Math.round(SEGUIMIENTO_CADA_MS / 60000)} min (3 h, 24 h y 72 h; de 9 am a 8 pm).`);
+  }
   console.log("\n✅ Bot de Tours Huasteca Potosina conectado y listo.");
   console.log("Comandos: /confirma <folio> <monto> · /noespago · /pausa · /reanuda · /olvida · /status · /help\n");
 });
 client.on("auth_failure", (m) => console.error("❌ Auth falló:", m, "\n   Borra .wwebjs_auth/ y reintenta."));
-client.on("disconnected", (r) => console.log("⚠️ Desconectado:", r));
+client.on("disconnected", (r) => { whatsappListo = false; console.log("⚠️ Desconectado:", r); });
 
 // ── Arranque ──────────────────────────────────────────────────
 function arrancar() {

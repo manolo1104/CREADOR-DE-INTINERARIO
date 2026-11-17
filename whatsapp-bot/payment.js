@@ -1,74 +1,94 @@
 // ════════════════════════════════════════════════════════════════════
-// Datos de pago para el bot (transferencia + OXXO).
-// Se leen del .env (recomendado, no se commitea). Si no están, usa los
-// valores de respaldo de abajo. En Railway, configúralos como variables.
+// Datos de pago para el bot: transferencia, OXXO y la liga de tarjeta, en UN
+// solo mensaje («Estructura de oro», 16 nov 2026: los datos bancarios iban en
+// el 67 % de las reservas y la liga de tarjeta solo en el 27 %, aunque 17
+// clientes la pidieron).
+//
+// 🔴 Los datos bancarios salen SOLO de las variables de entorno (BANK_NAME,
+// BANK_TITULAR, BANK_CLABE, OXXO_REFERENCIA). El repo es PÚBLICO: antes iban
+// escritos aquí de respaldo. Fuera de producción (pruebas y simulador) se usan
+// unos de mentira, para que nadie copie unos reales de un ejemplo.
 // ════════════════════════════════════════════════════════════════════
 
+const EN_PRODUCCION = process.env.NODE_ENV === "production";
+const DE_PRUEBA = { banco: "Banco de prueba", titular: "Titular de prueba", clabe: "000000000000000000", oxxo: "0000 0000 0000 0000" };
+
 const PAGO = {
-  banco: process.env.BANK_NAME || "Inbursa",
-  titular: process.env.BANK_TITULAR || "Manuel Arturo Covarrubias Martinez",
-  clabe: process.env.BANK_CLABE || "036180500744560342",
-  oxxo: process.env.OXXO_REFERENCIA || "4217 4701 3134 5718",
-  // El concepto es lo único que nos deja emparejar un depósito con su
-  // cotización: sin él hay que perseguir al cliente para saber de quién es.
-  instrucciones:
-    "IMPORTANTE: pon el FOLIO de la cotización como CONCEPTO o referencia de la transferencia — con eso identificamos tu pago. Una vez realizado, envía tu comprobante a este chat. Tu reservación solo queda CONFIRMADA cuando recibimos el comprobante.",
+  banco: process.env.BANK_NAME || (EN_PRODUCCION ? "" : DE_PRUEBA.banco),
+  titular: process.env.BANK_TITULAR || (EN_PRODUCCION ? "" : DE_PRUEBA.titular),
+  clabe: process.env.BANK_CLABE || (EN_PRODUCCION ? "" : DE_PRUEBA.clabe),
+  oxxo: process.env.OXXO_REFERENCIA || (EN_PRODUCCION ? "" : DE_PRUEBA.oxxo),
 };
+
+/** ¿Están los datos para transferir? Sin CLABE no se manda nada bancario. */
+const HAY_DATOS_BANCO = Boolean(PAGO.clabe);
+if (EN_PRODUCCION && !HAY_DATOS_BANCO) {
+  console.warn("⚠️ Faltan BANK_CLABE y compañía: el bot no puede dar datos de transferencia (solo la liga de tarjeta).");
+}
 
 function montoMx(n) {
   return `$${Math.round(Number(n)).toLocaleString("es-MX")} MXN`;
 }
 
 /**
- * El mensaje de datos de pago, listo para mandarse tal cual (es/en).
+ * El mensaje de pago, listo para mandarse tal cual (es/en). Lleva:
+ *   · el MONTO (sin él el cliente preguntaba «¿cuánto deposito?»);
+ *   · «para transferir usa la CLABE» (alguien transfirió al número de la
+ *     tarjeta de OXXO y su banco le dijo «cuenta inexistente»);
+ *   · el folio como concepto (lo único que empareja el depósito);
+ *   · la liga de tarjeta sin comisión, o una por persona;
+ *   · «Quedo en espera del comprobante», como cierra Erick.
+ * Nunca dice que la reserva ya está confirmada: eso pasa al validar el pago.
  *
- * Lleva lo que le faltaba a la plantilla del equipo y costó ventas:
- *   · el MONTO: sin él, el cliente preguntaba «¿cuánto deposito?» o pagaba
- *     de más;
- *   · «para transferir usa la CLABE»: un cliente transfirió al número de la
- *     tarjeta de OXXO, su banco le dijo «cuenta inexistente» y se perdieron
- *     2.5 h;
- *   · el folio como concepto: es lo único que empareja el depósito con la
- *     cotización.
- * Y nunca dice que la reserva YA está confirmada: eso solo pasa cuando el
- * equipo valida el pago (/confirma).
- *
- * @param {{folio?:string, monto?:number, locale?:"es"|"en"}} datos
+ * @param {{folio?:string, monto?:number, locale?:"es"|"en", liga?:string|null,
+ *   ligas?:{parte:number, de:number, url:string, monto:number, pagada?:boolean}[]}} datos
  */
-function mensajeDatosPago({ folio, monto, locale } = {}) {
+function mensajeDatosPago({ folio, monto, locale, liga, ligas } = {}) {
   const en = String(locale || "").toLowerCase().startsWith("en");
   const folioTxt = String(folio || "").trim().toUpperCase();
   const conMonto = Number.isFinite(Number(monto)) && Number(monto) > 0;
-  const lineas = en
+  const partes = Array.isArray(ligas) ? ligas.filter((l) => l && l.url && !l.pagada) : [];
+
+  const banco = HAY_DATOS_BANCO
+    ? en
+      ? [
+          `🏦 Bank: ${PAGO.banco}`,
+          `👤 Account holder: ${PAGO.titular}`,
+          `🔢 CLABE (for bank transfers): ${PAGO.clabe}`,
+          `🏪 Cash deposit at OXXO (card number): ${PAGO.oxxo}`,
+        ]
+      : [
+          `🏦 Banco: ${PAGO.banco}`,
+          `👤 Titular: ${PAGO.titular}`,
+          `🔢 CLABE interbancaria: ${PAGO.clabe}`,
+          `🏪 Depósito en OXXO (número de tarjeta): ${PAGO.oxxo}`,
+        ]
+    : [];
+
+  const tarjeta = partes.length
     ? [
-        "💳 *Payment details*",
-        "",
-        `🏦 Bank: ${PAGO.banco}`,
-        `👤 Account holder: ${PAGO.titular}`,
-        `🔢 CLABE (for bank transfers): ${PAGO.clabe}`,
-        `🏪 Cash deposit at OXXO (card number): ${PAGO.oxxo}`,
-        "",
-        ...(conMonto ? [`💰 *Amount:* ${montoMx(monto)}`] : []),
-        `📝 *Payment reference:* ${folioTxt || "your quote number"}`,
-        "",
-        "⚠️ For a bank transfer use the *CLABE*; the card number is only for cash deposits at OXXO stores.",
-        "Once you pay, send us the receipt in this chat. Your booking is confirmed once we verify the payment. 🌿",
+        en ? "💳 *By card, one link per person (no fee):*" : "💳 *Con tarjeta, una liga por persona (sin comisión):*",
+        ...partes.map((l) => `${en ? "Part" : "Parte"} ${l.parte}/${l.de} · ${montoMx(l.monto)}\n${l.url}`),
       ]
-    : [
-        "💳 *Datos para tu pago*",
-        "",
-        `🏦 Banco: ${PAGO.banco}`,
-        `👤 Titular: ${PAGO.titular}`,
-        `🔢 CLABE interbancaria: ${PAGO.clabe}`,
-        `🏪 Depósito en OXXO (número de tarjeta): ${PAGO.oxxo}`,
-        "",
-        ...(conMonto ? [`💰 *Monto:* ${montoMx(monto)}`] : []),
-        `📝 *Concepto:* ${folioTxt || "tu folio de cotización"}`,
-        "",
-        "⚠️ Para transferir usa la *CLABE*; la tarjeta es solo para depositar en OXXO.",
-        "Cuando pagues, mándanos el comprobante a este chat. Tu reserva queda confirmada cuando validamos el pago. 🌿",
-      ];
-  return lineas.join("\n");
+    : liga
+      ? [en ? "💳 *By card (no fee):*" : "💳 *Con tarjeta (sin comisión):*", liga]
+      : [];
+
+  const L = [
+    en ? "💳 *How to pay*" : "💳 *Datos para tu pago*",
+    "",
+    ...banco,
+    ...(banco.length ? [""] : []),
+    ...(conMonto ? [en ? `💰 *Amount:* ${montoMx(monto)}` : `💰 *Monto:* ${montoMx(monto)}`] : []),
+    ...(banco.length ? [en ? `📝 *Payment reference:* ${folioTxt || "your quote number"}` : `📝 *Concepto:* ${folioTxt || "tu folio de cotización"}`] : []),
+    ...(tarjeta.length ? ["", ...tarjeta] : []),
+    "",
+    ...(banco.length ? [en ? "⚠️ For a bank transfer use the *CLABE*; the card number is only for cash deposits at OXXO stores." : "⚠️ Para transferir usa la *CLABE*; la tarjeta es solo para depositar en OXXO."] : []),
+    en
+      ? "Your booking is confirmed once we verify the payment. I'll be waiting for your receipt here. 🌿"
+      : "Tu reserva queda confirmada cuando validamos el pago. Quedo en espera de tu comprobante por aquí. 🌿",
+  ];
+  return L.join("\n").replace(/\n{3,}/g, "\n\n");
 }
 
-module.exports = { PAGO, mensajeDatosPago };
+module.exports = { PAGO, HAY_DATOS_BANCO, mensajeDatosPago };
