@@ -32,6 +32,14 @@ export const VIGENCIAS: Record<string, { dias: number; label: string }> = {
 
 export const VIGENCIA_POR_DEFECTO = "7dias";
 
+/**
+ * Las cotizaciones del bot de WhatsApp. 16 nov 2026, Manolo: 7 días (antes
+ * 48 h). El 83 % de las reservas paga en menos de 7 días («Estructura de oro»),
+ * y así cabe el seguimiento de 3, 24 y 72 h. El tope del día antes del tour lo
+ * pone `calcularVencimiento`.
+ */
+export const VIGENCIA_BOT = "7dias" as const;
+
 const esYMD = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** La vigencia elegida en el panel; vive en el `_meta` de `packageItems`. */

@@ -280,7 +280,7 @@ export interface MetaCotizacionBot {
   anticipo:       number;
   anticipoTipo:   "percent";
   anticipoValor:  number;
-  vigencia:       "48h";
+  vigencia:       "7dias";
   numPersonas:    number | null;
   /** El total del bot cuando es MAYOR que la suma a precio de lista del panel (viajero solo). */
   priceOverride:  number | null;

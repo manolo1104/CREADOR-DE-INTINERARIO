@@ -9,7 +9,8 @@ import { SISTEMA, pesos, registrarEnBitacora } from "@/lib/admin/bitacora";
 import { RESPONSABLE_COBROS } from "@/lib/admin/automatizaciones";
 import { tituloTareaLigaPagada } from "@/lib/cotizaciones/reglasConversion";
 import {
-  avisoTrasAbonarLiga, CREADOR_LIGA_COTIZACION, decidirLigaDeCotizacion, motivoParaApagarLiga, reservasParaPagoRestante,
+  avisoTrasAbonarLiga, CREADOR_LIGA_COTIZACION, CREADOR_LIGA_PARTES, decidirLigaDeCotizacion, motivoParaApagarLiga,
+  parteDeTitulo, repartirEnPartes, reservasParaPagoRestante,
   textosLigaDeCotizacion, tituloLigaDeOtraCuenta, tituloLigaSinDestino,
   type HechosLiga, type SesionPagadaLiga,
 } from "@/lib/admin/ligasReglas";
@@ -341,6 +342,82 @@ export async function asegurarLigaDeCotizacion(quoteId: string): Promise<{ url: 
   } catch (e) {
     console.error("asegurarLigaDeCotizacion:", (e as Error)?.message);
     return null;
+  }
+}
+
+export interface LigaDeParte { parte: number; de: number; url: string; monto: number; pagada: boolean }
+
+/** Las ligas «una por persona» de una cotización, en orden de parte (pagadas y vivas). */
+export async function partesDeCotizacion(quoteId: string): Promise<LigaDeParte[]> {
+  const ligas = await prisma.linkPago.findMany({
+    where: { cotizacionId: quoteId, creadoPor: CREADOR_LIGA_PARTES, estado: { in: ["activo", "pagado"] } },
+    orderBy: { createdAt: "asc" },
+  });
+  return ligas
+    .map((l) => {
+      const p = parteDeTitulo(l.titulo);
+      return p ? { parte: p.parte, de: p.de, url: l.url, monto: l.monto, pagada: l.estado === "pagado" } : null;
+    })
+    .filter((x): x is LigaDeParte => !!x)
+    .sort((a, b) => a.parte - b.parte);
+}
+
+/**
+ * Una liga por persona (16 nov 2026, «Estructura de oro»): cuando viajan
+ * varios y cada quien quiere pagar su parte. Reparte el anticipo acordado (o el
+ * total) en `partes` ligas de Stripe que suman exacto.
+ *
+ *  · Solo antes de que entre cualquier pago y con la cotización abierta.
+ *  · Si ya existen las mismas partes (mismo número y monto), se reusan.
+ *  · Apaga la liga del anticipo completo (la del correo): pagarla encima de las
+ *    partes cobraría dos veces. Mientras haya partes vivas, el correo y los
+ *    recordatorios ya no la vuelven a crear (`decidirLigaDeCotizacion`).
+ *  · El primer pago convierte la cotización en reserva (como cualquier liga) y
+ *    los siguientes se abonan a esa misma reserva sin repetir el correo.
+ */
+export async function ligasPorPersona(
+  quoteId: string,
+  partes: number,
+  base: "anticipo" | "total" = "anticipo",
+): Promise<{ ok: true; ligas: LigaDeParte[] } | { ok: false; error: string }> {
+  try {
+    const q = await prisma.tourQuote.findUnique({ where: { id: quoteId } });
+    if (!q) return { ok: false, error: "Esa cotización no existe." };
+    if (q.status !== "borrador" && q.status !== "enviada") return { ok: false, error: `La cotización está ${q.status}: ya no se cobra con ligas.` };
+    const pkgs = Array.isArray(q.packageItems) ? (q.packageItems as Record<string, unknown>[]) : [];
+    const meta = (pkgs.find((p) => !!p && typeof p === "object" && p._meta === true) ?? {}) as { anticipo?: number; reemplazadaPor?: unknown; numPersonas?: unknown };
+    if (typeof meta.reemplazadaPor === "string" && meta.reemplazadaPor) return { ok: false, error: `La reemplazó la ${meta.reemplazadaPor}.` };
+    const ligas = await prisma.linkPago.findMany({ where: { cotizacionId: q.id }, orderBy: { createdAt: "desc" } });
+    if (ligas.some((l) => l.estado === "pagado")) return { ok: false, error: "Ya entró un pago de esta cotización: el resto lo cobra el equipo." };
+
+    const monto = base === "total" ? q.totalAmount : anticipoDe(q.totalAmount, meta).anticipo;
+    const montos = repartirEnPartes(monto, partes, MONTO_MINIMO);
+    const vivas = ligas.filter((l) => l.estado === "activo");
+    const partesVivas = vivas.filter((l) => l.creadoPor === CREADOR_LIGA_PARTES);
+    const mismas = partesVivas.length === montos.length
+      && partesVivas.every((l) => parteDeTitulo(l.titulo)?.de === montos.length)
+      && partesVivas.reduce((s, l) => s + l.monto, 0) === Math.round(monto);
+    if (mismas) return { ok: true, ligas: await partesDeCotizacion(q.id) };
+    if (!process.env.STRIPE_SECRET_KEY) return { ok: false, error: "Sin llave de Stripe no se pueden crear ligas." };
+
+    for (const l of vivas) await apagarLiga(l, `se cobra en ${montos.length} partes (una liga por persona)`);
+    const t = textosLigaDeCotizacion({
+      quoteNumber: q.quoteNumber, customerName: q.customerName, tourName: q.tourName, tourDate: q.tourDate,
+      personas: Number(meta.numPersonas) || q.adults + q.children, total: q.totalAmount, monto,
+    });
+    const creadas: LigaDeParte[] = [];
+    for (let i = 0; i < montos.length; i++) {
+      const titulo = `Parte ${i + 1} de ${montos.length} · ${t.titulo}`;
+      const c = await crearLinkDePago({
+        titulo, detalle: t.detalle, monto: montos[i], cliente: q.customerName, cotizacionId: q.id,
+        nota: `Una liga por persona: parte ${i + 1} de ${montos.length}`,
+      }, CREADOR_LIGA_PARTES);
+      creadas.push({ parte: i + 1, de: montos.length, url: c.url, monto: c.monto, pagada: false });
+    }
+    return { ok: true, ligas: creadas };
+  } catch (e) {
+    console.error("ligasPorPersona:", (e as Error)?.message);
+    return { ok: false, error: (e as Error)?.message || "No se pudieron crear las ligas." };
   }
 }
 
@@ -713,7 +790,10 @@ async function convertirPorLigaPagada(q: TourQuote, link: LinkPago, montoPagado:
       // liga pagada dejaba la reserva hecha, pero el cliente no recibía nada
       // hasta que alguien lo mandaba a mano desde el panel. Solo si ESTE pago
       // entró a la reserva: un reintento de Stripe ya no abona y no lo repite.
-      if (conv.abonadoPorLiga > 0) {
+      // Y solo cuando ESTE pago creó la reserva (`nueva`): con una liga por
+      // persona, la parte 2 se abona a la reserva que ya existe y el cliente
+      // no recibe otro «tu tour está confirmado» (16 nov 2026).
+      if (conv.abonadoPorLiga > 0 && conv.nueva) {
         await confirmarPagoDeLiga(conv.reserva, link, q, tarea);
       }
     }

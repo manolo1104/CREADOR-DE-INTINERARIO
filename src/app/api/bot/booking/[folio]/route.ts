@@ -7,6 +7,8 @@ import { ANTICIPO_PCT } from "@/lib/carrito";
 import { metaDe } from "@/lib/admin/reserva";
 import { cuandoVence, etapaDe } from "@/lib/vencimientoCotizacion";
 import { metaDeCotizacion, resumenDeCotizacion } from "@/lib/cotizaciones/armar";
+import { ligaParaCorreo } from "@/lib/cotizaciones/enviar";
+import { partesDeCotizacion } from "@/lib/admin/linksPago";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -25,15 +27,16 @@ function conHotel(packageItems: unknown, slug: string | null | undefined): boole
  * Lo que se pagó y lo que falta de una reserva, ya redactado para que el bot
  * no tenga que interpretar los números.
  *
- * El saldo se paga el día del tour en efectivo o transferencia (el guía NO
- * cobra con tarjeta, aunque aquí lo decía); con hotel, al hacer check-in.
+ * El saldo se paga antes de iniciar el tour en efectivo o transferencia (el
+ * guía no lleva terminal: con tarjeta, liga de pago sin comisión); con hotel,
+ * al hacer check-in.
  */
 function resumenPagoReserva(b: TourBooking): string {
   const total = b.totalAmount;
   const dep = b.depositoPagado ?? 0;
   const cuando = conHotel(b.packageItems, b.tourSlug)
     ? "al hacer check-in en el hotel"
-    : "el día del tour, en efectivo o transferencia";
+    : "antes de iniciar el tour, en efectivo o transferencia";
   if (b.status === "cancelled") {
     return `Reserva CANCELADA (era por ${mx(total)}). No le confirmes nada ni hables de reembolsos: si pregunta, pásalo al equipo.`;
   }
@@ -95,7 +98,7 @@ export async function GET(
       const meta = metaDeCotizacion(q.packageItems);
       const esPaquete = conHotel(q.packageItems, typeof meta.paqueteSlug === "string" ? meta.paqueteSlug : q.tourSlug);
       const pct = r.total > 0 ? Math.round((r.anticipo / r.total) * 100) : ANTICIPO_PCT;
-      const cuando = esPaquete ? "al hacer check-in en el hotel" : "el día del tour, en efectivo o transferencia";
+      const cuando = esPaquete ? "al hacer check-in en el hotel" : "antes de iniciar el tour, en efectivo o transferencia";
       // Ya convertida: lo que importa es lo que dice la reserva. La que
       // convirtió el bot guarda su folio en el `_meta`; la que se convirtió
       // desde el panel no, pero su reserva guarda de qué cotización salió (la
@@ -150,10 +153,21 @@ export async function GET(
           + " NO es una reserva confirmada: se confirma cuando el equipo valida el pago.";
       }
 
+      // La liga de Stripe de la cotización (la misma del correo), solo si
+      // todavía se puede pagar. `asegurarLigaDeCotizacion` no crea otra si ya
+      // hay una viva por el mismo monto.
+      const pagable = !reserva && r.status !== "aceptada" && etapa !== "vencida";
+      const liga = pagable ? await ligaParaCorreo(q.id, q.customerEmail) : null;
+      // Una liga por persona: cuáles ya se pagaron (el bot dice cuántas faltan).
+      const partes = await partesDeCotizacion(q.id).catch(() => []);
+
       return NextResponse.json({
         tipo:         "cotizacion",
         folio:        r.folio,
         status:       r.status,
+        ligaPago:     liga?.url ?? null,
+        ...(liga ? { ligaMonto: liga.monto } : {}),
+        ...(partes.length ? { partes } : {}),
         // borrador | enviada | por-vencer | aceptada | vencida (la que pinta el panel).
         etapa,
         tourName:     r.tourName,
@@ -193,6 +207,7 @@ export async function GET(
     const pagado    = conDato ? b.depositoPagado! : null;
     const saldo     = conDato ? Math.max(0, b.totalAmount - pagado!) : null;
     const liquidado = conDato ? saldo === 0 : null;
+    const partes = b.cotizacionId ? await partesDeCotizacion(b.cotizacionId).catch(() => []) : [];
 
     return NextResponse.json({
       tipo: "reserva",
@@ -212,6 +227,7 @@ export async function GET(
       esPaquete: conHotel(b.packageItems, b.tourSlug),
       // Redactado para que el bot no tenga que interpretar los números.
       resumenPago: resumenPagoReserva(b),
+      ...(partes.length ? { partes } : {}),
       customerName: b.customerName,
       customerPhone: b.customerPhone,
       createdAt: b.createdAt,

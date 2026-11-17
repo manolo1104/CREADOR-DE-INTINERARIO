@@ -26,14 +26,14 @@ import { localizePaquete } from "@/lib/i18n/paquetes.en";
 import { fraseRecogidaCorreo, lineasCancelacion, pasamosPorEl } from "@/lib/recogidaCorreo";
 import { incluyeDesayuno } from "@/lib/catalogoResumen";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
-import { VIGENCIAS, calcularVencimiento, fechaLimite, vigenciaDe } from "@/lib/vencimientoCotizacion";
+import { VIGENCIAS, VIGENCIA_BOT, calcularVencimiento, fechaLimite, vigenciaDe } from "@/lib/vencimientoCotizacion";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { BOT } from "@/lib/admin/bitacora";
 import {
   CORTE_MANANA_MIN, calcularCotizacionBotConCupo, guardarCotizacionBot, metaDeCotizacion, minutosDelDiaMX,
   pagoDeCotizacionAnterior, reemplazarCotizacion,
 } from "./armar";
-import { enviarCotizacionPorCorreo, marcarEnviadaPorWhatsapp } from "./enviar";
+import { enviarCotizacionPorCorreo, ligaParaCorreo, marcarEnviadaPorWhatsapp } from "./enviar";
 import type {
   ClienteCotizacionBot, CotizacionBotInput, CotizacionCalculada, ErrorPrecio, HospedajeCotizacionBot,
   HospedajePrecio, ItemBotCrudo, LineaPrecio, LocaleBot, PaquetePrecio, PaqueteCotizacionBot,
@@ -281,8 +281,8 @@ function vistaDeCalculo(c: CotizacionCalculada, folio: string, venceEl: string |
     ...(h ? { hotel: { habitacion: h.habitacion, checkin: h.checkin, checkout: h.checkout, noches: h.noches, habitaciones: h.habitaciones, subtotal: h.subtotal } } : {}),
     total: c.total, anticipo: c.anticipo, saldo: c.saldo, pct: c.pctAnticipo,
     venceEl,
-    // Las del bot nacen todas con 48 h (`_meta.vigencia`), igual en los dos idiomas.
-    vigencia: "48 h",
+    // Las del bot nacen con VIGENCIA_BOT (`_meta.vigencia`): 7 días desde el 16 nov 2026.
+    vigencia: en ? VIGENCIAS[VIGENCIA_BOT].label.replace("días", "days") : VIGENCIAS[VIGENCIA_BOT].label,
   };
 }
 
@@ -533,9 +533,9 @@ function bloqueCancelacion(v: Vista, locale: LocaleBot): string[] {
 }
 
 /**
- * El saldo, como lo cobra el equipo: el día del tour en efectivo o
- * transferencia (el guía NO cobra con tarjeta, aunque los textos viejos lo
- * decían); con hotel, al hacer check-in.
+ * El saldo, como lo cobra el equipo: antes de iniciar el primer tour, en
+ * efectivo o transferencia (el guía no lleva terminal; con tarjeta va por liga
+ * de pago, sin comisión); con hotel, al hacer check-in.
  */
 function lineasDinero(v: Vista, en: boolean): string[] {
   const fechas = todos(v).map((r) => r.fecha).filter(esYMD);
@@ -543,8 +543,8 @@ function lineasDinero(v: Vista, en: boolean): string[] {
   const cuando = llevaHotel(v)
     ? (en ? "is paid at hotel check-in" : "se paga al hacer check-in en el hotel")
     : en
-      ? `is paid on the day of ${varios ? "the first tour" : "the tour"} in cash or by bank transfer`
-      : `se paga el día ${varios ? "del primer recorrido" : "del tour"} en efectivo o transferencia`;
+      ? `is paid before ${varios ? "the first tour" : "the tour"} starts, in cash or by bank transfer`
+      : `se paga antes de iniciar ${varios ? "el primer recorrido" : "el tour"}, en efectivo o transferencia`;
   const L = [`💰 *Total: ${mx(v.total)} MXN*`];
   if (v.saldo > 0) {
     L.push(en
@@ -579,8 +579,8 @@ function lineaVigencia(v: Vista, en: boolean, hoy: string, despuesDeLas10 = fals
     return en ? "⏳ Valid until today." : "⏳ Vale solo hoy.";
   }
   const fecha = fechaLarga(v.venceEl, en, hoy);
-  // Topada en la víspera: decir «48 h» prometería más de lo que vale.
-  if (esYMD(primera) && v.venceEl === addDaysYMD(primera, -1) && v.vigencia === "48 h" && v.venceEl < addDaysYMD(hoy, 2)) {
+  // Topada en la víspera: decir «7 días» prometería más de lo que vale.
+  if (esYMD(primera) && v.venceEl === addDaysYMD(primera, -1)) {
     return en ? `⏳ Valid until ${fecha}, the day before the tour.` : `⏳ Vale hasta el ${fecha}, la víspera del tour.`;
   }
   return en ? `⏳ Valid for ${v.vigencia}: until ${fecha}.` : `⏳ Vale ${v.vigencia}: hasta el ${fecha}.`;
@@ -852,12 +852,22 @@ export interface RespuestaCotizacionBot {
   moneda:         "MXN";
   /** Fecha límite (YYYY-MM-DD, hora de México). */
   venceEl:        string;
-  vigencia:       "48h";
+  vigencia:       "7dias";
   /** Para pegar TAL CUAL como primer mensaje. Sin datos bancarios. */
   resumenWhatsApp: string;
   /** ¿Le llegó un correo AL CLIENTE? (sin su correo, la copia va solo al equipo). */
   emailEnviado:   boolean;
+  /**
+   * Para pagar con tarjeta. Desde el 16 nov 2026 es la liga de Stripe de ESTA
+   * cotización (por el anticipo, sin comisión; al pagarla se convierte sola en
+   * reserva). Sin Stripe (local) cae a la página de la web cuando la web vende
+   * lo mismo; si no, null.
+   */
   linkPago:       string | null;
+  /** «liga»: la de Stripe del folio · «web»: la página de reservar · null. */
+  linkPagoTipo:   "liga" | "web" | null;
+  /** Lo que cobra la liga (el anticipo), en MXN. */
+  linkPagoMonto?: number;
   tourName:       string;
   tourDate:       string;
   personas:       number | null;
@@ -894,7 +904,7 @@ export type ResultadoRuta =
  *     correo como si fuera lo que pidió.
  *  2. La guarda como «borrador» (`guardarCotizacionBot`, folio COT-).
  *  3. La manda por correo como el botón del panel: al cliente con copia al
- *     equipo. Ahí nacen la fecha límite (48 h) y el seguimiento. Si el correo
+ *     equipo. Ahí nacen la fecha límite (7 días) y el seguimiento. Si el correo
  *     falla, o el cliente no dejó correo (solo le llega al equipo y ya no
  *     cuenta como enviada, lote 4), se anota como enviada por WhatsApp —que es
  *     por donde la recibe—, para que no se quede en «Sin enviar».
@@ -960,10 +970,13 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
   const reemplazo = await reemplazoDe(input, quote, etiqueta);
 
   const locale: LocaleBot = input.locale === "en" ? "en" : "es";
-  // Si ni anotar el envío se pudo, la que le corresponde por la regla de las
-  // 48 h: es la que el panel le calculará al mandarla.
-  const venceEl = envio.venceEl ?? calcularVencimiento(new Date(), "48h", quote.tourDate || null);
+  // Si ni anotar el envío se pudo, la que le corresponde por la vigencia del
+  // bot: es la que el panel le calculará al mandarla.
+  const venceEl = envio.venceEl ?? calcularVencimiento(new Date(), VIGENCIA_BOT, quote.tourDate || null);
   const avisos = avisosDe(calc);
+  // La misma liga que ya lleva el correo (se reusa, no nace otra).
+  const liga = await ligaParaCorreo(quote.id, quote.customerEmail);
+  const web = liga ? null : linkDePago(calc, locale === "en");
   const instruccion = [
     "Manda `resumenWhatsApp` TAL CUAL como primer mensaje, antes de cualquier dato de pago.",
     reemplazo?.ok
@@ -980,13 +993,15 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
       pctAnticipo:     calc.pctAnticipo,
       moneda:          "MXN",
       venceEl,
-      vigencia:        "48h",
+      vigencia:        VIGENCIA_BOT,
       resumenWhatsApp: resumenWhatsAppCotizacion(calc, {
         locale, folio: quote.quoteNumber, venceEl,
         ...(reemplazo?.ok ? { reemplazaA: reemplazo.folio } : {}),
       }),
       emailEnviado:    envio.emailEnviado,
-      linkPago:        linkDePago(calc, locale === "en"),
+      linkPago:        liga?.url ?? web,
+      linkPagoTipo:    liga ? "liga" : web ? "web" : null,
+      ...(liga ? { linkPagoMonto: liga.monto } : {}),
       tourName:        quote.tourName,
       tourDate:        quote.tourDate,
       personas:        calc.numPersonas,

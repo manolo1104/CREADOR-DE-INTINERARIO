@@ -368,6 +368,36 @@ export function tituloViajeSinAnticipo(p: { folio: string; cliente: string }): s
  */
 export const CREADOR_LIGA_COTIZACION = "Sistema (cotización)";
 
+/**
+ * Las ligas de «una por persona» que pide el bot (16 nov 2026, «Estructura de
+ * oro»: si viajan varios y cada quien paga lo suyo). Mientras haya una viva,
+ * la cotización se cobra en partes: el correo y sus recordatorios ya no ofrecen
+ * la liga del anticipo completo, que se pagaría encima de las partes.
+ */
+export const CREADOR_LIGA_PARTES = "Sistema (por persona)";
+
+/**
+ * Reparte un monto en `partes` pesos enteros que suman exacto; lo que no se
+ * divide parejo va en las primeras (1,000 / 3 → 334, 333, 333). Lanza si
+ * alguna parte queda abajo del mínimo de Stripe.
+ */
+export function repartirEnPartes(monto: number, partes: number, minimo = 10): number[] {
+  const total = Math.round(monto);
+  const n = Math.floor(partes);
+  if (!Number.isFinite(total) || total <= 0) throw new Error("No hay monto que repartir");
+  if (!Number.isFinite(n) || n < 2 || n > 12) throw new Error("Se reparte entre 2 y 12 personas");
+  const base = Math.floor(total / n);
+  if (base < minimo) throw new Error(`Cada parte quedaría en menos de $${minimo} MXN`);
+  const sobra = total - base * n;
+  return Array.from({ length: n }, (_, i) => base + (i < sobra ? 1 : 0));
+}
+
+/** «Parte 2 de 3 · Anticipo de Expedición Tamul» → { parte: 2, de: 3 }; otra cosa → null. */
+export function parteDeTitulo(titulo: string | null | undefined): { parte: number; de: number } | null {
+  const m = /^Parte (\d+) de (\d+)/.exec(String(titulo || ""));
+  return m ? { parte: Number(m[1]), de: Number(m[2]) } : null;
+}
+
 export type DecisionLigaCotizacion =
   | { accion: "nada"; motivo: string }
   | { accion: "reusar"; ligaId: string }
@@ -400,6 +430,7 @@ export function decidirLigaDeCotizacion(p: {
   if (p.ligas.some((l) => l.estado === "pagado")) return { accion: "nada", motivo: "ya pagó una liga" };
   if (!(p.monto >= 10)) return { accion: "nada", motivo: "el anticipo es menor a $10" };
   const vivas = p.ligas.filter((l) => l.estado === "activo");
+  if (vivas.some((l) => l.creadoPor === CREADOR_LIGA_PARTES)) return { accion: "nada", motivo: "se cobra en partes (una liga por persona)" };
   const aMano = vivas.find((l) => l.creadoPor !== CREADOR_LIGA_COTIZACION);
   if (aMano) return { accion: "reusar", ligaId: aMano.id };
   const igual = vivas.find((l) => l.monto === p.monto);

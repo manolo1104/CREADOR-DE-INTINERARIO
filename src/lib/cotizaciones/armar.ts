@@ -44,7 +44,7 @@ import { registrarEnBitacora, pesos, BOT, type Actor } from "@/lib/admin/bitacor
 import { lugaresDePaqueteSeguro } from "@/lib/cupoPaquete";
 import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
-import { fechaLimite } from "@/lib/vencimientoCotizacion";
+import { VIGENCIA_BOT, fechaLimite } from "@/lib/vencimientoCotizacion";
 import { conMeta as conMetaSeguimiento, metaCotizacion as metaSeguimiento } from "@/lib/quoteFollowUp";
 import { precioWebDelBot } from "./reglasEnvio";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
@@ -1055,7 +1055,7 @@ export function calcularCotizacionBot(input: PrecioBotInput, opciones: OpcionesC
     anticipo,
     anticipoTipo:  "percent",
     anticipoValor: PCT,
-    vigencia:      "48h",
+    vigencia:      VIGENCIA_BOT,
     numPersonas,
     priceOverride,
     discountType:  descuentoFijo !== null ? "fixed" : null,
