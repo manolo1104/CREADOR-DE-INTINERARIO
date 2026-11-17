@@ -400,20 +400,33 @@ export async function ligasPorPersona(
     if (mismas) return { ok: true, ligas: await partesDeCotizacion(q.id) };
     if (!process.env.STRIPE_SECRET_KEY) return { ok: false, error: "Sin llave de Stripe no se pueden crear ligas." };
 
-    for (const l of vivas) await apagarLiga(l, `se cobra en ${montos.length} partes (una liga por persona)`);
     const t = textosLigaDeCotizacion({
       quoteNumber: q.quoteNumber, customerName: q.customerName, tourName: q.tourName, tourDate: q.tourDate,
       personas: Number(meta.numPersonas) || q.adults + q.children, total: q.totalAmount, monto,
     });
+    // Primero nacen TODAS las partes y después se apaga lo de antes: así nunca
+    // hay un rato sin ligas vivas en el que el correo vuelva a crear la del
+    // anticipo completo. Si una parte falla, se apagan las que sí nacieron.
     const creadas: LigaDeParte[] = [];
-    for (let i = 0; i < montos.length; i++) {
-      const titulo = `Parte ${i + 1} de ${montos.length} · ${t.titulo}`;
-      const c = await crearLinkDePago({
-        titulo, detalle: t.detalle, monto: montos[i], cliente: q.customerName, cotizacionId: q.id,
-        nota: `Una liga por persona: parte ${i + 1} de ${montos.length}`,
-      }, CREADOR_LIGA_PARTES);
-      creadas.push({ parte: i + 1, de: montos.length, url: c.url, monto: c.monto, pagada: false });
+    const ids: string[] = [];
+    try {
+      for (let i = 0; i < montos.length; i++) {
+        const titulo = `Parte ${i + 1} de ${montos.length} · ${t.titulo}`;
+        const c = await crearLinkDePago({
+          titulo, detalle: t.detalle, monto: montos[i], cliente: q.customerName, cotizacionId: q.id,
+          nota: `Una liga por persona: parte ${i + 1} de ${montos.length}`,
+        }, CREADOR_LIGA_PARTES);
+        ids.push(c.id);
+        creadas.push({ parte: i + 1, de: montos.length, url: c.url, monto: c.monto, pagada: false });
+      }
+    } catch (e) {
+      for (const id of ids) {
+        const l = await prisma.linkPago.findUnique({ where: { id } });
+        if (l) await apagarLiga(l, "no se pudieron crear todas las partes");
+      }
+      throw e;
     }
+    for (const l of vivas) await apagarLiga(l, `se cobra en ${montos.length} partes (una liga por persona)`);
     return { ok: true, ligas: creadas };
   } catch (e) {
     console.error("ligasPorPersona:", (e as Error)?.message);
@@ -790,10 +803,14 @@ async function convertirPorLigaPagada(q: TourQuote, link: LinkPago, montoPagado:
       // liga pagada dejaba la reserva hecha, pero el cliente no recibía nada
       // hasta que alguien lo mandaba a mano desde el panel. Solo si ESTE pago
       // entró a la reserva: un reintento de Stripe ya no abona y no lo repite.
-      // Y solo cuando ESTE pago creó la reserva (`nueva`): con una liga por
-      // persona, la parte 2 se abona a la reserva que ya existe y el cliente
-      // no recibe otro «tu tour está confirmado» (16 nov 2026).
-      if (conv.abonadoPorLiga > 0 && conv.nueva) {
+      // Y solo con el PRIMER pago por liga de la cotización (16 nov 2026): con
+      // una liga por persona, la parte 2 se abona a la reserva que ya existe y
+      // el cliente no recibe otro «tu tour está confirmado». Si la reserva
+      // nació en el panel y luego pagó la liga, ese primer pago sí lo manda
+      // (la página de Stripe lo promete). Dos partes pagadas a la vez: manda
+      // la que creó la reserva (`nueva`).
+      const pagadas = await prisma.linkPago.count({ where: { cotizacionId: q.id, estado: "pagado" } }).catch(() => 0);
+      if (conv.nueva || (pagadas === 1 && conv.abonadoPorLiga > 0)) {
         await confirmarPagoDeLiga(conv.reserva, link, q, tarea);
       }
     }

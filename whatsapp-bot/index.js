@@ -588,9 +588,14 @@ function pausaPorHumano(ids) {
       // «Hasta /reanuda» se respeta, pero queda dicho que ya escribió alguien:
       // así el seguimiento al dueño se detiene y la nota al retomar no miente.
       estado.pausar(id, { ...previa, humanoAt: ahora, telefono: previa.telefono || telefono });
+      const ses = sesionExistente(id);
+      if (ses) ses.humanoAt = ahora;
       descartarRafaga(id);
       continue;
     }
+    // El seguimiento (seguimiento.js) no le escribe encima a una persona.
+    const ses = sesionExistente(id);
+    if (ses) ses.humanoAt = ahora;
     estado.pausar(id, {
       hasta: ahora + HUMAN_TAKEOVER_MS,
       motivo: previa ? previa.motivo : "humano",
@@ -702,7 +707,10 @@ function guardarVisual(chatId, media) {
   return true;
 }
 function tomarVisuales(chatId) {
-  const lista = visualesPendientes.get(chatId) || [];
+  const ahora = Date.now();
+  // Solo las de los últimos 10 min: una foto que llegó en pausa o en una
+  // ráfaga descartada no se cuela a un turno de días después.
+  const lista = (visualesPendientes.get(chatId) || []).filter((v) => ahora - v.at < 10 * 60 * 1000);
   visualesPendientes.delete(chatId);
   return lista;
 }
@@ -930,6 +938,10 @@ client.on("message", async (msg) => {
     // Antes de cualquier espera: así una respuesta automática de WhatsApp
     // Business a ESTE mensaje se reconoce en message_create.
     anotarEntrante(chatId);
+    // Cuanto antes: un recordatorio que se revise mientras se busca el
+    // contacto (hasta 8 s en @lid) ya ve que el cliente escribió.
+    const sesPrevia = sesionExistente(chatId);
+    if (sesPrevia) sesPrevia.clienteAt = Date.now();
     // Un archivo puede ser el comprobante: cuenta como «en camino» DESDE YA,
     // antes de cualquier espera. 🔴 Subía hasta atenderArchivo, después de
     // pedir el contacto (en un chat @lid, hasta 8 s) y a veces de bajar el
@@ -1319,6 +1331,8 @@ async function aplicarEscalacion(chatId, { textoCliente = "", respuestaBot = "" 
   // estaba en pausa por otra cosa.
   let pausa = estado.pausaVigente(chatId);
   if (modo === "pasar") {
+    // El seguimiento no le escribe por su cuenta a un chat que se pasó al equipo.
+    s.escaladoAt = Date.now();
     // La pausa la pone el bot: un comprobante que esperaba en la ráfaga recibe su acuse igual.
     if (MOTIVOS_HASTA_REANUDA.has(motivo)) {
       pausa = pausar(chatId, { indefinida: true, motivo, modo: "escalacion", acusarComprobantes: true });
@@ -1976,6 +1990,7 @@ async function revisarSeguimientos() {
     for (const chatId of Object.keys(todas)) {
       const s = todas[chatId];
       if (!s || !s.botAt) continue;
+      if (esNuncaResponder(chatId, s.telefono)) continue;
       const d = seguimiento.decidirSeguimiento(s, { ahora: Date.now(), pausa: Boolean(pausaActiva(chatId)) });
       if (d.accion === "nada") continue;
       await rafagas.ejecutarExclusivo(chatId, () => ejecutarSeguimiento(chatId, d));
@@ -2039,6 +2054,13 @@ async function ejecutarSeguimiento(chatId, d) {
 async function avisarPagoConLiga(chatId, s, d) {
   const reserva = d.reservaFolio;
   if (!reserva) return;
+  // La convirtió el equipo (transferencia vista en el banco, panel): no es un
+  // pago con tarjeta. La ficha se entera, sin mensaje (el equipo ya le confirma).
+  if (!d.pagadaConLiga) {
+    anotarEnFicha("marcarPagoEnFicha", chatId, d.folio, reserva);
+    s.lastFolio = reserva;
+    return;
+  }
   const seg = s.seguimiento || (s.seguimiento = {});
   const en = medios.idiomaDeSesion(s) === "en";
   const partes = Array.isArray(d.partes) ? d.partes : [];

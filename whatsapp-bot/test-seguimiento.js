@@ -77,7 +77,7 @@ prueba("segundo a las 24 h y tercero a las 72 h, contados desde la base", () => 
   assert.deepEqual(decidirSeguimiento(s3, { ahora: MEDIODIA }), { accion: "recordar", paso: 3, saltados: 0 });
 });
 prueba("después del tercero, ya no se escribe", () => {
-  const base = MEDIODIA - 100 * HORA;
+  const base = MEDIODIA - 80 * HORA;
   const s = sesion({ botAt: MEDIODIA - 20 * HORA, seguimiento: { base, enviados: [base + 1, base + 2, base + 3] } });
   assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).motivo, "ya van los 3");
 });
@@ -102,6 +102,29 @@ prueba("confirmado no recibe recordatorios; post-viaje al día siguiente del tou
   assert.equal(decidirSeguimiento(sesion({ ficha: f }), { ahora: Date.parse("2026-11-16T18:00:00Z") }).accion, "nada");
   assert.equal(decidirSeguimiento(sesion({ ficha: f }), { ahora: MEDIODIA }).accion, "post_viaje");
   assert.equal(decidirSeguimiento(sesion({ ficha: f, seguimiento: { postViajeAt: 1 } }), { ahora: MEDIODIA }).accion, "nada");
+});
+prueba("revisión: chat de hace 20 días no recibe recordatorio (plática vieja)", () => {
+  const s = sesion({ botAt: MEDIODIA - 20 * 24 * HORA, clienteAt: MEDIODIA - 21 * 24 * HORA });
+  assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).motivo, "plática vieja");
+});
+prueba("revisión: si el viaje ya pasó, no se recuerda la cotización", () => {
+  const s = sesion({ ficha: { consultados: [{}], fechasDichas: ["2026-11-14"] } });
+  assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).motivo, "el viaje ya pasó");
+});
+prueba("revisión: plática de antes de Tének (sin clienteAt) no recibe recordatorio", () => {
+  const s = sesion({ clienteAt: undefined });
+  assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).motivo, "plática anterior al seguimiento");
+});
+prueba("revisión: si Erick escribió a mano o se pasó al equipo, el bot no escribe encima", () => {
+  assert.equal(decidirSeguimiento(sesion({ humanoAt: MEDIODIA - 2 * HORA }), { ahora: MEDIODIA }).motivo, "lo atiende el equipo");
+  assert.equal(decidirSeguimiento(sesion({ escaladoAt: MEDIODIA - 3.5 * HORA }), { ahora: MEDIODIA }).motivo, "lo atiende el equipo");
+  // Si el cliente volvió a escribir después y el bot contestó, el seguimiento sigue.
+  const s = sesion({ humanoAt: MEDIODIA - 10 * HORA, clienteAt: MEDIODIA - 5 * HORA, botAt: MEDIODIA - 4 * HORA });
+  assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).accion, "recordar");
+});
+prueba("revisión: la hora acordada también vale si apenas está calificado", () => {
+  const s = sesion({ ficha: { fechasDichas: ["2026-11-28"] }, seguimiento: { agendado: { at: MEDIODIA - 60000, creado: MEDIODIA - 5 * HORA } } });
+  assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).accion, "agendado");
 });
 prueba("la nota para el modelo pide algo concreto y prohíbe el «¿qué te pareció?»", () => {
   const n = notaParaElModelo(2, sesion());

@@ -160,6 +160,10 @@ export async function GET(
       const liga = pagable ? await ligaParaCorreo(q.id, q.customerEmail) : null;
       // Una liga por persona: cuáles ya se pagaron (el bot dice cuántas faltan).
       const partes = await partesDeCotizacion(q.id).catch(() => []);
+      // ¿Entró un pago por liga? Solo entonces el bot le dice «recibimos tu
+      // pago con tarjeta»; una reserva hecha en el panel tras una
+      // transferencia no es eso.
+      const pagadaConLiga = (await prisma.linkPago.count({ where: { cotizacionId: q.id, estado: "pagado" } }).catch(() => 0)) > 0;
 
       return NextResponse.json({
         tipo:         "cotizacion",
@@ -168,6 +172,7 @@ export async function GET(
         ligaPago:     liga?.url ?? null,
         ...(liga ? { ligaMonto: liga.monto } : {}),
         ...(partes.length ? { partes } : {}),
+        pagadaConLiga,
         // borrador | enviada | por-vencer | aceptada | vencida (la que pinta el panel).
         etapa,
         tourName:     r.tourName,

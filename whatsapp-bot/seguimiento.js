@@ -85,19 +85,35 @@ function decidirSeguimiento(s, { ahora, pausa = false } = {}) {
     return { accion: "revisar_pago", folio };
   }
 
-  if (!ETAPAS_CON_SEGUIMIENTO.has(etapa)) return { accion: "nada", motivo: `etapa ${etapa}` };
   const clienteAt = s.clienteAt || 0;
   if (clienteAt >= s.botAt) return { accion: "nada", motivo: "el último mensaje es del cliente" };
+  // Si alguien del equipo escribió a mano o el chat se le pasó al equipo, el
+  // bot no le escribe por su cuenta hasta que el cliente vuelva a escribir.
+  const intervino = Math.max(s.humanoAt || 0, s.escaladoAt || 0);
+  if (intervino && intervino >= clienteAt) return { accion: "nada", motivo: "lo atiende el equipo" };
   if (NO_QUIERE_RE.test(ultimoTextoDelCliente(s))) return { accion: "nada", motivo: "dijo que no" };
   if (!enHorario(ahora)) return { accion: "nada", motivo: "fuera de horario" };
 
-  // Lo que acordaron manda sobre el calendario.
+  // Lo que acordaron manda sobre el calendario (en cualquier etapa de venta).
   if (seg.agendado && seg.agendado.at) {
     if (ahora >= seg.agendado.at) return { accion: "agendado" };
     return { accion: "nada", motivo: "hay uno agendado" };
   }
 
+  if (!ETAPAS_CON_SEGUIMIENTO.has(etapa)) return { accion: "nada", motivo: `etapa ${etapa}` };
+  // Una plática de antes de Tének (sin `clienteAt`) no recibe recordatorios:
+  // al desplegar, todos los chats viejos recibirían el «último recordatorio».
+  if (!s.clienteAt) return { accion: "nada", motivo: "plática anterior al seguimiento" };
+  // El viaje ya pasó: no se le recuerda una cotización de algo que no fue.
+  const fechas = [
+    ...((s.ficha && Array.isArray(s.ficha.recorridos) ? s.ficha.recorridos : []).map((r) => r && r.fecha)),
+    ...((s.ficha && Array.isArray(s.ficha.fechasDichas)) ? s.ficha.fechasDichas : []),
+  ].filter((f) => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
+  if (fechas.length && fechas[fechas.length - 1] < hoyMX(new Date(ahora))) return { accion: "nada", motivo: "el viaje ya pasó" };
+
   const base = seg.base && seg.base >= clienteAt ? seg.base : s.botAt;
+  // Más de 4 días desde nuestro último mensaje: ya no es seguimiento, es spam.
+  if (ahora - base > 4 * 24 * HORA) return { accion: "nada", motivo: "plática vieja" };
   const enviados = Array.isArray(seg.enviados) ? seg.enviados.filter((t) => t >= base) : [];
   const n = enviados.length;
   if (n >= PASOS_MS.length) return { accion: "nada", motivo: "ya van los 3" };
