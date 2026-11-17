@@ -3,6 +3,26 @@
 Agente de WhatsApp (Claude) que asesora, recomienda y **cierra reservas** de los
 tours de huasteca-potosina.com.
 
+## Tének (16 nov 2026)
+Se presenta como **Tének** y vende con la «Estructura de oro» (232 chats reales:
+la cotización en PDF es el punto de quiebre). Lo nuevo:
+- **Guion de 9 etapas** en el prompt (`buildSystemPrompt`): primer mensaje según cómo
+  llega, 4 datos en 2 mensajes, propuesta día por día con fotos, cotización en PDF y
+  «¿Deseas que te envíe los pasos para reservar?», pago en un solo mensaje.
+- **PDF en el chat** (`documentos.js`): el sitio da el HTML (`/api/bot/documento/:folio`,
+  el mismo PDF del panel) y se imprime con el Chromium de whatsapp-web.js. Sale al
+  cotizar y al confirmar. Las fotos de los tours salen con `enviar_fotos`
+  (`adjuntos.js`: todo sale ANTES del texto del turno).
+- **Pago** (`payment.js`): transferencia + OXXO + liga de Stripe sin comisión en un
+  mensaje; una liga por persona con `enviar_link_pago` + `partes`. Datos bancarios
+  solo de variables de entorno.
+- **Seguimiento** (`seguimiento.js`): 3, 24 y 72 h sin respuesta, de 9 a 20 h; la hora
+  acordada (`agendar_seguimiento`); aviso cuando paga con la liga; «¿cómo les fue?»
+  al día siguiente del tour. **Etapas** (`etapas.js`) y **etiquetas** (`etiquetas.js`).
+- **Ve fotos y PDF** que no son pago; **lee los comprobantes** (monto, banco,
+  concepto) para el aviso al dueño; avisa las **notas de voz**.
+- Modelo: **Haiku 5.5** (`claude-haiku-5-5`). Pruebas gratis: `npm run test-seguimiento`.
+
 ## Qué hace
 - **Vende con un embudo**, no con un folleto: primero pregunta *fecha* y *cuántas
   personas*, luego qué buscan, y recién entonces propone **uno o dos** tours con el
