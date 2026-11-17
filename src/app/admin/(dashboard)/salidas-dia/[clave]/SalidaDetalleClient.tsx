@@ -112,7 +112,7 @@ export default function SalidaDetalleClient({ inicial, quien, puedeAsignar, verD
       {guardado.estado === "cancelada" && (
         <p role="status" className="panel-card mb-4 p-3 text-[13px] font-dm text-[var(--panel-problema)]">Salida cancelada: ya no sale en Salidas del día, Inicio, el correo de las 7:30 ni los indicadores, y no se le preparan confirmaciones. Para reabrirla, cambia el estado.</p>
       )}
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div className="space-y-5">
           {confirmaciones && (
             <section className="panel-card p-4 text-[13px] font-dm" role="status">
