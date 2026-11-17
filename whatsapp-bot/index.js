@@ -1,18 +1,37 @@
 // ════════════════════════════════════════════════════════════════════
 // Tours Huasteca Potosina — Bot de WhatsApp (proceso principal)
 // whatsapp-web.js + agente Claude. Comportamientos: espera por ráfaga de
-// mensajes, pausa por humano, escalación, comandos del dueño.
+// mensajes, comprobantes de pago, pausa cuando el equipo escribe a mano,
+// escalación con aviso al dueño y comandos (/confirma, /pausa, /reanuda…).
+//
+// Lo que el bot NUNCA hace solo: confirmar un pago. Acusa el comprobante, se
+// lo manda al dueño con el comando listo y espera su /confirma.
 // ════════════════════════════════════════════════════════════════════
 
 require("dotenv").config();
+const fs = require("fs");
+const path = require("path");
 const { Client, LocalAuth } = require("whatsapp-web.js");
 const qrcode = require("qrcode-terminal");
 const { processMessage, needsHuman } = require("./agent");
-const { confirmarReserva } = require("./api-client");
-const { clearSession, getSession, pushHistory } = require("./sessions");
+const api = require("./api-client");
+const sessions = require("./sessions");
+const { getSession, pushHistory, clearSession, sesionExistente } = sessions;
 const { crearGestorDeRafagas } = require("./buffer");
+const estado = require("./estado");
+const medios = require("./medios");
+const horario = require("./horario");
 
-const OWNER = (process.env.OWNER_WHATSAPP_NUMBER || "").replace(/\D/g, "");
+// ── Configuración ─────────────────────────────────────────────
+function msDeEntorno(nombre, porOmision) {
+  const n = Number(process.env[nombre]);
+  return Number.isFinite(n) && n > 0 ? n : porOmision;
+}
+function digitsOnly(s = "") { return String(s || "").replace(/\D/g, ""); }
+function listaDeNumeros(txt) {
+  return String(txt || "").split(",").map(digitsOnly).filter(Boolean);
+}
+
 // El cliente manda RÁFAGAS: "hola", "somos 4", "para el sábado". El bot espera
 // a que deje de escribir y contesta UNA vez a todo junto.
 // · DEBOUNCE_MS: cada mensaje nuevo reinicia este reloj (ventana deslizante).
@@ -20,15 +39,59 @@ const OWNER = (process.env.OWNER_WHATSAPP_NUMBER || "").replace(/\D/g, "");
 //   quien escribe cada 14 s no recibiría respuesta nunca.
 const DEBOUNCE_MS = Number(process.env.MESSAGE_DEBOUNCE_MS || 15000);
 const DEBOUNCE_MAX_MS = Number(process.env.MESSAGE_DEBOUNCE_MAX_MS || 90000);
-// Cuando el dueño escribe manualmente en un chat, el bot se pausa este tiempo (default 5 min).
-const HUMAN_TAKEOVER_MS = Number(process.env.HUMAN_TAKEOVER_MS || 5 * 60 * 1000); // 5 min
+// · Una ráfaga de SOLO comprobantes (la foto, sin texto) sale a los 3 s, no a
+//   los 15: el acuse no tiene que esperar a que el cliente escriba, y menos si
+//   la foto llegó mientras el modelo contestaba (ya esperó todo ese rato). Los
+//   3 s juntan las 2 fotos que se mandan de un jalón en UN acuse.
+const ESPERA_COMPROBANTE_MS = (() => {
+  const n = Number(process.env.MESSAGE_DEBOUNCE_COMPROBANTE_MS);
+  return process.env.MESSAGE_DEBOUNCE_COMPROBANTE_MS !== undefined && Number.isFinite(n) && n >= 0 ? n : 3000;
+})();
+// Cuando alguien del equipo escribe a mano en un chat, el bot se calla este
+// rato, y cada mensaje suyo lo vuelve a empezar. Eran 5 min (aunque el aviso
+// decía 1 h): el bot volvía a contestar encima del equipo a media plática.
+const HUMAN_TAKEOVER_MS = msDeEntorno("HUMAN_TAKEOVER_MS", 2 * 60 * 60 * 1000);
+// Cuando el bot PASA un chat al equipo (pide llamada, para hoy…) y nadie
+// escribe, retoma a las 12 h. Queja, cancelación, cliente molesto y cambios
+// después de pagar NO se retoman solos: esperan /reanuda.
+const PAUSA_ESCALACION_MS = msDeEntorno("PAUSA_ESCALACION_MS", 12 * 60 * 60 * 1000);
+const MOTIVOS_HASTA_REANUDA = new Set(["queja_incidente", "cancelacion", "cliente_molesto", "cambio_post_pago"]);
 
-// El bot corre en un número personal: por defecto SOLO responde a desconocidos
-// (números NO guardados en los contactos). RESPOND_MODE: "strangers" (default) | "all".
+// El número del dueño: ÚNICO destino de los avisos y quien puede mandar
+// comandos por mensaje directo. 10 dígitos de México → 52 + número.
+const OWNER = numeroEscrito(process.env.OWNER_WHATSAPP_NUMBER);
+const OWNER_JID = OWNER ? `${OWNER}@c.us` : "";
+
+// A quién responde el bot. RESPOND_MODE: "strangers" (default) | "all".
+// En "strangers" un contacto GUARDADO no se atiende… salvo que el bot ya
+// estuviera platicando con él: el equipo guarda los contactos a media venta
+// ("Ana 2pax Tamul 8sep") y el bot se quedaba mudo justo antes del pago.
 const RESPOND_MODE = (process.env.RESPOND_MODE || "strangers").toLowerCase();
-// Números que SIEMPRE reciben respuesta aunque estén guardados (pruebas). Coma-separados.
-const ALWAYS_RESPOND = (process.env.ALWAYS_RESPOND_NUMBERS || "")
-  .split(",").map((s) => s.replace(/\D/g, "")).filter(Boolean);
+// Números que SIEMPRE reciben respuesta aunque estén guardados (pruebas).
+const ALWAYS_RESPOND = listaDeNumeros(process.env.ALWAYS_RESPOND_NUMBERS);
+// Números que el bot NUNCA contesta, ni texto ni archivos: equipo, guías,
+// proveedores, el hotel.
+const NEVER_RESPOND = listaDeNumeros(process.env.NEVER_RESPOND_NUMBERS);
+
+// El panel acepta comprobantes de hasta 5 MB (src/lib/admin/evidencia.ts).
+const MAX_BYTES_COMPROBANTE = 5 * 1024 * 1024;
+const LIMITE_AVISO_MEDIO_MS = 10 * 60 * 1000;   // «no puedo escuchar audios»: 1 cada 10 min por chat
+const AVISO_REPETIDO_MS = 60 * 60 * 1000;       // mismo motivo «avisar» en el mismo chat: 1 por hora
+const FALLA_COOLDOWN_MS = 10 * 60 * 1000;       // «el bot no pudo responder»: 1 cada 10 min
+const CONFIRMA_REPETIDA_MS = 10 * 60 * 1000;    // mismo /confirma (folio + monto) dos veces
+
+// Los comandos del bot (solo los ejecuta el dueño o el teléfono del negocio).
+const COMANDO_RE = /^\/(confirma|noespago|pausa|reanuda|olvida|status|help|ayuda)\b/i;
+
+// Mensajes con archivo que nunca son un comprobante (no cuentan como «en camino»).
+const TIPOS_SIN_COMPROBANTE = new Set(["ptt", "audio", "sticker", "vcard", "multi_vcard", "location"]);
+
+// Mensajes de WhatsApp que no son de nadie: avisos internos, mensajes
+// borrados, cifrado pendiente, llamadas.
+const TIPOS_IGNORADOS = new Set([
+  "revoked", "e2e_notification", "notification_template", "notification", "gp2", "protocol",
+  "call_log", "ciphertext", "broadcast_notification", "debug", "reaction",
+]);
 
 /**
  * Versión FIJADA de WhatsApp Web.
@@ -60,59 +123,1759 @@ const client = new Client({
   },
 });
 
-// ── Estado en memoria ─────────────────────────────────────────
-const pausedChats = new Map();         // chatId -> expiresAt
-const recentBotOutgoing = new Map();   // chatId -> expiresAt (para no auto-pausar)
-
-function digitsOnly(s = "") { return String(s).replace(/\D/g, ""); }
-function normalizeChatId(id = "") {
-  const d = digitsOnly(String(id).split("@")[0]);
-  return d ? `${d}@c.us` : id;
+// ── Números ───────────────────────────────────────────────────
+/**
+ * Un teléfono que viene de WhatsApp (ya trae lada de país) como lo pide el
+ * sitio: los celulares de México sin el 1 viejo (521… → 52…). Lo demás, tal
+ * cual: un número de EE. UU. no se toca.
+ */
+function normalizarTelefono(d = "") {
+  d = digitsOnly(d);
+  if (d.length === 13 && d.startsWith("521")) return `52${d.slice(3)}`;
+  return d;
+}
+/** Un número que escribió una persona (variables, comandos): 10 dígitos = México. */
+function numeroEscrito(txt = "") {
+  const d = digitsOnly(txt);
+  return d.length === 10 ? `52${d}` : normalizarTelefono(d);
 }
 // Variantes de número MX (52 / 521 / 10 dígitos) para comparar sin fallar por formato.
 function mxVariants(n = "") {
   n = digitsOnly(n);
   const s = new Set([n]);
   if (n.length === 10) { s.add(`52${n}`); s.add(`521${n}`); }
-  if (n.length === 12 && n.startsWith("52")) s.add(`521${n.slice(2)}`);
-  if (n.length === 13 && n.startsWith("521")) s.add(`52${n.slice(3)}`);
-  return [...s];
+  if (n.length === 12 && n.startsWith("52")) { s.add(`521${n.slice(2)}`); s.add(n.slice(2)); }
+  if (n.length === 13 && n.startsWith("521")) { s.add(`52${n.slice(3)}`); s.add(n.slice(3)); }
+  return [...s].filter(Boolean);
 }
-function isAlwaysRespond(jid = "") {
-  const v = mxVariants(digitsOnly(String(jid).split("@")[0]));
-  return v.some((x) => ALWAYS_RESPOND.includes(x));
+function mismoNumero(a, b) {
+  if (!digitsOnly(a) || !digitsOnly(b)) return false;
+  const vb = new Set(mxVariants(b));
+  return mxVariants(a).some((x) => vb.has(x));
 }
+function enLista(lista, chatId, telefono) {
+  if (!lista.length) return false;
+  const [usuario, dominio] = String(chatId || "").split("@");
+  const candidatos = [telefono, dominio === "c.us" ? usuario : ""].filter(Boolean);
+  return candidatos.some((c) => lista.some((n) => mismoNumero(c, n)));
+}
+const esSiempreResponder = (chatId, tel) => enLista(ALWAYS_RESPOND, chatId, tel);
+const esNuncaResponder = (chatId, tel) => enLista(NEVER_RESPOND, chatId, tel);
+
+function primeraLinea(e) {
+  return String((e && e.message) || e || "").split("\n")[0];
+}
+
+// ── Envíos ────────────────────────────────────────────────────
+// Lo que manda el bot también dispara `message_create`: sin esta marca, cada
+// respuesta suya parecería «alguien del equipo escribió» y pausaría el chat.
+const recentBotOutgoing = new Map(); // chatId -> expira (ms)
 function markBotOutgoing(chatId, ms = 20000) {
-  recentBotOutgoing.set(normalizeChatId(chatId), Date.now() + ms);
+  if (chatId) recentBotOutgoing.set(chatId, Date.now() + ms);
 }
 function isRecentBotOutgoing(chatId) {
-  const k = normalizeChatId(chatId);
-  const exp = recentBotOutgoing.get(k);
+  const exp = recentBotOutgoing.get(chatId);
   if (!exp) return false;
-  if (Date.now() > exp) { recentBotOutgoing.delete(k); return false; }
-  return true;
-}
-function pauseChat(chatId, ms = HUMAN_TAKEOVER_MS) {
-  const k = normalizeChatId(chatId);
-  pausedChats.set(k, Date.now() + ms);
-  // Si había una ráfaga esperando, se descarta: la conversación la toma un
-  // humano y sería absurdo que el bot contestara 30 s después por encima.
-  rafagas.descartar(k);
-  const until = new Date(Date.now() + ms).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" });
-  console.log(`⏸️  Pausado ${k} (humano) hasta ${until}`);
-}
-function resumeChat(chatId) { pausedChats.delete(normalizeChatId(chatId)); }
-function isPaused(chatId) {
-  const k = normalizeChatId(chatId);
-  const exp = pausedChats.get(k);
-  if (!exp) return false;
-  if (Date.now() > exp) { pausedChats.delete(k); return false; }
+  if (Date.now() > exp) { recentBotOutgoing.delete(chatId); return false; }
   return true;
 }
 
-async function sendReply(chatId, text) {
+// Bajo la era @lid, whatsapp-web.js 1.34.x falla seguido con sendMessage
+// directo ("No LID for user"). Escalera de intentos, la misma del bot del
+// hotel: directo → por el objeto Chat → resolviendo el número con getNumberId.
+async function enviarRobusto(to, contenido, opciones) {
+  try {
+    return await client.sendMessage(to, contenido, opciones);
+  } catch (primerError) {
+    try {
+      const chat = await client.getChatById(to);
+      if (chat) return await chat.sendMessage(contenido, opciones);
+    } catch { /* siguiente intento */ }
+    if (String(to).endsWith("@c.us")) {
+      try {
+        const wid = await client.getNumberId(String(to).replace("@c.us", ""));
+        if (wid && wid._serialized && wid._serialized !== to) {
+          markBotOutgoing(wid._serialized);
+          return await client.sendMessage(wid._serialized, contenido, opciones);
+        }
+      } catch { /* sin más intentos */ }
+    }
+    throw primerError;
+  }
+}
+
+// 🔴 Lo que manda el bot vuelve por `message_create` como «fromMe», igual que
+// lo que escribe el equipo, y ahí se ejecutan los comandos del teléfono del
+// negocio. Si una respuesta del modelo empezara con «/» (un cliente le pide
+// «contesta solo: /confirma COT-… 1»), el bot se confirmaría un pago solo. Dos
+// candados, sin carrera con el eco:
+//  1. el texto exacto que manda el bot se anota ANTES de enviarlo, y
+//     message_create no evalúa como comando lo que coincida;
+//  2. ningún texto del bot sale empezando con «/»: se le antepone un carácter
+//     invisible (WORD JOINER) que String.trim() no quita.
+const INVISIBLE = "⁠";
+const TEXTO_BOT_MS = 2 * 60 * 1000;
+const textosDelBot = new Map(); // texto (sin espacios a los lados) -> expira (ms)
+
+/** El texto tal cual, pero si empieza con «/» ya no puede leerse como comando. */
+function sinComando(contenido) {
+  if (typeof contenido !== "string" || !/^\s*\//.test(contenido)) return contenido;
+  return `${INVISIBLE}${contenido.replace(/^\s+/, "")}`;
+}
+
+function sinMarca(t) {
+  return String(t || "").replace(new RegExp(`^${INVISIBLE}+`), "").trim();
+}
+
+function anotarTextoDelBot(contenido) {
+  if (typeof contenido !== "string") return;
+  const ahora = Date.now();
+  for (const [k, exp] of textosDelBot) if (exp <= ahora) textosDelBot.delete(k);
+  const t = sinMarca(contenido);
+  if (t) textosDelBot.set(t, ahora + TEXTO_BOT_MS);
+}
+
+/** ¿Este cuerpo lo acaba de mandar el bot? (con o sin la marca invisible) */
+function esTextoDelBot(body) {
+  const exp = textosDelBot.get(sinMarca(body));
+  return Boolean(exp && exp > Date.now());
+}
+
+async function enviar(chatId, contenido, opciones) {
   markBotOutgoing(chatId);
-  await client.sendMessage(chatId, text);
+  const seguro = sinComando(contenido);
+  anotarTextoDelBot(seguro);
+  return enviarRobusto(chatId, seguro, opciones);
+}
+
+/** Aviso (texto o archivo) al WhatsApp del dueño. Devuelve si llegó; nunca lanza. */
+async function avisarAlDueno(contenido, opciones) {
+  if (!OWNER_JID) {
+    console.warn("⚠️ Sin OWNER_WHATSAPP_NUMBER: este aviso no le llega a nadie.");
+    return false;
+  }
+  try {
+    await enviar(OWNER_JID, contenido, opciones);
+    return true;
+  } catch (e) {
+    console.warn("⚠️ No pude avisar al dueño:", primeraLinea(e));
+    return false;
+  }
+}
+
+function marcarLeido(msg) {
+  // El bot tarda 15 s o más en contestar; sin las palomitas azules el cliente
+  // siente que nadie lo vio.
+  msg.getChat().then((c) => c.sendSeen()).catch(() => {});
+}
+
+// ── Quién escribe ─────────────────────────────────────────────
+// Un chat "…@lid" NO trae el teléfono en su id: hay que pedírselo a WhatsApp
+// (getContactLidAndPhone). Se pregunta UNA vez por chat; lo que no se pudo se
+// reintenta a la hora.
+const cacheLid = new Map(); // chatId -> { lid, pn, at }
+
+/** La promesa, o `porOmision` si tarda más de `ms` (WhatsApp Web a veces no contesta nunca). */
+function conLimite(promesa, ms, porOmision) {
+  let timer = null;
+  const limite = new Promise((resolve) => { timer = setTimeout(() => resolve(porOmision), ms); });
+  return Promise.race([promesa, limite]).finally(() => clearTimeout(timer));
+}
+
+async function lidYTelefono(chatId) {
+  const previo = cacheLid.get(chatId);
+  if (previo && (previo.pn || Date.now() - previo.at < 60 * 60 * 1000)) return previo;
+  let r = { lid: null, pn: null, at: Date.now() };
+  if (/@(c\.us|lid)$/.test(String(chatId))) {
+    try {
+      // Puede preguntarle a los servidores de WhatsApp: con tope, para que un
+      // chat no se quede esperando para siempre.
+      const lista = await conLimite(client.getContactLidAndPhone([chatId]), 8000, null);
+      const x = Array.isArray(lista) ? lista[0] : null;
+      if (x) r = { lid: x.lid || null, pn: x.pn || null, at: Date.now() };
+      else if (lista === null) console.warn(`⚠️ getContactLidAndPhone(${chatId}) no contestó en 8 s.`);
+    } catch (e) {
+      console.warn(`⚠️ getContactLidAndPhone(${chatId}) falló:`, primeraLinea(e));
+    }
+  }
+  cacheLid.set(chatId, r);
+  return r;
+}
+
+/** Los ids con que WhatsApp puede nombrar al MISMO chat (el @c.us y el @lid). */
+async function idsEquivalentes(chatId) {
+  const ids = new Set([chatId]);
+  const { lid, pn } = await lidYTelefono(chatId);
+  if (lid) ids.add(lid);
+  if (pn) ids.add(pn);
+  return [...ids];
+}
+
+/** El teléfono REAL del chat (dígitos) o null. Nunca los dígitos de un @lid. */
+async function telefonoDeChat(chatId, contact) {
+  const ses = sesionExistente(chatId);
+  if (ses && ses.telefono) return ses.telefono;
+  const [usuario, dominio] = String(chatId || "").split("@");
+  if (dominio === "c.us") return normalizarTelefono(usuario) || null;
+  if (dominio !== "lid") return null;
+  const { pn } = await lidYTelefono(chatId);
+  const tel = pn ? digitsOnly(String(pn).split("@")[0]) : "";
+  if (tel) return normalizarTelefono(tel);
+  // Bajo @lid, contact.number a veces trae los MISMOS dígitos del lid (visto en
+  // el bot del hotel): eso daría un wa.me falso, así que se descarta.
+  const n = digitsOnly(contact && contact.number);
+  return n && n !== digitsOnly(usuario) ? normalizarTelefono(n) : null;
+}
+
+// Lo último que se supo de cada chat; atenderRafaga lo pasa a la sesión.
+const contactos = new Map(); // chatId -> { telefono, nombre, guardado }
+
+async function datosDelContacto(msg) {
+  const chatId = msg.from;
+  let contact = null;
+  try {
+    contact = await msg.getContact();
+  } catch (e) {
+    // Bajo @lid getContact a veces revienta: se sigue como desconocido para
+    // no perder al prospecto.
+    console.warn(`⚠️ getContact falló (${primeraLinea(e)}) — lo trato como desconocido: ${chatId}`);
+  }
+  const datos = {
+    telefono: await telefonoDeChat(chatId, contact),
+    nombre: String((contact && (contact.pushname || contact.verifiedName)) || "").trim() || null,
+    guardado: Boolean(contact && contact.isMyContact),
+  };
+  contactos.set(chatId, datos);
+  return datos;
+}
+
+function telefonoConocido(chatId) {
+  const s = sesionExistente(chatId);
+  if (s && s.telefono) return s.telefono;
+  const c = contactos.get(chatId);
+  if (c && c.telefono) return c.telefono;
+  const [usuario, dominio] = String(chatId || "").split("@");
+  return dominio === "c.us" ? normalizarTelefono(usuario) : null;
+}
+
+/** Pasa a la sesión el teléfono real y el nombre de WhatsApp (sin pisar lo que ya dio el cliente). */
+function completarContacto(chatId, s) {
+  const c = contactos.get(chatId) || {};
+  const tel = c.telefono || telefonoConocido(chatId);
+  if (!s.telefono && tel) s.telefono = tel;
+  if (!s.nombre && c.nombre) s.nombre = c.nombre;
+}
+
+function marcarAtendido(chatId) {
+  const s = getSession(chatId);
+  s.botAt = Date.now();
+}
+
+/** "Ana · 52XXXXXXXXXX" (o los dígitos del chat si no hay teléfono). */
+function etiquetaChat(chatId) {
+  const s = sesionExistente(chatId);
+  const c = contactos.get(chatId) || {};
+  const nombre = (s && s.nombre) || c.nombre || "";
+  const num = telefonoConocido(chatId) || String(chatId || "").split("@")[0];
+  return nombre ? `${nombre} · ${num}` : num;
+}
+
+/** El número que se escribe en /reanuda (el teléfono real si se conoce). */
+function numeroParaComando(chatId) {
+  return telefonoConocido(chatId) || String(chatId || "").split("@")[0];
+}
+
+// ── El dueño ──────────────────────────────────────────────────
+let ownerLid = null; // se aprende cuando el dueño escribe desde un chat @lid
+
+function esNumeroDelDueno(chatId, telefono) {
+  if (!OWNER) return false;
+  const [usuario, dominio] = String(chatId || "").split("@");
+  if (dominio === "c.us" && mismoNumero(usuario, OWNER)) return true;
+  if (ownerLid && chatId === ownerLid) return true;
+  return Boolean(telefono) && mismoNumero(telefono, OWNER);
+}
+
+/** ¿Es el chat de avisos con el dueño? (sin ir a WhatsApp: se usa en cada mensaje propio) */
+function esChatDelDueno(chatId) {
+  if (!OWNER || !chatId) return false;
+  const [usuario, dominio] = String(chatId).split("@");
+  return (dominio === "c.us" && mismoNumero(usuario, OWNER)) || chatId === ownerLid;
+}
+
+/** El chat «Tú» de la cuenta conectada (el número del negocio), o null antes de conectar. */
+function chatPropio() {
+  const wid = client.info && client.info.wid;
+  return (wid && wid._serialized) || null;
+}
+
+function esChatPropio(chatId) {
+  const propio = chatPropio();
+  if (!propio || !chatId) return false;
+  if (chatId === propio) return true;
+  const [usuario, dominio] = String(chatId).split("@");
+  return dominio === "c.us" && mismoNumero(usuario, String(propio).split("@")[0]);
+}
+
+/**
+ * El comando dentro de lo que mandó el dueño. Lo normal es «/confirma …» solo,
+ * pero el aviso del comprobante trae el comando a media línea («👉 /confirma
+ * COT-X 930», o el pie de la foto «Comprobante COT-X · /confirma COT-X 930») y
+ * WhatsApp copia el mensaje entero: eso se ignoraba en silencio y el dueño
+ * creía que había confirmado. Se toma la primera línea que trae un comando,
+ * desde la «/». null si no hay ninguno.
+ */
+function extraerComando(texto) {
+  const t = String(texto || "").trim();
+  if (!t) return null;
+  if (t.startsWith("/")) return t;
+  for (const linea of t.split(/\n+/)) {
+    const m = /(?:^|[\s·:>«"'(*_])(\/(?:confirma|noespago|pausa|reanuda|olvida|status|help|ayuda)\b.*)$/i.exec(linea);
+    if (m) return m[1].replace(/[»"')\]*_]+\s*$/, "").trim();
+  }
+  return null;
+}
+
+// ── Hora de México para los avisos ────────────────────────────
+function horaMx(ms) {
+  return new Date(ms).toLocaleTimeString("es-MX", {
+    hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: horario.ZONA_MX,
+  });
+}
+/** "las 22:15" · "mañana a las 06:15" · "el 2026-10-12 a las 09:00". */
+function cuandoMx(ms) {
+  const dia = horario.fechaMexico(new Date(ms));
+  const hoy = horario.fechaMexico();
+  if (dia === hoy) return `las ${horaMx(ms)}`;
+  if (dia === horario.sumarDias(hoy, 1)) return `mañana a las ${horaMx(ms)}`;
+  return `el ${dia} a las ${horaMx(ms)}`;
+}
+/** 7200000 → "2 h" · 5400000 → "1 h 30 min" · 600000 → "10 min". */
+function duracionTexto(ms) {
+  const min = Math.max(1, Math.round(Number(ms) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  const resto = min % 60;
+  return resto ? `${h} h ${resto} min` : `${h} h`;
+}
+
+// ── Historial sin pisar al modelo ─────────────────────────────
+// Mientras el modelo responde, agent.js va metiendo al historial sus
+// herramientas (tool_use → tool_result). Un texto colado en medio rompe la
+// pareja y la API rechaza el chat completo. Lo que llegue en ese rato (lo que
+// escribe el equipo a mano, un audio, la nota de «el equipo atendió») espera
+// aquí y entra cuando el modelo termina.
+const pendientes = new Map(); // chatId -> [[role, content], …]
+function anotarHistorial(chatId, role, content) {
+  if (!content) return;
+  if (rafagas.ocupado(chatId)) {
+    const lista = pendientes.get(chatId) || [];
+    lista.push([role, content]);
+    pendientes.set(chatId, lista);
+    return;
+  }
+  pushHistory(chatId, role, content);
+}
+function volcarPendientes(chatId) {
+  const lista = pendientes.get(chatId);
+  if (!lista) return;
+  pendientes.delete(chatId);
+  for (const [role, content] of lista) pushHistory(chatId, role, content);
+}
+
+/**
+ * Tira la ráfaga que esperaba (el chat pasó a una persona) pero guarda en el
+ * historial lo que dijo el cliente: antes se perdía y el bot, al retomar, no
+ * sabía qué había preguntado.
+ * Con `acusar` (la pausa la puso el propio bot: una escalación o una falla),
+ * el comprobante que esperaba su acuse lo recibe igual, uno por folio. 🔴 Si
+ * el turno en curso pasaba el chat al equipo, el acuse ya escrito se tiraba:
+ * el cliente se quedaba sin «Recibimos tu comprobante» y el historial decía
+ * que lo mandó «mientras el equipo atendía el chat», que no era cierto.
+ */
+function descartarRafaga(chatId, { acusar = false } = {}) {
+  const acusados = new Set();
+  for (const el of rafagas.descartar(chatId) || []) {
+    if (el && el.tipo === "comprobante") {
+      const clave = String(el.folio || "");
+      if (acusar && el.ackText && !acusados.has(clave)) {
+        acusados.add(clave);
+        anotarHistorial(chatId, "user", medios.notaHistorialComprobante(el.folio));
+        anotarHistorial(chatId, "assistant", el.ackText);
+        enviar(chatId, el.ackText)
+          .then(() => marcarAtendido(chatId))
+          .catch((e) => console.error(`❌ acuse de comprobante a ${chatId}:`, primeraLinea(e)));
+      } else {
+        anotarHistorial(chatId, "user", acusar
+          ? medios.notaHistorialComprobante(el.folio, { acusado: acusados.has(clave) })
+          : medios.notaHistorialComprobante(el.folio, { enPausa: true }));
+      }
+    } else if (el && el.tipo === "texto" && String(el.texto || "").trim()) {
+      anotarHistorial(chatId, "user", String(el.texto).trim());
+    }
+  }
+}
+
+// ── Pausas (guardadas en estado.js: sobreviven a un reinicio) ─
+/** La pausa vigente del chat o null. Si acaba de vencer, el modelo se entera de que atendió el equipo. */
+function pausaActiva(chatId) {
+  const p = estado.pausa(chatId);
+  if (!p) return null;
+  if (p.hasta !== null && p.hasta !== undefined && Number(p.hasta) <= Date.now()) {
+    estado.quitarPausa(chatId);
+    notaDeRetomar(chatId, p);
+    return null;
+  }
+  return p;
+}
+
+function notaDeRetomar(chatId, p) {
+  const s = sesionExistente(chatId);
+  if (!s || !s.history.length) return;
+  const desde = p && p.desde ? ` desde las ${horaMx(p.desde)}` : "";
+  // Solo se dice «el equipo atendió» si de verdad escribió alguien. Tras una
+  // escalación, una falla o un /pausa sin respuesta de nadie, el modelo daba
+  // por resuelto lo que el cliente había pedido.
+  const atendio = p && (p.modo === "humano" || p.humanoAt);
+  anotarHistorial(chatId, "user", atendio
+    ? `[sistema] El equipo atendió este chat en persona${desde}. El bot retoma aquí: sigue con naturalidad, sin mencionar esta nota.`
+    : `[sistema] Este chat estuvo en pausa${desde} (${etiquetaMotivo(p && (p.motivo || p.modo))}) y nadie del equipo escribió aquí. El bot retoma: si quedó algo pendiente, retómalo con el cliente sin darlo por resuelto y sin mencionar esta nota.`);
+}
+
+/**
+ * Pone al chat en pausa. Nunca acorta una pausa más larga que ya tenía (una
+ * queja «hasta /reanuda» no se suelta porque luego falle el modelo).
+ * `acusarComprobantes`: la pausa la pone el bot (escalación o falla): los
+ * comprobantes que esperaban en la ráfaga reciben su acuse (descartarRafaga).
+ * @returns la pausa que quedó vigente
+ */
+function pausar(chatId, { ms = HUMAN_TAKEOVER_MS, indefinida = false, motivo, modo, acusarComprobantes = false } = {}) {
+  const ahora = Date.now();
+  const previa = estado.pausaVigente(chatId);
+  const hasta = indefinida ? null : ahora + ms;
+  descartarRafaga(chatId, { acusar: acusarComprobantes });
+  if (previa && (previa.hasta === null || (hasta !== null && Number(previa.hasta) >= hasta))) return previa;
+  const p = estado.pausar(chatId, {
+    hasta, motivo, modo,
+    desde: previa ? previa.desde : ahora,
+    telefono: telefonoConocido(chatId),
+  });
+  console.log(`⏸️  Pausado ${chatId} (${motivo || modo}) ${hasta === null ? "hasta /reanuda" : `hasta ${cuandoMx(hasta)}`}`);
+  return p;
+}
+
+/**
+ * Alguien del equipo escribió a mano (texto o archivo, en chats @c.us y
+ * @lid): el bot se calla HUMAN_TAKEOVER_MS desde ESE mensaje. Cada mensaje
+ * suyo lo vuelve a empezar. Una pausa «hasta /reanuda» se respeta.
+ */
+function pausaPorHumano(ids) {
+  const ahora = Date.now();
+  const telefono = ids.map(telefonoConocido).find(Boolean) || null;
+  for (const id of ids) {
+    const previa = estado.pausaVigente(id);
+    if (previa && previa.hasta === null) {
+      // «Hasta /reanuda» se respeta, pero queda dicho que ya escribió alguien:
+      // así el seguimiento al dueño se detiene y la nota al retomar no miente.
+      estado.pausar(id, { ...previa, humanoAt: ahora, telefono: previa.telefono || telefono });
+      descartarRafaga(id);
+      continue;
+    }
+    estado.pausar(id, {
+      hasta: ahora + HUMAN_TAKEOVER_MS,
+      motivo: previa ? previa.motivo : "humano",
+      modo: "humano",
+      desde: previa ? previa.desde : ahora,
+      humanoAt: ahora,
+      telefono,
+    });
+    descartarRafaga(id);
+  }
+  console.log(`⏸️  Pausado ${ids[0]} (alguien del equipo escribió) hasta ${cuandoMx(ahora + HUMAN_TAKEOVER_MS)}`);
+}
+
+// ── Respuestas automáticas de WhatsApp Business ───────────────
+// La bienvenida y el mensaje de ausencia salen desde el MISMO número un par
+// de segundos después del mensaje del cliente. message_create los veía como
+// «alguien del equipo escribió» y callaba al bot 2 h, justo de noche, cuando
+// no hay nadie. Un mensaje propio que el bot no mandó y que sale a menos de
+// AUTORESPUESTA_MS del último mensaje del cliente es automático: no pausa.
+// (Igual conviene apagarlos en WhatsApp Business: ver el README.)
+const AUTORESPUESTA_MS = 4000;
+const ultimoEntrante = new Map(); // chatId -> ms del último mensaje del cliente
+
+function anotarEntrante(chatId) {
+  const ahora = Date.now();
+  if (ultimoEntrante.size > 2000) {
+    for (const [k, t] of ultimoEntrante) if (ahora - t > 60 * 1000) ultimoEntrante.delete(k);
+  }
+  ultimoEntrante.set(chatId, ahora);
+}
+
+function esAutorespuesta(ids) {
+  const ahora = Date.now();
+  return ids.some((id) => ahora - (ultimoEntrante.get(id) || 0) < AUTORESPUESTA_MS);
+}
+
+// ── Seguimiento de un chat que el bot pasó al equipo ──────────
+// Al pasar un chat por llamada, «quiero una persona» o «para hoy», el bot le
+// pregunta a qué hora le marcan (o le ofrece mañana) y se calla en el mismo
+// turno. Su respuesta («a las 5 pm, a este número») ya solo quedaba en el
+// teléfono del negocio. Mientras nadie del equipo escriba, lo que conteste en
+// la primera hora le llega también al dueño, como seguimiento del aviso.
+const MOTIVOS_SEGUIMIENTO = new Set(["pide_humano", "llamada", "para_hoy"]);
+const SEGUIMIENTO_MS = 60 * 60 * 1000;
+const SEGUIMIENTO_MAX = 6;
+const seguimientosEnviados = new Map(); // `${chatId}|${desde}` -> cuántos van
+
+async function seguimientoAlDueno(chatId, texto, p) {
+  if (!p || p.modo !== "escalacion" || p.humanoAt || !MOTIVOS_SEGUIMIENTO.has(p.motivo)) return;
+  const ahora = Date.now();
+  if (ahora - Number(p.desde || 0) > SEGUIMIENTO_MS) return;
+  if (seguimientosEnviados.size > 500) {
+    for (const k of seguimientosEnviados.keys()) {
+      if (ahora - Number(k.split("|").pop()) > SEGUIMIENTO_MS) seguimientosEnviados.delete(k);
+    }
+  }
+  const clave = `${chatId}|${p.desde}`;
+  const n = seguimientosEnviados.get(clave) || 0;
+  if (n >= SEGUIMIENTO_MAX) return;
+  seguimientosEnviados.set(clave, n + 1);
+  const s = sesionExistente(chatId);
+  const aviso = [
+    `🗣️ *Seguimiento* · ${etiquetaMotivo(p.motivo)}`,
+    `👤 ${(s && s.nombre) || "Sin nombre"}`,
+    medios.lineaTelefono((s && s.telefono) || telefonoConocido(chatId)),
+    `💬 *Contestó:* «${medios.recortar(texto, 300)}»`,
+    "",
+    describirPausa(p, numeroParaComando(chatId)),
+  ].join("\n");
+  const ok = await avisarAlDueno(aviso);
+  console.log(`🗣️ Seguimiento (${p.motivo}) de ${etiquetaChat(chatId)} → dueño: ${ok ? "avisado" : "NO llegó"}`);
+}
+
+function reanudar(chatId) {
+  const p = estado.pausa(chatId);
+  const habia = estado.quitarPausa(chatId);
+  if (habia) notaDeRetomar(chatId, p);
+  return habia;
+}
+
+function describirPausa(p, numero) {
+  if (!p) return "▶️ *Estado:* el bot sigue atendiendo este chat.";
+  if (p.hasta === null) return `⏸️ *Estado:* bot en pausa en este chat hasta que escribas /reanuda ${numero}`;
+  return `⏸️ *Estado:* bot en pausa ${duracionTexto(Number(p.hasta) - Date.now())} (hasta ${cuandoMx(p.hasta)}) · para que vuelva antes: /reanuda ${numero}`;
+}
+
+// ── Comprobantes ──────────────────────────────────────────────
+const comprobantes = medios.createProofProcessor({
+  api,
+  almacen: estado,
+  dir: estado.COMPROBANTES_DIR,
+  enviarAlDueno: (contenido, opciones) => avisarAlDueno(contenido, opciones),
+  log: console,
+});
+
+/**
+ * La ficha del viaje (sessions.js) se entera del comprobante o del pago
+ * validado: con eso el bot ya no recotiza un viaje pagado (lo pasa al equipo
+ * como «cambio después de pagar»). Nunca frena el pago: si falla, solo se anota.
+ */
+function anotarEnFicha(funcion, ...args) {
+  const fn = sessions[funcion];
+  if (typeof fn !== "function") return;
+  try {
+    fn(...args);
+  } catch (e) {
+    console.warn(`⚠️ Ficha del viaje (${funcion}):`, primeraLinea(e));
+  }
+}
+
+// Comprobantes que ya llegaron pero aún no entran a una ráfaga: se están
+// descargando, buscando su cotización y avisando al dueño (unos segundos).
+const comprobantesEnCamino = new Map(); // chatId -> cuántos
+function comprobanteEnCamino(chatId, delta) {
+  const n = (comprobantesEnCamino.get(chatId) || 0) + delta;
+  if (n > 0) comprobantesEnCamino.set(chatId, n);
+  else comprobantesEnCamino.delete(chatId);
+}
+
+/**
+ * ¿Mandó un comprobante que la respuesta en curso NO conoce? (en camino, o
+ * esperando en la siguiente ráfaga). La respuesta del modelo se escribió sin
+ * saberlo: no puede salir pidiendo el comprobante o la transferencia.
+ */
+function comprobanteSinContestar(chatId) {
+  if ((comprobantesEnCamino.get(chatId) || 0) > 0) return true;
+  return rafagas.elementosEnEspera(chatId).some((e) => e && e.tipo === "comprobante");
+}
+
+// El último acuse que salió a cada chat (ver medios.esCharlaTrasAcuse).
+const ultimoAcuse = new Map(); // chatId -> { at, texto }
+
+// Avisos al cliente que no pasan por el modelo: 1 cada 10 min por chat.
+const ultimoAvisoMedio = new Map();
+function avisoLimitado(clave) {
+  const t = Date.now();
+  const previo = ultimoAvisoMedio.get(clave);
+  if (previo && t - previo < LIMITE_AVISO_MEDIO_MS) return true;
+  ultimoAvisoMedio.set(clave, t);
+  return false;
+}
+
+async function atenderAudio(chatId, pausa) {
+  if (pausa) {
+    anotarHistorial(chatId, "user", "[El cliente mandó una nota de voz; el equipo la escucha en el teléfono]");
+    return;
+  }
+  if (avisoLimitado(`${chatId}|audio`)) return;
+  const aviso = medios.textoAudio(medios.idiomaDeSesion(sesionExistente(chatId)));
+  try {
+    await enviar(chatId, aviso);
+    anotarHistorial(chatId, "user", "[nota de voz]");
+    anotarHistorial(chatId, "assistant", aviso);
+    marcarAtendido(chatId);
+  } catch (e) {
+    console.error(`❌ aviso de audio a ${chatId}:`, primeraLinea(e));
+  }
+}
+
+async function atenderNoSoportado(chatId, pausa) {
+  if (pausa) {
+    anotarHistorial(chatId, "user", "[El cliente mandó un archivo que el bot no puede leer]");
+    return;
+  }
+  if (avisoLimitado(`${chatId}|archivo`)) return;
+  const aviso = medios.textoArchivoNoSoportado(medios.idiomaDeSesion(sesionExistente(chatId)));
+  try {
+    await enviar(chatId, aviso);
+    anotarHistorial(chatId, "user", "[archivo que el bot no puede leer]");
+    anotarHistorial(chatId, "assistant", aviso);
+    marcarAtendido(chatId);
+  } catch (e) {
+    console.error(`❌ aviso de archivo a ${chatId}:`, primeraLinea(e));
+  }
+}
+
+/** El archivo del mensaje (MessageMedia) o null si WhatsApp ya no lo tiene. Nunca lanza. */
+async function bajarArchivo(msg, chatId) {
+  try {
+    return (await msg.downloadMedia()) || null;
+  } catch (e) {
+    console.warn(`⚠️ No pude descargar el archivo de ${chatId}:`, primeraLinea(e));
+    return null;
+  }
+}
+
+/**
+ * Foto, PDF u otro archivo. El comprobante avisa al dueño YA (sin esperar la
+ * ráfaga) aunque el chat esté en pausa; el acuse al cliente sí va en la ráfaga.
+ * `llegoAt` = cuándo llegó el mensaje: el comprobante entra a la ráfaga hasta
+ * que se buscó su cotización, y con esto queda en SU lugar (buffer.js).
+ * @returns {{listo:true} | {listo:false, texto:string}} texto = pie de foto que se contesta como mensaje
+ */
+async function atenderArchivo(msg, chatId, contacto, pausa, llegoAt = Date.now()) {
+  const rawCaption = String(msg.body || "").trim();
+  const caption = medios.limpiarPie(rawCaption);
+  const ses = sesionExistente(chatId);
+  // Se clasifica con el tipo que declara WhatsApp y solo se baja lo que sí es
+  // comprobante: bajar un video de 15 MB para contestar «solo leo texto,
+  // fotos o PDF» era memoria tirada.
+  let media = null;
+  let mimetype = String((msg._data && msg._data.mimetype) || "");
+  if (!mimetype) {
+    media = await bajarArchivo(msg, chatId);
+    mimetype = (media && media.mimetype) || (msg.type === "image" ? "image/jpeg" : "");
+  }
+  // «Debe algo» solo si hay folio y no se sabe que ya lo liquidó: el folio se
+  // queda en la sesión después del tour, y las fotos del paseo se tomaban
+  // por comprobantes («Recibimos tu comprobante… esperado $0»).
+  const debeAlgo = Boolean(ses && ses.lastFolio) && !(ses && ses.saldoPendiente === 0);
+  const kind = medios.classifyIncomingMedia({
+    mimetype, caption: rawCaption, hasPendingQuote: debeAlgo, messageType: msg.type,
+  });
+
+  if (kind === "proof") {
+    // Ya cuenta como «comprobante sin contestar» desde que llegó el mensaje
+    // (el handler sube el contador antes de cualquier espera).
+    if (!media) media = await bajarArchivo(msg, chatId);
+    if (media && media.mimetype) mimetype = media.mimetype;
+    const locale = (ses && ses.locale) || medios.idiomaProbable(caption) || medios.idiomaDeSesion(ses);
+    // ¿Cierra la ficha a cambios (ya no recotiza ni da datos de pago)? Solo
+    // con señales de PAGO: un PDF, un pie que habla del pago, el pago en lo
+    // que escribió (también lo que espera en la ráfaga: «ahorita hago el
+    // pago») o los datos bancarios que el bot ya le mandó. 🔴 Cualquier foto
+    // sin texto con una cotización abierta (la cascada, la captura de un tour)
+    // cerraba el chat. El acuse y el aviso al dueño salen igual, y si de todos
+    // modos no era un pago, el dueño lo deshace con /noespago.
+    const conSenalesDePago = medios.pareceComprobanteDePago({
+      mimetype,
+      caption: rawCaption,
+      history: ses && ses.history,
+      textos: rafagas.elementosEnEspera(chatId).filter((e) => e && e.tipo === "texto").map((e) => e.texto),
+    });
+    let r = { ackText: null, folio: null, duplicate: false };
+    try {
+      r = await comprobantes.process({
+        chatId,
+        nombre: contacto.nombre,
+        telefono: contacto.telefono,
+        // Solo si cierra la ficha: al dueño le llega cómo deshacerlo.
+        numero: conSenalesDePago ? numeroParaComando(chatId) : null,
+        sessionFolio: ses && ses.lastFolio,
+        media,
+        mimetype,
+        caption,
+        paused: Boolean(pausa),
+        locale,
+      });
+    } catch (e) {
+      console.error("❌ Error procesando comprobante:", primeraLinea(e));
+      r = { ackText: pausa ? null : medios.textoAcuseSinCotizacion(locale), folio: null, duplicate: false };
+    }
+    console.log(`🧾 Comprobante (${medios.mediaKind(mimetype) || "archivo"}) de ${etiquetaChat(chatId)}${r.folio ? ` · folio ${r.folio}` : " · sin cotización"}${media ? "" : " · ⚠️ sin descargar"}${r.folio && !conSenalesDePago ? " · sin señales de pago: la ficha sigue abierta" : ""}`);
+    // La ficha lo sabe aunque el chat esté en pausa: un cambio pedido después
+    // ya no se recotiza, se pasa al equipo.
+    const marcado = Boolean(r.folio && conSenalesDePago);
+    if (marcado) anotarEnFicha("marcarComprobanteEnFicha", chatId, r.folio);
+
+    if (pausa) {
+      // Un humano tiene el chat: el dueño ya tiene el aviso; aquí solo se anota.
+      anotarHistorial(chatId, "user", medios.notaHistorialComprobante(r.folio, { enPausa: true }));
+      if (caption) anotarHistorial(chatId, "user", caption);
+      return { listo: true };
+    }
+    marcarLeido(msg);
+    // `marcado`: si no cerró la ficha, la ráfaga lo vuelve a ver con TODO lo
+    // que escribió («… ya pagué» puede llegar después de la foto).
+    rafagas.recibirElemento(chatId, { tipo: "comprobante", folio: r.folio, ackText: r.ackText, duplicado: Boolean(r.duplicate), marcado, llegoAt });
+    if (caption) rafagas.recibirElemento(chatId, { tipo: "texto", texto: caption, llegoAt });
+    return { listo: true };
+  }
+
+  if (kind === "unsupported") {
+    // Video sin texto, documento de Word, etc.
+    await atenderNoSoportado(chatId, pausa);
+    return { listo: true };
+  }
+
+  // 'text': el pie de foto se contesta como un mensaje normal (una foto con
+  // una pregunta, una constancia fiscal…).
+  return { listo: false, texto: caption || rawCaption };
+}
+
+// ── Mensajes ENTRANTES (clientes y el dueño) ──────────────────
+client.on("message", async (msg) => {
+  // Cuándo llegó, ANTES de cualquier espera (el contacto, la descarga): con
+  // esto la ráfaga queda en el orden en que el cliente mandó las cosas.
+  const llegoAt = Date.now();
+  let chatId = "";
+  let posibleComprobante = false;
+  try {
+    if (msg.fromMe || msg.isStatus) return;
+    chatId = msg.from || "";
+    // Grupos, difusiones y canales: no. (msg.author solo viene en grupos.)
+    if (!chatId || chatId === "status@broadcast" || /@(g\.us|broadcast|newsletter)$/.test(chatId) || msg.author) return;
+    if (TIPOS_IGNORADOS.has(msg.type)) return;
+    // Antes de cualquier espera: así una respuesta automática de WhatsApp
+    // Business a ESTE mensaje se reconoce en message_create.
+    anotarEntrante(chatId);
+    // Un archivo puede ser el comprobante: cuenta como «en camino» DESDE YA,
+    // antes de cualquier espera. 🔴 Subía hasta atenderArchivo, después de
+    // pedir el contacto (en un chat @lid, hasta 8 s) y a veces de bajar el
+    // archivo: una respuesta del modelo que terminaba en ese hueco salía sin
+    // filtrar («cuando hagas la transferencia, mándanos el comprobante») y el
+    // acuse llegaba después. Se baja en el `finally`; para entonces el
+    // comprobante ya espera en la ráfaga, que también cuenta.
+    posibleComprobante = Boolean(msg.hasMedia) && !TIPOS_SIN_COMPROBANTE.has(msg.type);
+    if (posibleComprobante) comprobanteEnCamino(chatId, +1);
+    const body = String(msg.body || "").trim();
+    const contacto = await datosDelContacto(msg);
+
+    // 1) El dueño: sus comandos van ANTES de cualquier filtro. También a media
+    // línea o en el pie de una foto: copia el aviso entero y lo pega.
+    if (esNumeroDelDueno(chatId, contacto.telefono)) {
+      if (chatId.endsWith("@lid")) ownerLid = chatId;
+      const comando = msg.type === "location" ? null : extraerComando(body);
+      if (comando) {
+        await handleOwnerCommand({
+          canal: "dueno",
+          chatActual: null,
+          confirmadoPor: "manolo",
+          responder: (t) => enviar(chatId, t),
+        }, comando);
+        return;
+      }
+      // …y lo demás que manda (un «ok» a un aviso) no lo contesta el bot,
+      // salvo que su número esté en ALWAYS_RESPOND_NUMBERS para probar.
+      if (!esSiempreResponder(chatId, contacto.telefono)) {
+        console.log("   💬 mensaje del dueño sin comando: no lo atiende el bot (para probar como cliente, agrega tu número a ALWAYS_RESPOND_NUMBERS).");
+        return;
+      }
+    }
+
+    // Un comando que NO viene del dueño no se ejecuta ni llega al modelo: un
+    // cliente que escribe «/confirma COT-… 930» no debe sacarle al bot un
+    // «listo, confirmada».
+    if (msg.type === "chat" && COMANDO_RE.test(body)) {
+      console.log(`   🚫 ${chatId} mandó un comando y no es el dueño${chatId.endsWith("@lid") && !contacto.telefono ? " (chat @lid sin teléfono resuelto)" : ""}: lo ignoro.`);
+      return;
+    }
+
+    // 2) Equipo, guías, proveedores, hotel: nunca.
+    if (esNuncaResponder(chatId, contacto.telefono)) {
+      console.log(`   🔕 ${chatId} está en NEVER_RESPOND_NUMBERS: no lo atiendo.`);
+      return;
+    }
+
+    // 3) Contactos guardados: los atiende el equipo, salvo que el bot ya
+    // estuviera platicando con ellos.
+    if (RESPOND_MODE === "strangers" && contacto.guardado && !esSiempreResponder(chatId, contacto.telefono)) {
+      const s = sesionExistente(chatId);
+      if (!(s && s.botAt)) {
+        console.log(`   ⏭️  ${chatId} es contacto guardado y el bot no ha platicado con él → lo atiende el equipo.`);
+        return;
+      }
+    }
+
+    // 4) Archivos, audios y ubicaciones: ANTES del corte por texto vacío.
+    const pausa = pausaActiva(chatId);
+    let texto = body;
+    switch (msg.type) {
+      case "location":
+        // El body de una ubicación es una miniatura en base64, no texto.
+        texto = medios.textoUbicacion(msg.location || {});
+        break;
+      case "sticker":
+        return;
+      case "ptt":
+      case "audio":
+        await atenderAudio(chatId, pausa);
+        return;
+      case "vcard":
+      case "multi_vcard":
+        await atenderNoSoportado(chatId, pausa);
+        return;
+      default:
+        if (msg.hasMedia) {
+          const r = await atenderArchivo(msg, chatId, contacto, pausa, llegoAt);
+          if (r.listo) return;
+          texto = r.texto;
+        }
+    }
+    if (!texto) return;
+
+    console.log(`📩 Entrante de ${chatId}: ${texto.substring(0, 60)}`);
+
+    // Si un humano tomó el chat: NO respondo, pero SÍ registro lo que dice el
+    // cliente para no perder el hilo al reanudar.
+    if (pausa) {
+      anotarHistorial(chatId, "user", texto);
+      console.log("   ⏸️  chat en pausa — lo guardo en el historial, sin responder.");
+      await seguimientoAlDueno(chatId, texto, pausa);
+      return;
+    }
+
+    marcarLeido(msg);
+    rafagas.recibirElemento(chatId, { tipo: "texto", texto, llegoAt });
+  } catch (e) {
+    console.error("❌ message handler:", primeraLinea(e));
+  } finally {
+    if (posibleComprobante) comprobanteEnCamino(chatId, -1);
+  }
+});
+
+// ── Espera antes de responder ─────────────────────────────────
+// La mecánica (ventana deslizante, tope y candado) vive en buffer.js.
+// Aquí solo va QUÉ hacer cuando la ráfaga ya está completa.
+const rafagas = crearGestorDeRafagas({
+  debounceMs: DEBOUNCE_MS,
+  maxMs: DEBOUNCE_MAX_MS,
+  esperaComprobantesMs: ESPERA_COMPROBANTE_MS,
+  responder: atenderRafaga,
+  onError: (e) => console.error("❌ ráfaga:", e && e.message),
+});
+
+async function atenderRafaga(chatId, texto, info = {}) {
+  const elementos = Array.isArray(info.elementos) ? info.elementos : (texto ? [{ tipo: "texto", texto }] : []);
+  try {
+    const pausa = pausaActiva(chatId);
+    volcarPendientes(chatId);
+    if (pausa) {
+      // Un humano tomó el chat mientras se esperaba: no se contesta, pero se
+      // guarda lo que llegó.
+      for (const el of elementos) {
+        if (el && el.tipo === "comprobante") pushHistory(chatId, "user", medios.notaHistorialComprobante(el.folio, { enPausa: true }));
+        else if (el && el.tipo === "texto" && String(el.texto || "").trim()) pushHistory(chatId, "user", String(el.texto).trim());
+      }
+      return;
+    }
+
+    const s = getSession(chatId);
+    completarContacto(chatId, s);
+    let plan = medios.prepararRafaga(elementos);
+    console.log(`📨 [${etiquetaChat(chatId)}] ${info.mensajes || elementos.length} mensaje(s) juntos tras ${Math.round((info.esperaMs || 0) / 1000)}s: ${plan.textoUnido.substring(0, 80)}${plan.huboComprobante ? ` · comprobante ${plan.folios.join(", ") || "sin cotización"}` : ""}`);
+
+    // Un comprobante que no cerró la ficha al llegar (foto sin pie, sin pago
+    // en la plática): si en la MISMA ráfaga el cliente sí habló del pago
+    // («listo, ya pagué» después de la foto), ahora sí la cierra.
+    if (plan.huboComprobante && medios.hablaDePago(plan.textos)) {
+      const avisados = new Set();
+      for (const el of elementos) {
+        if (!el || el.tipo !== "comprobante" || !el.folio || el.marcado) continue;
+        anotarEnFicha("marcarComprobanteEnFicha", chatId, el.folio);
+        el.marcado = true;
+        if (!avisados.has(el.folio)) {
+          avisados.add(el.folio);
+          avisarAlDueno(medios.textoNoEsPago(numeroParaComando(chatId)));
+        }
+      }
+    }
+
+    // 1) Acuses de los comprobantes: plantilla, sin modelo, antes que nada.
+    // 🔴 NO entran al historial antes de lo que escribió el cliente: su turno
+    // es `textoParaModelo`, con la nota del comprobante EN SU LUGAR. Antes el
+    // modelo leía «ahorita hago el pago» después del acuse y contestaba
+    // «cuando hagas la transferencia, mándanos el comprobante».
+    const acusesEnviados = [];
+    for (const acuse of plan.acuses) {
+      try {
+        await enviar(chatId, acuse);
+        acusesEnviados.push(acuse);
+      } catch (e) {
+        console.error(`❌ acuse de comprobante a ${chatId}:`, primeraLinea(e));
+      }
+    }
+    const textoAcuses = acusesEnviados.join("\n\n");
+    if (acusesEnviados.length) {
+      marcarAtendido(chatId);
+      if (ultimoAcuse.size > 1000) {
+        for (const [k, v] of ultimoAcuse) if (Date.now() - v.at > medios.CHARLA_TRAS_ACUSE_MS) ultimoAcuse.delete(k);
+      }
+      ultimoAcuse.set(chatId, { at: Date.now(), texto: textoAcuses });
+    } else if (plan.acuses.length) {
+      // No salió ningún acuse: la nota no puede decirle al modelo que ya lo recibió.
+      plan = medios.prepararRafaga(elementos.map((e) => (e && e.tipo === "comprobante" ? { ...e, ackText: null } : e)));
+    }
+
+    // 2) Solo el comprobante, o el comprobante + «ya pagué / ahorita hago el
+    // pago / gracias»: con el acuse basta. Al historial: lo suyo (en orden) y
+    // luego el acuse, que fue lo que recibió.
+    if (plan.huboComprobante && !plan.llamarModelo) {
+      pushHistory(chatId, "user", plan.textoParaModelo);
+      if (textoAcuses) pushHistory(chatId, "assistant", textoAcuses);
+      return;
+    }
+
+    if (!plan.textoUnido) return;
+
+    // 3) «listo / gracias» que llega en su propia ráfaga justo tras el acuse
+    // (la de solo comprobantes ya no espera 15 s): con el acuse basta.
+    if (medios.esCharlaTrasAcuse(plan, ultimoAcuse.get(chatId), s.history)) {
+      pushHistory(chatId, "user", plan.textoParaModelo);
+      console.log(`   🧾 [${etiquetaChat(chatId)}] solo «${medios.recortar(plan.textoUnido, 40)}» tras el acuse: no se llama al modelo.`);
+      return;
+    }
+
+    // 4) Pide a una persona o una llamada (regla rápida, sin modelo).
+    if (typeof needsHuman === "function" && needsHuman(plan.textoUnido)) {
+      await pasarPorRegla(chatId, plan.textoUnido, plan.textoParaModelo);
+      return;
+    }
+
+    // 5) El modelo.
+    await responderConModelo(chatId, plan.textoParaModelo, {
+      textoCliente: plan.textoUnido,
+      huboComprobante: plan.huboComprobante,
+      textoAcuses,
+    });
+  } finally {
+    volcarPendientes(chatId);
+  }
+}
+
+/**
+ * @param {string} textoModelo  lo que lee el modelo (con la nota del comprobante en su lugar)
+ * @param {{textoCliente?:string, huboComprobante?:boolean, textoAcuses?:string}} opciones
+ *   textoCliente    = solo lo que escribió (para los avisos al dueño)
+ *   huboComprobante = la ráfaga traía comprobante (su acuse ya salió)
+ *   textoAcuses     = los acuses que ya recibió en esta ráfaga
+ */
+async function responderConModelo(chatId, textoModelo, { textoCliente = textoModelo, huboComprobante = false, textoAcuses = "" } = {}) {
+  let escribiendo = null;
+  let enviado = null;
+  try {
+    const chat = await client.getChatById(chatId).catch(() => null);
+    if (chat) {
+      // El "escribiendo…" de WhatsApp se apaga solo a los ~25 s. Lo refresco
+      // mientras el modelo piensa para que el cliente no vea el chat mudo.
+      chat.sendStateTyping().catch(() => {});
+      escribiendo = setInterval(() => chat.sendStateTyping().catch(() => {}), 10000);
+    }
+    const respuesta = await processMessage(chatId, textoModelo);
+    enviado = respuesta;
+    // 🔴 El comprobante ya llegó (en esta ráfaga, o MIENTRAS el modelo
+    // pensaba): la respuesta no sale pidiendo el comprobante, la
+    // transferencia ni con los datos de pago. Filtro fijo (medios.js).
+    const durante = comprobanteSinContestar(chatId);
+    if (huboComprobante || durante) {
+      enviado = medios.filtrarRespuestaTrasComprobante(respuesta);
+      if (enviado !== respuesta) {
+        // Lo que quedó en el historial = lo que salió. Si no sale nada y en
+        // esta ráfaga ya salió el acuse, eso fue su respuesta.
+        const corregido = medios.corregirRespuestaEnHistorial(getSession(chatId).history, respuesta, enviado || (huboComprobante ? textoAcuses : ""));
+        console.log(`   🧾 [${etiquetaChat(chatId)}] ${durante ? "llegó un comprobante mientras el modelo contestaba" : "la ráfaga traía el comprobante"}: quité de la respuesta lo que pedía el pago${enviado ? "" : " (no quedó nada que mandar)"}${corregido ? "" : " · ⚠️ no encontré esa respuesta en el historial para corregirla"}.`);
+      }
+    }
+    if (enviado) {
+      await enviar(chatId, enviado);
+      marcarAtendido(chatId);
+    }
+  } catch (e) {
+    console.error(`❌ procesando ${chatId}:`, primeraLinea(e));
+    await fallaAlResponder(chatId, e, textoCliente);
+  } finally {
+    if (escribiendo) clearInterval(escribiendo);
+  }
+  // 6) Si el modelo decidió pasar el chat al equipo (escalar_a_humano), se
+  // aplica DESPUÉS de contestar. También si la respuesta falló: el aviso al
+  // equipo vale igual.
+  try {
+    await aplicarEscalacion(chatId, { textoCliente, respuestaBot: enviado || null });
+  } catch (e) {
+    console.error(`❌ escalación de ${chatId}:`, primeraLinea(e));
+  }
+}
+
+/**
+ * La regla rápida de agent.js (needsHuman): pasa el chat sin gastar una llamada al modelo.
+ * `textoHistorial` = su turno tal como queda guardado (con la nota del
+ * comprobante en su lugar, si lo mandó en la misma ráfaga).
+ */
+async function pasarPorRegla(chatId, texto, textoHistorial = texto) {
+  const s = getSession(chatId);
+  const locale = s.locale || medios.idiomaProbable(texto) || medios.idiomaDeSesion(s);
+  const espera = horario.mensajeEspera({ urgencia: "hoy", locale });
+  const respuesta = locale === "en"
+    ? `Of course! 🙌 I've passed your message on. ${espera} If you'd prefer a call, just tell me what time works for you. 🌿`
+    : `¡Claro! 🙌 Ya pasé tu mensaje. ${espera} Si prefieres que te llamemos, dime a qué hora te queda bien. 🌿`;
+  pushHistory(chatId, "user", textoHistorial);
+  try {
+    await enviar(chatId, respuesta);
+    pushHistory(chatId, "assistant", respuesta);
+    marcarAtendido(chatId);
+  } catch (e) {
+    console.error(`❌ respuesta de «pide humano» a ${chatId}:`, primeraLinea(e));
+  }
+  s.escalacion = {
+    motivo: "pide_humano",
+    modo: "pasar",
+    urgencia: "hoy",
+    resumen: "El cliente pidió hablar con una persona (o que le llamen).",
+    folio: s.lastFolio || null,
+    at: Date.now(),
+  };
+  await aplicarEscalacion(chatId, { textoCliente: texto, respuestaBot: respuesta });
+}
+
+// ── Escalación: avisar al dueño y, si toca, pausar ────────────
+const ETIQUETAS_MOTIVO = {
+  pide_humano: "Pide hablar con una persona",
+  llamada: "Pide que le llamen",
+  cambio_post_pago: "Cambio después de pagar",
+  cancelacion: "Cancelación o reembolso",
+  queja_incidente: "Queja o incidente",
+  cliente_molesto: "Cliente molesto",
+  grupo: "Grupo grande o precio de grupo",
+  descuento: "Pide descuento",
+  fuera_catalogo: "Pide algo fuera del catálogo",
+  traslado_sin_tarifa: "Recogida o traslado sin tarifa",
+  para_hoy: "Quiere el tour para HOY",
+  para_manana: "Tour para MAÑANA: confirma que hay salida",
+  hotel: "Hotel: disponibilidad o petición especial",
+  pregunta_sin_respuesta: "Pregunta que el bot no sabe",
+  salud: "Salud, edad o condición física",
+  factura: "Pide factura",
+  pago_fallido: "El pago con tarjeta falló",
+  falla_bot: "El bot no pudo responder",
+  recogida: "Hotel para la recogida",
+  humano: "Alguien del equipo escribió en el chat",
+  comando: "Pausado con /pausa",
+  otro: "Otro",
+};
+function etiquetaMotivo(motivo) {
+  return ETIQUETAS_MOTIVO[motivo] || String(motivo || "otro").replace(/_/g, " ");
+}
+
+/**
+ * El aviso al dueño, con el formato del plan:
+ * [URGENTE|HOY|NORMAL] motivo · nombre · wa.me/tel · folio, tour, fecha,
+ * personas · qué pidió · qué le dijo el bot · estado (/reanuda …).
+ */
+function textoAvisoEscalacion({ motivo, urgencia, resumen, nombre, telefono, cotizacion, folio, textoCliente, respuestaBot, estadoTxt } = {}) {
+  const etiqueta = urgencia === "urgente" ? "🚨 *[URGENTE]*" : urgencia === "hoy" ? "🔔 *[HOY]*" : "📝 *[NORMAL]*";
+  const L = [`${etiqueta} ${etiquetaMotivo(motivo)}`];
+  L.push(`👤 ${nombre || (cotizacion && cotizacion.customerName) || "Sin nombre"}`);
+  L.push(medios.lineaTelefono(telefono));
+  const c = cotizacion || {};
+  const personas = c.adults ? `${c.adults} adulto${c.adults === 1 ? "" : "s"}${c.children ? ` + ${c.children} niño${c.children === 1 ? "" : "s"}` : ""}` : "";
+  const datos = cotizacion
+    ? [c.folio, c.tourName, c.tourDate ? medios.fechaCorta(c.tourDate) : "", personas].filter(Boolean)
+    : (folio ? [folio] : []);
+  if (datos.length) L.push(`📋 ${datos.join(" · ")}`);
+  if (resumen) L.push(`💬 *Qué pidió:* ${medios.recortar(resumen, 300)}`);
+  if (textoCliente) L.push(`🗣️ *Su último mensaje:* «${medios.recortar(textoCliente, 200)}»`);
+  if (respuestaBot) L.push(`🤖 *Qué le dijo el bot:* «${medios.recortar(respuestaBot, 200)}»`);
+  if (estadoTxt) L.push("", estadoTxt);
+  return L.join("\n");
+}
+
+const ultimoAvisoEscalacion = new Map(); // `${chatId}|${motivo}` -> ms
+
+/**
+ * Aplica `session.escalacion` (la deja escalar_a_humano o la regla rápida):
+ *   · modo "pasar" → pausa PAUSA_ESCALACION_MS (o hasta /reanuda en queja,
+ *     cancelación, cliente molesto y cambio después de pagar);
+ *   · aviso al WhatsApp del dueño («pregunta que no sabe», máx. 1 por hora
+ *     por chat; los demás «avisar», solo se frena el mismo pedido repetido);
+ *   · bitácora del panel (/api/bot/escalacion).
+ * Luego la limpia. Nunca lanza hacia la ráfaga: los errores se registran.
+ */
+async function aplicarEscalacion(chatId, { textoCliente = "", respuestaBot = "" } = {}) {
+  const s = sesionExistente(chatId);
+  if (!s || !s.escalacion) return;
+  const esc = { ...s.escalacion };
+  s.escalacion = null; // primero se limpia: si algo de abajo falla, no se repite en cada mensaje
+  estado.marcarCambio();
+
+  const modo = esc.modo === "pasar" ? "pasar" : "avisar";
+  const urgencia = ["urgente", "hoy", "normal"].includes(esc.urgencia) ? esc.urgencia : "normal";
+  const motivo = String(esc.motivo || "otro");
+  const folio = esc.folio || s.lastFolio || null;
+  const numero = numeroParaComando(chatId);
+
+  // En «avisar» no se pausa, pero el estado dice la verdad si el chat ya
+  // estaba en pausa por otra cosa.
+  let pausa = estado.pausaVigente(chatId);
+  if (modo === "pasar") {
+    // La pausa la pone el bot: un comprobante que esperaba en la ráfaga recibe su acuse igual.
+    if (MOTIVOS_HASTA_REANUDA.has(motivo)) {
+      pausa = pausar(chatId, { indefinida: true, motivo, modo: "escalacion", acusarComprobantes: true });
+    } else if (motivo === "falla_bot") {
+      // El modelo no contestó ni con dos empujones (agent.js): es una falla,
+      // no un chat que se pasa. 2 h como cualquier falla, no las 12 h.
+      pausa = pausar(chatId, { ms: HUMAN_TAKEOVER_MS, motivo, modo: "falla", acusarComprobantes: true });
+    } else {
+      pausa = pausar(chatId, { ms: PAUSA_ESCALACION_MS, motivo, modo: "escalacion", acusarComprobantes: true });
+    }
+  }
+
+  // Tour, fecha y personas del folio (si el sitio contesta; si no, solo el folio).
+  let cotizacion = null;
+  if (folio) {
+    const r = await api.consultarReserva(folio);
+    if (r && r.ok && r.data) {
+      cotizacion = medios.normalizarCotizacion(r.data, folio);
+      if (cotizacion) Object.assign(cotizacion, { adults: r.data.adults, children: r.data.children });
+    }
+  }
+
+  // El freno de 1 aviso por hora es el de «pregunta que no sabe» (así lo pide
+  // la matriz). Los demás motivos se reusan para pedidos distintos («otro»:
+  // falló la cotización, quiere la liga de tarjeta…): de esos solo se frena el
+  // MISMO pedido repetido (mismo motivo y mismo resumen). Antes el segundo
+  // pedido no le llegaba al dueño aunque el bot ya le había prometido algo al cliente.
+  const clave = motivo === "pregunta_sin_respuesta"
+    ? `${chatId}|${motivo}`
+    : `${chatId}|${motivo}|${String(esc.resumen || "").toLowerCase().replace(/[^a-z0-9áéíóúñü]+/g, " ").trim().slice(0, 160)}`;
+  if (ultimoAvisoEscalacion.size > 1000) {
+    for (const [k, t] of ultimoAvisoEscalacion) if (Date.now() - t > AVISO_REPETIDO_MS) ultimoAvisoEscalacion.delete(k);
+  }
+  const repetido = modo === "avisar" && Date.now() - (ultimoAvisoEscalacion.get(clave) || 0) < AVISO_REPETIDO_MS;
+  if (!repetido) {
+    ultimoAvisoEscalacion.set(clave, Date.now());
+    const aviso = textoAvisoEscalacion({
+      motivo, urgencia, resumen: esc.resumen,
+      nombre: s.nombre, telefono: s.telefono || telefonoConocido(chatId),
+      cotizacion, folio, textoCliente, respuestaBot,
+      estadoTxt: describirPausa(pausa, numero),
+    });
+    const ok = await avisarAlDueno(aviso);
+    console.log(`🙋 Escalación (${motivo}, ${modo}, ${urgencia}) de ${etiquetaChat(chatId)} → dueño: ${ok ? "avisado" : "NO llegó"}`);
+  } else {
+    console.log(`🙋 Escalación repetida (${motivo}) de ${etiquetaChat(chatId)}: sin aviso nuevo al dueño (1 por hora).`);
+  }
+
+  // Bitácora del panel: todas, también las repetidas (así se juntan las
+  // preguntas que el bot no supo para alimentarlo). api-client nunca lanza.
+  api.escalacion({
+    waChatId: chatId,
+    telefono: s.telefono || telefonoConocido(chatId) || undefined,
+    nombre: s.nombre || undefined,
+    motivo, modo, urgencia,
+    resumen: esc.resumen || medios.recortar(textoCliente, 300),
+    folio: folio || undefined,
+  }).then((r) => {
+    if (!r.ok) console.warn(`⚠️ /api/bot/escalacion (${motivo}):`, (r.data && r.data.error) || r.status);
+  });
+}
+
+// ── Cuando el bot no puede responder ─────────────────────────
+// Traduce el error crudo a algo que el dueño entienda (del bot del hotel).
+function resumirError(err) {
+  const raw = primeraLinea(err);
+  if (/organization has been disabled|account.*disabled/i.test(raw)) return "La cuenta de Anthropic (el cerebro del bot) está DESHABILITADA: revisar billing o la API key.";
+  if (/credit balance is too low|insufficient|quota|billing/i.test(raw)) return "Falta saldo en la cuenta de Anthropic: revisar billing.";
+  if (/api.?key.*invalid|invalid.*api.?key|invalid x-api-key|authentication|unauthorized|401/i.test(raw)) return "La API key de Anthropic es inválida o fue revocada: revisar ANTHROPIC_API_KEY.";
+  if (/rate.?limit|429/i.test(raw)) return "Límite de velocidad de la API (429): suele ser temporal.";
+  if (/overloaded|529|5\d\d/i.test(raw)) return "La API de Anthropic tuvo un error temporal del servidor.";
+  if (/timeout|ETIMEDOUT|ECONNRESET|fetch failed|network|ENOTFOUND/i.test(raw)) return "Problema de red: suele ser temporal.";
+  return raw.slice(0, 160) || "Error desconocido.";
+}
+
+// En una caída entran muchos mensajes: el dueño recibe UN aviso cada 10 min,
+// pero ningún chat se pierde — los que fallan en ese rato van en el siguiente.
+let ultimaFallaAt = 0;
+let timerFallas = null;
+const fallasSinAvisar = new Map(); // chatId -> { etiqueta, motivo }
+
+async function enviarAvisoDeFallas() {
+  if (timerFallas) { clearTimeout(timerFallas); timerFallas = null; }
+  if (!fallasSinAvisar.size) return;
+  ultimaFallaAt = Date.now();
+  const lista = [...fallasSinAvisar.values()];
+  fallasSinAvisar.clear();
+  const L = [
+    "⚠️ *El bot no pudo responder*",
+    `🔎 Motivo: ${lista[lista.length - 1].motivo}`,
+    "",
+    lista.length === 1 ? `👤 ${lista[0].etiqueta}` : `Chats sin respuesta:\n${lista.map((x) => `• ${x.etiqueta}`).join("\n")}`,
+    "",
+    `👉 Contéstales tú, por favor. Al cliente le dije que alguien del equipo le escribe, y el bot quedó en pausa ${duracionTexto(HUMAN_TAKEOVER_MS)} en ese chat.`,
+    "_(Este aviso sale máx. 1 vez cada 10 min; los chats que fallen mientras tanto van en el siguiente.)_",
+  ];
+  await avisarAlDueno(L.join("\n"));
+}
+
+async function avisarFalla(chatId, err) {
+  fallasSinAvisar.set(chatId, { etiqueta: etiquetaChat(chatId), motivo: resumirError(err) });
+  const espera = ultimaFallaAt + FALLA_COOLDOWN_MS - Date.now();
+  if (espera <= 0) return enviarAvisoDeFallas();
+  if (!timerFallas) {
+    timerFallas = setTimeout(() => { enviarAvisoDeFallas().catch(() => {}); }, espera);
+    if (timerFallas.unref) timerFallas.unref();
+  }
+}
+
+/**
+ * En vez de «tuve un problema técnico» (que espanta y no resuelve): «dame un
+ * momento, te escribe alguien del equipo», pausa de 2 h y aviso al dueño.
+ */
+async function fallaAlResponder(chatId, err, textoCliente) {
+  const s = sesionExistente(chatId);
+  const en = medios.idiomaDeSesion(s) === "en";
+  // El tiempo que se promete sale del horario del equipo, no fijo: a las 2 am
+  // «te escribe alguien» dejaba al cliente esperando hasta las 8.
+  const espera = horario.mensajeEspera({ urgencia: "urgente", locale: en ? "en" : "es" });
+  const disculpa = en ? `Give me a moment 🙏 ${espera}` : `Dame un momento 🙏 ${espera}`;
+  try {
+    await enviar(chatId, disculpa);
+    // Solo detrás de un turno del cliente: si el modelo tronó a media
+    // herramienta, el último turno es un tool_use suelto (sanearHistorial lo
+    // quita en la siguiente vuelta) y una disculpa pegada ahí estorbaría.
+    const h = getSession(chatId).history;
+    const ultimo = h[h.length - 1];
+    if (!ultimo || ultimo.role === "user") pushHistory(chatId, "assistant", disculpa);
+  } catch (e) {
+    console.error(`❌ tampoco pude mandar la disculpa a ${chatId}:`, primeraLinea(e));
+  }
+  pausar(chatId, { ms: HUMAN_TAKEOVER_MS, motivo: "falla_bot", modo: "falla", acusarComprobantes: true });
+  await avisarFalla(chatId, err).catch((e) => console.error("❌ aviso de falla:", primeraLinea(e)));
+  api.escalacion({
+    waChatId: chatId,
+    telefono: telefonoConocido(chatId) || undefined,
+    nombre: (s && s.nombre) || undefined,
+    motivo: "falla_bot",
+    modo: "pasar",
+    urgencia: "urgente",
+    resumen: `El bot no pudo responder (${resumirError(err)}). Último mensaje: ${medios.recortar(textoCliente, 200)}`,
+    folio: (s && s.lastFolio) || undefined,
+  }).then((r) => {
+    if (!r.ok) console.warn("⚠️ /api/bot/escalacion (falla_bot):", (r.data && r.data.error) || r.status);
+  });
+}
+
+// ── Mensajes SALIENTES (teléfono del negocio / la cuenta conectada) ──
+client.on("message_create", async (msg) => {
+  try {
+    if (!msg.fromMe) return;
+    if (TIPOS_IGNORADOS.has(msg.type)) return;
+    const body = String(msg.body || "").trim();
+    const remoto = msg.id && msg.id.remote;
+    const target = msg.to || (typeof remoto === "string" ? remoto : (remoto && remoto._serialized)) || "";
+    const sinChat = !target || target === "status@broadcast" || /@(g\.us|broadcast|newsletter)$/.test(target);
+
+    // Comandos escritos desde el teléfono del negocio. 🔴 Nunca lo que mandó el
+    // propio bot (ver `esTextoDelBot`): una respuesta del modelo que empezara
+    // con «/confirma …» confirmaría un pago sin que nadie viera el dinero.
+    if (msg.type === "chat" && body.startsWith("/") && !esTextoDelBot(body)) {
+      // En un grupo la respuesta la leería todo el grupo (el de guías, por
+      // ejemplo): ahí no se ejecuta nada.
+      if (sinChat) {
+        console.log(`   🚫 comando escrito en ${target || "un chat sin id"}: en grupos no se ejecuta.`);
+        return;
+      }
+      const esChatDeCliente = !esChatDelDueno(target) && !esChatPropio(target);
+      await handleOwnerCommand({
+        canal: "negocio",
+        chatActual: esChatDeCliente ? target : null,
+        confirmadoPor: "equipo",
+        responder: responderAlNegocio(target, esChatDeCliente),
+      }, body);
+      return;
+    }
+
+    if (sinChat) return;
+    // Eventos internos sin contenido (abrir un chat, notificaciones…).
+    if (!body && !msg.hasMedia) return;
+    // El chat con el dueño es de avisos y comandos, y «Tú» es donde el bot
+    // contesta los comandos del teléfono del negocio: ninguno se pausa.
+    if (esChatDelDueno(target) || esChatPropio(target)) return;
+    // ¿Lo mandó el bot? Se revisan también los otros ids del mismo chat
+    // (@c.us / @lid): WhatsApp puede nombrar el chat distinto al enviar.
+    const ids = await idsEquivalentes(target);
+    if (ids.some(isRecentBotOutgoing)) return;
+    // Bienvenida o ausencia de WhatsApp Business: no es una persona.
+    if (esAutorespuesta(ids)) {
+      console.log(`   🤖 ${target}: mensaje automático de WhatsApp Business (salió a segundos del cliente): no pauso al bot.`);
+      return;
+    }
+
+    // Alguien del equipo escribió a mano (texto, archivo o audio): el bot se calla.
+    pausaPorHumano(ids);
+    // Lo que escribió va al historial (como lado del negocio) para que el bot
+    // no pierda el hilo al retomar, solo si ya platicaba con ese chat.
+    const s = sesionExistente(target);
+    if (s && s.history.length) anotarHistorial(target, "assistant", lineaDelEquipo(msg, body));
+  } catch (e) {
+    console.error("❌ message_create:", primeraLinea(e));
+  }
+});
+
+/**
+ * A dónde contesta un comando escrito en el teléfono del negocio. 🔴 Nunca al
+ * chat de un cliente: `/status` lista nombre y teléfono de OTROS clientes,
+ * `/reanuda` nombra al chat afectado y `/confirma` puede pegar la
+ * confirmación de otro folio. Va al chat «Tú» de la cuenta (lo ve quien tiene
+ * el teléfono del negocio) o, si no se puede, al dueño. Escrito en «Tú» o en
+ * el chat del dueño, ahí mismo.
+ */
+function responderAlNegocio(target, esChatDeCliente) {
+  return async (t) => {
+    if (!esChatDeCliente) return enviar(target, t);
+    const propio = chatPropio();
+    if (propio) {
+      try {
+        return await enviar(propio, t);
+      } catch (e) {
+        console.warn("⚠️ No pude contestar el comando en «Tú»:", primeraLinea(e));
+      }
+    }
+    return avisarAlDueno(t);
+  };
+}
+
+function lineaDelEquipo(msg, body) {
+  if (msg.type === "chat") return body;
+  if (msg.type === "location") return "[el equipo mandó una ubicación]";
+  if (msg.type === "ptt" || msg.type === "audio") return "[el equipo mandó una nota de voz]";
+  const que = msg.type === "image" ? "una foto" : msg.type === "video" ? "un video" : msg.type === "document" ? "un documento" : "un archivo";
+  return `[el equipo mandó ${que}${body ? `: ${body}` : ""}]`;
+}
+
+// ── Comandos (teléfono del negocio o mensaje directo del dueño) ──
+const TEXTO_AYUDA = [
+  "*Comandos del bot*",
+  "*/confirma <folio> <monto> [método]* — valida un pago: convierte la cotización en reserva, registra el cobro con el comprobante guardado y le escribe al cliente. Ej.: /confirma COT-ABC123 930",
+  "   Métodos: transferencia (por omisión), deposito (OXXO), stripe (liga), efectivo, otro.",
+  "   Si el sitio lo frena (otro pago igual hace minutos, otra reserva del mismo cliente, cotización vencida, reemplazada o sin lugar) y de verdad va, repite con «forzar» al final.",
+  "*/noespago <número>* — el archivo que mandó NO era un comprobante: el bot vuelve a cotizarle y a darle los datos de pago",
+  "*/pausa <número>* — calla al bot en ese chat hasta /reanuda",
+  "*/reanuda <número>* — el bot vuelve a contestar (recuerda la conversación)",
+  "*/olvida <número>* — borra lo que el bot recuerda de ese chat",
+  "*/status* — estado del bot",
+  "",
+  "Funcionan mandándoselos al bot desde tu WhatsApp o desde el teléfono del negocio. Escritos en el chat de un cliente, la respuesta llega al chat «Tú» del negocio (nunca al cliente). En grupos no funcionan.",
+].join("\n");
+
+/**
+ * @param {{canal:"dueno"|"negocio", chatActual:string|null, confirmadoPor:string, responder:(t:string)=>Promise<any>}} ctx
+ */
+async function handleOwnerCommand(ctx, body) {
+  const [crudo, ...resto] = String(body || "").trim().split(/\s+/);
+  const cmd = crudo.toLowerCase();
+  const arg = resto.join(" ").trim();
+  const responder = (t) => Promise.resolve(ctx.responder(t)).catch((e) => console.error("❌ respuesta a comando:", primeraLinea(e)));
+
+  switch (cmd) {
+    case "/status":
+      return responder(textoStatus());
+    case "/help":
+    case "/ayuda":
+      return responder(TEXTO_AYUDA);
+    case "/confirma":
+      return confirmarPago(ctx, arg, responder);
+    case "/noespago":
+      return quitarComprobante(ctx, arg, responder);
+    case "/pausa": {
+      const ids = resolverChats(arg, ctx.chatActual);
+      if (!ids.length) return responder("Uso: /pausa <número>\nEj.: /pausa 52XXXXXXXXXX");
+      for (const id of ids) pausar(id, { indefinida: true, motivo: "comando", modo: "dueno" });
+      return responder(`⏸️ Bot en pausa en ${ids.map(etiquetaChat).join(", ")} hasta que escribas /reanuda ${numeroParaComando(ids[0])}.`);
+    }
+    case "/reanuda": {
+      const ids = resolverChats(arg, ctx.chatActual, { soloConocidos: true });
+      if (!ids.length) return responder(arg ? `No encontré un chat con ${arg}.` : "Uso: /reanuda <número>");
+      const reanudados = ids.filter(reanudar);
+      if (!reanudados.length) return responder(`ℹ️ ${ids.map(etiquetaChat).join(", ")} no estaba en pausa.`);
+      return responder(`▶️ Bot reactivado en ${reanudados.map(etiquetaChat).join(", ")}. Recuerda la conversación; para que empiece de cero: /olvida ${numeroParaComando(reanudados[0])}`);
+    }
+    case "/olvida": {
+      const ids = resolverChats(arg, ctx.chatActual, { soloConocidos: true });
+      if (!ids.length) return responder(arg ? `No encontré un chat con ${arg}.` : "Uso: /olvida <número>");
+      const etiquetas = ids.map(etiquetaChat);
+      for (const id of ids) {
+        rafagas.descartar(id);
+        clearSession(id);
+        pendientes.delete(id);
+      }
+      const enPausa = ids.filter((id) => estado.pausaVigente(id));
+      return responder(`🧹 Memoria borrada en ${etiquetas.join(", ")}.${enPausa.length ? ` Sigue en pausa: /reanuda ${numeroParaComando(enPausa[0])}` : ""}`);
+    }
+    default:
+      // En el teléfono del negocio un «/» suelto puede ser cualquier cosa;
+      // al dueño, que le escribe al bot, sí se le contesta.
+      if (ctx.canal === "dueno") return responder(`No conozco ${crudo}.\n\n${TEXTO_AYUDA}`);
+      return undefined;
+  }
+}
+
+/**
+ * <número> → los chats que coinciden (por dígitos del chat o por el teléfono
+ * real guardado en la sesión o la pausa: así un chat @lid se encuentra con el
+ * número que ve el dueño). Sin número, el chat donde se escribió el comando.
+ */
+function resolverChats(arg, chatActual, { soloConocidos = false } = {}) {
+  const txt = String(arg || "").trim();
+  if (!txt) return chatActual ? [chatActual] : [];
+  if (txt.includes("@")) return [txt];
+  const d = digitsOnly(txt);
+  if (!d) return [];
+  const coincide = (chatId, tel) => mismoNumero(String(chatId).split("@")[0], d) || (tel && mismoNumero(tel, d));
+  const encontrados = new Set();
+  for (const [id, p] of Object.entries(estado.pausas())) if (coincide(id, p && p.telefono)) encontrados.add(id);
+  for (const [id, s] of Object.entries(estado.sesiones())) if (coincide(id, s && s.telefono)) encontrados.add(id);
+  if (!encontrados.size && !soloConocidos) encontrados.add(`${numeroEscrito(d)}@c.us`);
+  return [...encontrados];
+}
+
+function textoStatus() {
+  const vigentes = Object.keys(estado.pausas())
+    .map((id) => [id, estado.pausaVigente(id)])
+    .filter(([, p]) => p);
+  const r = estado.resumen();
+  const L = [
+    "✅ *Bot activo*",
+    `🕗 Equipo: ${horario.horarioTexto("es")} (hora de México) · ahorita ${horario.enHorarioHumano() ? "en horario" : "fuera de horario"}`,
+    `⏸️ Chats en pausa: ${vigentes.length}`,
+    ...vigentes.slice(0, 10).map(([id, p]) => `   • ${etiquetaChat(id)} — ${etiquetaMotivo(p.motivo || p.modo)} · ${p.hasta === null ? "hasta /reanuda" : `hasta ${cuandoMx(p.hasta)}`}`),
+    ...(vigentes.length > 10 ? [`   • …y ${vigentes.length - 10} más`] : []),
+    `⏳ Ráfagas esperando: ${rafagas.enEspera()}`,
+    `💬 Conversaciones guardadas: ${r.sesiones} · 🧾 comprobantes guardados: ${r.comprobantes}`,
+    `🧠 Modelo: ${process.env.BOT_MODEL || "claude-haiku-4-5-20251001"} · ⌛ espera ${DEBOUNCE_MS / 1000} s (tope ${DEBOUNCE_MAX_MS / 1000} s; solo comprobante: ${ESPERA_COMPROBANTE_MS / 1000} s)`,
+    `🙋 Si alguien escribe a mano: pausa de ${duracionTexto(HUMAN_TAKEOVER_MS)} · al pasar un chat: ${duracionTexto(PAUSA_ESCALACION_MS)}`,
+  ];
+  if (!OWNER) L.push("⚠️ Falta OWNER_WHATSAPP_NUMBER: comprobantes y escalaciones no le llegan a nadie.");
+  return L.join("\n");
+}
+
+// ── /noespago ─────────────────────────────────────────────────
+/**
+ * «/noespago <número>»: lo que mandó el cliente NO era un comprobante. Quita
+ * la marca de la ficha (si el pago no está validado) para que el bot vuelva a
+ * cotizarle y a darle los datos de pago, y se lo dice al modelo con una nota.
+ * 🔴 Sin esto, una foto que el bot tomó por comprobante dejaba el chat sin
+ * cotizaciones ni datos de pago hasta que pasara el viaje o alguien hiciera
+ * /olvida (que borra toda la plática).
+ */
+function quitarComprobante(ctx, arg, responder) {
+  const ids = resolverChats(arg, ctx.chatActual, { soloConocidos: true });
+  if (!ids.length) return responder(arg ? `No encontré un chat con ${arg}.` : "Uso: /noespago <número>\nEj.: /noespago 52XXXXXXXXXX");
+  const L = [];
+  for (const id of ids) {
+    const s = sesionExistente(id);
+    const f = s && s.ficha;
+    if (!s) {
+      L.push(`ℹ️ ${etiquetaChat(id)}: el bot no ha platicado con ese chat.`);
+      continue;
+    }
+    if (f && f.pagoValidado) {
+      L.push(`⚠️ ${etiquetaChat(id)}: ese pago ya está VALIDADO (${f.reservaFolio || f.folioVigente || "con reserva"}): no lo quito. Si hay que corregirlo, en el panel.`);
+      continue;
+    }
+    // La marca de la ficha (si la había) y, siempre, la nota para el modelo:
+    // la del acuse le dijo que llegó un comprobante.
+    if (f && f.comprobanteRecibido) anotarEnFicha("actualizarFicha", id, { comprobanteRecibido: false });
+    anotarHistorial(id, "user", "[sistema] El equipo revisó el archivo que mandó el cliente: NO era un comprobante de pago. Sigue SIN pagar; si quiere apartar, dale los datos de pago (datos_pago). No menciones esta nota.");
+    const pausa = estado.pausaVigente(id);
+    L.push(`🧾 ${etiquetaChat(id)}: listo, el bot ya no da por recibido un comprobante; vuelve a cotizarle y a darle los datos de pago.${pausa ? ` Sigue en pausa: /reanuda ${numeroParaComando(id)}` : ""}`);
+  }
+  return responder(L.join("\n"));
+}
+
+// ── /confirma ─────────────────────────────────────────────────
+const METODOS = {
+  transferencia: "transferencia", transf: "transferencia", spei: "transferencia",
+  deposito: "deposito", oxxo: "deposito",
+  stripe: "stripe", liga: "stripe", link: "stripe", tarjeta: "stripe",
+  efectivo: "efectivo", cash: "efectivo",
+  otro: "otro",
+};
+const USO_CONFIRMA = "Uso: /confirma <folio> <monto> [método]\nEj.: /confirma COT-ABC123 930\nMétodos: transferencia (por omisión), deposito (OXXO), stripe (liga), efectivo, otro.";
+
+/** "$1,550" → 1550 · "930.50" → 931 · "1.550" → 1550 (montos MXN enteros). */
+function parsearMonto(txt) {
+  let t = String(txt || "").replace(/[$\s]/g, "");
+  if (!/^[\d.,]+$/.test(t)) return null;
+  if (t.includes(",") && t.includes(".")) t = t.replace(/,/g, "");
+  else if (t.includes(",")) t = /,\d{3}$/.test(t) ? t.replace(/,/g, "") : t.replace(",", ".");
+  else if (/^\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, "");
+  const n = Number(t);
+  return Number.isFinite(n) ? Math.round(n) : null;
+}
+
+/**
+ * "/confirma COT-ABC123 930 deposito" → { folio, monto, metodo, forzar }
+ * (en cualquier orden). Con error → { error } listo para contestar.
+ */
+function parsearConfirma(args) {
+  const tokens = String(args || "").trim().split(/\s+/).filter(Boolean);
+  let folio = null, monto = null, metodo = null, forzar = false;
+  const raros = [];
+  for (const tk of tokens) {
+    const bajo = tk.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!folio && /^(COT-|HP)[A-Z0-9-]{3,}$/i.test(tk)) { folio = tk.toUpperCase().replace(/[^A-Z0-9-]/g, ""); continue; }
+    if (monto === null && /^\$?[\d.,]+$/.test(tk)) { monto = parsearMonto(tk); continue; }
+    if (METODOS[bajo]) { metodo = METODOS[bajo]; continue; }
+    if (bajo === "forzar") { forzar = true; continue; }
+    raros.push(tk);
+  }
+  if (!folio) return { error: USO_CONFIRMA };
+  if (!(monto > 0)) return { error: `Falta el monto que entró (lo que viste en tu banco).\n${USO_CONFIRMA}` };
+  if (raros.length) return { error: `No entendí «${raros.join(" ")}».\n${USO_CONFIRMA}` };
+  return { folio, monto, metodo: metodo || "transferencia", forzar };
+}
+
+function cuandoSeLiquida(b, en) {
+  if (b && b.esPaquete) return en ? "paid at hotel check-in" : "se paga al hacer check-in";
+  return en
+    ? "paid on the day of the tour, in cash or by bank transfer"
+    : "se paga el día del tour en efectivo o transferencia";
+}
+
+function lineasDinero(b, en) {
+  const L = [`💰 *Total:* ${medios.mx(b.totalAmount)}`];
+  if (b.liquidado || !(Number(b.saldo) > 0)) {
+    L.push(`✅ *${en ? "Paid" : "Pagado"}:* ${medios.mx(b.pagado)} — ${en ? "nothing left to pay" : "no queda nada pendiente"}`);
+  } else {
+    L.push(`✅ *${en ? "Paid" : "Pagado"}:* ${medios.mx(b.pagado)}`);
+    L.push(`🕒 *${en ? "Balance" : "Saldo"}:* ${medios.mx(b.saldo)} — ${cuandoSeLiquida(b, en)}`);
+  }
+  return L;
+}
+
+/**
+ * La confirmación al cliente, con lo que devolvió /api/bot/confirm: folio
+ * HP-M-, cada recorrido con fecha, salida y recogida, qué llevar, pagado y
+ * saldo (y cómo se paga), «un día antes tu guía te contacta», y la pregunta
+ * del hotel si falta para pasar por ellos.
+ * Antes decía «calzado cerrado» para todos (mal para tours de agua) y «saldo
+ * con tarjeta» (el guía no cobra con tarjeta).
+ */
+function textoConfirmacionCliente(b = {}, locale = "es") {
+  const en = String(locale || "").toLowerCase().startsWith("en");
+  const nombre = medios.primerNombre(b.customerName);
+  const folio = b.reservaFolio || b.folio;
+  const L = [
+    en ? `🎉 *All set${nombre ? `, ${nombre}` : ""}! Your booking is confirmed.*` : `🎉 *¡Listo${nombre ? `, ${nombre}` : ""}! Tu reserva quedó confirmada.*`,
+    "",
+    `📋 *${en ? "Booking" : "Folio"}:* ${folio}`,
+  ];
+  const recorridos = Array.isArray(b.recorridos) && b.recorridos.length
+    ? b.recorridos
+    : [{ nombre: b.tourName, fecha: b.tourDate, salida: b.salida, recogida: b.recogida, queLlevar: [] }];
+  // Si todos los recorridos piden lo mismo, la lista va una sola vez al final.
+  const listas = recorridos.map((r) => (Array.isArray(r.queLlevar) ? r.queLlevar.filter(Boolean) : []));
+  const misma = listas.length > 1 && listas[0].length && listas.every((l) => l.join("|") === listas[0].join("|"));
+  recorridos.forEach((r, i) => {
+    L.push("", `🗺️ *${r.nombre || (en ? "Tour" : "Recorrido")}*${r.fecha ? ` · ${medios.fechaLarga(r.fecha, locale)}` : ""}`);
+    if (r.salida) L.push(`⏰ ${en ? "Departure" : "Salida"}: ${r.salida}`);
+    if (r.recogida) L.push(`📍 ${r.recogida}`);
+    if (!misma && listas[i].length) L.push(`🎒 ${en ? "What to bring" : "Qué llevar"}: ${listas[i].join(", ")}`);
+  });
+  if (misma) L.push("", `🎒 *${en ? "What to bring" : "Qué llevar"}:* ${listas[0].join(", ")}`);
+  if (Number(b.adults) > 0) {
+    const ninos = Number(b.children) > 0 ? ` + ${b.children} ${en ? (b.children === 1 ? "child" : "children") : (b.children === 1 ? "niño" : "niños")}` : "";
+    L.push("", `👥 ${b.adults} ${en ? (b.adults === 1 ? "adult" : "adults") : (b.adults === 1 ? "adulto" : "adultos")}${ninos}`);
+  }
+  L.push("", ...lineasDinero(b, en));
+  L.push("", en
+    ? "One day before, your guide will contact you with the exact pick-up time and place."
+    : "Un día antes tu guía te contacta para darte la hora y el punto exacto de recogida.");
+  if (b.pideHospedaje) {
+    L.push("", en ? "Which hotel are you staying at? It's so we can pick you up. 🏨" : "¿En qué hotel se hospedan? Es para pasar por ustedes. 🏨");
+  }
+  L.push("", en ? "See you soon! 🌿" : "¡Nos vemos pronto! 🌿");
+  return L.join("\n");
+}
+
+/** Un pago más sobre una reserva que YA estaba confirmada (el saldo, un abono). */
+function textoPagoRegistrado(b = {}, locale = "es") {
+  const en = String(locale || "").toLowerCase().startsWith("en");
+  const nombre = medios.primerNombre(b.customerName);
+  const L = [
+    en ? `✅ *Thank you${nombre ? `, ${nombre}` : ""}! We registered your payment.*` : `✅ *¡Gracias${nombre ? `, ${nombre}` : ""}! Registramos tu pago.*`,
+    "",
+    `📋 *${en ? "Booking" : "Folio"}:* ${b.reservaFolio || b.folio}`,
+    ...lineasDinero(b, en),
+    "",
+    en ? "See you soon! 🌿" : "¡Nos vemos pronto! 🌿",
+  ];
+  return L.join("\n");
+}
+
+/** El chat del cliente por su folio (la sesión que lo cotizó), el más reciente. */
+function chatPorFolio(...folios) {
+  const buscados = new Set(folios.filter(Boolean).map((f) => String(f).toUpperCase()));
+  let mejor = null;
+  for (const [id, s] of Object.entries(estado.sesiones())) {
+    if (s && s.lastFolio && buscados.has(String(s.lastFolio).toUpperCase())) {
+      if (!mejor || (s.updatedAt || 0) > (mejor.s.updatedAt || 0)) mejor = { id, s };
+    }
+  }
+  return mejor ? mejor.id : null;
+}
+
+const confirmacionesRecientes = new Map(); // `${folio}|${monto}` -> ms
+
+async function confirmarPago(ctx, arg, responder) {
+  const p = parsearConfirma(arg);
+  if (p.error) return responder(p.error);
+
+  // El mismo /confirma dos veces (doble toque, mensaje repetido) registraría
+  // el cobro dos veces.
+  const clave = `${p.folio}|${p.monto}`;
+  const previa = confirmacionesRecientes.get(clave);
+  if (previa && Date.now() - previa < CONFIRMA_REPETIDA_MS && !p.forzar) {
+    return responder(`⚠️ Ya confirmaste ${p.folio} por ${medios.mx(p.monto)} hace ${duracionTexto(Date.now() - previa)}. Si de verdad entró OTRO pago igual, repite con:\n/confirma ${p.folio} ${p.monto} ${p.metodo} forzar`);
+  }
+
+  // 🔴 Se anota ANTES de llamar al sitio: el segundo de dos /confirma casi
+  // juntos (Erick desde el teléfono del negocio y Manolo por mensaje directo)
+  // ya lo encuentra aquí. Si el sitio no registra nada, se borra.
+  confirmacionesRecientes.set(clave, Date.now());
+
+  // El último comprobante guardado de ese folio viaja al panel con el cobro.
+  const comp = estado.ultimoComprobante(p.folio);
+  let comprobante;
+  let notaComprobante = "";
+  if (comp) {
+    try {
+      const buf = fs.readFileSync(comp.path);
+      if (buf.length <= MAX_BYTES_COMPROBANTE) {
+        comprobante = { base64: buf.toString("base64"), mimetype: comp.mimetype || "application/octet-stream", filename: comp.filename || path.basename(comp.path) };
+      } else {
+        notaComprobante = "⚠️ El comprobante pesa más de 5 MB: súbelo a mano en el panel.";
+      }
+    } catch (e) {
+      notaComprobante = "⚠️ No encontré el archivo del comprobante en el disco: súbelo en el panel si hace falta.";
+    }
+  } else {
+    notaComprobante = `ℹ️ No tengo comprobante guardado de ${p.folio}: súbelo en el panel si hace falta.`;
+  }
+
+  await responder(`⏳ Confirmando ${p.folio} por ${medios.mx(p.monto)} (${p.metodo})…`);
+  const res = await api.confirmarReserva(p.folio, p.monto, {
+    metodo: p.metodo, comprobante, confirmadoPor: ctx.confirmadoPor, forzar: p.forzar,
+  });
+  if (!res.ok) {
+    confirmacionesRecientes.delete(clave);
+    // El error tal cual: 404 no existe, 409 vencida / ya registrado / otra
+    // reserva del mismo cliente, 400 pedido inválido.
+    const error = (res.data && res.data.error) || (res.status ? `el sitio respondió ${res.status}` : "sin conexión con el sitio");
+    return responder(`❌ ${p.folio}: ${error}`);
+  }
+  const b = res.data || {};
+  // Lo que dijo el sitio del archivo, no lo que hay en el disco: «adjunto» no
+  // es «guardado» (un sitio anterior no manda `comprobanteGuardado`).
+  if (comprobante) {
+    const total = estado.comprobantesDe(p.folio).length;
+    const cual = `${comprobante.filename}${total > 1 ? ` (el último de ${total} archivos)` : ""}`;
+    notaComprobante = b.comprobanteGuardado === true
+      ? `📎 Comprobante guardado en el panel: ${cual}`
+      : b.comprobanteGuardado === false
+        ? `⚠️ El comprobante NO quedó en el panel (${cual}): súbelo a mano.`
+        : `📎 Comprobante enviado: ${cual}`;
+  }
+
+  // A quién: el chat que guardó el sitio, el del comprobante o el que cotizó
+  // ese folio. 🔴 NUNCA a "dígitos@c.us" armado del teléfono: en un chat @lid
+  // ese número es falso y la confirmación no le llega a nadie.
+  const destino = b.waChatId || (comp && comp.chatId) || chatPorFolio(p.folio, b.reservaFolio) || null;
+  // El pago ya es un hecho aunque el mensaje no llegue: la ficha lo sabe desde
+  // aquí y el bot ya no recotiza ese viaje (cambio después de pagar → equipo).
+  if (destino) anotarEnFicha("marcarPagoEnFicha", destino, p.folio, b.reservaFolio || null);
+  const ses = destino ? sesionExistente(destino) : null;
+  const locale = b.locale === "en" || b.locale === "es" ? b.locale : medios.idiomaDeSesion(ses);
+  const mensaje = b.yaConfirmada ? textoPagoRegistrado(b, locale) : textoConfirmacionCliente(b, locale);
+
+  let enviado = false;
+  if (destino) {
+    try {
+      await enviar(destino, mensaje);
+      enviado = true;
+    } catch (e) {
+      console.error(`❌ confirmación a ${destino}:`, primeraLinea(e));
+    }
+  }
+  if (enviado) {
+    // Los comprobantes que lleguen después (el saldo) se ligan a la reserva, y
+    // con el saldo en la sesión una foto de después del tour ya no es «pago».
+    const s = getSession(destino);
+    if (b.reservaFolio) s.lastFolio = b.reservaFolio;
+    if (Number.isFinite(Number(b.saldo))) s.saldoPendiente = Math.max(0, Math.round(Number(b.saldo)));
+    s.botAt = Date.now();
+    const folioReserva = b.reservaFolio || p.folio;
+    anotarHistorial(destino, "user",
+      `[sistema] El equipo validó el pago de ${p.folio}${b.reservaFolio && b.reservaFolio !== p.folio ? ` (reserva ${b.reservaFolio})` : ""}: pagado ${medios.mx(b.pagado)}, saldo ${medios.mx(b.saldo)}. Ya se le mandó la confirmación.` +
+      (b.pideHospedaje ? ` Se le preguntó en qué hotel se hospeda: cuando lo diga, llama escalar_a_humano (recogida, avisar, normal) con el hotel y el folio ${folioReserva}.` : ""));
+    anotarHistorial(destino, "assistant", mensaje);
+  }
+
+  const L = [
+    b.yaConfirmada
+      ? `✅ ${b.reservaFolio || p.folio}: pago registrado.`
+      : `✅ ${p.folio}${b.reservaFolio && b.reservaFolio !== p.folio ? ` → reserva ${b.reservaFolio}` : ""} confirmada.`,
+    `💵 Registrado ${medios.mx(p.monto)} (${p.metodo}) · pagado ${medios.mx(b.pagado)} de ${medios.mx(b.totalAmount)}${Number(b.saldo) > 0 ? ` · falta ${medios.mx(b.saldo)}` : " · liquidado"}`,
+    notaComprobante,
+    ...(b.emailEnviado === true ? ["📧 Correo de confirmación enviado."] : []),
+    // Lo que el sitio quiere que el dueño revise: otra reserva del mismo
+    // cliente, el correo que no salió, el comprobante que no se guardó…
+    ...(Array.isArray(b.avisos) ? b.avisos.filter(Boolean).map((a) => `⚠️ ${a}`) : []),
+  ];
+  if (enviado) L.push(`📨 Mensaje enviado a ${b.customerName || etiquetaChat(destino)}.`);
+  else L.push("", `⚠️ ${destino ? "No pude mandarle el mensaje al cliente" : "No tengo el chat del cliente"}: copia y mándale esto:`, "", mensaje);
+  return responder(L.filter(Boolean).join("\n"));
 }
 
 // ── Eventos de conexión ───────────────────────────────────────
@@ -124,7 +1887,7 @@ client.on("qr", (qr) => {
   // (imagen, panel web, etc.) sin tener que leer el dibujo ASCII.
   if (process.env.QR_OUT_FILE) {
     try {
-      require("fs").writeFileSync(process.env.QR_OUT_FILE, qr);
+      fs.writeFileSync(process.env.QR_OUT_FILE, qr);
     } catch (e) {
       console.error("   no pude guardar el QR en QR_OUT_FILE:", e.message);
     }
@@ -133,215 +1896,44 @@ client.on("qr", (qr) => {
 client.on("authenticated", () => console.log("🔐 Autenticado."));
 client.on("ready", () => {
   console.log("\n✅ Bot de Tours Huasteca Potosina conectado y listo.");
-  console.log("Comandos del dueño: /confirma <folio> · /pausa · /reanuda · /status · /help\n");
+  console.log("Comandos: /confirma <folio> <monto> · /noespago · /pausa · /reanuda · /olvida · /status · /help\n");
 });
 client.on("auth_failure", (m) => console.error("❌ Auth falló:", m, "\n   Borra .wwebjs_auth/ y reintenta."));
 client.on("disconnected", (r) => console.log("⚠️ Desconectado:", r));
 
-// ── Mensajes ENTRANTES (clientes) ─────────────────────────────
-client.on("message", async (msg) => {
-  try {
-    if (msg.fromMe || msg.isStatus || msg.from === "status@broadcast") return;
-    if (msg.from.endsWith("@g.us")) return; // grupos
-    const body = (msg.body || "").trim();
-    if (!body) return;
-
-    console.log(`📩 Entrante de ${msg.from}: ${body.substring(0, 60)}`);
-
-    // Corre en número personal: por defecto solo responde a DESCONOCIDOS.
-    // (Los contactos GUARDADOS no se responden nunca — los atiende el dueño.)
-    if (RESPOND_MODE === "strangers") {
-      let contact = null;
-      try { contact = await msg.getContact(); } catch {}
-      const contactNumber = String((contact && (contact.number || (contact.id && contact.id.user))) || "");
-      const always = isAlwaysRespond(msg.from) || isAlwaysRespond(contactNumber);
-      const saved = !!(contact && contact.isMyContact);
-      console.log(`   número=${contactNumber || "?"} · guardado=${saved} · always=${always}`);
-      if (saved && !always) {
-        console.log("   ⏭️  es contacto guardado → no respondo (lo atiendes tú). Para probar, agrega su número a ALWAYS_RESPOND_NUMBERS o usa RESPOND_MODE=all.");
-        return;
-      }
-    }
-
-    // Si el chat está en pausa (un humano lo tomó): NO respondo, pero SÍ registro
-    // el mensaje del cliente en el historial para no perder el hilo al reanudar.
-    if (isPaused(msg.from)) {
-      pushHistory(msg.from, "user", body);
-      console.log("   ⏸️  chat en pausa (humano) — registro el mensaje del cliente para no perder el hilo, sin responder.");
-      return;
-    }
-
-    // Marco el mensaje como LEÍDO de inmediato. El bot va a tardar 30 s o más
-    // en contestar; sin las palomitas azules el cliente siente que nadie lo vio.
-    msg.getChat().then((c) => c.sendSeen()).catch(() => {});
-
-    bufferMessage(msg.from, body);
-  } catch (e) {
-    console.error("❌ message handler:", e.message);
-  }
-});
-
-// ── Espera antes de responder ─────────────────────────────────
-// La mecánica (ventana deslizante, tope y candado) vive en buffer.js.
-// Aquí solo va QUÉ hacer cuando la ráfaga ya está completa.
-const rafagas = crearGestorDeRafagas({
-  debounceMs: DEBOUNCE_MS,
-  maxMs: DEBOUNCE_MAX_MS,
-  responder: atenderRafaga,
-  onError: (e) => console.error("❌ ráfaga:", e && e.message),
-});
-
-function bufferMessage(chatId, text) {
-  rafagas.recibir(chatId, text);
-}
-
-async function atenderRafaga(chatId, text, info) {
-  if (isPaused(chatId)) return;
-
-  console.log(`📨 [${chatId.split("@")[0]}] ${info.mensajes} mensaje(s) juntos tras ${Math.round(info.esperaMs / 1000)}s: ${text.substring(0, 80)}`);
-
-  // Escalación a humano
-  if (needsHuman(text)) {
-    await escalateToHuman(chatId, text);
-    return;
-  }
-
-  let escribiendo = null;
-  try {
-    const chat = await client.getChatById(chatId).catch(() => null);
-    if (chat) {
-      // El "escribiendo…" de WhatsApp se apaga solo a los ~25 s. Lo refresco
-      // mientras el modelo piensa para que el cliente no vea el chat mudo.
-      chat.sendStateTyping().catch(() => {});
-      escribiendo = setInterval(() => chat.sendStateTyping().catch(() => {}), 10000);
-    }
-    const reply = await processMessage(chatId, text);
-    await sendReply(chatId, reply);
-  } catch (e) {
-    console.error(`❌ procesando ${chatId}:`, e.message);
-    await sendReply(chatId, "Disculpa, tuve un problema técnico momentáneo. ¿Me escribes de nuevo en un momento? 🙏").catch(() => {});
-  } finally {
-    if (escribiendo) clearInterval(escribiendo);
-  }
-}
-
-async function escalateToHuman(chatId, text) {
-  pauseChat(chatId);
-  await sendReply(chatId, "¡Claro! 🙌 En un momento te atiende una persona de nuestro equipo. Déjame tus dudas por aquí y te contactamos lo antes posible. 🌿").catch(() => {});
-  if (OWNER) {
-    const aviso = `🔔 *Cliente pide atención humana*\n📱 ${chatId.split("@")[0]}\n💬 "${text.substring(0, 200)}"\n\n_El bot se pausó 1 h en ese chat._`;
-    client.sendMessage(`${OWNER}@c.us`, aviso).catch(() => {});
-  }
-  console.log(`🙋 Escalado a humano: ${chatId.split("@")[0]}`);
-}
-
-// ── Mensajes SALIENTES (dueño / cuenta conectada) ─────────────
-client.on("message_create", async (msg) => {
-  try {
-    if (!msg.fromMe) return;
-    const body = (msg.body || "").trim();
-    if (!body) return;
-
-    // Comandos del dueño
-    if (body.startsWith("/")) {
-      await handleOwnerCommand(msg, body);
-      return;
-    }
-
-    // Si el dueño escribió manualmente en un chat de cliente (no fue el bot),
-    // pausar ese chat 5 min: un humano tomó la conversación. Cada mensaje del
-    // dueño reinicia esos 5 min. Además registro su mensaje en el historial
-    // (como lado del negocio) para que el bot no pierda el hilo al reanudar.
-    const target = msg.to || msg.from;
-    if (target && target.endsWith("@c.us") && !isRecentBotOutgoing(target)) {
-      pauseChat(target);
-      const s = getSession(target);
-      if (s.history.length > 0) pushHistory(target, "assistant", body);
-    }
-  } catch (e) {
-    console.error("❌ message_create:", e.message);
-  }
-});
-
-async function handleOwnerCommand(msg, body) {
-  const reply = (t) => msg.reply(t).catch(() => client.sendMessage(msg.from, t));
-  const [cmd, ...rest] = body.split(/\s+/);
-  const arg = rest.join(" ").trim();
-
-  switch (cmd.toLowerCase()) {
-    case "/status":
-      return reply(`✅ Bot activo.\n⏸️ Chats en pausa: ${pausedChats.size}\n⏳ Ráfagas esperando: ${rafagas.enEspera()}\n🧠 Modelo: ${process.env.BOT_MODEL || "claude-haiku-4-5"}\n⌛ Espera: ${DEBOUNCE_MS / 1000}s (tope ${DEBOUNCE_MAX_MS / 1000}s)`);
-    case "/help":
-      return reply("*Comandos:*\n*/confirma <folio> [monto]* — confirma reserva y avisa al cliente (el monto es lo que entró; sin él se asume lo estándar: el 30 % del total)\n*/pausa <numero>* — pausa el bot en ese chat\n*/reanuda <numero>* — reactiva el bot\n*/status* — estado del bot");
-    case "/confirma": {
-      if (!arg) return reply("Uso: /confirma HPXXXX [monto]\nEj: /confirma HPABC123 3750  (lo que entró)\nSin monto se asume lo estándar: el 30 % del total.");
-      {
-        const [folioArg, montoArg] = arg.trim().split(/\s+/);
-        const monto = montoArg ? Number(String(montoArg).replace(/[^\d.]/g, "")) : undefined;
-        return handleConfirma(reply, folioArg.toUpperCase(), monto);
-      }
-    }
-    case "/pausa": {
-      const num = digitsOnly(arg) || digitsOnly(msg.to || "");
-      if (!num) return reply("Uso: /pausa <numero>");
-      pauseChat(`${num}@c.us`);
-      return reply(`⏸️ Bot pausado para ${num}.`);
-    }
-    case "/reanuda": {
-      const num = digitsOnly(arg) || digitsOnly(msg.to || "");
-      if (!num) return reply("Uso: /reanuda <numero>");
-      resumeChat(`${num}@c.us`);
-      clearSession(`${num}@c.us`);
-      return reply(`▶️ Bot reactivado para ${num}.`);
-    }
-    default:
-      return; // comando desconocido: ignorar silenciosamente
-  }
-}
-
-async function handleConfirma(reply, folio, montoPagado) {
-  const res = await confirmarReserva(folio, montoPagado);
-  if (!res.ok) return reply(`❌ ${res.data?.error || "No se pudo confirmar."}`);
-  const b = res.data;
-  const mx = (n) => `$${Number(n).toLocaleString("es-MX")} MXN`;
-
-  // ⚠️ El desglose de lo pagado y lo pendiente va SIEMPRE. Antes el mensaje
-  // solo enseñaba el total y quien había dado el 30 % entendía que ya no debía
-  // nada — se enteraba el día del tour, delante del guía.
-  const dinero = b.liquidado
-    ? `💰 *Total:* ${mx(b.totalAmount)}\n` +
-      `✅ *Pagado:* ${mx(b.pagado)} — no queda nada pendiente\n\n`
-    : `💰 *Total del viaje:* ${mx(b.totalAmount)}\n` +
-      `✅ *Anticipo recibido:* ${mx(b.pagado)} (${b.pctPagado} %)\n` +
-      `🕒 *Saldo pendiente:* ${mx(b.saldo)} — se liquida el día del tour, en efectivo o con tarjeta\n\n`;
-
-  // La hora y la recogida vienen del catálogo, por recorrido (/api/bot/confirm).
-  // 🔴 Estaba clavada en "8:30–9:00 AM": la Gruta de Xilo sale a las 7 PM y
-  // solo recoge en Xilitla (y 8:30 ni siquiera era la ventana del catálogo,
-  // 8:00–9:00). Sin `salida` —un servidor viejo o un paquete sin recorridos
-  // reconocibles— NO se pone hora: se promete mandarla, igual que el correo.
-  // (Sin hora pública —buceo, rappel— la ruta ya manda "te la confirmamos un día antes".)
-  const horaPendiente = !b.salida;
-  const msgCliente =
-    `🎉 *¡Tu reserva está CONFIRMADA!*\n\n` +
-    `📋 *Folio:* ${b.folio}\n` +
-    `🗺️ *Tour:* ${b.tourName}\n` +
-    `📅 *Fecha:* ${b.tourDate}\n` +
-    (b.salida ? `⏰ *Salida:* ${b.salida}\n` : "") +
-    `👥 *Personas:* ${b.adults} adulto(s)${b.children ? ` + ${b.children} niño(s)` : ""}\n` +
-    dinero +
-    (b.recogida ? `📍 ${b.recogida}\n\n` : "") +
-    `Te enviaremos ${horaPendiente ? "la hora y el punto de encuentro exactos" : "el punto de encuentro exacto"} un día antes. Lleva ropa cómoda, calzado cerrado y protector solar. ¡Nos vemos pronto! 🌿`;
-
-  if (b.customerPhone) {
-    await client.sendMessage(`${digitsOnly(b.customerPhone)}@c.us`, msgCliente).catch(() => {});
-    return reply(`✅ ${folio} confirmada${b.yaConfirmada ? " (ya lo estaba)" : ""}. Registrado: ${mx(b.pagado)} de ${mx(b.totalAmount)}${b.saldo > 0 ? ` · falta ${mx(b.saldo)}` : " · liquidado"}. Mensaje enviado a ${b.customerName}.`);
-  }
-  return reply(`✅ ${folio} confirmada. ⚠️ Sin teléfono guardado — copia y envía manualmente:\n\n${msgCliente}`);
-}
-
 // ── Arranque ──────────────────────────────────────────────────
-console.log("🚀 Iniciando bot de Tours Huasteca Potosina…");
-if (!process.env.ANTHROPIC_API_KEY) console.warn("⚠️ Falta ANTHROPIC_API_KEY");
-if (!process.env.AGENT_API_TOKEN) console.warn("⚠️ Falta AGENT_API_TOKEN (reservas no funcionarán)");
-client.initialize();
+function arrancar() {
+  // La memoria (conversaciones, pausas y comprobantes) se carga ANTES de
+  // conectar: el primer mensaje ya encuentra lo hablado antes del despliegue.
+  const r = estado.iniciar();
+  console.log(`💾 Memoria: ${r.sesiones} conversación(es), ${r.pausas} pausa(s) y ${r.comprobantes} comprobante(s) — ${r.ruta}`);
+  console.log("🚀 Iniciando bot de Tours Huasteca Potosina…");
+  if (!process.env.ANTHROPIC_API_KEY) console.warn("⚠️ Falta ANTHROPIC_API_KEY");
+  if (!process.env.AGENT_API_TOKEN) console.warn("⚠️ Falta AGENT_API_TOKEN (reservas no funcionarán)");
+  if (!OWNER) console.warn("⚠️ Falta OWNER_WHATSAPP_NUMBER: comprobantes y escalaciones no le llegarán a nadie.");
+  client.initialize();
+}
+
+// `node index.js` arranca el bot. Requerirlo desde una prueba solo da las
+// funciones puras de abajo: no conecta WhatsApp ni toca la memoria guardada.
+if (require.main === module) arrancar();
+
+module.exports = {
+  textoAvisoEscalacion,
+  textoConfirmacionCliente,
+  textoPagoRegistrado,
+  parsearConfirma,
+  parsearMonto,
+  duracionTexto,
+  etiquetaMotivo,
+  resumirError,
+  normalizarTelefono,
+  mxVariants,
+  mismoNumero,
+  MOTIVOS_HASTA_REANUDA,
+  // Los candados de los comandos (test-escalacion.js).
+  sinComando,
+  extraerComando,
+  anotarTextoDelBot,
+  esTextoDelBot,
+};

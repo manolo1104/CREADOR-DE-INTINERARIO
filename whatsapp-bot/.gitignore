@@ -3,3 +3,10 @@ node_modules/
 .wwebjs_auth/
 .wwebjs_cache/
 *.log
+# Memoria del bot y comprobantes de pago de clientes: datos personales.
+# 🔴 El repo es PÚBLICO: nada de esto se sube, aunque cambien las rutas
+# (ESTADO_PATH / COMPROBANTES_DIR) y queden fuera de .wwebjs_auth/.
+estado-bot.json
+estado-bot.json.tmp-*
+comprobantes/
+*.corrupto-*

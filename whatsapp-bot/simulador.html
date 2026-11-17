@@ -63,7 +63,25 @@
   .panel button b{display:block} .panel button small{color:var(--gris);font-size:11px}
   .tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:600}
   .tag.sim{background:#d9fdd3;color:#0b6b2f} .tag.real{background:#ffd5d5;color:#8b1a1a}
+  .dueno{align-self:center;background:#fdf3d7;border:1px solid #f0d58a;color:#4a3b10;font-size:12.5px;line-height:1.45;
+     padding:7px 10px;border-radius:8px;max-width:92%;white-space:pre-wrap;word-wrap:break-word;margin:5px 0;animation:pop .18s ease-out}
+  .dueno .titulo{display:block;font-weight:700;font-size:11.5px;color:#7a5b00;margin-bottom:3px}
+  .pausa{flex:0 0 auto;background:#fff3cd;color:#5c4a1e;font-size:12.5px;padding:7px 12px;display:none;align-items:center;gap:8px;
+     border-bottom:1px solid #f0d58a}
+  .pausa.activa{display:flex}
+  .pausa span{flex:1}
+  .pausa button{background:var(--verde2);color:#fff;border:0;border-radius:6px;padding:5px 10px;font-size:12px;cursor:pointer}
+  #adjuntar{width:42px;height:42px;border-radius:50%;border:0;background:#fff;font-size:19px;cursor:pointer;flex:0 0 auto;
+     box-shadow:0 1px .5px rgba(0,0,0,.13)}
+  .confirma{display:flex;gap:6px;margin-bottom:7px}
+  .confirma input{flex:1;min-width:0;border:1px solid #d5d5d5;border-radius:8px;padding:8px;font-size:12.5px;font-family:ui-monospace,Menlo,monospace}
+  .panel .confirma button{width:auto;margin:0;padding:8px 10px;text-align:center}
   .nota{background:#fff8e1;border:1px solid #ffe3a3;padding:9px;border-radius:7px;font-size:11.5px;line-height:1.5;color:#5c4a1e}
+  .meta .costo{color:#0b6b2f;font-weight:600}
+  #pCosto{color:#0b6b2f;font-weight:600}
+  details.ficha{margin-top:10px;border:1px solid #e3e3e3;border-radius:8px;padding:7px 9px;background:#fafafa}
+  details.ficha summary{cursor:pointer;font-weight:600;font-size:12.5px}
+  details.ficha pre{margin:7px 0 0;white-space:pre-wrap;word-break:break-word;font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#333;max-height:220px;overflow-y:auto}
   @media(max-width:820px){body{flex-direction:column;padding:8px;height:auto}.panel{width:100%;max-width:440px}.telefono{height:78vh}}
 </style>
 </head>
@@ -78,8 +96,10 @@
     </div>
     <button class="btn-h" id="btnLimpiar">Reiniciar</button>
   </header>
+  <div class="pausa" id="pausa"><span id="pausaTexto"></span><button id="btnReanudarFranja">Reanudar</button></div>
   <div id="chat"></div>
   <footer>
+    <button id="adjuntar" title="Mandar comprobante (foto de prueba)">📎</button>
     <textarea id="texto" rows="1" placeholder="Escribe un mensaje" autofocus></textarea>
     <button id="enviar" title="Enviar">➤</button>
   </footer>
@@ -90,17 +110,35 @@
   <p class="sub">Eres el cliente. Escribe como escribiría alguien por WhatsApp — y manda varios mensajes seguidos para ver cómo el bot los junta.</p>
 
   <div class="fila"><b>Modo</b><span id="pModo">…</span></div>
-  <div class="fila"><b>Modelo</b><span id="pModelo">…</span></div>
+  <div class="fila"><b>Modelo</b><span id="pModelo" title="">…</span></div>
+  <div class="fila"><b>Costo</b><span id="pCosto">Plática: $0</span></div>
   <div class="fila"><b>Espera</b><span id="pEspera">…</span></div>
   <div class="fila"><b>Turnos</b><span id="pTurnos">0</span></div>
+  <div class="fila"><b>Chat</b><span id="pChat">el bot atiende</span></div>
+  <div class="fila"><b>Folio vigente</b><span id="pFolio">—</span></div>
+  <details class="ficha" id="fichaCaja">
+    <summary>Ficha del viaje (lo que el bot tiene a la vista)</summary>
+    <pre id="pFicha">Todavía vacía.</pre>
+  </details>
 
   <h3>Velocidad de la espera</h3>
-  <button data-espera="30000" data-tope="90000"><b>30 segundos — la de producción</b><small>Igual que en el WhatsApp real</small></button>
+  <button data-espera="15000" data-tope="90000"><b>15 segundos — la de producción</b><small>Igual que en el WhatsApp real</small></button>
   <button data-espera="5000" data-tope="15000"><b>5 segundos — para ir rápido</b><small>Para probar el guion de venta sin esperar</small></button>
 
   <h3>Pruebas de un botón</h3>
   <button id="btnRafaga"><b>Mandar una ráfaga</b><small>4 mensajes seguidos, uno cada 4 s</small></button>
   <button id="btnInterrumpir"><b>Escribir mientras contesta</b><small>Manda uno, y otro cuando ya está pensando</small></button>
+
+  <h3>Pagos (lo que pasa en WhatsApp)</h3>
+  <button id="btnComprobante"><b>📎 Mandar comprobante (foto de prueba)</b><small>Va por el mismo camino que una foto real: acuse al cliente y aviso a Manolo. Si escribiste algo en la caja, va como pie de foto.</small></button>
+  <button id="btnPagoRafaga"><b>Pago en la misma ráfaga</b><small>«ahorita hago el pago» y, enseguida, la foto. Primero sale el acuse y el bot NO te pide el comprobante (primero cotiza algo)</small></button>
+  <button id="btnPagoDurante"><b>Pago mientras contesta</b><small>«ahorita hago el pago»; cuando el bot ya está pensando, la foto. Su respuesta no te pide el comprobante y el acuse sale enseguida</small></button>
+  <div class="confirma">
+    <input id="confirmaTexto" placeholder="/confirma COT-… 930" autocomplete="off">
+    <button id="btnConfirma">Confirmar</button>
+  </div>
+  <p class="sub" style="margin-top:0">Lo que escribiría Manolo después de revisar su banco. Ves la confirmación que recibe el cliente.</p>
+  <button id="btnReanudar"><b>▶️ Reanudar el bot</b><small>Como /reanuda: el bot vuelve a contestar y recuerda la plática</small></button>
 
   <h3>Frases para probar</h3>
   <button class="frase"><b>"hola"</b><small>Debe pedir fecha y personas en 2 líneas</small></button>
@@ -108,7 +146,11 @@
   <button class="frase" data-t="uf, está muy caro"><b>"está caro"</b><small>Debe desglosar, no inventar descuentos</small></button>
   <button class="frase" data-t="déjame lo pienso y te aviso"><b>"lo voy a pensar"</b><small>Debe usar las 48 h y volver a cerrar</small></button>
   <button class="frase" data-t="puedo pagar todo el mero día del tour?"><b>"pago el día del tour"</b><small>Debe decir que no, se aparta con el 30 %</small></button>
-  <button class="frase" data-t="quiero hablar con una persona"><b>Pide un humano</b><small>Debe escalar y dejar de vender</small></button>
+  <button class="frase" data-t="quiero hablar con una persona"><b>Pide un humano</b><small>Pasa el chat sin el modelo y te avisa</small></button>
+  <button class="frase" data-t="¿me puedes marcar?"><b>"¿me puedes marcar?"</b><small>Igual: pasa el chat y pregunta a qué hora</small></button>
+  <button class="frase" data-t="¿tienen algún tour para hoy? somos 2"><b>"¿algo para hoy?"</b><small>Debe escalar urgente y ofrecer mañana</small></button>
+  <button class="frase" data-t="ya pagué, ¿ya quedó mi reserva?"><b>"¿ya quedó?"</b><small>Nunca debe decir «confirmada»: eso lo hace /confirma</small></button>
+  <button class="frase" data-t="Hi! We'd like to book the Tamul tour for 2 adults"><b>Cliente en inglés</b><small>Debe contestar en inglés, en MXN y con el 30 %</small></button>
 
   <h3>Detalle</h3>
   <label style="display:flex;gap:7px;align-items:center;margin-bottom:12px;cursor:pointer">
@@ -120,7 +162,7 @@
 <script>
 const $ = (s) => document.querySelector(s);
 const chat = $("#chat");
-let cfg = { esperaMs: 30000 };
+let cfg = { esperaMs: 15000 };
 let burbujasMias = [];
 let cuenta = null, burbujaEspera = null, burbujaEscribiendo = null;
 
@@ -147,11 +189,26 @@ function formatoWhatsApp(t) {
     .replace(/\*([^*\n]+)\*/g, "<b>$1</b>")
     .replace(/_([^_\n]+)_/g, "<i>$1</i>");
 }
-function bot(texto, pie) {
+function escaparHtml(t) {
+  return String(t || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+function bot(texto, pie, costo) {
   const d = document.createElement("div");
   d.className = "b bot";
-  d.innerHTML = formatoWhatsApp(texto) + `<span class="meta">${hora()}${pie ? " · " + pie : ""}</span>`;
+  const extra = costo ? ` · <span class="costo">${escaparHtml(costo)}</span>` : "";
+  d.innerHTML = formatoWhatsApp(texto) + `<span class="meta">${hora()}${pie ? " · " + escaparHtml(pie) : ""}${extra}</span>`;
   chat.appendChild(d); abajo();
+}
+function dueno(texto) {
+  const d = document.createElement("div");
+  d.className = "dueno";
+  d.innerHTML = '<span class="titulo">🔔 Aviso que le llegaría a Manolo:</span>' + formatoWhatsApp(texto);
+  chat.appendChild(d); abajo();
+}
+function pintarPausa(activa, texto) {
+  $("#pausa").classList.toggle("activa", Boolean(activa));
+  $("#pausaTexto").textContent = texto || "";
+  $("#pChat").textContent = activa ? "⏸️ pasado a una persona" : "el bot atiende";
 }
 function sistema(texto) {
   const d = document.createElement("div");
@@ -199,25 +256,32 @@ function mostrarEscribiendo(mensajes) {
   burbujaEscribiendo.innerHTML = '<span class="puntos"><span></span><span></span><span></span></span>';
   chat.appendChild(burbujaEscribiendo); abajo();
   if (mensajes > 1) sistema(`El bot juntó tus ${mensajes} mensajes y va a contestar UNA sola vez.`);
+  // La prueba «Pago mientras contesta» manda la foto justo ahora.
+  if (alPensar) { const fn = alPensar; alPensar = null; setTimeout(fn, 1200); }
 }
+let alPensar = null;
 
 // ── Conexión con el servidor ──────────────────────────────────
 const es = new EventSource("/eventos");
 es.onmessage = (e) => {
   const ev = JSON.parse(e.data);
-  if (ev.tipo === "listo") { pintarEstado(ev); return; }
+  if (ev.tipo === "listo" || ev.tipo === "estado") { pintarEstado(ev); return; }
   if (ev.tipo === "esperando") { mostrarEspera(ev.esperaMs); return; }
   if (ev.tipo === "escribiendo") { mostrarEscribiendo(ev.mensajes); return; }
   if (ev.tipo === "herramienta") { herramienta(ev.nombre, ev.entrada, ev.salida); return; }
   if (ev.tipo === "aviso") { sistema(ev.texto); return; }
+  if (ev.tipo === "dueno") { dueno(ev.texto); return; }
+  if (ev.tipo === "pausa") { pintarPausa(ev.activa, ev.texto); return; }
   if (ev.tipo === "error") { sistema("⚠️ " + ev.texto); quitarEspera(); quitarEscribiendo(); return; }
   if (ev.tipo === "bot") {
     quitarEspera(); quitarEscribiendo(); marcarLeidas();
     burbujasMias = [];
     const seg = ev.esperaMs != null ? Math.round(ev.esperaMs / 1000) : null;
-    const pie = seg != null ? `esperó ${seg}s · pensó ${Math.round((ev.pensoMs || 0) / 1000)}s` : "";
-    bot(ev.texto, pie);
+    const pie = ev.pie || (seg != null ? `esperó ${seg}s · pensó ${Math.round((ev.pensoMs || 0) / 1000)}s` : "");
+    // «costó $0.0031 · Haiku»: lo que costaron TODAS las llamadas de esta respuesta.
+    bot(ev.texto, pie, ev.costo);
     if (ev.turnos != null) $("#pTurnos").textContent = ev.turnos;
+    if (ev.platica) $("#pCosto").textContent = ev.platica;
   }
 };
 es.onerror = () => { $("#estadoChat").textContent = "desconectado — ¿se cerró la terminal?"; };
@@ -226,12 +290,20 @@ function pintarEstado(s) {
   cfg = s;
   $("#pModo").innerHTML = s.modo === "real"
     ? '<span class="tag real">REAL</span>' : '<span class="tag sim">SIMULACRO</span>';
-  $("#pModelo").textContent = s.modelo;
+  $("#pModelo").textContent = s.modeloEtiqueta ? `${s.modeloEtiqueta} · ${s.modelo}` : s.modelo;
+  $("#pModelo").title = "Para comparar: npm run chat -- --modelo haiku | sonnet | opus | fable";
+  if (s.platica) $("#pCosto").textContent = s.platica;
   $("#pEspera").textContent = `${s.esperaMs / 1000}s (tope ${s.topeMs / 1000}s)`;
   $("#pTurnos").textContent = s.turnos;
+  $("#pFolio").textContent = s.folio || "—";
+  $("#pFicha").textContent = s.ficha || "Todavía vacía.";
+  pintarPausa(Boolean(s.pausa), s.pausa ? `⏸️ Chat pasado a una persona (${s.pausa.motivo})` : "");
+  const confirma = s.confirmaReal
+    ? " <b>/confirma está activo</b> contra este sitio LOCAL: registra el cobro y manda el correo de prueba."
+    : " /confirma está apagado: solo corre con <code>SITE_API_URL</code> local y <code>SIMULADOR_CONFIRMA=1</code>.";
   $("#nota").innerHTML = s.modo === "real"
-    ? `<b>Modo real.</b> Lo que cierres aquí crea folios de verdad en el panel y manda correos. Habla con ${s.sitio}.`
-    : "<b>Modo simulacro.</b> Los folios son de mentiras y no se escribe nada en el panel ni se manda ningún correo. Para probar de verdad: <code>npm run chat -- --real</code>";
+    ? `<b>Modo real.</b> Lo que cierres aquí crea folios de verdad en el panel y manda correos. Habla con ${escaparHtml(s.sitio)}.${confirma}`
+    : "<b>Modo simulacro.</b> Los folios son de mentiras y no se escribe nada en el panel ni se manda ningún correo. Lo que le llegaría a tu WhatsApp sale en las burbujas amarillas. Para probar de verdad: <code>npm run chat -- --real</code>";
 }
 // ── Enviar ────────────────────────────────────────────────────
 async function enviar(texto) {
@@ -246,11 +318,57 @@ caja.addEventListener("keydown", (e) => {
 });
 caja.addEventListener("input", () => { caja.style.height = "auto"; caja.style.height = Math.min(caja.scrollHeight, 100) + "px"; });
 
+async function mandarComprobante() {
+  const pie = caja.value.trim();
+  caja.value = ""; caja.style.height = "auto";
+  mia(pie ? `📷 [foto del comprobante]\n${pie}` : "📷 [foto del comprobante]");
+  const r = await (await fetch("/comprobante", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ caption: pie }) })).json();
+  if (r.folio) $("#pFolio").textContent = r.folio;
+}
+$("#adjuntar").onclick = mandarComprobante;
+$("#btnComprobante").onclick = mandarComprobante;
+
+// El orden del comprobante (lo que falló en la prueba del 6 oct): el acuse
+// sale primero y el bot ya no pide el comprobante que acaba de llegar.
+$("#btnPagoRafaga").onclick = async () => {
+  sistema("Mando «ahorita hago el pago» y, enseguida, la foto: todo en la MISMA ráfaga. Debe salir el acuse y nada que te pida el comprobante.");
+  await enviar("ahorita hago el pago");
+  await new Promise((r) => setTimeout(r, 1500));
+  await mandarComprobante();
+};
+$("#btnPagoDurante").onclick = async () => {
+  sistema("Mando «ahorita hago el pago» y, cuando el bot ya esté pensando, la foto. Su respuesta no debe pedirte el comprobante, y el acuse sale enseguida.");
+  const foto = () => { clearTimeout(respaldo); mandarComprobante(); };
+  alPensar = foto;
+  // Si el bot no llega a pensar (p. ej. acaba de mandar un acuse y toma el
+  // mensaje como «charla»), la foto sale igual y la prueba no se queda colgada.
+  const respaldo = setTimeout(() => { if (alPensar === foto) { alPensar = null; foto(); } }, (cfg.esperaMs || 15000) + 6000);
+  await enviar("ahorita hago el pago");
+};
+
+async function confirmar() {
+  const t = $("#confirmaTexto").value.trim();
+  if (!t) { $("#confirmaTexto").focus(); return; }
+  sistema(`Manolo escribe: ${t.startsWith("/") ? t : "/confirma " + t}`);
+  $("#confirmaTexto").value = "";
+  const s = await (await fetch("/confirma", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t }) })).json();
+  pintarEstado(s);
+}
+$("#btnConfirma").onclick = confirmar;
+$("#confirmaTexto").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); confirmar(); } });
+
+async function reanudar() {
+  const s = await (await fetch("/reanudar", { method: "POST" })).json();
+  pintarEstado(s);
+}
+$("#btnReanudar").onclick = reanudar;
+$("#btnReanudarFranja").onclick = reanudar;
+
 $("#btnLimpiar").onclick = async () => {
   const s = await (await fetch("/reiniciar", { method: "POST" })).json();
-  chat.innerHTML = ""; burbujasMias = []; quitarEspera(); quitarEscribiendo();
+  chat.innerHTML = ""; burbujasMias = []; quitarEspera(); quitarEscribiendo(); alPensar = null;
   pintarEstado(s); $("#pTurnos").textContent = 0;
-  sistema("Conversación nueva. El bot ya no recuerda nada de lo anterior.");
+  sistema("Conversación nueva. El bot ya no recuerda nada de lo anterior (y el costo de la plática vuelve a $0).");
 };
 
 document.querySelectorAll("[data-espera]").forEach((b) => {
