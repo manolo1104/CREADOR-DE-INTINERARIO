@@ -36,6 +36,7 @@ import type { Periodo, PuntoSerie, ValorKpi } from "./tipos";
 export const ESTADOS_ENVIADA = ["enviada", "aceptada", "expirada"];
 const ETAPAS_RESERVA = ["anticipo", "confirmado", "operado"];
 const ETAPAS_COTIZADO = ["cotizado", "seguimiento", ...ETAPAS_RESERVA];
+const ETAPAS_CALIFICADO = ["calificado", ...ETAPAS_COTIZADO];
 const H = 3_600_000;
 const DIA = 24 * H;
 /** Días que se espera a una cohorte después de que termina su periodo. */
@@ -178,6 +179,33 @@ export function leadsCotizados(d: DatosComercial, p: Periodo): ValorKpi {
   });
 }
 
+/**
+ * «PDF a todo calificado» (Estructura de oro, 17 nov 2026): de los leads de la
+ * cohorte que llegaron a calificado (ya dieron tour, fecha y personas), cuántos
+ * recibieron su cotización en PDF. La cotización es el punto de quiebre: con
+ * PDF reserva el 48 %, sin PDF el 5 %.
+ */
+export function pdfACalificados(d: DatosComercial, p: Periodo): ValorKpi {
+  const corte = cierreCohorte(p);
+  const calificados = cohorteDe(d.leads, p).filter(l => llego(l, ETAPAS_CALIFICADO, corte) || cotizo(l, corte));
+  return tasa("pdf-calificados", calificados.filter(l => cotizo(l, corte)).length, calificados.length, {
+    unidadDetalle: "leads calificados", preliminar: !cohorteMadura(p, d.hoy),
+    sinDatoNota: "Ningún lead del periodo llegó a calificado.",
+  });
+}
+
+/** Desde cuándo está en «calificado» (ms): su último paso a esa etapa; sin historial, el día que entró. */
+const calificadoDesde = (l: LeadCohorte) => l.historial.filter(h => h.nueva === "calificado").at(-1)?.en ?? inicioMX(l.ymd).getTime();
+/** Días hacia atrás que mira «Calificados sin cotización». */
+export const DIAS_SIN_COTIZAR = 56;
+
+/** Hoy: leads de las últimas 8 semanas que siguen en «calificado» hace más de 24 h, sin cotización. La meta es 0. */
+export function calificadosSinCotizar(d: Pick<DatosComercial, "leads" | "ahora" | "hoy">): ValorKpi {
+  const desde = addDaysYMD(d.hoy, -DIAS_SIN_COTIZAR);
+  const ls = d.leads.filter(l => !l.fuera && l.ymd >= desde && l.etapa === "calificado" && l.cotizacionEn === null && calificadoDesde(l) <= d.ahora - DIA);
+  return { clave: "calificados-sin-cotizar", valor: ls.length, calidad: "exacto", detalle: `al día de hoy · leads de las últimas 8 semanas con más de 24 h en «Calificado»` };
+}
+
 export function respuesta5(d: DatosComercial, p: Periodo): ValorKpi {
   const r = primerMensajeEn5(d.chats, inicioMX(p.desde), finMX(p.hasta));
   if (r.enHorario > 0) return tasa("respuesta-5min", r.en5, r.enHorario, { unidadDetalle: "chats nuevos en horario" });
@@ -247,7 +275,8 @@ export function calcularComercial(d: DatosComercial, p: Periodo, periodos: Perio
   const cr = cotizacionReserva(d, p);
   const saldo = d.saldos.reduce((t, s) => t + s.saldo, 0);
   const valores: ValorKpi[] = [
-    leadReserva(d, p), respuesta5(d, p), leadsCotizados(d, p), cr.numero, cr.monto, seguimientoATiempo(d, p), score(d, p),
+    leadReserva(d, p), respuesta5(d, p), leadsCotizados(d, p), pdfACalificados(d, p), calificadosSinCotizar(d),
+    cr.numero, cr.monto, seguimientoATiempo(d, p), score(d, p),
     ...ventas(d, p),
     { clave: "saldos-vencidos", valor: saldo, calidad: "exacto", detalle: `${d.saldos.length} reserva${d.saldos.length === 1 ? "" : "s"} · al día de hoy` },
   ];
@@ -255,6 +284,7 @@ export function calcularComercial(d: DatosComercial, p: Periodo, periodos: Perio
   const series: Record<string, PuntoSerie[]> = {
     "lead-reserva": v(x => leadReserva(d, x)),
     "leads-cotizados": v(x => leadsCotizados(d, x)),
+    "pdf-calificados": v(x => pdfACalificados(d, x)),
     "respuesta-5min": v(x => respuesta5(d, x)),
     "cotizacion-reserva": v(x => cotizacionReserva(d, x).numero),
     "cotizacion-reserva-monto": v(x => cotizacionReserva(d, x).monto),

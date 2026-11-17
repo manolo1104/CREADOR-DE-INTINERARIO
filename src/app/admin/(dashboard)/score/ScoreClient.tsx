@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Send } from "lucide-react";
 import {
-  RUBRICA, ETIQUETA_BANDA, META_SCORE, bandaScore, calcularScore, limpiarCaptura, recomendacionesSugeridas, type CapturaRubrica,
+  ETIQUETA_BANDA, META_SCORE, NOMBRE_VERSION, VERSION_ACTUAL, bandaScore, calcularScore, limpiarCaptura, recomendacionesSugeridas, rubricaDe,
+  type CapturaRubrica, type VersionRubrica,
 } from "@/lib/admin/rubrica";
 import { ChipEstado, type TonoEstado } from "@/components/admin/ui/ChipEstado";
 import { playError, playSuccess } from "@/lib/admin/sfx";
@@ -20,10 +21,13 @@ interface Inicial {
 const TONO_BANDA: Record<string, TonoEstado> = { meta: "bien", cerca: "atencion", corregir: "problema" };
 const celda = "w-16 rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2 py-2 text-center text-[16px] font-dm text-[var(--panel-tinta)] panel-foco disabled:bg-[var(--panel-fondo-velo)]";
 
-export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }: {
-  semana: string; inicial: Inicial; puedeEditar: boolean; tendencia: { semana: string; score: number | null }[];
+export default function ScoreClient({ semana, inicial, puedeEditar, tendencia, version: versionInicial }: {
+  semana: string; inicial: Inicial; puedeEditar: boolean; tendencia: { semana: string; score: number | null }[]; version: VersionRubrica;
 }) {
   const router = useRouter();
+  // Las semanas viejas se leen con la rúbrica con que se capturaron; lo que propone el agente es siempre la de hoy.
+  const [version, setVersion] = useState<VersionRubrica>(versionInicial);
+  const RUBRICA = rubricaDe(version);
   // Se edita como texto (un campo vacío no es un cero) y se limpia al calcular.
   const [cap, setCap] = useState<Record<string, { aplican: string; cumplen: string }>>(() =>
     Object.fromEntries(RUBRICA.map(r => [r.clave, { aplican: inicial.rubrica[r.clave]?.aplican?.toString() ?? "", cumplen: inicial.rubrica[r.clave]?.cumplen?.toString() ?? "" }])));
@@ -33,8 +37,8 @@ export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }:
   const [msj, setMsj] = useState<{ texto: string; error?: boolean } | null>(null);
   const [enviado, setEnviado] = useState(inicial.enviadoOperadorEn);
 
-  const captura = useMemo(() => limpiarCaptura(Object.fromEntries(Object.entries(cap).filter(([, v]) => v.aplican !== "").map(([k, v]) => [k, { aplican: v.aplican, cumplen: v.cumplen || 0 }]))), [cap]);
-  const r = useMemo(() => calcularScore(captura), [captura]);
+  const captura = useMemo(() => limpiarCaptura(Object.fromEntries(Object.entries(cap).filter(([, v]) => v.aplican !== "").map(([k, v]) => [k, { aplican: v.aplican, cumplen: v.cumplen || 0 }])), version), [cap, version]);
+  const r = useMemo(() => calcularScore(captura, version), [captura, version]);
   const score = r.score ?? inicial.scoreSinRubrica;
   const banda = bandaScore(score);
   const maxT = 100;
@@ -52,7 +56,8 @@ export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }:
     setRevisando(false);
     if (!res?.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "El agente no pudo revisar", error: true }); return; }
     if (!d.chats) { setMsj({ texto: "Esta semana no hay chats de clientes en la Bandeja." }); return; }
-    setCap(Object.fromEntries(RUBRICA.map(r => [r.clave, { aplican: d.captura[r.clave]?.aplican?.toString() ?? "", cumplen: d.captura[r.clave]?.cumplen?.toString() ?? "" }])));
+    setVersion(VERSION_ACTUAL);
+    setCap(Object.fromEntries(rubricaDe(VERSION_ACTUAL).map(r => [r.clave, { aplican: d.captura[r.clave]?.aplican?.toString() ?? "", cumplen: d.captura[r.clave]?.cumplen?.toString() ?? "" }])));
     if (!revisadas.trim() && d.notas?.length) setRevisadas(d.notas.join("\n"));
     playSuccess();
     setMsj({ texto: `Propuesta del agente: ${d.chats} chats (${d.revisados} revisados ahora${d.yaEstaban ? `, ${d.yaEstaban} de antes` : ""})${d.detenido ? ` · se detuvo: ${d.detenido}` : ""}. Revísala y guarda.` });
@@ -63,7 +68,7 @@ export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }:
     if (mandar && !window.confirm("¿Guardar y mandarle a Erick su score con las recomendaciones?")) return;
     setGuardando(mandar ? "mandar" : "guardar"); setMsj(null);
     try {
-      const res = await fetch("/api/admin/score", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ semana, rubrica: captura, revisadas, recomendaciones: recs, mandar }) });
+      const res = await fetch("/api/admin/score", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ semana, rubrica: captura, version, revisadas, recomendaciones: recs, mandar }) });
       const d = await res.json().catch(() => null);
       if (!res.ok || !d?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo guardar", error: true }); return; }
       playSuccess();
@@ -107,7 +112,7 @@ export default function ScoreClient({ semana, inicial, puedeEditar, tendencia }:
       {/* La rúbrica */}
       <section className="panel-card overflow-hidden">
         <div className="flex flex-wrap items-baseline justify-between gap-2 px-4 pt-4">
-          <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Rúbrica</h2>
+          <h2 className="font-cormorant text-[22px] text-[var(--panel-tinta)]">Rúbrica · {NOMBRE_VERSION[version]}</h2>
           <p className="text-[12px] font-dm text-[var(--panel-tinta-media)]">Por regla: en cuántos chats aplicó y cuántos la cumplieron. Vacío = no aplicó (se deja fuera y el total se reescala a 100).</p>
         </div>
         <div className="mt-2 overflow-x-auto">

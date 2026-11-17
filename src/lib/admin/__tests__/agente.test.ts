@@ -91,10 +91,10 @@ import { primerMensajeDelChat, sumarRevisiones } from "../agente/calidadReglas";
 describe("score automático", () => {
   it("suma las revisiones por regla (solo cuentan los chats donde aplica)", () => {
     const c = sumarRevisiones([
-      { "sin-caritas": { aplica: true, cumple: true }, "seguimiento-d3": { aplica: true, cumple: false } },
-      { "sin-caritas": { aplica: true, cumple: false }, "seguimiento-d3": { aplica: false, cumple: false } },
+      { "forma": { aplica: true, cumple: true }, "seguimiento-d3": { aplica: true, cumple: false } },
+      { "forma": { aplica: true, cumple: false }, "seguimiento-d3": { aplica: false, cumple: false } },
     ]);
-    expect(c).toEqual({ "sin-caritas": { aplican: 2, cumplen: 1 }, "seguimiento-d3": { aplican: 1, cumplen: 0 } });
+    expect(c).toEqual({ "forma": { aplican: 2, cumplen: 1 }, "seguimiento-d3": { aplican: 1, cumplen: 0 } });
   });
   it("el primer mensaje en 5 min se mide con la hora real, no lo adivina Claude", () => {
     const d = new Date("2026-11-02T06:00:00Z"), h = new Date("2026-11-09T05:59:59Z");

@@ -10,13 +10,18 @@ import { addDaysYMD, ymdMX } from "@/lib/dates";
 import { diasDeTourDe } from "@/lib/admin/salidas";
 import { agruparClientes } from "@/lib/admin/clientes";
 import { historialGoogle, type PuntoGoogle } from "@/lib/admin/satisfaccion";
+import { normalizarTelefono } from "@/lib/admin/crm";
 import { NO_CUENTAN, enPeriodo, r1, serie, sinDato, tasa } from "./util";
 import type { Periodo, PuntoSerie, ValorKpi } from "./tipos";
 
 export interface DatosServicio {
   google: PuntoGoogle[];
-  /** Reservas que ya se operaron: su último día de tour y si contestaron el check-in. */
-  operadas: { ultimoDia: string; conCheckin: boolean }[];
+  /**
+   * Reservas que ya se operaron: su último día de tour, si contestaron el
+   * check-in y si se les pidió la reseña por WhatsApp (null = su chat no está
+   * en la Bandeja y no se puede saber).
+   */
+  operadas: { ultimoDia: string; conCheckin: boolean; resenaPedida?: boolean | null }[];
   encuestas: { enviada: string | null; contestada: string | null; recomendaria: number | null; calificacion: number | null }[];
   /** Clientes y cuántos repiten, con TODAS las reservas capturadas hasta el fin de cada periodo de la serie. */
   vuelven: { hasta: string; clientes: number; repiten: number }[];
@@ -67,6 +72,30 @@ export function resenasDe(d: Pick<DatosServicio, "google" | "operadas" | "hoy">,
 }
 const resenas = resenasDe;
 
+/** Días después del viaje en que todavía cuenta haber pedido la reseña. */
+export const DIAS_PEDIR_RESENA = 14;
+const RE_RESENA = /g\.page|rese[ñn]a|review|opini[oó]n en google|calif[ií]canos/i;
+
+/** ¿Se le pidió la reseña? Un mensaje nuestro con la liga o la palabra, desde el último día del tour hasta 14 días después. */
+export function pidioResena(salientes: { ymd: string; texto: string }[], ultimoDia: string): boolean {
+  const hasta = addDaysYMD(ultimoDia, DIAS_PEDIR_RESENA);
+  return salientes.some(m => m.ymd >= ultimoDia && m.ymd <= hasta && RE_RESENA.test(m.texto));
+}
+
+/** «Reseña pedida» (Estructura de oro: se hizo en el 39 % de las reservas; debe ser en todas). */
+export function resenaPedida(d: Pick<DatosServicio, "operadas" | "hoy">, p: Periodo): ValorKpi {
+  const os = d.operadas.filter(o => enPeriodo(o.ultimoDia, p) && o.ultimoDia < d.hoy);
+  const conChat = os.filter(o => o.resenaPedida !== null && o.resenaPedida !== undefined);
+  const sinChat = os.length - conChat.length;
+  return tasa("resena-pedida", conChat.filter(o => o.resenaPedida).length, conChat.length, {
+    unidadDetalle: "reservas operadas con chat",
+    preliminar: os.some(o => addDaysYMD(o.ultimoDia, DIAS_PEDIR_RESENA) > d.hoy),
+    calidad: sinChat > 0 ? "aproximado" : "exacto",
+    nota: sinChat > 0 ? `${sinChat} reserva${sinChat === 1 ? "" : "s"} sin chat en la Bandeja: no se puede ver si se pidió.` : undefined,
+    sinDatoNota: "Sin reservas operadas con chat en la Bandeja en el periodo.",
+  });
+}
+
 function encuestasDe(d: DatosServicio, p: Periodo) {
   // Una encuesta «le llegó» si se mandó en el periodo, o si se contestó en él sin marca de envío.
   const env = d.encuestas.filter(e => enPeriodo(e.enviada, p) || (!e.enviada && enPeriodo(e.contestada, p)));
@@ -99,10 +128,10 @@ function checkin(d: DatosServicio, p: Periodo): ValorKpi {
 
 export function calcularServicio(d: DatosServicio, p: Periodo, periodos: Periodo[]): MedicionServicio {
   const iP = periodos.findIndex(x => x.desde === p.desde && x.hasta === p.hasta);
-  const valores = [resenas(d, p), nps(d, p), respuesta(d, p), vuelven(d, iP >= 0 ? iP : d.vuelven.length - 1), checkin(d, p)];
+  const valores = [resenas(d, p), resenaPedida(d, p), nps(d, p), respuesta(d, p), vuelven(d, iP >= 0 ? iP : d.vuelven.length - 1), checkin(d, p)];
   const v = (f: (x: Periodo, i: number) => ValorKpi) => serie(periodos, (x, i) => f(x, i).valor);
   const series: Record<string, PuntoSerie[]> = {
-    resenas: v(x => resenas(d, x)), nps: v(x => nps(d, x)), "respuesta-encuesta": v(x => respuesta(d, x)),
+    resenas: v(x => resenas(d, x)), "resena-pedida": v(x => resenaPedida(d, x)), nps: v(x => nps(d, x)), "respuesta-encuesta": v(x => respuesta(d, x)),
     vuelven: v((_, i) => vuelven(d, i)), checkin: v(x => checkin(d, x)),
   };
   const { cont } = encuestasDe(d, p);
@@ -129,6 +158,8 @@ export function calcularServicio(d: DatosServicio, p: Periodo, periodos: Periodo
   };
 }
 
+const inicioDe = (ymd: string) => new Date(`${addDaysYMD(ymd, -1)}T00:00:00-06:00`);
+
 export async function cargarServicio(periodos: Periodo[], hoy: string): Promise<DatosServicio> {
   const desde = periodos[0].desde, hasta = periodos[periodos.length - 1].hasta;
   const [google, reservas, encuestas] = await Promise.all([
@@ -140,9 +171,27 @@ export async function cargarServicio(periodos: Periodo[], hoy: string): Promise<
     }),
   ]);
   const ultimoDia = (b: (typeof reservas)[number]) => diasDeTourDe(b).map(x => x.fecha).sort().at(-1) ?? b.tourDate;
+  const enSerie = reservas.filter(b => { const u = ultimoDia(b); return u >= addDaysYMD(desde, -1) && u <= hasta; });
+  // La reseña pedida por WhatsApp: el chat de la Bandeja con el mismo teléfono que la reserva.
+  const tel = new Map(enSerie.map(b => [b.id, normalizarTelefono(b.customerPhone)]));
+  const tels = Array.from(new Set(Array.from(tel.values()).filter((t): t is string => !!t)));
+  const chats = tels.length ? await prisma.conversacion.findMany({
+    where: { telefono: { in: tels }, noEsCliente: false },
+    select: { telefono: true, mensajes: { where: { direccion: "sale", fecha: { gte: inicioDe(desde) } }, select: { fecha: true, texto: true, estado: true } } },
+  }).catch(() => []) : [];
+  const salientesDe = new Map<string, { ymd: string; texto: string }[]>();
+  for (const c of chats) {
+    const xs = salientesDe.get(c.telefono!) ?? [];
+    for (const m of c.mensajes) if (m.texto && m.estado !== "fallo") xs.push({ ymd: ymdMX(m.fecha), texto: m.texto });
+    salientesDe.set(c.telefono!, xs);
+  }
   return {
     google,
-    operadas: reservas.map(b => ({ ultimoDia: ultimoDia(b), conCheckin: !!b.encuesta?.checkinEn })).filter(o => o.ultimoDia >= addDaysYMD(desde, -1) && o.ultimoDia <= hasta),
+    operadas: enSerie.map(b => {
+      const t = tel.get(b.id);
+      const sal = t ? salientesDe.get(t) : undefined;
+      return { ultimoDia: ultimoDia(b), conCheckin: !!b.encuesta?.checkinEn, resenaPedida: sal ? pidioResena(sal, ultimoDia(b)) : null };
+    }),
     encuestas: encuestas.map(e => ({
       enviada: e.satisfaccionEnviadaEn ? ymdMX(e.satisfaccionEnviadaEn) : null,
       contestada: e.satisfaccionEn && e.calificacion ? ymdMX(e.satisfaccionEn) : null,

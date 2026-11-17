@@ -1,7 +1,14 @@
-// La rúbrica del score de WhatsApp (Fase 3 del rediseño, 4 nov 2026). Es la
-// que Manolo ya usa cada jueves: se respeta tal cual para poder comparar
-// semanas (`docs/rediseno-panel.md`, «Rúbrica del score de WhatsApp»).
-// Puro: lo usan la pantalla, la ruta y las pruebas.
+// La rúbrica del score de WhatsApp. Puro: lo usan la pantalla, la ruta, el
+// agente y las pruebas.
+//
+// Dos versiones (17 nov 2026):
+// - v1 (4 nov): las 14 reglas que Manolo usó cada jueves hasta el 12 nov
+//   (`docs/rediseno-panel.md`). Se conserva para leer esas semanas igual.
+// - v2 «Estructura de oro» (desde la semana del 16 nov): las 9 etapas que
+//   siguen las reservas exitosas en 232 chats reales (PDF «Estructura de oro de
+//   reservas por WhatsApp», 16 nov). Pesa más lo que separa una reserva de un
+//   chat perdido: el PDF a todo calificado y el seguimiento.
+// Puente: la semana base (5–12 nov) se calificó con las dos (80 con v1).
 //
 // Cada regla vale `puntos` × (chats que la cumplen ÷ chats donde aplica). Si
 // una regla no aplicó esa semana (0 chats) se deja fuera y el total se
@@ -9,7 +16,7 @@
 
 export interface ReglaRubrica { clave: string; texto: string; puntos: number; aplica: string }
 
-export const RUBRICA: ReglaRubrica[] = [
+export const RUBRICA_V1: ReglaRubrica[] = [
   { clave: "primer-5min",     texto: "Primer mensaje en 5 min o menos",          puntos: 10, aplica: "Solo clientes nuevos" },
   { clave: "se-presenta",     texto: "Se presenta con su nombre",                puntos: 5,  aplica: "Todos" },
   { clave: "cotiza-a-todos",  texto: "Cotiza a todo el que da fecha y personas", puntos: 10, aplica: "Solo clientes nuevos" },
@@ -26,6 +33,39 @@ export const RUBRICA: ReglaRubrica[] = [
   { clave: "sin-caritas",     texto: "Sin caritas",                              puntos: 5,  aplica: "Todos" },
 ];
 
+export const RUBRICA_V2: ReglaRubrica[] = [
+  { clave: "primer-5min",        texto: "Bienvenida en 5 min o menos",                                                puntos: 10, aplica: "Clientes nuevos que escriben en horario (8:00–20:00); se mide solo" },
+  { clave: "se-presenta",        texto: "Se presenta con su nombre",                                                   puntos: 3,  aplica: "Clientes nuevos" },
+  { clave: "califica",           texto: "Califica en 2 mensajes o menos: fechas, personas y edades, dónde se hospedan y qué les emociona", puntos: 5, aplica: "Clientes nuevos que no dieron esos datos solos" },
+  { clave: "itinerario",         texto: "Propone día por día con 1 a 3 tours (no solo el catálogo)",                   puntos: 7,  aplica: "Chats con fecha y personas" },
+  { clave: "cotiza-a-todos",     texto: "Cotización en PDF a todo el que da fecha y personas",                         puntos: 15, aplica: "Chats con fecha y personas" },
+  { clave: "cotiza-30min",       texto: "Cotiza en 30 min o menos desde que tiene los datos",                          puntos: 5,  aplica: "Cotizaciones" },
+  { clave: "mensaje-cotizacion", texto: "Al cotizar: vigencia, anticipo de 30 % con monto y «¿Te envío los pasos para reservar?»", puntos: 8, aplica: "Cotizaciones" },
+  { clave: "pago-completo",      texto: "Datos bancarios, OXXO y liga con tarjeta en el mismo mensaje",                puntos: 5,  aplica: "Chats a los que se mandó cómo pagar" },
+  { clave: "confirmacion",       texto: "Comprobante → «Recibí tu comprobante», confirmación PDF, qué llevar y dónde los recogemos", puntos: 7, aplica: "Reservas de la semana" },
+  { clave: "seguimiento-d3",     texto: "Seguimiento a tiempo y con algo concreto (3 h, 24 h, 72 h, víspera de vencer)", puntos: 18, aplica: "Propuestas y cotizaciones sin respuesta cuyo día 3 ya pasó" },
+  { clave: "resena",             texto: "Después del viaje: «¿Cómo les fue?» y liga de reseña",                        puntos: 5,  aplica: "Reservas cuyo viaje terminó en la semana" },
+  { clave: "siguiente-paso",     texto: "Termina con una pregunta que lleva al siguiente paso",                        puntos: 6,  aplica: "Último mensaje de la semana; no cuenta si el tour ya ocurrió o el cliente dijo que no" },
+  { clave: "promesas",           texto: "Cumple lo que promete a la hora (o avisa antes)",                             puntos: 3,  aplica: "Chats con una promesa de hora o de «te aviso»" },
+  { clave: "forma",              texto: "Lo hablado por llamada, por escrito; nada interno al cliente; sin caritas",   puntos: 3,  aplica: "Todos" },
+];
+
+export type VersionRubrica = 1 | 2;
+/** La de hoy: la que usan las semanas nuevas y el agente. */
+export const VERSION_ACTUAL: VersionRubrica = 2;
+export const RUBRICA = RUBRICA_V2;
+export const rubricaDe = (v: VersionRubrica): ReglaRubrica[] => (v === 1 ? RUBRICA_V1 : RUBRICA_V2);
+export const NOMBRE_VERSION: Record<VersionRubrica, string> = { 1: "Rúbrica anterior (hasta el 12 nov)", 2: "Estructura de oro" };
+
+const SOLO_V1 = new Set(RUBRICA_V1.map(r => r.clave).filter(c => !RUBRICA_V2.some(r => r.clave === c)));
+/** Con qué rúbrica se capturó una semana: la marca `_version` o, si no la trae, por sus reglas. */
+export function versionDeCaptura(raw: unknown): VersionRubrica {
+  if (!raw || typeof raw !== "object") return VERSION_ACTUAL;
+  const v = (raw as Record<string, unknown>)._version;
+  if (v === 1 || v === 2) return v;
+  return Object.keys(raw).some(k => SOLO_V1.has(k)) ? 1 : VERSION_ACTUAL;
+}
+
 export const META_SCORE = 85;
 
 /** Lo capturado de una regla: en cuántos chats aplicó y cuántos la cumplieron. */
@@ -38,10 +78,10 @@ export interface ResultadoScore { score: number | null; reglas: ResultadoRegla[]
 const entero = (v: unknown) => { const n = Math.round(Number(v)); return Number.isFinite(n) && n >= 0 ? Math.min(n, 10_000) : 0; };
 
 /** Limpia lo que llega del navegador: solo reglas conocidas, enteros, y cumplen ≤ aplican. */
-export function limpiarCaptura(raw: unknown): CapturaRubrica {
+export function limpiarCaptura(raw: unknown, version: VersionRubrica = versionDeCaptura(raw)): CapturaRubrica {
   const out: CapturaRubrica = {};
   if (!raw || typeof raw !== "object") return out;
-  for (const r of RUBRICA) {
+  for (const r of rubricaDe(version)) {
     const v = (raw as Record<string, unknown>)[r.clave] as { aplican?: unknown; cumplen?: unknown } | undefined;
     if (!v || typeof v !== "object") continue;
     const aplican = entero(v.aplican);
@@ -51,8 +91,8 @@ export function limpiarCaptura(raw: unknown): CapturaRubrica {
 }
 
 /** El score de la semana (0–100, reescalado) y lo que más puntos le costó. */
-export function calcularScore(captura: CapturaRubrica): ResultadoScore {
-  const reglas = RUBRICA.map(r => {
+export function calcularScore(captura: CapturaRubrica, version: VersionRubrica = VERSION_ACTUAL): ResultadoScore {
+  const reglas = rubricaDe(version).map(r => {
     const c = captura[r.clave];
     const aplican = c?.aplican ?? 0;
     const cumplen = Math.min(c?.cumplen ?? 0, aplican);

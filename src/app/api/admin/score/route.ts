@@ -6,7 +6,7 @@ import { lunesDe } from "@/lib/admin/corteSemanal";
 import { addDaysYMD } from "@/lib/dates";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { correoDe } from "@/lib/admin/recordatorios";
-import { ETIQUETA_BANDA, bandaScore, calcularScore, limpiarCaptura, META_SCORE } from "@/lib/admin/rubrica";
+import { ETIQUETA_BANDA, bandaScore, calcularScore, limpiarCaptura, META_SCORE, VERSION_ACTUAL, type VersionRubrica } from "@/lib/admin/rubrica";
 import { RESPONSABLE_OPERACION } from "@/lib/admin/automatizaciones";
 
 export const dynamic = "force-dynamic";
@@ -30,12 +30,14 @@ export async function PATCH(req: NextRequest) {
   const pedida = String(body.semana ?? "");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(pedida) || addDaysYMD(pedida, 0) !== pedida) return NextResponse.json({ error: "Semana no válida." }, { status: 400 });
   const semana = lunesDe(pedida);
-  const rubrica = limpiarCaptura(body.rubrica);
-  const r = calcularScore(rubrica);
+  // La versión de la rúbrica viaja con la captura: una semana vieja se corrige con la suya.
+  const version: VersionRubrica = body.version === 1 ? 1 : VERSION_ACTUAL;
+  const rubrica = limpiarCaptura(body.rubrica, version);
+  const r = calcularScore(rubrica, version);
   const texto = (v: unknown, max: number) => (v === undefined ? undefined : String(v ?? "").trim().slice(0, max) || null);
   const data = {
     // Sin ninguna regla capturada no se borra el score que se anotó a mano en Inicio.
-    rubrica: rubrica as object, ...(r.score !== null ? { score: r.score } : {}),
+    rubrica: { ...rubrica, _version: version } as object, ...(r.score !== null ? { score: r.score } : {}),
     ...(body.revisadas !== undefined ? { revisadas: texto(body.revisadas, 4000) } : {}),
     ...(body.recomendaciones !== undefined ? { recomendaciones: texto(body.recomendaciones, 2000) } : {}),
     guardadoPor: sesion.nombre,

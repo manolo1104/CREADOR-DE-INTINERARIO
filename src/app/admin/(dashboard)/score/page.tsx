@@ -5,7 +5,7 @@ import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { lunesDe, etiquetaSemana } from "@/lib/admin/corteSemanal";
 import { datosScorecard } from "@/lib/admin/scorecardDatos";
 import { sesionActual } from "@/lib/admin/sesion";
-import { limpiarCaptura } from "@/lib/admin/rubrica";
+import { limpiarCaptura, versionDeCaptura, NOMBRE_VERSION } from "@/lib/admin/rubrica";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { TarjetaKpi } from "@/components/admin/ui/TarjetaKpi";
 import ScoreClient from "./ScoreClient";
@@ -35,15 +35,16 @@ export default async function ScorePage({ searchParams }: { searchParams: { sema
     <Link href={`/admin/score?semana=${s}`} aria-label={aria} className="panel-foco inline-flex h-10 w-10 items-center justify-center rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white text-[var(--panel-tinta)]"><Icono className="h-4 w-4" aria-hidden="true" /></Link>
   );
   const esActual = lunes === lunesDe(hoyMX());
+  const version = versionDeCaptura(revision?.rubrica);
 
   return (
     <div className="mx-auto max-w-5xl p-4 pb-12 sm:p-6 md:p-8">
-      <EncabezadoPagina titulo="Score WhatsApp" nueva subtitulo={`La revisión de los jueves · 14 reglas, 100 puntos, meta 85${esActual ? " · semana en curso" : ""}`}
+      <EncabezadoPagina titulo="Score WhatsApp" nueva subtitulo={`La revisión de los jueves · ${NOMBRE_VERSION[version]} · 14 reglas, 100 puntos, meta 85${esActual ? " · semana en curso" : ""}`}
         acciones={<div className="flex items-center gap-2">{nav(addDaysYMD(lunes, -7), "Semana anterior", ChevronLeft)}<span className="min-w-[170px] text-center font-cormorant text-xl text-[var(--panel-tinta)]">{etiquetaSemana(lunes)}</span>{nav(addDaysYMD(lunes, 7), "Semana siguiente", ChevronRight)}</div>} />
 
-      <ScoreClient key={lunes} semana={lunes} puedeEditar={puedeEditar} tendencia={tendencia}
+      <ScoreClient key={lunes} semana={lunes} puedeEditar={puedeEditar} tendencia={tendencia} version={version}
         inicial={{
-          rubrica: limpiarCaptura(revision?.rubrica),
+          rubrica: limpiarCaptura(revision?.rubrica, version),
           revisadas: revision?.revisadas ?? "",
           recomendaciones: revision?.recomendaciones ?? "",
           scoreSinRubrica: revision && !revision.rubrica ? revision.score : null,

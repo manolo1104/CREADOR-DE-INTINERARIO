@@ -4,7 +4,8 @@ import { seccionDePagina } from "../indicadores/secciones";
 import { estadoContraMeta, formatear, pct } from "../indicadores/estado";
 import { KPI, KPIS, OBJETIVOS } from "../indicadores/catalogo";
 import { calcularDemanda, type DatosDemanda } from "../indicadores/demanda";
-import { leadReserva, seguimientoATiempo, type DatosComercial, type LeadCohorte } from "../indicadores/comercial";
+import { calificadosSinCotizar, leadReserva, pdfACalificados, seguimientoATiempo, type DatosComercial, type LeadCohorte } from "../indicadores/comercial";
+import { pidioResena, resenaPedida } from "../indicadores/servicio";
 import { aTiempo, calcularOperacion, type DatosOperacion } from "../indicadores/operacion";
 import { clasificar, cobradoPorTour } from "../indicadores/producto";
 import { datosConfiables } from "../indicadores/datos";
@@ -143,6 +144,35 @@ describe("comercial: cohortes y seguimiento", () => {
     const caso = (leadId: string, extra: Partial<DatosComercial["seguimiento"][number]>) => ({ leadId, cotizadoEn: t0, pagoEn: null, conChat: true, salientes: [], tareasHechas: [], ...extra });
     const d = { ...base([]), seguimiento: [caso("a", { salientes: [t0 + 30 * h] }), caso("b", { salientes: [t0 + 80 * h] }), caso("c", { pagoEn: t0 + 10 * h }), caso("d", { tareasHechas: [t0 + 50 * h] })] };
     expect(seguimientoATiempo(d, periodoDe("semana", "2026-10-19", HOY))).toMatchObject({ valor: 66.7, detalle: "2 de 3 que lo necesitaban" });
+  });
+  it("PDF a todo calificado: solo cuentan los que llegaron a calificado; el que cotizó cuenta aunque no pasara por la etapa", () => {
+    const h = (nueva: string, ymd: string) => ({ nueva, en: Date.parse(`${ymd}T18:00:00Z`) });
+    const l = (id: string, etapa: string, historial: { nueva: string; en: number }[], cotizacionEn: number | null = null): LeadCohorte =>
+      ({ id, ymd: "2026-10-20", canal: "whatsapp", responsable: "Erick", etapa, historial, pagoEn: null, cotizacionEn });
+    const leads = [
+      l("a", "cotizado", [h("nuevo", "2026-10-20"), h("calificado", "2026-10-20"), h("cotizado", "2026-10-21")]),
+      l("b", "calificado", [h("nuevo", "2026-10-20"), h("calificado", "2026-10-20")]),
+      l("c", "nuevo", [h("nuevo", "2026-10-20")]), // nunca dio fecha y personas: no cuenta
+      l("d", "seguimiento", [h("nuevo", "2026-10-20")], Date.parse("2026-10-22T18:00:00Z")),
+    ];
+    expect(pdfACalificados(base(leads), periodoDe("semana", "2026-10-19", HOY))).toMatchObject({ valor: 66.7, detalle: "2 de 3 leads calificados" });
+    // Calificados sin cotización hoy: «b» lleva días en calificado; uno de hace 2 h todavía no cuenta.
+    const reciente = { ...l("e", "calificado", [h("nuevo", "2026-11-04")]), ymd: "2026-11-04", historial: [{ nueva: "calificado", en: Date.parse("2026-11-04T16:00:00Z") }] };
+    expect(calificadosSinCotizar(base([...leads, reciente])).valor).toBe(1);
+  });
+});
+
+describe("servicio: reseña pedida por WhatsApp", () => {
+  it("cuenta la liga o la palabra entre el último día del tour y 14 días después", () => {
+    expect(pidioResena([{ ymd: "2026-11-10", texto: "¿Nos dejas tu reseña? https://g.page/r/abc/review" }], "2026-11-08")).toBe(true);
+    expect(pidioResena([{ ymd: "2026-11-07", texto: "Déjanos tu reseña" }], "2026-11-08")).toBe(false); // antes del viaje
+    expect(pidioResena([{ ymd: "2026-11-30", texto: "Déjanos tu reseña" }], "2026-11-08")).toBe(false); // ya muy tarde
+    const d = { hoy: HOY, operadas: [
+      { ultimoDia: "2026-10-20", conCheckin: false, resenaPedida: true },
+      { ultimoDia: "2026-10-21", conCheckin: false, resenaPedida: false },
+      { ultimoDia: "2026-10-22", conCheckin: false, resenaPedida: null }, // sin chat en la Bandeja
+    ] };
+    expect(resenaPedida(d, periodoDe("semana", "2026-10-19", HOY))).toMatchObject({ valor: 50, calidad: "aproximado" });
   });
 });
 

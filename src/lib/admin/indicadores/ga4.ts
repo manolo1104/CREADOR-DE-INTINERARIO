@@ -77,6 +77,8 @@ export function horasDeCache(rangos: Rango[], leidoEn: Date | string): number {
 
 /** Caché en `Config`: lo pasado casi no cambia; lo reciente, sí. */
 export async function conCache<T>(clave: string, rangos: Rango[], leer: () => Promise<T>): Promise<T & { leidoEn: string }> {
+  // Los scripts de solo lectura (línea base) no leen ni escriben la caché: así no tocan la base.
+  if (process.env.INDICADORES_SIN_CACHE === "1") return { ...(await leer()), leidoEn: new Date().toISOString() };
   const guardado = await prisma.config.findUnique({ where: { key: clave } }).catch(() => null);
   if (guardado) {
     try {
