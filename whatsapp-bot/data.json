@@ -1,16 +1,23 @@
 {
-  "generatedAt": "2026-10-08T21:03:23.805Z",
+  "generatedAt": "2026-11-17T04:18:52.561Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
     "confirmaSalidaDias": 7,
     "sitio": "https://www.huasteca-potosina.com",
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
-    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Huasteca Instagrameable (horario según el día) tiene otro horario. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Buceo en la Media Luna: nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde; llegas por tu cuenta. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
     "rating": 4.7,
-    "resenas": 161
+    "resenas": 168,
+    "confianza": {
+      "resenasGoogle": "https://maps.app.goo.gl/SWGyihBFTiykTFFM6",
+      "dejarResena": "https://g.page/r/CZg8hdQa_GI9EBM/review",
+      "facebook": "https://www.facebook.com/huastecatours",
+      "instagram": "",
+      "marcas": ""
+    }
   },
   "tours": [
     {
@@ -36,6 +43,7 @@
       "tagline": "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
       "pitch": "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600 MXN), no por persona.",
       "url": "https://www.huasteca-potosina.com/tours/rzr-xilitla",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/rzr-xilitla/hero.jpg",
       "destinos": [
         "Base en Xilitla (punto de encuentro)",
         "Aldea Nanacatli — casitas de hongos (Ruta Nanacatli · 2 h)",
@@ -278,6 +286,7 @@
       "tagline": "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
       "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
       "url": "https://www.huasteca-potosina.com/tours/rappel-tamul",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/rappel-tamul/hero.jpg",
       "destinos": [
         "Embarcadero del Río Tampaón (inicio del descenso)",
         "Pared de rappel frente a la Cascada de Tamul",
@@ -367,10 +376,7 @@
       "duracionTexto": "7 h",
       "precio": 1950,
       "precioLista": 1950,
-      "promo": {
-        "precio": 1850,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "escalaPersona": null,
@@ -383,6 +389,7 @@
       "tagline": "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
       "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida que eliges antes o después de la actividad. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
       "url": "https://www.huasteca-potosina.com/tours/rafting-rio-tampaon",
+      "foto": "https://www.huasteca-potosina.com/imagenes/rio-tampaon-rafting/gallery-9.jpg",
       "destinos": [
         "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
         "Embarcadero del Río Tampaón",
@@ -491,10 +498,7 @@
       "duracionTexto": "12–13 h",
       "precio": 1550,
       "precioLista": 1550,
-      "promo": {
-        "precio": 1450,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "escalaPersona": [
@@ -520,6 +524,7 @@
       "tagline": "Tres maravillas en un día: Tamul en canoa, el cenote de la Cueva del Agua y las Huahuas al atardecer",
       "pitch": "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
       "url": "https://www.huasteca-potosina.com/tours/expedicion-tamul",
+      "foto": "https://www.huasteca-potosina.com/imagenes/cascada-de-tamul/gallery-6.jpg",
       "destinos": [
         "Cascada de Tamul (paseo en canoa)",
         "Cenote Cueva del Agua (al regreso — se nada y se echan clavados)",
@@ -562,7 +567,7 @@
         "primera vez",
         "naturaleza"
       ],
-      "urgencia": null,
+      "urgencia": "Cierra al atardecer con las aves del sótano — reserva con anticipación",
       "queLlevar": [
         "Aqua shoes o tenis que se puedan mojar (indispensables en ríos y pozas)",
         "Traje de baño y una muda completa de ropa seca",
@@ -589,7 +594,7 @@
         },
         {
           "q": "¿Qué pasa si llueve?",
-          "a": "Operamos con lluvia ligera. Si hay tormenta eléctrica, reprogramamos sin costo."
+          "a": "Operamos con lluvia ligera: la selva con agua se ve mejor. Si el río no está seguro, primero te cambiamos de actividad —hay recorridos que no dependen del río, como Las Pozas o la Gruta— y si ninguno te late, eliges reembolso o cambio de fecha. La idea es que ese día la pases bien de todos modos."
         }
       ],
       "rutas": null,
@@ -603,12 +608,9 @@
       "dificultad": "baja",
       "duracionHrs": 8,
       "duracionTexto": "8–10 h",
-      "precio": 1400,
-      "precioLista": 1400,
-      "promo": {
-        "precio": 1300,
-        "vence": "2026-10-29"
-      },
+      "precio": 1500,
+      "precioLista": 1500,
+      "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "escalaPersona": [
@@ -630,6 +632,7 @@
       "tagline": "Arte, agua y misterio en un recorrido de contrastes únicos",
       "pitch": "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
       "url": "https://www.huasteca-potosina.com/tours/ruta-surrealista-edward-james",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/edward-james/hero.jpg",
       "destinos": [
         "Jardín Surrealista Edward James (Las Pozas)",
         "Nacimiento de Huichihuayán",
@@ -637,7 +640,7 @@
         "Castillo de la Salud"
       ],
       "incluye": [
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
+        "Traslado redondo desde tu hospedaje en Xilitla, en unidad cómoda con aire acondicionado (desde Ciudad Valles, $400 más por reserva)",
         "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
@@ -648,13 +651,13 @@
         "Comida de mediodía",
         "Propinas y gastos personales"
       ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
-      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla (traslado redondo incluido) o en Ciudad Valles, con $400 MÁS POR RESERVA, no por persona (no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado cuesta $400 más por reserva (no por persona).",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 8 y 10 horas; regresa aprox. 4:00–6:00 PM. Los horarios exactos se confirman al reservar.",
       "transporte": {
         "incluido": true,
-        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
+        "detalle": "SÍ incluye traslado redondo desde el hospedaje en Xilitla. Desde Ciudad Valles también pasamos por el cliente, pero cuesta $400 MÁS POR RESERVA (no por persona). Es el ÚNICO recorrido que cobra el traslado desde Valles."
       },
       "alimentos": {
         "desayuno": true,
@@ -735,6 +738,7 @@
       "tagline": "El jardín de Edward James para ustedes solos, antes de que abra al público",
       "pitch": "Las Pozas sin nadie más: entras una hora antes de que abra, con guía propio y acceso a rincones cerrados al público. Tres horas en el jardín de Edward James a tu ritmo, incluidos los niveles altos del Palacio de Bambú y la Casa Estudio donde todavía se conserva un poema escrito de su puño y letra. Grupo de hasta 7 personas, tarifa del grupo completo.",
       "url": "https://www.huasteca-potosina.com/tours/eden-en-el-jardin",
+      "foto": "https://www.huasteca-potosina.com/imagenes/las-pozas-jardin-surrealista/hero.jpg",
       "destinos": [
         "Jardín Escultórico Edward James (Las Pozas)",
         "Palacio de Bambú — niveles superiores",
@@ -837,10 +841,7 @@
       "duracionTexto": "12 h",
       "precio": 1700,
       "precioLista": 1700,
-      "promo": {
-        "precio": 1600,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "escalaPersona": [
@@ -866,6 +867,7 @@
       "tagline": "Tres caídas de agua, tres emociones distintas",
       "pitch": "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
       "url": "https://www.huasteca-potosina.com/tours/cascadas-del-meco",
+      "foto": "https://www.huasteca-potosina.com/imagenes/cascada-el-meco/hero.jpg",
       "destinos": [
         "Cascada del Meco",
         "Mirador Panorámico del Meco",
@@ -950,10 +952,7 @@
       "duracionTexto": "11–12 h",
       "precio": 1600,
       "precioLista": 1600,
-      "promo": {
-        "precio": 1500,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "escalaPersona": [
@@ -979,6 +978,7 @@
       "tagline": "Dos joyas naturales, un día perfecto para desconectar",
       "pitch": "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
       "url": "https://www.huasteca-potosina.com/tours/paraiso-escalonado-minas-micos",
+      "foto": "https://www.huasteca-potosina.com/imagenes/cascadas-minas-viejas/hero-new.jpg",
       "destinos": [
         "Cascadas de Minas Viejas",
         "Cascadas de Micos"
@@ -1054,17 +1054,14 @@
     {
       "id": "tour-puente-dios",
       "slug": "ruta-acuatica-puente-de-dios",
-      "nombre": "Ruta Acuática — Puente de Dios & Cascadas de Tamasopo",
+      "nombre": "Ruta Acuática — Puente de Dios + Siete Cascadas o Tamasopo",
       "tipo": "Aventura Acuática",
       "dificultad": "media",
       "duracionHrs": 12,
       "duracionTexto": "11–12 h",
       "precio": 1600,
       "precioLista": 1600,
-      "promo": {
-        "precio": 1500,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
       "escalaPersona": [
@@ -1088,12 +1085,13 @@
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
       "tagline": "El recorrido más refrescante y completo de la región",
-      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo. En un día da para uno de los dos, no para ambos.",
+      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo (+$150 por persona). En un día da para uno de los dos, no para ambos.",
       "url": "https://www.huasteca-potosina.com/tours/ruta-acuatica-puente-de-dios",
+      "foto": "https://www.huasteca-potosina.com/imagenes/cascadas-de-tamasopo/gallery-3.jpg",
       "destinos": [
         "Puente de Dios",
         "A elegir: Hacienda Los Gómez + Siete Cascadas (mismo lugar)",
-        "A elegir: Cascadas de Tamasopo"
+        "A elegir: Cascadas de Tamasopo (+$150 por persona)"
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -1166,90 +1164,6 @@
       "flota": null
     },
     {
-      "id": "tour-buceo-media-luna",
-      "slug": "buceo-media-luna",
-      "nombre": "Descubre el Buceo en la Laguna de la Media Luna — Tu Primera Inmersión con Instructor PADI",
-      "tipo": "Buceo & Naturaleza",
-      "dificultad": "baja",
-      "duracionHrs": 4,
-      "duracionTexto": "4 h",
-      "precio": 1300,
-      "precioLista": 1300,
-      "promo": null,
-      "precioUnidad": "persona",
-      "tarifaGrupo": null,
-      "escalaPersona": null,
-      "cancelacion": null,
-      "groupMin": 2,
-      "groupMax": 10,
-      "soloAdultos": true,
-      "privateAvailable": false,
-      "privateExtraPorPersona": null,
-      "tagline": "Respira bajo el agua por primera vez en las aguas frescas y cristalinas de la Media Luna — sin experiencia previa",
-      "pitch": "Vive tu primera experiencia de buceo con equipo SCUBA en la Laguna de la Media Luna, en Rioverde, de aguas frescas y cristalinas. Respirar bajo el agua nunca fue tan fácil: no necesitas experiencia previa, solo ganas. Un instructor certificado PADI te acompaña paso a paso — primero practicas en aguas poco profundas y, cuando estés listo, desciendes entre 5 y 10 metros. Son 4 horas de capacitación e incluye el equipo de buceo y las fotografías digitales de tu inmersión. $1,300 MXN por persona.",
-      "url": "https://www.huasteca-potosina.com/tours/buceo-media-luna",
-      "destinos": [
-        "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
-        "Orientación con instructor certificado PADI",
-        "Práctica de habilidades en aguas poco profundas",
-        "Inmersión de 5 a 10 metros por debajo de la superficie"
-      ],
-      "incluye": [
-        "Instructor certificado PADI",
-        "Equipo completo de buceo (SCUBA)",
-        "4 horas de capacitación y práctica",
-        "Fotografías digitales de tu inmersión",
-        "Inmersión guiada de 5 a 10 metros de profundidad"
-      ],
-      "noIncluye": [
-        "Transporte hasta la Laguna de la Media Luna (Rioverde)",
-        "Entrada al parque (se paga allá)",
-        "Alimentos — no se incluye ninguna comida, pero en la laguna hay puestos y restaurantes donde comprar",
-        "Traje de baño y toalla"
-      ],
-      "puntoEncuentro": "Laguna de la Media Luna (Rioverde, San Luis Potosí)",
-      "salida": "Nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde; llegas por tu cuenta.",
-      "recogidaTipo": "en-sitio",
-      "horario": "Dura ~4 h. La hora de encuentro se confirma al reservar.",
-      "transporte": {
-        "incluido": false,
-        "detalle": "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta."
-      },
-      "alimentos": {
-        "desayuno": false,
-        "comida": false,
-        "detalle": "NO incluye ningún alimento. En la laguna hay puestos y restaurantes donde comprar."
-      },
-      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
-      "incluyeSiempre": [
-        "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido que toma tu guía"
-      ],
-      "idealPara": [
-        "primera vez buceando",
-        "mayores de 10 años",
-        "aventura acuática"
-      ],
-      "urgencia": "Primera inmersión con instructor PADI — se reserva con anticipación",
-      "queLlevar": [
-        "Traje de baño",
-        "Toalla",
-        "Efectivo para la entrada al parque"
-      ],
-      "requisitos": [
-        "Actividad para mayores de 10 años con buena salud: no aplica descuento de niños",
-        "NO es apta para personas con problemas respiratorios, cardiovasculares o afecciones de oído",
-        "NO es apta para mujeres embarazadas",
-        "No se puede bucear bajo efectos de alcohol o drogas",
-        "No se necesita certificación previa: son 4 horas de capacitación y la inmersión va siempre acompañada por un instructor PADI"
-      ],
-      "edadMinima": 10,
-      "edadNota": null,
-      "faqs": [],
-      "rutas": null,
-      "flota": null
-    },
-    {
       "id": "tour-travesia-cafe",
       "slug": "travesia-del-cafe",
       "nombre": "Travesía del Café — Finca Cafetalera de Xilitla en RZR",
@@ -1272,6 +1186,7 @@
       "tagline": "El sabor de Xilitla, desde la mata hasta la taza",
       "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/travesia-del-cafe",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/travesia-del-cafe/hero.jpg",
       "destinos": [
         "Cafetal bajo sombra de la sierra de Xilitla",
         "Patio de secado del grano",
@@ -1350,6 +1265,7 @@
       "tagline": "Novecientos metros bajo la sierra, de noche",
       "pitch": "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/gruta-de-xilo",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/gruta-de-xilo/hero.jpg",
       "destinos": [
         "Selva de Xilitla (caminata de acceso)",
         "Gruta de Xilo",
@@ -1459,6 +1375,7 @@
       "tagline": "Llegar a la cima antes que el sol",
       "pitch": "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando sale el sol, muchas veces por encima del mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. $1,700 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/amanecer-de-nubes",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/amanecer-de-nubes/hero.jpg",
       "destinos": [
         "Bosque de niebla de La Trinidad",
         "Cerro del Pilón",
@@ -1568,6 +1485,7 @@
       "tagline": "Un abismo donde la luz entra como cascada",
       "pitch": "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. $1,800 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/olla-de-la-luz",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/olla-de-la-luz/hero.jpg",
       "destinos": [
         "La Trinidad — Bosque de Niebla de Xilitla",
         "Miradores del Cerro de la Luz",
@@ -1651,163 +1569,6 @@
       ],
       "rutas": null,
       "flota": null
-    },
-    {
-      "id": "tour-huasteca-instagrameable",
-      "slug": "huasteca-instagrameable",
-      "nombre": "Huasteca Instagrameable — Los Días Más Fotogénicos de la Huasteca Potosina",
-      "tipo": "Fotografía & Contenido",
-      "dificultad": "media",
-      "duracionHrs": 13,
-      "duracionTexto": "11–14 h",
-      "precio": 1850,
-      "precioLista": 1850,
-      "promo": null,
-      "precioUnidad": "persona",
-      "tarifaGrupo": null,
-      "escalaPersona": [
-        {
-          "desde": 3,
-          "menos": 100
-        },
-        {
-          "desde": 4,
-          "menos": 160
-        },
-        {
-          "desde": 5,
-          "menos": 200
-        },
-        {
-          "desde": 6,
-          "menos": 260
-        }
-      ],
-      "cancelacion": null,
-      "groupMin": 2,
-      "groupMax": 6,
-      "soloAdultos": false,
-      "privateAvailable": true,
-      "privateExtraPorPersona": 250,
-      "tagline": "El día en que te vas con las fotos, no sólo con el recuerdo",
-      "pitch": "Un día armado alrededor de la luz y de los encuadres, no del reloj. Tu guía lleva una cámara Fujifilm X-T30 II, conoce los puntos exactos de cada lugar y la hora a la que el agua se ve turquesa, y te entrega de 25 a 30 fotografías editadas dentro de 3 días. Eliges cuál de los tres días instagrameables quieres. Grupo de máximo 6 personas. $1,850 MXN por persona.",
-      "url": "https://www.huasteca-potosina.com/tours/huasteca-instagrameable",
-      "destinos": [
-        "Día 1 — Cascada de Tamul en canoa y Las Pozas, el jardín surrealista de Edward James",
-        "Día 2 — Cascadas de Micos y Sótano de las Huahuas",
-        "Día 3 — Cascadas de Minas Viejas, Cascada del Meco y El Salto"
-      ],
-      "incluye": [
-        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
-        "Paseo en canoa hasta la Cascada de Tamul (Día 1)",
-        "Entradas a todos los lugares del día que elijas",
-        "Guía acreditado NOM-09 SECTUR, con cámara Fujifilm X-T30 II",
-        "Los encuadres marcados de cada lugar: tu guía sabe desde qué punto y a qué hora se ve cada uno",
-        "Fotografías y video del recorrido que toma tu guía, y además de 25 a 30 fotografías editadas, en una carpeta privada, dentro de 3 días",
-        "Equipo de seguridad (chaleco y lo que pida cada lugar)"
-      ],
-      "noIncluye": [
-        "Comida de mediodía: hay parada para comer y se paga en el lugar",
-        "Fotógrafo aparte del guía: las fotos las toma el guía",
-        "Dron y tripié: en Las Pozas están prohibidos",
-        "Propinas y gastos personales"
-      ],
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
-      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles a tiempo para su horario fijo (6:00 AM el Día 1 y 8:00 AM los Días 2 y 3; el Día 1 no sale los martes).",
-      "recogidaTipo": "hospedaje",
-      "horario": "Sale 6:00 AM el Día 1 y 8:00 AM los Días 2 y 3; el Día 1 no sale los martes y dura entre 11 y 14 horas; regresa aprox. 11–14 h después de empezar. Los horarios exactos se confirman al reservar.",
-      "transporte": {
-        "incluido": true,
-        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. OJO con la hora: el Día 1 sale a las 6:00 AM y los Días 2 y 3 a las 8:00 AM."
-      },
-      "alimentos": {
-        "desayuno": false,
-        "comida": false,
-        "detalle": "NO incluye alimentos. Hay una parada para comer durante el día y el cliente paga en el lugar."
-      },
-      "fotos": "Es el recorrido de fotografía: SÍ se promete entrega. De 25 a 30 fotografías EDITADAS, en una carpeta privada, dentro de 3 días. Las toma el guía con una cámara Fujifilm X-T30 II. NO va un fotógrafo aparte del guía y NO hay dron: en Las Pozas están prohibidos el dron y el tripié. El grupo es de máximo 6 personas, y eso es parte de lo que hace posible la entrega.",
-      "incluyeSiempre": [
-        "Seguro de viaje para todos los integrantes",
-        "Fotografías y video del recorrido que toma tu guía"
-      ],
-      "idealPara": [
-        "fotografía",
-        "creadores de contenido",
-        "parejas",
-        "grupo chico",
-        "reels y redes"
-      ],
-      "urgencia": "Grupo de máximo 6 — el guía va con cámara, no con teléfono",
-      "queLlevar": [
-        "Aqua shoes o tenis que se puedan mojar (indispensables en ríos y pozas)",
-        "Traje de baño, toalla y una muda completa de ropa seca",
-        "Ropa de color liso para las fotos: el blanco, el rojo y el amarillo se ven mejor contra el agua turquesa; los estampados chicos no",
-        "Un cambio de ropa para el jardín si vas en el Día 1: se llega mojado del río y las fotos de Las Pozas son al final",
-        "Bloqueador y repelente BIODEGRADABLES (son los únicos permitidos en el agua)",
-        "Gorra o sombrero y lentes de sol",
-        "Efectivo para la comida y gastos personales: en los parajes no hay cajero",
-        "INE o pasaporte vigente"
-      ],
-      "requisitos": [
-        "El grupo es de máximo 6 personas: es parte de lo que hace posible fotografiar a todos",
-        "El Día 1 sale a las 6:00 AM y regresa cerca de las 7:30 PM; no sale los martes, porque Las Pozas no abre su horario de las 5:00 PM ese día",
-        "No necesitas saber nadar: se usa chaleco salvavidas en el agua",
-        "Si te mareas en lancha, toma tu medicamento antes: el trayecto en canoa del Día 1 es largo",
-        "En Las Pozas no se permite el acceso con dron ni tripié: las fotos se hacen con cámara en mano",
-        "El Día 1 son unas 13 horas con canoa de por medio. Si viajas con niños pequeños, con alguien a quien le cuesta caminar o estás embarazada, cuéntanos antes de apartar: los Días 2 y 3 son más tranquilos y salen a las 8:00 AM",
-        "El Día 1 NO sale los martes: Las Pozas no abre su horario de las 5:00 PM ese día",
-        "El cliente elige UNO de los tres días al reservar; los tres días se cotizan juntos por WhatsApp"
-      ],
-      "edadMinima": null,
-      "edadNota": "El Día 1 son unas 13 horas con canoa de por medio: cuéntanos las edades al reservar y te decimos si es buena idea.",
-      "faqs": [
-        {
-          "q": "¿Qué fotos me voy a llevar exactamente?",
-          "a": "Los encuadres de tu día, que el guía ya tiene ubicados. Día 1: la canoa entrando al cañón entre paredes de cien metros, tú sobre la roca con los 105 metros de Tamul atrás, el agua turquesa desde dentro de la canoa, y en la tarde las columnas y los arcos de Edward James y la escalera que no lleva a ningún lado, con la luz de las 5 PM. Día 2: el salto a la poza de Micos, las caídas en escalones desde la orilla y, al atardecer, los pericos entrando al Sótano de las Huahuas. Día 3: las terrazas de travertino y la cortina doble de Minas Viejas desde la pasarela, el Meco entre las 9 y las 11 AM —su hora— y la caída de El Salto."
-        },
-        {
-          "q": "¿Cuántas fotos me entregan y cuándo?",
-          "a": "Entre 25 y 30 fotografías editadas, en una carpeta privada que te llega por WhatsApp o correo dentro de los 3 días siguientes al recorrido. No son las fotos en crudo: van revisadas y ajustadas de luz y color."
-        },
-        {
-          "q": "¿Quién toma las fotos? ¿Va un fotógrafo aparte?",
-          "a": "Las toma tu guía, con una cámara Fujifilm X-T30 II —no con un teléfono—. No va un fotógrafo adicional: va un guía que conoce los puntos exactos de cada lugar, la hora a la que se ven mejor y dónde pararte. Por eso el grupo es de máximo 6 personas."
-        },
-        {
-          "q": "¿Puedo usar las fotos en mis redes? ¿Ustedes también las usan?",
-          "a": "Son tuyas y puedes publicarlas donde quieras, sin pedirnos permiso. Nosotros también podríamos usar alguna en nuestras redes o en el sitio; si prefieres que no, dínoslo el mismo día y no se usa ninguna."
-        },
-        {
-          "q": "¿Llevan dron?",
-          "a": "No. En Las Pozas están prohibidos los drones y los tripiés, así que no forman parte de este recorrido. Las fotos se hacen con cámara en mano. El único recorrido nuestro con video de dron es el Rappel en la Cascada de Tamul, porque el equipo es del operador del rappel."
-        },
-        {
-          "q": "¿Por qué el Día 1 no sale los martes?",
-          "a": "Porque el Día 1 entra a Las Pozas en el horario de las 5:00 PM, y el jardín abre ese horario de miércoles a lunes. Los martes no existe, y mover el jardín a la mañana haría imposible la canoa de Tamul el mismo día. Los Días 2 y 3 salen cualquier día."
-        },
-        {
-          "q": "¿Puedo hacer los tres días?",
-          "a": "Sí. Son tres días distintos, cada uno al mismo precio por persona, y se pueden tomar seguidos: Tamul y Las Pozas, Micos y el Sótano de las Huahuas, y Minas Viejas con el Meco y El Salto. Escríbenos por WhatsApp y te armamos los tres días con sus fechas en una sola cotización."
-        },
-        {
-          "q": "¿El guía me dice cómo posar?",
-          "a": "Te dice dónde pararte, qué tienes detrás y hacia dónde mirar, y si quieres te propone encuadres. Si prefieres que no te dirija y solo te fotografíe como vas, también: dínoslo al empezar el día."
-        },
-        {
-          "q": "¿Y si no me llegan las fotos?",
-          "a": "Escríbenos por WhatsApp al terminar el tercer día y te las mandamos. Guarda tu folio de reserva: con él el equipo ubica tu carpeta. Si se pasó el plazo, dínoslo —no esperes semanas—, porque las fotos se ordenan por salida y entre más pronto avises, más rápido se encuentran."
-        },
-        {
-          "q": "¿Pueden ir con guía que hable inglés?",
-          "a": "Se pide con anticipación y el equipo lo revisa según la fecha; no lo damos por hecho al reservar. Dinos desde el principio si lo necesitas y te confirmamos antes de apartar."
-        },
-        {
-          "q": "¿Y si llueve o el río cierra?",
-          "a": "Si el río cierra el paso a Tamul, el Día 1 se reacomoda sin costo: se ve la cascada desde el mirador de arriba y el jardín se mantiene. Si la lluvia impide el recorrido completo, lo reagendamos o te devolvemos lo pagado, como en todos nuestros recorridos."
-        }
-      ],
-      "rutas": null,
-      "flota": null
     }
   ],
   "paquetes": [
@@ -1822,11 +1583,7 @@
       "precio": 8699,
       "precioLabel": "por pareja",
       "precioTotalPareja": 8699,
-      "promo": {
-        "precio": 8299,
-        "precioTotalPareja": 8299,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/inmersion-huasteca",
       "badge": "Nuevo",
       "perfiles": [
@@ -1894,11 +1651,11 @@
         },
         {
           "item": "Expedición Tamul (2 pax)",
-          "precio": "$2,900"
+          "precio": "$3,100"
         },
         {
           "item": "Ruta Surrealista (2 pax)",
-          "precio": "$2,600"
+          "precio": "$2,800"
         }
       ]
     },
@@ -1913,11 +1670,7 @@
       "precio": 12290,
       "precioLabel": "por pareja",
       "precioTotalPareja": 12290,
-      "promo": {
-        "precio": 11690,
-        "precioTotalPareja": 11690,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/gran-huasteca",
       "badge": "Los 3 imperdibles",
       "perfiles": [
@@ -1994,15 +1747,15 @@
         },
         {
           "item": "Expedición Tamul (2 pax)",
-          "precio": "$2,900"
+          "precio": "$3,100"
         },
         {
           "item": "Cascadas del Meco (2 pax)",
-          "precio": "$3,200"
+          "precio": "$3,400"
         },
         {
           "item": "Ruta Surrealista (2 pax)",
-          "precio": "$2,600"
+          "precio": "$2,800"
         }
       ]
     },
@@ -2017,11 +1770,7 @@
       "precio": 13390,
       "precioLabel": "por pareja",
       "precioTotalPareja": 13390,
-      "promo": {
-        "precio": 12990,
-        "precioTotalPareja": 12990,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/aventura",
       "badge": "Adrenalina",
       "perfiles": [
@@ -2103,7 +1852,7 @@
         },
         {
           "item": "Paraíso Escalonado + Salto (2 pax)",
-          "precio": "$3,700"
+          "precio": "$3,900"
         },
         {
           "item": "RZR Ruta Miradores (1 vehículo)",
@@ -2122,11 +1871,7 @@
       "precio": 16500,
       "precioLabel": "por pareja",
       "precioTotalPareja": 16500,
-      "promo": {
-        "precio": 15700,
-        "precioTotalPareja": 15700,
-        "vence": "2026-10-29"
-      },
+      "promo": null,
       "url": "https://www.huasteca-potosina.com/reservar-paquete/odisea-huasteca",
       "badge": "Lo ves todo",
       "perfiles": [
@@ -2212,19 +1957,19 @@
         },
         {
           "item": "Expedición Tamul (2 pax)",
-          "precio": "$2,900"
+          "precio": "$3,100"
         },
         {
           "item": "Cascadas del Meco (2 pax)",
-          "precio": "$3,200"
+          "precio": "$3,400"
         },
         {
           "item": "Paraíso Escalonado (2 pax)",
-          "precio": "$3,000"
+          "precio": "$3,200"
         },
         {
           "item": "Ruta Surrealista (2 pax)",
-          "precio": "$2,600"
+          "precio": "$2,800"
         }
       ]
     }
@@ -2279,7 +2024,7 @@
         "icon": "Car",
         "titulo": "En auto",
         "puntos": [
-          "Desde la Ciudad de México: 7 h (aprox. 339 km).",
+          "Desde la Ciudad de México: 7 h (aprox. 350 km).",
           "Desde la ciudad de San Luis Potosí: 5 h.",
           "El acceso a Xilitla es carretera de sierra, con curvas cerradas y neblina: te recomendamos manejar de día, despacio y con el tanque lleno."
         ]
@@ -2366,7 +2111,7 @@
   "faqsPaquetes": [
     {
       "q": "¿El precio es por persona o por pareja?",
-      "a": "Por pareja: la cifra de cada paquete es el total para dos personas que comparten habitación. Para grupos, familias o personas adicionales armamos una cotización a tu medida — escríbenos por WhatsApp."
+      "a": "Por pareja: la cifra de cada paquete es el total para dos personas que comparten habitación. Si van más personas o niños, al reservar eliges cuántos van (hasta 12) y el precio se calcula solo; para grupos más grandes escríbenos por WhatsApp."
     },
     {
       "q": "¿Cómo llego a Xilitla?",
@@ -2386,7 +2131,7 @@
     },
     {
       "q": "¿Cómo confirman la disponibilidad?",
-      "a": "Al enviarnos tu consulta por WhatsApp verificamos la disponibilidad del hotel y las fechas en tiempo real. Te respondemos en menos de 1 hora. Se aparta con el 30 % de anticipo."
+      "a": "Al reservar eliges tu fecha en el calendario, que ya enseña la disponibilidad de cada día, y apartas con el 30 % de anticipo (o pagas todo). Si prefieres WhatsApp, te confirmamos el hotel y las fechas en menos de 1 hora."
     }
   ],
   "destinos": [
@@ -2408,7 +2153,7 @@
         "calzado antiderrapante",
         "repelente biodegradable"
       ],
-      "advertencias": "Comprar ticket digital antes. Cerrado martes.",
+      "advertencias": "Reservar tu turno en línea (se paga en taquilla). Cerrado martes.",
       "datosCuriosos": [
         "Fue plantación de orquídeas",
         "Edward James nunca vivió en las estructuras"
@@ -2463,7 +2208,7 @@
       "nombre": "Sótano de las Golondrinas",
       "zona": "Aquismón",
       "tipo": "Extrema",
-      "descripcion": "Abismo kárstico de 376 m de caída libre (hasta 512 m de profundidad). Santuario de vencejos con vuelo espiral al amanecer.",
+      "descripcion": "Abismo kárstico de 376 m de caída libre (hasta 512 m de profundidad). Santuario de vencejos que salen en espiral al amanecer y regresan al atardecer.",
       "precioEntrada": "$100 MXN",
       "dificultad": "media",
       "duracionHrs": 3,
@@ -2694,7 +2439,7 @@
       "nombre": "Balneario Taninul",
       "zona": "Ciudad Valles",
       "tipo": "Naturaleza",
-      "descripcion": "Aguas termales sulfurosas (36°C constante) y lodo terapéutico.",
+      "descripcion": "Aguas termales sulfurosas (38°C constante) y lodo terapéutico.",
       "precioEntrada": "$150 MXN",
       "dificultad": "baja",
       "duracionHrs": 4,
@@ -2710,7 +2455,7 @@
       ],
       "advertencias": "NO llevar joyería de plata (azufre la oscurece).",
       "datosCuriosos": [
-        "Agua mantiene 36°C constante todo el año"
+        "Agua mantiene 38°C constante todo el año"
       ],
       "erroresComunes": [
         "Llevar joyería de plata"
@@ -2734,7 +2479,7 @@
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "08:00–10:00",
       "temporadaIdeal": "Oct–May",
-      "comoLlegar": "105 min desde Valles · Carretera 70 norte → desvío El Naranjo por Carr. 80",
+      "comoLlegar": "105 min desde Valles · Carretera 85 norte → desvío a El Naranjo por la 80",
       "queLlevar": [
         "calzado acuático o tenis que puedan mojarse",
         "bloqueador solar biodegradable (obligatorio)",
@@ -2979,7 +2724,7 @@
     {
       "slug": "nacimiento-huichihuayan",
       "nombre": "Nacimiento de Huichihuayán",
-      "zona": "Xilitla",
+      "zona": "Huehuetlán",
       "tipo": "Naturaleza",
       "descripcion": "Río cristalino que nace de una cueva — tan claro que se ven los peces en el fondo desde la orilla.",
       "precioEntrada": "$30 MXN",
@@ -3089,7 +2834,7 @@
       "zona": "Aquismón",
       "tipo": "Aventura",
       "descripcion": "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
-      "precioEntrada": "$1,850 MXN (tour completo, con traslado y comida)",
+      "precioEntrada": "$1,950 MXN (tour completo, con traslado y comida)",
       "dificultad": "media",
       "duracionHrs": 7,
       "horario": "09:00–18:00",
@@ -3832,20 +3577,12 @@
       {
         "nombre": "Rappel en Tamul",
         "slug": "rappel-tamul"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "sotano-de-las-huahuas": [
       {
         "nombre": "Expedición Tamul",
         "slug": "expedicion-tamul"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "rio-tampaon-rafting": [
@@ -3866,10 +3603,6 @@
       {
         "nombre": "El Edén en el Jardín",
         "slug": "eden-en-el-jardin"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "xilitla-pueblo-magico": [
@@ -3940,46 +3673,24 @@
       {
         "nombre": "Cascadas del Meco",
         "slug": "cascadas-del-meco"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "cascada-el-salto": [
       {
         "nombre": "Cascadas del Meco",
         "slug": "cascadas-del-meco"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "cascadas-minas-viejas": [
       {
         "nombre": "Paraíso Escalonado",
         "slug": "paraiso-escalonado-minas-micos"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "cascadas-de-micos": [
       {
         "nombre": "Paraíso Escalonado",
         "slug": "paraiso-escalonado-minas-micos"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
-      }
-    ],
-    "laguna-media-luna": [
-      {
-        "nombre": "Descubre el Buceo",
-        "slug": "buceo-media-luna"
       }
     ],
     "castillo-de-la-salud": [
@@ -3994,12 +3705,6 @@
       {
         "nombre": "Expedición Tamul",
         "slug": "expedicion-tamul"
-      }
-    ],
-    "rio-tampaon-rafting": [
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "nacimiento-tambaque": [
@@ -4054,10 +3759,6 @@
       {
         "nombre": "Travesía del Café",
         "slug": "travesia-del-cafe"
-      },
-      {
-        "nombre": "Huasteca Instagrameable",
-        "slug": "huasteca-instagrameable"
       }
     ],
     "cascada-los-comales": [
@@ -4226,6 +3927,7 @@
       "Ciudad Valles",
       "Coxcatlán",
       "El Naranjo",
+      "Huehuetlán",
       "Matlapa",
       "Rioverde",
       "San Martín Chalchicuautla",
@@ -4243,7 +3945,7 @@
     ],
     "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
     "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (parada en El Taco Loco, camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de El Taco Loco de los otros tours. El RZR, el rappel y el buceo no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
-    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática, Huasteca Instagrameable. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.); Buceo en la Media Luna (La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta.). Nunca digas 'todos los tours incluyen transporte'.",
+    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "hotelServicios": {
       "nombre": "Hotel Paraíso Encantado",
@@ -4265,7 +3967,7 @@
       "llegadaTemprano": "Si llegan antes del check-in (por ejemplo en el autobús de la mañana), se les da la habitación al llegar si ya está libre; si no, dejan las maletas en recepción (ahí quedan seguras) y esperan la camioneta del tour. Se registran solo con el nombre del titular de la reserva."
     },
     "mejorTemporada": "Se puede venir todo el año. Del 30 de octubre a mayo el agua baja clara; el turquesa más intenso es de marzo a mayo, y es cuando más gente hay. Junio es de transición: llegan las primeras lluvias. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; el rafting depende del nivel del río ese día y, si el río crece, se reprograma sin costo. Del 30 de octubre a diciembre es «la mejor temporada para venir» (aflojan las lluvias, el agua se aclara y todavía no llegan las multitudes de primavera), pero el turquesa más intenso es de marzo a mayo: no lo prometas para esas fechas.",
-    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Huasteca Instagrameable (horario según el día) tiene otro horario. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Buceo en la Media Luna: nos vemos en la entrada de la Laguna de la Media Luna, en Rioverde; llegas por tu cuenta. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:00 PM), Amanecer de Nubes (3:00–4:00 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
     "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni al buceo, que es solo para mayores de 10.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "cancelacionCompleta": [
@@ -4302,7 +4004,7 @@
     {
       "tema": "saldo",
       "titulo": "Cuándo y cómo se paga el resto",
-      "texto": "Tour suelto: el saldo se paga el día del tour, en efectivo al guía o por transferencia (avisándole al guía). Paquete con hotel: el saldo se paga al hacer check-in en la recepción del hotel, en efectivo, con tarjeta o por transferencia. Con tarjeta, el saldo solo se paga en la recepción del hotel o con una liga de pago que manda el equipo: el guía NO cobra con tarjeta. No hay depósito en garantía ni cargos extra al llegar: el precio cotizado es el precio final.",
+      "texto": "Tour suelto: el resto se paga antes de iniciar el primer tour, en efectivo al guía o por transferencia (avisándole al guía). Paquete con hotel: el saldo se paga al hacer check-in en la recepción del hotel, en efectivo, con tarjeta o por transferencia. Con tarjeta, el saldo se paga con una liga de pago (sin comisión) o en la recepción del hotel: el guía no lleva terminal. No hay depósito en garantía ni cargos extra al llegar: el precio cotizado es el precio final.",
       "claves": [
         "saldo",
         "resto",
@@ -4320,7 +4022,7 @@
     {
       "tema": "metodos-de-pago",
       "titulo": "Formas de pago",
-      "texto": "El anticipo se paga por transferencia a la CLABE, con depósito en efectivo en OXXO o con tarjeta (en la página para los tours por persona, o con una liga de pago que manda el equipo). Para TRANSFERIR se usa la CLABE interbancaria; el número de tarjeta es SOLO para depositar en OXXO. Si transfieren al número de la tarjeta, el banco responde «cuenta inexistente». Concepto de la transferencia: el folio de la cotización (COT-…). Al pagar, el cliente manda el comprobante (foto o PDF) a este mismo chat y el equipo lo valida. Los datos bancarios salen de la herramienta de pago con el monto y el folio: nunca los escribas de memoria. Meses sin intereses o cargos por pagar con liga: lo confirma el equipo.",
+      "texto": "El anticipo se paga por transferencia a la CLABE, con depósito en efectivo en OXXO o con tarjeta con la liga de pago de su cotización, sin comisión. Las tres opciones van juntas en un solo mensaje. Si viajan varias personas y cada una quiere pagar su parte, se manda una liga por persona. Para TRANSFERIR se usa la CLABE interbancaria; el número de tarjeta es SOLO para depositar en OXXO. Si transfieren al número de la tarjeta, el banco responde «cuenta inexistente». Concepto de la transferencia: el folio de la cotización (COT-…). Al pagar, el cliente manda el comprobante (foto o PDF) a este mismo chat y el equipo lo valida. Los datos bancarios salen de la herramienta de pago con el monto y el folio: nunca los escribas de memoria. Pagar con la liga no lleva comisión. Meses sin intereses: lo confirma el equipo.",
       "claves": [
         "transferencia",
         "clabe",
@@ -4344,7 +4046,7 @@
     {
       "tema": "extranjeros",
       "titulo": "Clientes del extranjero",
-      "texto": "Contesta en el idioma del cliente y manda los links en su versión /en/ cuando escribe en inglés. Con tarjeta extranjera se paga con tarjeta en línea: en la página del tour o con una liga de pago que manda el equipo. La transferencia solo sirve si el cliente tiene cuenta en un banco mexicano. No aceptamos Revolut ni transferencias internacionales (no hay datos SWIFT). Los precios son en pesos mexicanos (MXN).",
+      "texto": "Contesta en el idioma del cliente y manda los links en su versión /en/ cuando escribe en inglés. Con tarjeta extranjera se paga con la liga de pago de su cotización (Stripe, sin comisión). La transferencia solo sirve si el cliente tiene cuenta en un banco mexicano. No aceptamos Revolut ni transferencias internacionales (no hay datos SWIFT). Los precios son en pesos mexicanos (MXN).",
       "claves": [
         "extranjero",
         "foreign",
@@ -4363,7 +4065,7 @@
     {
       "tema": "vigencia",
       "titulo": "Cuánto dura una cotización",
-      "texto": "Una cotización vale 48 horas: hasta la fecha y hora que trae la propia cotización se respetan su precio y su lugar. Si vence sin pago, se vuelve a cotizar con el precio y la disponibilidad de ese momento. La fecha de vencimiento la da el sistema al crear la cotización: cítala tal cual, no la calcules.",
+      "texto": "Una cotización vale 7 días (si el tour es antes, hasta un día antes del tour): hasta la fecha que trae la propia cotización se respetan su precio y su lugar. Si vence sin pago, se vuelve a cotizar con el precio y la disponibilidad de ese momento. La fecha de vencimiento la da el sistema al crear la cotización: cítala tal cual, no la calcules.",
       "claves": [
         "vigencia",
         "vence",
@@ -4579,7 +4281,7 @@
     {
       "tema": "donde-hospedarse",
       "titulo": "Dónde conviene hospedarse según sus tours",
-      "texto": "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió. En Xilitla o en Ciudad Valles, cualquiera le sirve: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática y Huasteca Instagrameable. Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz. Solo en Ciudad Valles: Rappel en la Cascada de Tamul. Recorrido en RZR por Xilitla: en nuestra base de Xilitla; llega por su cuenta. Buceo en la Media Luna es en la entrada de la Laguna de la Media Luna, en Rioverde: llega por su cuenta. En corto: si alguno de sus tours recoge solo en Xilitla o empieza en nuestra base, le conviene Xilitla; con Rappel en la Cascada de Tamul, Ciudad Valles; si todos recogen en las dos, la que prefiera. En Xilitla está nuestro hotel, el Hotel Paraíso Encantado, a 5 minutos caminando de Las Pozas, con alberca, restaurante y estacionamiento gratis: ofrécelo como opción, no como requisito, y revisa disponibilidad antes de ofrecer un cuarto. Si prefiere otro, consulta «hoteles-alternativos»: también pasamos por él ahí. Un traslado entre Ciudad Valles y Xilitla (cambiar de zona, o ir desde Valles a un tour de solo Xilitla) NO va incluido salvo que una herramienta lo diga: nunca digas «sin costo», «gratis» ni «sin costo extra»; si lo pide, se cotiza con el equipo (escalar_a_humano: traslado_sin_tarifa, avisar). Contesta esto primero y pregúntale qué zona prefiere; en ese mensaje no cotices ni ofrezcas apartar.",
+      "texto": "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió. En Xilitla o en Ciudad Valles, cualquiera le sirve: Rafting en el Río Tampaón, Expedición Tamul, Cascadas del Meco, Paraíso Escalonado y Ruta Acuática. En Xilitla va incluido; desde Ciudad Valles cuesta más: Ruta Surrealista (desde Ciudad Valles, +$400 por reserva, no por persona). Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz. Solo en Ciudad Valles: Rappel en la Cascada de Tamul. Recorrido en RZR por Xilitla: en nuestra base de Xilitla; llega por su cuenta. En corto: si alguno de sus tours recoge solo en Xilitla o empieza en nuestra base, le conviene Xilitla; con Rappel en la Cascada de Tamul, Ciudad Valles; si todos recogen en las dos, la que prefiera. En Xilitla está nuestro hotel, el Hotel Paraíso Encantado, a 5 minutos caminando de Las Pozas, con alberca, restaurante y estacionamiento gratis: ofrécelo como opción, no como requisito, y revisa disponibilidad antes de ofrecer un cuarto. Si prefiere otro, consulta «hoteles-alternativos»: también pasamos por él ahí. Un traslado entre Ciudad Valles y Xilitla (cambiar de zona, o ir desde Valles a un tour de solo Xilitla) NO va incluido salvo que una herramienta lo diga: nunca digas «sin costo», «gratis» ni «sin costo extra»; si lo pide, se cotiza con el equipo (escalar_a_humano: traslado_sin_tarifa, avisar). Contesta esto primero y pregúntale qué zona prefiere; en ese mensaje no cotices ni ofrezcas apartar.",
       "claves": [
         "dónde hospedarnos",
         "dónde hospedarse",
@@ -4804,78 +4506,5 @@
       ]
     }
   ],
-  "xantolo": {
-    "nota": "Fechas fijas y cupo limitado. El cupo que queda lo cuenta el sistema en el link de reserva: manda el link y no prometas lugar.",
-    "noche": {
-      "nombre": "Noche de Xantolo en Xilitla",
-      "pagina": "https://www.huasteca-potosina.com/paquetes/noche-de-xantolo",
-      "precioAdulto": 990,
-      "precioNinoMedio": 693,
-      "precioNinoChico": 495,
-      "ninos": "Niños de 6 a 10 años: $693; menores de 6: $495; los bebés menores de 3 no pagan.",
-      "horario": "de 5:30 a 11:30 PM",
-      "horaRecogida": "5:30 PM",
-      "regreso": "11:30 PM",
-      "recogida": "tu hospedaje en Xilitla",
-      "queVes": "las comparsas y los shows más representativos de esta celebración",
-      "degustacion": "tamales, atole, bocoles y pan de muerto",
-      "incluye": [
-        "Transporte con guía desde tu hospedaje en Xilitla, ida y vuelta",
-        "Guía del pueblo toda la noche",
-        "Degustación de temporada: tamales, atole, bocoles y pan de muerto",
-        "Las comparsas y los shows más representativos de esta celebración, en el centro de Xilitla"
-      ],
-      "noIncluye": [
-        "Hospedaje (si todavía no tienes, pregúntanos por WhatsApp)",
-        "Traslado hasta Xilitla",
-        "Comidas y cenas fuera de la degustación",
-        "Propinas y gastos personales"
-      ],
-      "cancelacion": "Cancelas gratis hasta 48 horas antes de la salida, con reembolso completo.",
-      "fechas": [
-        {
-          "fecha": "2026-10-31",
-          "fechaTexto": "Sábado 31 de octubre de 2026",
-          "cupoTotal": 12,
-          "urlReserva": "https://www.huasteca-potosina.com/reservar-paquete/noche-de-xantolo-31-oct",
-          "aLaVenta": true
-        },
-        {
-          "fecha": "2026-11-01",
-          "fechaTexto": "Domingo 1 de noviembre de 2026",
-          "cupoTotal": 12,
-          "urlReserva": "https://www.huasteca-potosina.com/reservar-paquete/noche-de-xantolo-1-nov",
-          "aLaVenta": true
-        }
-      ]
-    },
-    "paquete": {
-      "slug": "xantolo-2026",
-      "nombre": "Xantolo en Xilitla",
-      "subtitulo": "Las Pozas de día, sabores de temporada y la noche de Xantolo con guía",
-      "fecha": "2026-11-01",
-      "fechaTexto": "Domingo 1 de noviembre de 2026",
-      "precio": 6490,
-      "precioLabel": "por pareja",
-      "cuartos": 4,
-      "personasPorCuarto": "2 a 4",
-      "salidaMaxima": 12,
-      "personaExtra": "Cada persona más paga su parte de hotel y de la Ruta Surrealista, más $990 de la noche con degustación; el total lo calcula la herramienta de precio.",
-      "incluye": [
-        "1 noche en el Hotel Paraíso Encantado de Xilitla, del domingo 1 al lunes 2 de noviembre",
-        "Ruta Surrealista completa: transporte desde el hotel, desayuno, entradas, guía certificado NOM-09 y seguro de viaje",
-        "Degustación de temporada: tamales, atole, bocoles y pan de muerto",
-        "Transporte con guía al centro de Xilitla para ver las comparsas y los shows más representativos del Xantolo"
-      ],
-      "noIncluye": [
-        "Traslado hasta Xilitla (si lo necesitas, lo cotizamos aparte)",
-        "Noches antes o después del 1 de noviembre: no hay habitaciones",
-        "Comidas y cenas fuera de la degustación",
-        "Propinas y gastos personales"
-      ],
-      "pagina": "https://www.huasteca-potosina.com/paquetes/xantolo-2026",
-      "urlReserva": "https://www.huasteca-potosina.com/reservar-paquete/xantolo-2026",
-      "aLaVenta": true
-    }
-  }
+  "xantolo": null
 }

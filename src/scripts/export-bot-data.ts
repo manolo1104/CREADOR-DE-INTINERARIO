@@ -470,7 +470,33 @@ const empresa = {
   // cifras reales; así no se vuelve a desfasar del sitio.
   rating: GOOGLE_RATING,
   resenas: GOOGLE_RESENAS,
+  // Mensaje de confianza («Estructura de oro», 16 nov 2026): lo manda Tének
+  // cuando piden redes o reseñas, o dudan antes de pagar. `instagram` y
+  // `marcas` los da Manolo; vacíos = el bot no los menciona.
+  confianza: {
+    resenasGoogle: "https://maps.app.goo.gl/SWGyihBFTiykTFFM6",
+    dejarResena: "https://g.page/r/CZg8hdQa_GI9EBM/review",
+    facebook: "https://www.facebook.com/huastecatours",
+    instagram: "",
+    marcas: "",
+  },
 };
+
+/** Primera foto JPG/PNG del tour (tarjeta, portada, collage, galería), con URL completa. */
+function fotoParaWhatsapp(t: (typeof TOURS_DB)[number]): string | null {
+  const src = (x: unknown): string | undefined =>
+    typeof x === "string" ? x : (x as { src?: string } | null)?.src;
+  const candidatas = [
+    t.imagenTarjeta,
+    t.imagen_hero,
+    ...((t.collage ?? []) as unknown[]).map(src),
+    ...((t.imagenes ?? []) as unknown[]).map(src),
+    ...((t.gallery ?? []) as unknown[]).map(src),
+  ].filter((x): x is string => Boolean(x));
+  const jpg = candidatas.find((x) => /\.(jpe?g|png)$/i.test(x));
+  if (!jpg) return null;
+  return jpg.startsWith("http") ? jpg : `${empresa.sitio}${jpg}`;
+}
 
 const tours = TOURS_DB.map((t) => ({
   id: t.id,
@@ -510,6 +536,9 @@ const tours = TOURS_DB.map((t) => ({
     return t.precioUnidad === "vehiculo" ? sinCruceDeRios(texto) : texto;
   })(),
   url: `${empresa.sitio}/tours/${t.slug}`,
+  // Foto que Tének manda con la propuesta. JPG o PNG a propósito: WhatsApp
+  // trata algunos .webp como sticker.
+  foto: fotoParaWhatsapp(t),
   destinos: t.destinos,
   // Solo lo propio: `incluyeSiempre` va aparte y el bot las dice en dos
   // frases. Con la lista cruda repetía "seguro de viaje" en las dos.

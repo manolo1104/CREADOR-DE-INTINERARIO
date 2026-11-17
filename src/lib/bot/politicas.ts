@@ -5,7 +5,7 @@
  *
  * De dónde sale: de 26 chats reales que terminaron en reserva (jul–sep 2026),
  * resumidos en hechos cortos, más las decisiones de Manolo del 29 sep al 6 oct
- * (anticipo 30 %, vigencia 48 h, check-in 3 pm / check-out 12 pm, rafting con
+ * (anticipo 30 %, vigencia 7 días, check-in 3 pm / check-out 12 pm, rafting con
  * comida, rappel con traslado desde Ciudad Valles, RZR a la hora que elija el
  * cliente). `src/scripts/export-bot-data.ts` lo copia a `whatsapp-bot/data.json`
  * y el bot lo consulta con su herramienta `consultar_politica({tema})`.
@@ -163,9 +163,9 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "saldo",
     titulo: "Cuándo y cómo se paga el resto",
     texto:
-      "Tour suelto: el saldo se paga el día del tour, en efectivo al guía o por transferencia (avisándole al guía). " +
+      "Tour suelto: el resto se paga antes de iniciar el primer tour, en efectivo al guía o por transferencia (avisándole al guía). " +
       "Paquete con hotel: el saldo se paga al hacer check-in en la recepción del hotel, en efectivo, con tarjeta o por transferencia. " +
-      "Con tarjeta, el saldo solo se paga en la recepción del hotel o con una liga de pago que manda el equipo: el guía NO cobra con tarjeta. " +
+      "Con tarjeta, el saldo se paga con una liga de pago (sin comisión) o en la recepción del hotel: el guía no lleva terminal. " +
       "No hay depósito en garantía ni cargos extra al llegar: el precio cotizado es el precio final.",
     claves: ["saldo", "resto", "restante", "liquidar", "pagar allá", "al llegar", "check-in", "efectivo", "guía cobra", "balance", "pay the rest"],
   },
@@ -173,12 +173,13 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "metodos-de-pago",
     titulo: "Formas de pago",
     texto:
-      "El anticipo se paga por transferencia a la CLABE, con depósito en efectivo en OXXO o con tarjeta (en la página para los tours por persona, o con una liga de pago que manda el equipo). " +
+      "El anticipo se paga por transferencia a la CLABE, con depósito en efectivo en OXXO o con tarjeta con la liga de pago de su cotización, sin comisión. Las tres opciones van juntas en un solo mensaje. " +
+      "Si viajan varias personas y cada una quiere pagar su parte, se manda una liga por persona. " +
       "Para TRANSFERIR se usa la CLABE interbancaria; el número de tarjeta es SOLO para depositar en OXXO. Si transfieren al número de la tarjeta, el banco responde «cuenta inexistente». " +
       "Concepto de la transferencia: el folio de la cotización (COT-…). " +
       "Al pagar, el cliente manda el comprobante (foto o PDF) a este mismo chat y el equipo lo valida. " +
       "Los datos bancarios salen de la herramienta de pago con el monto y el folio: nunca los escribas de memoria. " +
-      "Meses sin intereses o cargos por pagar con liga: lo confirma el equipo.",
+      "Pagar con la liga no lleva comisión. Meses sin intereses: lo confirma el equipo.",
     claves: ["transferencia", "clabe", "oxxo", "depósito", "tarjeta", "cuenta", "datos bancarios", "concepto", "comprobante", "cuenta inexistente", "liga", "link de pago", "meses sin intereses", "msi", "spei", "card", "bank transfer"],
   },
   {
@@ -186,7 +187,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Clientes del extranjero",
     texto:
       "Contesta en el idioma del cliente y manda los links en su versión /en/ cuando escribe en inglés. " +
-      "Con tarjeta extranjera se paga con tarjeta en línea: en la página del tour o con una liga de pago que manda el equipo. " +
+      "Con tarjeta extranjera se paga con la liga de pago de su cotización (Stripe, sin comisión). " +
       "La transferencia solo sirve si el cliente tiene cuenta en un banco mexicano. " +
       "No aceptamos Revolut ni transferencias internacionales (no hay datos SWIFT). " +
       "Los precios son en pesos mexicanos (MXN).",
@@ -196,7 +197,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "vigencia",
     titulo: "Cuánto dura una cotización",
     texto:
-      "Una cotización vale 48 horas: hasta la fecha y hora que trae la propia cotización se respetan su precio y su lugar. " +
+      "Una cotización vale 7 días (si el tour es antes, hasta un día antes del tour): hasta la fecha que trae la propia cotización se respetan su precio y su lugar. " +
       "Si vence sin pago, se vuelve a cotizar con el precio y la disponibilidad de ese momento. " +
       "La fecha de vencimiento la da el sistema al crear la cotización: cítala tal cual, no la calcules.",
     claves: ["vigencia", "vence", "hasta cuándo", "cuánto dura la cotización", "respetan el precio", "expira", "valid", "expire"],
