@@ -429,7 +429,7 @@ const ES: EmailMessages = {
     descuentoAplicado: "Descuento aplicado",
     anticipoApartar: (pct) => `Anticipo para apartar (${pct} %)`,
     saldoDia: "Saldo el día del primer recorrido",
-    anticipoNota: "Con el anticipo queda apartado tu lugar. El resto se paga el día del primer recorrido en efectivo, transferencia o tarjeta.",
+    anticipoNota: "Con el anticipo queda apartado tu lugar. El resto se paga antes de iniciar el primer recorrido, en efectivo, transferencia o con liga de pago (tarjeta, sin comisión).",
     vigenteHasta: (f) => `Esta cotización vale hasta el ${f}.`,
   },
 
@@ -654,7 +654,7 @@ const EN: EmailMessages = {
     descuentoAplicado: "Discount applied",
     anticipoApartar: (pct) => `Deposit to hold your spot (${pct}%)`,
     saldoDia: "Balance on the day of the first tour",
-    anticipoNota: "The deposit holds your spot. The balance is paid on the day of the first tour in cash, by transfer or by card.",
+    anticipoNota: "The deposit holds your spot. The balance is paid before the first tour starts, in cash, by bank transfer or with a payment link (card, no fee).",
     vigenteHasta: (f) => `This quote is valid until ${f}.`,
   },
 
