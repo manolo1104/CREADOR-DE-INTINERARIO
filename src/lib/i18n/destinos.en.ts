@@ -77,7 +77,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     // (ver `POZAS_ACCESO`). Sin «cash» a propósito: `faqPrecioDestino`
     // (jsonld.ts) lo lee como «cash only», y la taquilla acepta tarjeta.
     advertencias: "Reserve your time slot online (you pay at the ticket booth). Closed Tuesdays.",
-    como_llegar: "1h 45min from Ciudad Valles · Taxi $1,200 MXN · Bus $110 MXN",
+    como_llegar: "1h 30min from Ciudad Valles · Taxi $1,200 MXN · Bus $110 MXN",
     que_llevar: ["non-slip footwear", "biodegradable insect repellent"],
     datos_curiosos: ["It was once an orchid plantation", "Edward James never lived in the structures"],
     errores_comunes: ["Arriving without a reservation", "Smooth-soled shoes"],
@@ -101,7 +101,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
         ],
       // Fase 3 SEO (10 nov 2026): mismo papel que en español, tarjeta práctica.
       metaTitle: "Las Pozas, Xilitla: Location, Getting There & Tours 2026",
-      metaDescription: "Las Pozas, Edward James's surrealist garden in Xilitla: getting there from Ciudad Valles (1 h 45 min), the best time to go in, what to bring and tours.",
+      metaDescription: "Las Pozas, Edward James's surrealist garden in Xilitla: getting there from Ciudad Valles (1 h 30 min), the best time to go in, what to bring and tours.",
       keywords: ["las pozas xilitla", "edward james surrealist garden", "las pozas tickets", "xilitla mexico", "surrealist garden san luis potosi"],
     },
   },
@@ -779,7 +779,7 @@ export const DESTINOS_EN: Record<string, DestinoTranslation> = {
     mejor_hora: "Morning",
     temporada_ideal: "Nov–May",
     advertencias: "It's usually visited the same day as Las Pozas (~50 m from its entrance). Trails are slippery in the rain. The temazcal requires a reservation. Price and hours aren't officially published: confirm by phone.",
-    como_llegar: "~1h 45min from Ciudad Valles via Hwy 120 to Xilitla; the waterfall is right by the Las Pozas entrance",
+    como_llegar: "~1h 30min from Ciudad Valles via Hwy 120 to Xilitla; the waterfall is right by the Las Pozas entrance",
     que_llevar: ["swimsuit", "non-slip footwear", "biodegradable repellent", "cash"],
     datos_curiosos: ["It's about 50 m from the Las Pozas entrance: many visit both the same day.", "Its medicinal temazcal takes small groups (limited capacity)."],
     errores_comunes: ["Going on a Tuesday (Las Pozas area closures)", "Not bringing cash"],

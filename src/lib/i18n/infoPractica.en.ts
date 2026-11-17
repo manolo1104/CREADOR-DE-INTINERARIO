@@ -51,7 +51,9 @@ const A_PIE_EN = `${HOTEL_PROPIO.metrosALasPozas} m (a ${HOTEL_PROPIO.minutosCam
  *   · decía que se paga el total al reservar → el carrito cobra 30 %
  *     (`ANTICIPO_PCT` en `lib/carrito.ts`);
  *   · decía "menores de 4 gratis, de 4 a 12 al 60 %" → `calcTourTotal`
- *     (`lib/tourBooking.ts`) cobra 70 % de 6 a 10 años y 50 % a los menores de 6.
+ *     (`lib/tourBooking.ts`) cobraba 70 % de 6 a 10 años y 50 % a los menores de 6.
+ *     Desde el 17 nov 2026 la regla es otra (`lib/ninos.ts`): 3 años o menos
+ *     gratis (ocupan lugar), 4 a 7 el 50 %, 8 en adelante adulto.
  */
 
 /**
@@ -699,7 +701,7 @@ const ES: InfoPracticaContent = {
       items: [
         "INE o pasaporte vigente",
         "Efectivo en pesos mexicanos (ver sección Presupuesto)",
-        "Seguro de viaje recomendado para actividades extremas",
+        "Seguro de viajero: incluido en rafting, rappel y RZR; en los demás tours es opcional ($80 por persona, al reservar)",
         "Reservaciones descargadas en el celular (sin internet en cascadas)",
         "Número de emergencias guardado: ver sección Seguridad",
       ],
@@ -800,7 +802,7 @@ const ES: InfoPracticaContent = {
           q: "¿Pueden participar niños?",
           // "En los que se cobran por persona": el Edén se cobra por grupo
           // completo y el RZR por vehículo; ahí no hay tramos de menor.
-          a: "Sí. En los recorridos que se cobran por persona, los menores de 6 años pagan el 50 % del precio de adulto y los de 6 a 10 años el 70 %. A partir de 11 años pagan tarifa completa. Algunos recorridos son solo para mayores: la ficha de cada tour lo indica.",
+          a: "Sí. En los recorridos que se cobran por persona, los niños de 4 a 7 años pagan el 50 % del precio de adulto; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan tarifa completa. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Algunos recorridos son a partir de 8 años: la ficha de cada tour lo indica.",
         },
         {
           q: "¿Pueden participar personas mayores?",
@@ -856,7 +858,7 @@ const ES: InfoPracticaContent = {
           q: "¿A qué hora es la salida?",
           // El "regreso entre 6:00 y 7:00 PM" era falso incluso de día: Tamul
           // dura 12 h. Cada ficha calcula su regreso con su propia duración.
-          a: `En la mayoría de los recorridos pasamos por ti ${HORA_COMUN_ES}. Algunos tienen horario propio: la Gruta de Xilo es de noche y el Amanecer de Nubes sale de madrugada. La ficha de cada recorrido indica su hora de salida y su regreso aproximado, y te confirmamos la hora exacta al reservar.`,
+          a: `En la mayoría de los recorridos pasamos por ti ${HORA_COMUN_ES}. Algunos tienen horario propio: la Gruta de Xilo es de noche y el Amanecer de Nubes sale de madrugada. La ficha de cada recorrido indica su hora de salida y su regreso aproximado, y la noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de recogida.`,
         },
         {
           q: "¿Qué debo llevar?",
@@ -1328,7 +1330,7 @@ const EN: InfoPracticaContent = {
       items: [
         "Valid ID or passport",
         "Cash in Mexican pesos (see the Budget section)",
-        "Travel insurance recommended for extreme activities",
+        "Traveler insurance: included on rafting, rappel and RZR; optional on the other tours (MXN $80 per person, when you book)",
         "Bookings downloaded on your phone (no internet at the waterfalls)",
         "Emergency numbers saved: see the Safety section",
       ],
@@ -1422,7 +1424,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "Can children take part?",
-          a: "Yes. On tours priced per person, children under 6 pay 50 % of the adult price and those aged 6 to 10 pay 70 %. From 11 upwards it's the full rate. Some tours are adults only: each tour page says so.",
+          a: "Yes. On tours priced per person, kids 4–7 pay 50 % of the adult price; ages 3 and under ride free (they still take a seat); 8 and up pay the full rate. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group. Some tours are for ages 8 and up: each tour page says so.",
         },
         {
           q: "Can older people take part?",
@@ -1464,7 +1466,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "What time do they leave?",
-          a: `On most tours we pick you up ${HORA_COMUN_EN}. Some run on their own schedule: the Xilo Cave is at night and the Sea of Clouds Sunrise leaves in the small hours. Each tour page shows its departure time and approximate return, and we confirm the exact time when you book.`,
+          a: `On most tours we pick you up ${HORA_COMUN_EN}. Some run on their own schedule: the Xilo Cave is at night and the Sea of Clouds Sunrise leaves in the small hours. Each tour page shows its departure time and approximate return, and the night before, between 8 and 9 PM, your guide messages you on WhatsApp with the exact pickup time.`,
         },
         {
           q: "What should I bring?",

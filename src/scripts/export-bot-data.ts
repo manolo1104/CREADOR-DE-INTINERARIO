@@ -112,7 +112,7 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   // no es un alimento del paquete sino parte del recorrido.
   "travesia-del-cafe": { desayuno: false, comida: false, detalle: "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido." },
   "gruta-de-xilo": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Es un recorrido de noche de unas 3 horas." },
-  "amanecer-de-nubes": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Se sale de madrugada: conviene que el cliente lleve algo para desayunar en la cima." },
+  "amanecer-de-nubes": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Al terminar, gente de la comunidad ofrece comida (costo aparte) y en La Trinidad hay un restaurante; si quiere algo en la cima, que lleve un snack." },
   "olla-de-la-luz": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Conviene que el cliente lleve agua y algo de comer para la caminata." },
   "huasteca-instagrameable": { desayuno: false, comida: false, detalle: "NO incluye alimentos. Hay una parada para comer durante el día y el cliente paga en el lugar." },
 };
@@ -197,7 +197,7 @@ function horarioTour(t: (typeof TOURS_DB)[number]): string {
   // (el rappel): esa ventana es la de RECOGIDA, y el itinerario pone la
   // llegada al embarcadero a las 10 AM.
   if (recogidaDeTour(t).tipo === "en-sitio" || sinTrasladoNoMarcado(t)) {
-    return `Dura ~${t.duracion_hrs} h. La hora de encuentro se confirma al reservar.`;
+    return `Dura ~${t.duracion_hrs} h. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.`;
   }
   const regreso = regresoDeTour(t, false);
   // El rappel recoge solo en Ciudad Valles: la hora es la de allá.
@@ -211,9 +211,9 @@ function horarioTour(t: (typeof TOURS_DB)[number]): string {
     const rango = Number.isInteger(a)
       ? `entre ${a} y ${b} horas`
       : `entre ${enHoras(a)} y ${b} horas`;
-    return `Sale ${salida} y dura ${rango}; regresa aprox. ${regreso}. Los horarios exactos se confirman al reservar.`;
+    return `Sale ${salida} y dura ${rango}; regresa aprox. ${regreso}. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.`;
   }
-  return `Sale ${salida} y termina aprox. ${regreso} (~${t.duracion_hrs} h). Los horarios exactos se confirman al reservar.`;
+  return `Sale ${salida} y termina aprox. ${regreso} (~${t.duracion_hrs} h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.`;
 }
 
 /**
@@ -342,7 +342,7 @@ function edadesMinimasTexto(): string {
  */
 function salidaDeTour(t: (typeof TOURS_DB)[number]): string {
   if (sinTrasladoNoMarcado(t)) {
-    return `${TRANSPORTE[t.slug].detalle} La hora de encuentro se confirma al reservar.`;
+    return `${TRANSPORTE[t.slug].detalle} La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.`;
   }
   // RZR: la hora la elige el cliente. `fraseRecogida` diría "entre 9:00 AM y
   // 5:00 PM", que se lee como una ventana en la que lo esperamos.
@@ -457,7 +457,7 @@ const empresa = {
   salida: [
     "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual).",
     excepcionesSalida("es"),
-    ...TOURS_DB.filter(sinTrasladoNoMarcado).map((t) => `${t.nombreCorto}: ${TRANSPORTE[t.slug].detalle} La hora de encuentro se confirma al reservar.`),
+    ...TOURS_DB.filter(sinTrasladoNoMarcado).map((t) => `${t.nombreCorto}: ${TRANSPORTE[t.slug].detalle} La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.`),
     // El catálogo cuenta al rappel entre "la mayoría" (Xilitla o Valles); su
     // traslado es solo desde Ciudad Valles.
     ...TOURS_DB.filter((t) => ciudadUnica(t)).map((t) => `Excepción: ${t.nombreCorto} recoge solo en ${ciudadUnica(t)}; desde otra zona, el punto de encuentro lo confirma el equipo.`),

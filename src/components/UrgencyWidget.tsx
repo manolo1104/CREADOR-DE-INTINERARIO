@@ -9,7 +9,8 @@ import { GOOGLE_RATING } from "@/lib/resenas";
 // bundle del cliente).
 // 🔴 28 sep 2026: el cuarto decía «Transporte, desayuno y guía incluidos», y
 // solo 5 de los 14 recorridos llevan desayuno (el RZR y el buceo, ni traslado).
-// Queda lo que sí trae TODO recorrido: guía NOM-09 y seguro de viaje.
+// Queda lo que sí trae TODO recorrido: guía NOM-09. (El seguro de viaje
+// salió el 17 nov 2026: solo lo incluyen rafting, rappel y RZR.)
 // 🔴 La cancelación gratis NO es de todo recorrido: el Edén no reembolsa. Los
 // nombres llegan por prop (`sinReembolso`, calculado del catálogo en el
 // servidor) para no meter TOURS_DB al bundle del cliente.
@@ -22,13 +23,13 @@ function facts(en: boolean, sinReembolso: string[]): string[] {
         "Departures every day of the year",
         `Free cancellation up to 48h before${salvo}`,
         `+10,000 travelers · ${GOOGLE_RATING}★ on Google`,
-        "NOM-09 guide & travel insurance included",
+        "NOM-09 SECTUR certified guides",
       ]
     : [
         "Salidas todos los días del año",
         `Cancelación gratuita hasta 48h antes${salvo}`,
         `+10,000 viajeros · ${GOOGLE_RATING}★ en Google`,
-        "Guía NOM-09 y seguro de viaje incluidos",
+        "Guías certificados NOM-09 SECTUR",
       ];
 }
 

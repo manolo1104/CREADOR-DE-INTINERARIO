@@ -420,8 +420,8 @@ export const ERRATAS_GRUPO_B: ErratasPorArticulo = {
     },
     {
       from: "<strong>Sal antes de las 6:00 h:</strong> El fenómeno lumínico de la <strong>olla de la luz</strong> alcanza su máxima expresión entre las <strong>7:00 y las 9:30 h</strong>.",
-      to: "<strong>Sal temprano:</strong> El fenómeno lumínico de la <strong>olla de la luz</strong> alcanza su máxima expresión hacia el mediodía, y la caminata desde La Trinidad es de unas <strong>2 horas</strong>.",
-      porque: "La luz llega al fondo del sótano con el sol alto, no de 7:00 a 9:30; `tours.ts` (olla-de-la-luz): caminata de unas 2 horas y llegada al borde a las 11:45.",
+      to: "<strong>Sal temprano:</strong> El fenómeno lumínico de la <strong>olla de la luz</strong> alcanza su máxima expresión hacia el mediodía, y la caminata desde La Trinidad es de <strong>2 h 30 a 3 horas</strong>.",
+      porque: "La luz llega al fondo del sótano con el sol alto, no de 7:00 a 9:30; `tours.ts` (olla-de-la-luz): caminata de 2 h 30 a 3 horas (Erick, 17 nov 2026) y llegada al borde hacia el mediodía.",
     },
     {
       from: "Cubre el cobro comunitario (<strong>$80 MXN</strong>)",
@@ -445,8 +445,8 @@ export const ERRATAS_GRUPO_B: ErratasPorArticulo = {
     },
     {
       from: "<strong>$1,700 MXN</strong> · <strong>~5 h</strong></td>",
-      to: "<strong>$1,700 MXN</strong> · <strong>~7–8 h</strong></td>",
-      porque: "`tours.ts` (amanecer-de-nubes): dura de 7 a 8 horas.",
+      to: "<strong>$1,700 MXN</strong> · <strong>~8–9 h</strong></td>",
+      porque: "`tours.ts` (amanecer-de-nubes): dura de 8 a 9 horas (Erick, 17 nov 2026: recogida 4:00–4:30 AM, regreso 12:00–1:00 PM).",
     },
     {
       from: "<tr><td>Acceso independiente (vehículo propio)</td><td><strong>$80 MXN</strong> cobro comunitario · <strong>~35-50 min</strong> desde Xilitla</td><td>Requiere 4×4 en temporada de lluvias; sin guía ni seguro incluido</td></tr>",
@@ -470,8 +470,8 @@ export const ERRATAS_GRUPO_B: ErratasPorArticulo = {
     },
     {
       from: "Llegar antes de las <strong>7:00 h</strong> es clave en cualquier época.",
-      to: "Salir temprano es clave en cualquier época: la caminata desde La Trinidad es de unas <strong>2 horas</strong>.",
-      porque: "La luz entra al fondo con el sol alto, no al amanecer; lo que obliga a madrugar es la caminata de unas 2 horas (`tours.ts`, olla-de-la-luz).",
+      to: "Salir temprano es clave en cualquier época: la caminata desde La Trinidad es de <strong>2 h 30 a 3 horas</strong>.",
+      porque: "La luz entra al fondo con el sol alto, no al amanecer; lo que obliga a madrugar es la caminata de 2 h 30 a 3 horas (`tours.ts`, olla-de-la-luz).",
     },
     {
       from: "limitados a un máximo de <strong>8 personas</strong>",
@@ -545,7 +545,7 @@ export const ERRATAS_GRUPO_B: ErratasPorArticulo = {
     {
       from: "el mirador del Cerro del Pilón, a 1,950 m sobre el nivel del mar.</figcaption>",
       to: "el mirador del Cerro del Pilón, por encima del bosque de La Trinidad.</figcaption>",
-      porque: "Los ~1,950 m son la altitud de La Trinidad (`destinos.ts`); la cima del Cerro del Pilón queda bastante más arriba (el Amanecer de Nubes sube casi 2 horas desde ahí, `tours.ts`), así que la cifra no era del mirador.",
+      porque: "Los ~1,950 m son la altitud de La Trinidad (`destinos.ts`); la cima del Cerro del Pilón queda bastante más arriba (el Amanecer de Nubes sube de 40 min a 1 h, 4–5 km, desde ahí, `tours.ts`), así que la cifra no era del mirador.",
     },
     {
       from: "entrada solo visita <strong>$50 MXN adultos / $25 MXN menores</strong>; cabaña con hospedaje <strong>$500 MXN por persona</strong>;",
@@ -559,8 +559,8 @@ export const ERRATAS_GRUPO_B: ErratasPorArticulo = {
     },
     {
       from: "sale desde Xilitla a las <strong>5:00 h</strong> y regresa antes del mediodía.",
-      to: "sale desde Xilitla entre las <strong>3:00 y las 4:00 h</strong> y regresa antes del mediodía.",
-      porque: "`tours.ts` (amanecer-de-nubes): la recogida es de 3:00 a 4:00 AM y el regreso de 10:00 a 11:00 AM.",
+      to: "sale desde Xilitla entre las <strong>4:00 y las 4:30 h</strong> y regresa entre las 12:00 y la 1:00 de la tarde.",
+      porque: "`tours.ts` (amanecer-de-nubes): la recogida es de 4:00 a 4:30 AM y el regreso de 12:00 a 1:00 PM (Erick, 17 nov 2026).",
     },
     {
       from: "Según guías locales de la región, <strong>aproximadamente el 30% de los visitantes que suben solos tienen algún contratiempo</strong> relacionado con el acceso —llanta ponchada, vehículo atascado o equivocación de ruta— en 2025.",

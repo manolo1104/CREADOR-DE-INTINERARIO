@@ -46,6 +46,9 @@ export interface TourRequisitos {
 export const NO_INCLUYE_BASE = [
   "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
   "Comidas y cenas fuera del desayuno",
+  // 17 nov 2026 (Manolo): el seguro solo va incluido en rafting, rappel y RZR,
+  // y los tres reemplazan esta base. En los demás es opcional.
+  "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
   "Propinas (opcionales, siempre agradecidas)",
   "Souvenirs y gastos personales",
 ];
@@ -134,15 +137,16 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
   "tour-tamul": {
     requisitos: [
       "No necesitas saber nadar: se usa chaleco salvavidas durante toda la travesía",
-      "La salida es entre las 8:00 y las 9:00 AM; confirmamos tu hora exacta de recogida al reservar",
-      "Si te mareas en lancha, toma tu medicamento antes: el trayecto en canoa es largo",
+      "Pasamos por ti hacia las 8:00 AM; la noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta",
+      "Si te mareas en lancha, toma tu medicamento antes: son cerca de una hora de remo hasta la cascada",
+      "En Tamul, antes de subir a la canoa, cada persona firma una carta responsiva",
     ],
   },
 
   "tour-edward-james": {
     requisitos: [
       "El terreno de Las Pozas es irregular, con escaleras y superficies húmedas",
-      "Se pasa alrededor de 2 h en Las Pozas y 1 h en Huichihuayán",
+      "Se pasa cerca de 1 h 30 en Las Pozas (visita guiada) y 1 h en Huichihuayán",
     ],
     edadNota: "Sin restricción de edad. Para menores de 5 años recomendamos cuidado extra por lo irregular del terreno.",
   },
@@ -204,6 +208,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Cómo llegar a Xilitla (la recogida es en tu hospedaje dentro de Xilitla)",
       "Alimentos: este recorrido no lleva desayuno ni comida incluidos",
       "El café que te lleves de la finca",
+      "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
       "Propinas y gastos personales",
     ],
     reemplazaBase: true,
@@ -230,6 +235,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Propinas (opcionales, siempre agradecidas)",
       "Souvenirs y gastos personales",
       "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte",
+      "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
     ],
     reemplazaBase: true,
     queLlevar: [
@@ -265,6 +271,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Alimentos y bebidas: es un recorrido de noche y no lleva cena",
       "Traslado desde Ciudad Valles: tiene costo adicional (te lo cotizamos por WhatsApp)",
       "Ropa de cambio y calzado que se pueda mojar",
+      "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
       "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
       "Propinas (opcionales, siempre agradecidas)",
       "Souvenirs y gastos personales",
@@ -279,6 +286,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     ],
     requisitos: [
       "Es un recorrido NOCTURNO: la caminata de acceso son 15 a 20 minutos por la selva, ya oscureciendo",
+      "Hay salida a las 8:00 PM (pasamos por ti hacia las 7:40) y a las 9:00 PM (hacia las 8:40). Son unas 3 horas: en la de las 8 vuelves entre las 10:30 y las 11:00 PM",
       "Dentro se recorren unos 900 metros; hay tramos donde se camina de pie y tramos donde hay que agacharse",
       "Casco y lámpara frontal van incluidos y son de uso obligatorio: te los entregamos al inicio, cuando pasamos por ti",
       "Si sufres de claustrofobia, este no es tu recorrido",
@@ -291,8 +299,9 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
   "tour-amanecer-nubes": {
     reemplazaBase: true,
     noIncluye: [
-      "Desayuno: se sale de madrugada, conviene que lleves algo para la cima",
+      "Desayuno: al bajar, gente de la comunidad ofrece comida con costo aparte, y en La Trinidad hay un restaurante",
       "Chamarra y calzado de montaña",
+      "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
       "Traslado desde Ciudad Valles: tiene costo adicional (te lo cotizamos por WhatsApp)",
       "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
       "Propinas (opcionales, siempre agradecidas)",
@@ -302,19 +311,19 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Calzado de montaña con buen agarre: se sube de noche y por sendero",
       "Chamarra que corte el viento — arriba hace frío de verdad aunque en Xilitla haga calor",
       "Lámpara frontal (llevamos de repuesto, pero la tuya se agradece)",
-      "Agua y algo de comer para desayunar en la cima",
-      "Efectivo para gastos personales",
+      "Agua y algo ligero para la subida (el desayuno se resuelve al bajar, en La Trinidad)",
+      "Efectivo para la comida en La Trinidad y gastos personales",
       "INE o pasaporte vigente",
     ],
     requisitos: [
-      "Se sale DE MADRUGADA para llegar a la cima antes del amanecer",
-      "Son varias horas de caminata en subida constante, buena parte de ellas a oscuras",
+      "Se sale DE MADRUGADA: pasamos por ti entre las 4:00 y las 4:30 AM para llegar a la cima antes del amanecer, y vuelves entre las 12:00 y la 1:00 PM",
+      "La caminata es de 40 minutos a 1 hora, unos 4 a 5 km en subida constante, casi toda a oscuras",
       "No hace falta experiencia de montaña, pero sí condición para caminar en pendiente",
       "El mar de nubes depende del clima: es frecuente, pero nadie lo puede garantizar",
       "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp",
     ],
     edadMinima: 8,
-    edadNota: "Es una caminata larga en pendiente y de madrugada: cuéntanos las edades al reservar y te decimos si conviene.",
+    edadNota: "Es una caminata en pendiente, de madrugada y a oscuras: cuéntanos las edades al reservar y te decimos si conviene.",
   },
 
   "tour-olla-de-la-luz": {
@@ -322,13 +331,14 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     noIncluye: [
       "Alimentos: conviene llevar agua y algo de comer para la caminata",
       "Calzado de senderismo y chamarra o impermeable",
+      "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
       "Traslado desde Ciudad Valles: tiene costo adicional (te lo cotizamos por WhatsApp)",
       "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
       "Propinas (opcionales, siempre agradecidas)",
       "Souvenirs y gastos personales",
     ],
     queLlevar: [
-      "Calzado de senderismo: son unas 2 horas de camino entre bosque, llanos y miradores",
+      "Calzado de senderismo: son de 2 h 30 a 3 horas de camino, unos 9 a 10 km, entre bosque, llanos y miradores",
       "Chamarra o impermeable — el bosque de niebla es fresco y húmedo todo el año",
       "Agua y algo de comer",
       "Cámara: los miradores del camino son la mitad del recorrido",
@@ -342,7 +352,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Te recogemos en tu hospedaje en Xilitla; desde Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp",
     ],
     edadMinima: 8,
-    edadNota: "Son unas 2 horas de caminata en altura y el sótano tiene bordes expuestos: cuéntanos las edades al reservar.",
+    edadNota: "Son de 2 h 30 a 3 horas de caminata en altura y el sótano tiene bordes expuestos: cuéntanos las edades al reservar.",
   },
 
   // Huasteca Instagrameable. La lista base de agua no sirve tal cual: el día incluye un

@@ -224,7 +224,7 @@ function buildGuiaHtml(): string {
       <div class="ficha-item"><div class="ficha-label">Duración recomendada</div><div class="ficha-val">4 horas</div></div>
       <div class="ficha-item"><div class="ficha-label">Mejor época</div><div class="ficha-val">Noviembre–Marzo</div></div>
       <div class="ficha-item"><div class="ficha-label">Dificultad</div><div class="ficha-val">Media (muchos escalones)</div></div>
-      <div class="ficha-item"><div class="ficha-label">Desde Valles</div><div class="ficha-val">1h 45min en coche</div></div>
+      <div class="ficha-item"><div class="ficha-label">Desde Valles</div><div class="ficha-val">1h 30min en coche</div></div>
     </div>
     <div class="advertencia">⚠️ Reserva tu turno en línea antes de ir: no cuesta, y la entrada ($180 MXN por adulto, más $30 MXN de guía obligatoria) se paga en la taquilla del jardín el día de la visita, en efectivo o con tarjeta. En temporada alta los turnos se agotan. Llega 10 minutos antes: si llegas tarde, pierdes el turno. Cerrado todos los martes.</div>
     <div class="consejo">💡 Llega en la apertura (09:00). A las 11:00 ya hay grupos y la magia de tener el jardín casi solo desaparece. La luz matinal entre la selva es impresionante para fotografía.</div>
@@ -413,7 +413,7 @@ function buildGuiaHtml(): string {
   </div>
   <div class="itinerario-dia">
     <div class="dia-header">Día 4 — Xilitla (Las Pozas)</div>
-    <p><strong>07:00</strong> Sale de Valles hacia Xilitla (1h 45min).<br/>
+    <p><strong>07:00</strong> Sale de Valles hacia Xilitla (1h 30min).<br/>
     <strong>09:00–13:00</strong> Las Pozas. Llega en apertura para tener el jardín casi solo las primeras 2 horas.<br/>
     <strong>13:00</strong> Almuerzo en el pueblo de Xilitla (probar el café de altura local y las gorditas de maíz azul).<br/>
     <strong>14:30–17:00</strong> Explora el pueblo mágico de Xilitla — iglesia del siglo XVI, mercado local.<br/>

@@ -372,7 +372,7 @@ const ES: EmailMessages = {
     menoresDe6: (n) => `${n} niño${n !== 1 ? "s" : ""} de 4 a 7 años`,
     bebes: (n) => `${n} bebé${n !== 1 ? "s" : ""} de 0 a 3 (gratis)`,
     vehiculos: (n) => `${n} vehículo${n !== 1 ? "s" : ""}`,
-    pickupDefault: "Te confirmamos por WhatsApp la hora y el punto de salida.",
+    pickupDefault: "Tu guía te manda por WhatsApp la hora y el punto de salida la noche anterior, entre 8 y 9 pm.",
     confirmaDireccion: "Confirma tu dirección exacta por WhatsApp.",
     addOnLinea: (nombre, cantidad) => `+ ${nombre} · ${cantidad} ${cantidad === 1 ? "persona" : "personas"}`,
     elegiste: (opcion) => `Elegiste: ${opcion}`,

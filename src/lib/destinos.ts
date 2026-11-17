@@ -127,7 +127,7 @@ export const DESTINOS_DB: Destino[] = [
     // `POZAS_ACCESO`). Sin «efectivo» a propósito: `faqPrecioDestino`
     // (jsonld.ts) lo lee como «solo efectivo», y la taquilla acepta tarjeta.
     advertencias: "Reservar tu turno en línea (se paga en taquilla). Cerrado martes.",
-    como_llegar: "1h 45min desde Valles · Taxi $1,200 · Bus $110",
+    como_llegar: "1h 30min desde Valles · Taxi $1,200 · Bus $110",
     que_llevar: ["calzado antiderrapante", "repelente biodegradable"],
     datos_curiosos: ["Fue plantación de orquídeas", "Edward James nunca vivió en las estructuras"],
     errores_comunes: ["Llegar sin reservación", "Calzado liso"],
@@ -149,7 +149,7 @@ export const DESTINOS_DB: Destino[] = [
       // llegar y qué tour va, y enlaza a los dos (`GUIAS_BLOG_DESTINO`).
       // Era "Las Pozas de Xilitla 2026 | Horarios, Precio y Cómo Llegar".
       metaTitle: "Las Pozas, Xilitla: ubicación, cómo llegar y tours 2026",
-      metaDescription: "Las Pozas, el jardín surrealista de Edward James en Xilitla: cómo llegar desde Ciudad Valles (1 h 45 min), la mejor hora para entrar, qué llevar y tours.",
+      metaDescription: "Las Pozas, el jardín surrealista de Edward James en Xilitla: cómo llegar desde Ciudad Valles (1 h 30 min), la mejor hora para entrar, qué llevar y tours.",
       keywords: ["las pozas xilitla", "jardín surrealista edward james", "las pozas precio", "las pozas horario", "qué hacer en xilitla"],
       faqPrincipales: [
         // 🔴 19 oct 2026: «Conviene comprar el boleto digital» era el esquema
@@ -1159,7 +1159,7 @@ export const DESTINOS_DB: Destino[] = [
     horario: "Visita de día", dias_abierto: "Cierra martes (igual que Las Pozas)",
     mejor_hora: "Mañana", temporada_ideal: "Nov–May",
     advertencias: "Se suele visitar el mismo día que Las Pozas (está a ~50 m de su entrada). Senderos resbalosos en lluvia. El temazcal requiere reservación. Precio y horarios no publicados oficialmente: confirma por teléfono.",
-    como_llegar: "~1h 45min desde Ciudad Valles por la Carr. 120 a Xilitla; la cascada está junto a la entrada de Las Pozas",
+    como_llegar: "~1h 30min desde Ciudad Valles por la Carr. 120 a Xilitla; la cascada está junto a la entrada de Las Pozas",
     que_llevar: ["traje de baño", "calzado antiderrapante", "repelente biodegradable", "efectivo"],
     datos_curiosos: ["Está a unos 50 m de la entrada de Las Pozas: muchos la visitan el mismo día.", "Su temazcal de uso medicinal recibe grupos pequeños (cupo limitado)."],
     errores_comunes: ["Ir en martes (zona de Las Pozas con cierres)", "No llevar efectivo"],

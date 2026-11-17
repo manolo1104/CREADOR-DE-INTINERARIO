@@ -71,13 +71,13 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
       "NOM-09 SECTUR certified guides",
       "Entrance fees to every site",
       "Safety gear and life jacket",
-      "Travel insurance",
       "Photography and video of the trip",
     ],
     noIncluye: [
       "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
       "Lunches and dinners (breakfast is included)",
       "Mountain-view room (write to us and we will quote the change)",
+      "Traveler insurance: optional, MXN $80 per person (just ask when you book)",
       "Tips and personal expenses",
     ],
     valor: [
@@ -115,13 +115,13 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
       "NOM-09 SECTUR certified guides",
       "Entrance fees to every site",
       "Safety gear and life jacket",
-      "Travel insurance",
       "Photography and video of the trip",
     ],
     noIncluye: [
       "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
       "Lunches and dinners (breakfast is included)",
       "Mountain-view room (write to us and we will quote the change)",
+      "Traveler insurance: optional, MXN $80 per person (just ask when you book)",
       "Tips and personal expenses",
     ],
     valor: [
@@ -165,13 +165,14 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
       "NOM-09 SECTUR certified guides",
       "Entrance fees to every site",
       "Safety gear: helmet, life jacket and paddle",
-      "Travel insurance",
+      "Traveler insurance on the RZR and rafting days",
       "Photography and video of the trip",
     ],
     noIncluye: [
       "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
       "Lunches and dinners (breakfast is included)",
       "Mountain-view room (write to us and we will quote the change)",
+      "Traveler insurance on Minas Viejas and Micos: optional, MXN $80 per person (just ask when you book)",
       "Tips and personal expenses",
     ],
   },
@@ -209,13 +210,13 @@ const PAQUETES_EN: Record<string, PaqueteTranslation> = {
       "NOM-09 SECTUR certified guides",
       "Entrance fees to every site",
       "Safety gear and life jacket",
-      "Travel insurance",
       "Photography and video of every tour",
     ],
     noIncluye: [
       "Getting to Xilitla (you arrive on your own; see the 'How to get here' section)",
       "Lunches and dinners (breakfast is included)",
       "Mountain-view room (write to us and we will quote the change)",
+      "Traveler insurance: optional, MXN $80 per person (just ask when you book)",
       "Tips and personal expenses",
     ],
   },
@@ -372,7 +373,7 @@ const LOGISTICA_EN = {
     },
   ],
   intra:
-    "Once you're in the area, our transport takes you from the hotel to the start of each tour and back. For reference: Xilitla is ~40 min from Aquismón and ~1 h from Ciudad Valles; Ciudad Valles is ~50 min from Tamasopo.",
+    "Once you're in the area, our transport takes you from the hotel to the start of each tour and back. For reference: Xilitla is ~40 min from Aquismón and ~1 h 30 from Ciudad Valles; Ciudad Valles is ~50 min from Tamasopo.",
 };
 
 export function getLocalizedLogistica(locale: Locale): typeof LOGISTICA {

@@ -108,10 +108,11 @@ export function BloqueConfianza({ locale }: { locale: Locale }) {
       Icon: BadgeCheck,
       titulo: t("Los guías son nuestros", "The guides are ours"),
       // Nombres de `guias.ts`; «de Xilitla» y «NOM-09» solo si valen para
-      // TODOS (11 nov 2026: de Erick aún no se sabe).
+      // TODOS (11 nov 2026: de Erick aún no se sabe). El seguro ya no va en
+      // todos (17 nov 2026): solo en rafting, rappel y RZR.
       texto: t(
-        `${nombresGuias(false)} ${TODOS_DE_XILITLA ? "son de Xilitla y" : "son guías de la casa; el equipo"} lleva${TODOS_DE_XILITLA ? "n" : ""} guiando desde ${Math.min(...GUIAS.map((g) => g.desde))}. ${TODOS_NOM09 ? "Guías certificados NOM-09 por SECTUR, con seguro" : "Con seguro"} de viaje incluido.`,
-        `${nombresGuias(true)} ${TODOS_DE_XILITLA ? "are from Xilitla and have" : "are our own guides; the team has"} been guiding since ${Math.min(...GUIAS.map((g) => g.desde))}. ${TODOS_NOM09 ? "NOM-09 SECTUR certified, travel" : "Travel"} insurance included.`,
+        `${nombresGuias(false)} ${TODOS_DE_XILITLA ? "son de Xilitla y" : "son guías de la casa; el equipo"} lleva${TODOS_DE_XILITLA ? "n" : ""} guiando desde ${Math.min(...GUIAS.map((g) => g.desde))}. ${TODOS_NOM09 ? "Guías certificados NOM-09 por SECTUR. " : ""}Los tours de aventura (rafting, rappel y RZR) llevan seguro de viajero incluido.`,
+        `${nombresGuias(true)} ${TODOS_DE_XILITLA ? "are from Xilitla and have" : "are our own guides; the team has"} been guiding since ${Math.min(...GUIAS.map((g) => g.desde))}. ${TODOS_NOM09 ? "NOM-09 SECTUR certified. " : ""}Adventure tours (rafting, rappel and RZR) include traveler insurance.`,
       ),
     },
     {

@@ -342,12 +342,12 @@ const PAQ_CORTO_FRASE =
 const PAQ_INCLUYE =
   "incluyen el hotel en Xilitla, el desayuno los días de tour, los recorridos y el transporte del hotel a cada uno; el viaje hasta Xilitla va por tu cuenta";
 
-// Tramos de menor del motor de cobro (`calcTourTotal`: 6–10 años y menores de
-// 6). Se leen de la función, no se escriben: si cambia el cobro, cambia el texto.
-const PCT_MENOR_6_10 = calcTourTotal(100, 0, 1, 0, 0).childPriceMid;
-const PCT_MENOR_6    = calcTourTotal(100, 0, 0, 1, 0).childPriceSmall;
+// El tramo de menor del motor de cobro (`calcTourTotal`, regla de `ninos.ts`
+// del 17 nov 2026: de 4 a 7 años). Se lee de la función, no se escribe: si
+// cambia el cobro, cambia el texto.
+const PCT_NINO = calcTourTotal(100, 0, 0, 1, 0).childPriceSmall;
 const NINOS_FRASE =
-  `si el recorrido admite niños, los de 6 a 10 años pagan el ${PCT_MENOR_6_10} % del precio de adulto y los menores de 6, el ${PCT_MENOR_6} %`;
+  `si el recorrido admite niños, los de 4 a 7 años pagan el ${PCT_NINO} % del precio de adulto, los de 3 años o menos van gratis y de 8 en adelante pagan como adulto`;
 
 const MIN_MINAS    = minutosDesdeValles(D_MINAS);
 const MIN_MICOS    = minutosDesdeValles(D_MICOS);
@@ -744,7 +744,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from:
           "Los viajeros que coordinamos desde Ciudad Valles suelen preferir el tour organizado de <strong>8 horas</strong> que incluye transporte, guía certificado, equipo de seguridad, seguro y almuerzo por <strong>$1,099 MXN por persona</strong>.",
         to:
-          `Los viajeros que coordinamos suelen preferir la ${TAMUL.nombreCorto}, de <strong>${horas(TAMUL)} horas</strong>, con ${trasladoDe(TAMUL)}, desayuno, entradas, guía certificado, equipo de seguridad y seguro, por <strong>${precioDe(TAMUL)}</strong>.`,
+          `Los viajeros que coordinamos suelen preferir la ${TAMUL.nombreCorto}, de <strong>${horas(TAMUL)} horas</strong>, con ${trasladoDe(TAMUL)}, desayuno, entradas, guía certificado y equipo de seguridad, por <strong>${precioDe(TAMUL)}</strong>.`,
       },
       {
         from:
@@ -790,7 +790,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
       {
         from:
           "<tr><td>Tour desde Ciudad Valles</td><td><strong>$1,099 MXN/persona</strong></td><td>Transporte, guía, seguro, almuerzo</td></tr>",
-        to: `<tr><td>${TAMUL.nombreCorto} (tour guiado)</td><td><strong>${precioDe(TAMUL)}</strong></td><td>Traslado, desayuno, entradas, guía y seguro</td></tr>`,
+        to: `<tr><td>${TAMUL.nombreCorto} (tour guiado)</td><td><strong>${precioDe(TAMUL)}</strong></td><td>Traslado, desayuno, entradas y guía</td></tr>`,
       },
       {
         from:

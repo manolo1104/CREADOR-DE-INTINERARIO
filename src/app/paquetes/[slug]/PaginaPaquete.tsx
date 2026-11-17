@@ -506,7 +506,9 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                       {/* La lista COMPLETA de lo que incluye el recorrido. Antes se
                           cortaba en 6, y justo los que quedaban fuera eran el
                           botiquín y el seguro de viaje — los dos que más
-                          tranquilizan a quien viaja con familia. */}
+                          tranquilizan a quien viaja con familia. (Desde el 17
+                          nov 2026 el seguro solo viene en el `incluye` de
+                          rafting, rappel y RZR.) */}
                       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1.5 mb-4">
                         {tour.incluye.map((inc) => (
                           <span key={inc} className="flex items-start gap-2 text-[12px] text-crema/60 font-dm">

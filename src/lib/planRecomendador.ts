@@ -20,7 +20,7 @@ export const ORIGEN_A_SLUG: Record<string, string> = {
   "Tampico": "tampico",
 };
 
-/** Cuántos van, según «¿con quién viajas?». Familia = 2 adultos + 2 niños de 6 a 10. */
+/** Cuántos van, según «¿con quién viajas?». Familia = 2 adultos + 2 niños de 4 a 7 (50 %, `ninos.ts`). */
 export function personasDeGrupo(grupo: string): { adultos: number; ninos: number } {
   if (/solo|sola/i.test(grupo)) return { adultos: 1, ninos: 0 };
   if (/pareja/i.test(grupo)) return { adultos: 2, ninos: 0 };
@@ -76,13 +76,13 @@ export function totalEstimado(p: {
   const lineas: LineaEstimado[] = [];
 
   const paquete = p.paquete && dias >= 3
-    ? computePaqueteCharge({ slug: p.paquete.slug, personas: Math.max(2, adultos), childrenMid: ninos, pct: 100 })
+    ? computePaqueteCharge({ slug: p.paquete.slug, personas: Math.max(2, adultos), childrenSmall: ninos, pct: 100 })
     : null;
   if (paquete && p.paquete) {
     lineas.push({ concepto: `${p.paquete.nombre} (hotel, recorridos y desayunos)`, monto: paquete.total });
   } else {
-    if (p.principal) lineas.push({ concepto: p.principal.nombre.split("—")[0].trim(), monto: totalRecorrido(p.principal, adultos, ninos) });
-    if (p.secundario && dias >= 2) lineas.push({ concepto: p.secundario.nombre.split("—")[0].trim(), monto: totalRecorrido(p.secundario, adultos, ninos) });
+    if (p.principal) lineas.push({ concepto: p.principal.nombre.split("—")[0].trim(), monto: totalRecorrido(p.principal, adultos, 0, ninos) });
+    if (p.secundario && dias >= 2) lineas.push({ concepto: p.secundario.nombre.split("—")[0].trim(), monto: totalRecorrido(p.secundario, adultos, 0, ninos) });
     const noches = dias - 1;
     if (noches > 0) {
       const desde = Math.min(...HABITACIONES_HOTEL.flatMap((h) => Object.values(h.tarifas)));

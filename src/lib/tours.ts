@@ -109,11 +109,14 @@ export interface TourVehiculo {
 /**
  * Lo que va incluido en TODOS los recorridos sin excepción (decisión del dueño,
  * ago-2026). No está en el `incluye` de cada tour, así que cualquier código que
- * calcule "qué incluye" debe sumarlo — si no, acaba diciéndole al cliente que
- * un tour no tiene seguro de viaje cuando sí lo tiene.
+ * calcule "qué incluye" debe sumarlo.
+ *
+ * 🔴 17 nov 2026 (Manolo): el seguro de viajero YA NO va en todos. Solo lo
+ * traen los tours de aventura —rafting, rappel y RZR—, y está en el `incluye`
+ * de cada uno. En los demás es opcional: $80 por persona, se pide al reservar.
+ * No lo vuelvas a meter aquí o todos los tours lo prometerían otra vez.
  */
 export const INCLUYE_SIEMPRE = [
-  "Seguro de viaje para todos los integrantes",
   "Fotografías y video del recorrido que toma tu guía",
 ] as const;
 
@@ -122,7 +125,6 @@ export const INCLUYE_SIEMPRE = [
  * cambiar una lista sin ver la otra: son la misma promesa al cliente.
  */
 export const INCLUYE_SIEMPRE_EN = [
-  "Travel insurance for everyone in the group",
   "Photos and video of the tour, taken by your guide",
 ] as const;
 
@@ -1065,6 +1067,7 @@ const TOURS_RAW: Tour[] = [
       "Casco y goggles de seguridad para cada tripulante",
       "Guía instructor que abre y marca la ruta",
       "Briefing de manejo — apto para principiantes",
+      "Seguro de viajero para cada tripulante",
       "4 rutas a elegir: Nanacatli, Miradores, Nacimiento o Trinidad",
     ],
     imagen_hero: "/imagenes/tours/rzr-xilitla/hero.jpg",
@@ -1140,6 +1143,7 @@ const TOURS_RAW: Tour[] = [
       "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
       "Guías de alta montaña certificados",
       "Briefing y técnica de descenso — apto para principiantes",
+      "Seguro de viajero para cada participante",
       "Video con dron del descenso",
       "Fotografía con cámaras de acción",
     ],
@@ -1206,7 +1210,7 @@ const TOURS_RAW: Tour[] = [
     descripcion:
       "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida que eliges antes o después de la actividad. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
     descripcionLarga:
-      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Tu reserva incluye la comida, y tú decides cuándo: puedes tomarla antes de salir para arrancar con energía, o dejarla para después del descenso.\n\nDel 30 de octubre a mayo el agua baja clara, y su turquesa más intenso llega de marzo a mayo. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
+      "El Río Tampaón está considerado uno de los 10 ríos más escénicos de Norteamérica, y basta el primer rápido para entender por qué: agua turquesa —coloreada por los mismos minerales kársticos que pintan la Cascada de Tamul—, paredes de cañón que se cierran sobre el río y una selva que se asoma desde lo alto de la roca.\n\nEl día empieza en la puerta de tu hospedaje: pasamos por ti a Ciudad Valles o Xilitla, con traslado redondo incluido. En el embarcadero te entregamos el equipo completo —balsa profesional, remo, casco y chaleco salvavidas— y el guía te da el briefing de seguridad y técnica de remado. No necesitas experiencia ni saber nadar: hay rutas para diferentes niveles, los rápidos Clase III son el punto perfecto entre emoción de verdad y seguridad para principiantes, y el guía va dentro de la balsa contigo todo el descenso.\n\nSon 14 kilómetros de descenso —entre 2 y 3 horas en el río— alternando rápidos con tramos tranquilos para nadar y admirar el cañón. El momento más esperado es el rápido de 'La Tumba', donde las paredes se cierran tanto que el eco desaparece — un silencio absoluto justo antes del tramo más técnico del río. Vas a salir empapado, con los brazos cansados y con ganas de volver a subirte. Tu reserva incluye la comida, y tú decides cuándo: puedes tomarla antes de salir para arrancar con energía, o dejarla para después del descenso.\n\nDel 30 de octubre a mayo el agua baja clara, y su turquesa más intenso llega de marzo a mayo. En temporada de lluvias (julio–septiembre) la salida depende del nivel del río: si no es seguro navegar, te lo decimos con anticipación y reprogramamos o te proponemos una actividad alternativa. Tu seguridad va primero, siempre.",
     destinos: [
       "Traslado redondo desde tu hospedaje (Ciudad Valles o Xilitla)",
       "Embarcadero del Río Tampaón",
@@ -1305,7 +1309,7 @@ const TOURS_RAW: Tour[] = [
     descripcion:
       "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
     descripcionLarga:
-      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— y el día está armado para terminar justo a la hora del mejor espectáculo.\n\nLa canoa te lleva por el Cañón del Tampaón, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de San Luis Potosí con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla.\n\nDe regreso bajas de la canoa y subes a la Cueva del Agua: un cenote donde la luz entra en haces perfectos y el agua alcanza un turquesa imposible. Aquí sí te metes —se nada y se echan clavados—, y es el momento favorito de casi todos los que hacen este tour. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio; la comida del día viene después, ya saliendo de Tamul, y no va incluida.\n\nCerramos en el Sótano de las Huahuas, un abismo de 478 metros, y llegamos a propósito al atardecer: es la hora en que miles de aves —loros y vencejos— vuelven a casa y se dejan caer en picada dentro del abismo, en espiral, hasta desaparecer. Es de esas cosas que no se explican con una foto. Quienes hacen este tour siempre vuelven, y siempre traen a alguien más.",
+      "La Expedición Tamul es el tour más completo de la Huasteca en un solo día: salimos por la mañana —sin madrugadas extremas— y el día está armado para terminar justo a la hora del mejor espectáculo.\n\nLa canoa te lleva por el Cañón del Tampaón —cerca de una hora de remo hasta la cascada—, un corredor de roca caliza de 80 metros de altura donde el silencio solo se rompe por el sonido del remo sobre el agua. Al fondo del cañón, la Cascada de Tamul —la más alta de San Luis Potosí con sus 105 metros— se desploma sobre el río con una fuerza que se siente en el pecho antes de verla.\n\nDe regreso bajas de la canoa y subes a la Cueva del Agua: un cenote donde la luz entra en haces perfectos y el agua alcanza un turquesa imposible. Aquí sí te metes —se nada y se echan clavados—, y es el momento favorito de casi todos los que hacen este tour. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio; la comida del día viene después, ya saliendo de Tamul, y no va incluida.\n\nCerramos en el Sótano de las Huahuas, un abismo de 478 metros, y llegamos a propósito al atardecer: es la hora en que miles de aves —loros y vencejos— vuelven a casa y se dejan caer en picada dentro del abismo, en espiral, hasta desaparecer. Es de esas cosas que no se explican con una foto. Quienes hacen este tour siempre vuelven, y siempre traen a alguien más.",
     // En el orden REAL del día: la Cueva del Agua es parada del mismo paseo en
     // canoa, al regreso, y el Sótano se deja para el atardecer por las aves.
     destinos: [
@@ -1321,7 +1325,6 @@ const TOURS_RAW: Tour[] = [
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
       "Fotografías y video del recorrido",
       "Botiquín de primeros auxilios",
-      "Seguro de viaje para todos los integrantes",
       "Paseo en canoa por el Cañón del Tampaón",
     ],
     // El día hora por hora. Las horas salen de la operación real y hay que
@@ -1330,13 +1333,13 @@ const TOURS_RAW: Tour[] = [
     // abismo son 478 m (los 512 son del Sótano de las Golondrinas, que no
     // operamos) y las aves se nombran como aves, no como pericos.
     itinerario: [
-      { hora: "8:00–9:00 AM", momento: "Recogida",
-        texto: "Pasamos por ti a tu hotel, cabaña o Airbnb en Xilitla o Ciudad Valles. No necesitas hospedarte con nosotros.",
+      { hora: "8:00 AM", momento: "Recogida",
+        texto: "Pasamos por ti a tu hotel, cabaña o Airbnb en Xilitla o Ciudad Valles. No necesitas hospedarte con nosotros. La hora exacta te la manda tu guía por WhatsApp la noche anterior, entre 8 y 9 PM.",
         foto: "/imagenes/tours/tamul/recogida-hotel.jpg" },
       { hora: "9:30 AM", momento: "Desayuno",
         texto: "Buffet de platillos huastecos en El Taco Loco, camino al río. Va incluido." },
       { hora: "11:00 AM", momento: "Canoa a Tamul",
-        texto: "Entras al Cañón del Tampaón en canoa: silencio, el remo sobre el agua y, al fondo, una cascada de 105 metros que se siente en el pecho antes de verla.",
+        texto: "Antes de subir se firma la carta responsiva. Luego entras al Cañón del Tampaón en canoa: cerca de una hora de remo, en silencio, y al fondo una cascada de 105 metros que se siente en el pecho antes de verla.",
         foto: "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg" },
       { hora: "12:30 PM", momento: "Fotos frente a la cascada",
         texto: "Bajas a las piedras del cañón, justo enfrente de la caída, y ahí se toma la foto que todos acaban enseñando al volver. Sin prisa: es el momento del día que más se repite en las cámaras.",
@@ -1411,11 +1414,16 @@ const TOURS_RAW: Tour[] = [
     id:               "tour-edward-james",
     slug:             "ruta-surrealista-edward-james",
     categoria:        "ecoturismo",
-    duracionRango:    [8, 10],
+    // Erick (17 nov 2026): desde Xilitla termina entre 4:30 y 5:00 PM (con
+    // la recogida de las 8:00, 8.5–9 h); quien viene de Ciudad Valles llega de
+    // vuelta hacia las 6:00–7:00 PM, y eso lo dicen el regreso del itinerario
+    // y la pregunta frecuente. El rango es el de Xilitla porque es el de los
+    // paquetes (el hotel está en Xilitla) y el del regreso calculado.
+    duracionRango:    [8.5, 9],
     icon:             "Leaf",
     tipo:             "Cultura & Naturaleza",
     dificultad:       "baja",
-    duracion_hrs:     8,
+    duracion_hrs:     9,
     // Recoge en Xilitla o en Ciudad Valles, pero desde Valles son $400 más POR
     // RESERVA (no por persona). Es el único recorrido que lo cobra (Manolo,
     // 20 oct 2026); el checkout pregunta la zona por esto.
@@ -1450,7 +1458,6 @@ const TOURS_RAW: Tour[] = [
       "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
       "Botiquín de primeros auxilios",
-      "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/tours/edward-james/hero.jpg",
     itinerario: [
@@ -1459,22 +1466,22 @@ const TOURS_RAW: Tour[] = [
       { hora: "9:30 AM", momento: "Desayuno",
         texto: "Buffet de platillos huastecos y guisados en El Taco Loco, camino a los destinos. Va incluido." },
       { hora: "11:00 AM", momento: "Las Pozas",
-        texto: "El jardín surrealista de Edward James: escaleras que no llevan a ningún lado, columnas de concreto asomando entre la selva y unas dos horas para recorrerlo con guía.",
+        texto: "El jardín surrealista de Edward James: escaleras que no llevan a ningún lado, columnas de concreto asomando entre la selva y cerca de hora y media para recorrerlo con guía.",
         foto: "/imagenes/tours/edward-james/gallery-2.jpg" },
-      { hora: "1:30 PM", momento: "Nacimiento de Huichihuayán",
+      { hora: "1:00 PM", momento: "Nacimiento de Huichihuayán",
         texto: "Agua turquesa saliendo de la roca, con los rayos de luz entrando entre la selva. Aquí sí te metes.",
         // Fotos de las paradas 2 y 4 elegidas por Manolo el 5 oct 2026.
         foto: "/imagenes/tours/edward-james/nacimiento-huichihuayan-entre-arboles.jpg" },
-      { hora: "2:45 PM", momento: "Cueva de las Quilas",
+      { hora: "2:15 PM", momento: "Cueva de las Quilas",
         texto: "Se entra a la cueva por un cañón estrecho donde la luz cae desde arriba. El cambio de temperatura se siente al cruzar la boca.",
         // La foto de `gallery-6` sin la ✦ de Gemini: Manolo trajo la versión
         // limpia el 5 oct 2026 y la eligió para aquí y para la tarjeta.
         foto: "/imagenes/tours/edward-james/cueva-de-las-quilas-entrada.jpg" },
-      { hora: "3:45 PM", momento: "Castillo de la Salud",
+      { hora: "3:30 PM", momento: "Castillo de la Salud",
         texto: "Torres de colores levantadas entre la selva huasteca, la última parada del día y la más fotogénica al atardecer.",
         foto: "/imagenes/castillo-de-la-salud/hero.jpg" },
-      { hora: "4:00–6:00 PM", momento: "Regreso",
-        texto: "Te dejamos en tu hospedaje." },
+      { hora: "4:30–5:00 PM", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje: en Xilitla, entre las 4:30 y las 5:00 PM; si vienes de Ciudad Valles, llegas hacia las 6:00–7:00 PM." },
     ],
     logo: "/imagenes/tours/logos/ruta-surrealista-edward-james.webp",
     // Cuatro paradas, cuatro fotos, en el orden en que se visitan: Las Pozas,
@@ -1703,7 +1710,6 @@ const TOURS_RAW: Tour[] = [
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
       "Botiquín de primeros auxilios",
-      "Seguro de viaje para todos los integrantes",
       "Recorrido en canoa frente a la Cascada del Meco",
     ],
     imagen_hero: "/imagenes/cascada-el-meco/hero.jpg",
@@ -1809,7 +1815,6 @@ const TOURS_RAW: Tour[] = [
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
       "Botiquín de primeros auxilios",
-      "Seguro de viaje para todos los integrantes",
     ],
     // Actividad opcional del Paraíso Escalonado. El precio autoritativo vive
     // aquí y `computeTourCharge` lo vuelve a leer al cobrar: del cliente solo
@@ -1818,7 +1823,7 @@ const TOURS_RAW: Tour[] = [
       {
         id:          "salto-7-cascadas",
         nombre:      "Salto de las 7 Cascadas",
-        descripcion: "Salto guiado en las Cascadas de Micos, con seguro y guía certificado en actividades extremas y rescate.",
+        descripcion: "Salto guiado en las Cascadas de Micos, con guía certificado en actividades extremas y rescate.",
         precio:      350,
       },
     ],
@@ -1918,7 +1923,6 @@ const TOURS_RAW: Tour[] = [
       "Guía certificado NOM-09 SECTUR",
       "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
       "Botiquín de primeros auxilios",
-      "Seguro de viaje para todos los integrantes",
     ],
     imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
     itinerario: [
@@ -2051,9 +2055,9 @@ const TOURS_RAW: Tour[] = [
     icon:             "Leaf",
     tipo:             "Cultura & Sabor",
     dificultad:       "baja",
-    // Dura de 2 h y media a 3, no 5 (Manolo, 28 sep).
-    duracion_hrs:     3,
-    duracionRango:    [2.5, 3],
+    // Unas 4 horas (Erick, 17 nov 2026). Antes decía de 2 h y media a 3.
+    duracion_hrs:     4,
+    duracionRango:    [3.5, 4],
     // 🔴 ARREGLO (28 sep): mismo fallo que el Edén. Su `incluye` y su
     // descripción dicen "desde tu hospedaje EN XILITLA … en RZR", pero como no
     // figuraba en la lista de casos especiales de `TourDeparture`, la ficha
@@ -2080,7 +2084,7 @@ const TOURS_RAW: Tour[] = [
     descripcion:
       "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. {precio} por persona.",
     descripcionLarga:
-      "Xilitla huele a café mucho antes de que llegues a la finca. La sierra que rodea al pueblo está sembrada de cafetales bajo sombra, y esta travesía te lleva justo ahí: al lugar donde nace la taza que te tomas por la mañana.\n\nEl trayecto ya es parte de la experiencia. Te recogemos en tu hospedaje en Xilitla y subimos a la finca en RZR, por los caminos de terracería que atraviesan la selva húmeda — el mismo tipo de vehículo de nuestros recorridos off-road, pero aquí el destino es un cafetal.\n\nEn la finca te recibe la familia cafetalera. Caminas entre las matas, aprendes a distinguir el grano maduro del que todavía no lo está, y sigues el proceso completo: la cosecha a mano, el despulpado, el patio de secado donde el grano se extiende al sol y se remueve durante días, y por último el tostado en el tambor, cuando el olor lo llena todo.\n\nEl final es la cata. Frente a los platos con el grano verde, el tostado y el molido, aprendes a oler y a probar como lo hacen los catadores, y te sirven el café de esa misma finca. Muchos se van con un paquete bajo el brazo.\n\nEs un recorrido tranquilo, sin exigencia física, ideal para ir en pareja, con amigos o con la familia. Dura entre dos horas y media y tres, y sale con un mínimo de 2 personas.",
+      "Xilitla huele a café mucho antes de que llegues a la finca. La sierra que rodea al pueblo está sembrada de cafetales bajo sombra, y esta travesía te lleva justo ahí: al lugar donde nace la taza que te tomas por la mañana.\n\nEl trayecto ya es parte de la experiencia. Te recogemos en tu hospedaje en Xilitla y subimos a la finca en RZR, por los caminos de terracería que atraviesan la selva húmeda — el mismo tipo de vehículo de nuestros recorridos off-road, pero aquí el destino es un cafetal.\n\nEn la finca te recibe la familia cafetalera. Caminas entre las matas, aprendes a distinguir el grano maduro del que todavía no lo está, y sigues el proceso completo: la cosecha a mano, el despulpado, el patio de secado donde el grano se extiende al sol y se remueve durante días, y por último el tostado en el tambor, cuando el olor lo llena todo.\n\nEl final es la cata. Frente a los platos con el grano verde, el tostado y el molido, aprendes a oler y a probar como lo hacen los catadores, y te sirven el café de esa misma finca. Muchos se van con un paquete bajo el brazo.\n\nEs un recorrido tranquilo, sin exigencia física, ideal para ir en pareja, con amigos o con la familia. Dura unas 4 horas y sale con un mínimo de 2 personas.",
     destinos: [
       "Cafetal bajo sombra de la sierra de Xilitla",
       "Patio de secado del grano",
@@ -2097,21 +2101,21 @@ const TOURS_RAW: Tour[] = [
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Xilitla. El camino a la finca se hace en RZR, así que sales del pueblo ya en el vehículo." },
-      { hora: "8:20 AM", momento: "Subida a la finca",
+      { hora: "8:30 AM", momento: "Subida a la finca",
         texto: "Caminos de terracería entre la selva húmeda hasta el cafetal bajo sombra. El trayecto ya es parte de la experiencia." },
-      { hora: "8:50 AM", momento: "El cafetal",
+      { hora: "9:00 AM", momento: "El cafetal",
         texto: "Caminas entre las matas con la familia cafetalera y aprendes a distinguir el grano maduro del que todavía no lo está.",
         foto: "/imagenes/tours/travesia-del-cafe/hero.jpg" },
-      { hora: "9:25 AM", momento: "El patio de secado",
+      { hora: "9:45 AM", momento: "El patio de secado",
         texto: "Donde el grano se extiende al sol y se remueve durante días. Aquí se ve por qué el café tarda tanto en llegar a la taza.",
         foto: "/imagenes/tours/travesia-del-cafe/gallery-7.jpg" },
-      { hora: "9:50 AM", momento: "La tostaduría",
+      { hora: "10:30 AM", momento: "La tostaduría",
         texto: "El tambor girando y el olor llenándolo todo. Es el momento en que la finca huele a lo que te vas a tomar.",
         foto: "/imagenes/tours/travesia-del-cafe/gallery-2.jpg" },
-      { hora: "10:15 AM", momento: "La cata",
+      { hora: "11:00 AM", momento: "La cata",
         texto: "Frente a los platos con el grano verde, el tostado y el molido, aprendes a oler y a probar como lo hacen los catadores. Muchos se van con un paquete bajo el brazo.",
         foto: "/imagenes/tours/travesia-del-cafe/gallery-6.jpg" },
-      { hora: "10:30–11:00 AM", momento: "Regreso",
+      { hora: "11:30 AM–12:00 PM", momento: "Regreso",
         texto: "De vuelta a tu hospedaje en Xilitla." },
     ],
     logo: "/imagenes/tours/logos/travesia-del-cafe.webp",
@@ -2149,10 +2153,12 @@ const TOURS_RAW: Tour[] = [
       // vamos, pero con costo adicional que se cotiza por WhatsApp (decisión de
       // Manolo, 28 sep: sin monto publicado).
       tipo:       "hospedaje-xilitla",
-      // Confirmado por Manolo el 28 sep: es de NOCHE y la recogida es a las
-      // 7 PM. Sin este número la ficha sumaba las 3 h a las 8:00 AM y
-      // prometía "Regreso aprox. 11:00 AM".
-      horaInicio: 19,
+      // Es de NOCHE. Sin este número la ficha sumaba las 3 h a las 8:00 AM y
+      // prometía "Regreso aprox. 11:00 AM". Erick, 17 nov 2026: el guía pasa
+      // hacia las 7:40 PM para la salida de las 8:00 PM (hay otra a las
+      // 9:00 PM, con recogida hacia las 8:40) y vuelven entre 10:30 y 11:00 PM.
+      // Las horas aceptan minutos: 19 + 40/60 se pinta "7:40 PM".
+      horaInicio: 19 + 40 / 60,
       ventanaHrs: 0,
       vehiculo:   { es: "RZR", en: "RZR (side-by-side)" },
       nota: {
@@ -2192,7 +2198,7 @@ const TOURS_RAW: Tour[] = [
     descripcion:
       "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. {precio} por persona.",
     descripcionLarga:
-      "Casi todos los recorridos de la Huasteca se hacen de día. Este no. La Gruta de Xilo —también la encontrarás como Grutas de Xilo— se camina de noche, y esa es la mitad de la experiencia: sin el ruido ni el calor del día, lo único que existe es el círculo de luz de tu lámpara y lo que alcanza a iluminar.\n\nEl casco y la lámpara frontal te los entregamos al inicio, cuando pasamos por ti. Luego viene una caminata de 15 a 20 minutos por la selva hasta la entrada de la gruta; ahí el guía explica por dónde se pisa y se entra.\n\nAdentro son unos 900 metros de recorrido. Las paredes son un catálogo de formaciones: estalactitas que cuelgan de la bóveda, estalagmitas que suben desde el piso, columnas donde las dos se encontraron después de millones de años de gota a gota. Hay tramos amplios donde se camina de pie y tramos donde hay que agacharse; se avanza despacio, en grupo chico.\n\nAl final del recorrido están los jacuzzis: pozas de agua cristalina formadas dentro de la propia gruta. Ahí se hace una dinámica de introspección — apagar las lámparas, quedarse en silencio unos minutos y escuchar la cueva. Es el momento que la gente recuerda.\n\nDura unas 3 horas en total y es de noche. Pasamos por ti a tu hospedaje en Xilitla en RZR; si te quedas en Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp. Lleva calzado cerrado que se pueda mojar y ropa de cambio.",
+      "Casi todos los recorridos de la Huasteca se hacen de día. Este no. La Gruta de Xilo —también la encontrarás como Grutas de Xilo— se camina de noche, y esa es la mitad de la experiencia: sin el ruido ni el calor del día, lo único que existe es el círculo de luz de tu lámpara y lo que alcanza a iluminar.\n\nEl casco y la lámpara frontal te los entregamos al inicio, cuando pasamos por ti. Luego viene una caminata de 15 a 20 minutos por la selva hasta la entrada de la gruta; ahí el guía explica por dónde se pisa y se entra.\n\nAdentro son unos 900 metros de recorrido. Las paredes son un catálogo de formaciones: estalactitas que cuelgan de la bóveda, estalagmitas que suben desde el piso, columnas donde las dos se encontraron después de millones de años de gota a gota. Hay tramos amplios donde se camina de pie y tramos donde hay que agacharse; se avanza despacio, en grupo chico.\n\nAl final del recorrido están los jacuzzis: pozas de agua cristalina formadas dentro de la propia gruta. Ahí se hace una dinámica de introspección — apagar las lámparas, quedarse en silencio unos minutos y escuchar la cueva. Es el momento que la gente recuerda.\n\nDura unas 3 horas en total y es de noche. Pasamos por ti en RZR a tu hospedaje en Xilitla hacia las 7:40 PM, para la salida de las 8:00, y estás de vuelta entre las 10:30 y las 11:00 PM; también hay salida a las 9:00 PM, con recogida hacia las 8:40. Si te quedas en Ciudad Valles también vamos por ti, con costo adicional que te cotizamos por WhatsApp. Lleva calzado cerrado que se pueda mojar y ropa de cambio.",
     destinos: [
       "Selva de Xilitla (caminata de acceso)",
       "Gruta de Xilo",
@@ -2213,19 +2219,19 @@ const TOURS_RAW: Tour[] = [
     // candidatas tenían formaciones pálidas justo ahí y el título se perdía.
     imagen_hero: "/imagenes/tours/gruta-de-xilo/hero.jpg",
     itinerario: [
-      { hora: "7:00 PM", momento: "Recogida",
-        texto: "Pasamos por ti a tu hospedaje en Xilitla, en el propio RZR, y ahí mismo te entregamos tu casco y tu lámpara frontal. Ya está oscureciendo." },
-      { hora: "7:30 PM", momento: "Caminata por la selva",
-        texto: "De 15 a 20 minutos a pie, ya con la lámpara encendida, hasta la boca de la gruta." },
-      { hora: "8:00 PM", momento: "Entras a la cueva",
+      { hora: "7:40 PM", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla, en el propio RZR, y ahí mismo te entregamos tu casco y tu lámpara frontal. Es la recogida de la salida de las 8:00 PM; si eliges la de las 9:00, pasamos hacia las 8:40." },
+      { hora: "8:00 PM", momento: "Caminata por la selva",
+        texto: "Arranca la salida: de 15 a 20 minutos a pie, ya con la lámpara encendida, hasta la boca de la gruta." },
+      { hora: "8:20 PM", momento: "Entras a la cueva",
         texto: "El guía explica por dónde se pisa y se entra. A partir de aquí lo único que existe es el círculo de luz de tu lámpara." },
-      { hora: "8:45 PM", momento: "Las formaciones",
+      { hora: "9:00 PM", momento: "Las formaciones",
         texto: "Unos 900 metros entre estalactitas, estalagmitas y columnas donde las dos se encontraron después de millones de años de gota a gota.",
         foto: "/imagenes/tours/gruta-de-xilo/gallery-2.jpg" },
-      { hora: "9:30 PM", momento: "Los jacuzzis y el silencio",
+      { hora: "9:45 PM", momento: "Los jacuzzis y el silencio",
         texto: "El final del recorrido son pozas de agua cristalina formadas dentro de la gruta. Ahí se apagan las lámparas unos minutos para escuchar la cueva. Es el momento que la gente recuerda.",
         foto: "/imagenes/tours/gruta-de-xilo/gallery-5.jpg" },
-      { hora: "10:00 PM", momento: "Regreso",
+      { hora: "10:30–11:00 PM", momento: "Regreso",
         texto: "De vuelta a tu hospedaje en Xilitla." },
     ],
     collage: [
@@ -2262,13 +2268,14 @@ const TOURS_RAW: Tour[] = [
     tipo:             "Senderismo & Amanecer",
     dificultad:       "media",
     duracion_hrs:     8,
-    duracionRango:    [7, 8],
+    duracionRango:    [8, 9],
     recogida: {
       tipo: "hospedaje-xilitla",
-      // Confirmado por Manolo el 28 sep: recogida entre 3 y 4 AM, para llegar a
-      // la cima antes del amanecer; con 7-8 h vuelve a media mañana.
-      horaInicio: 3,
-      ventanaHrs: 1,
+      // Erick, 17 nov 2026: recogida entre 4:00 y 4:30 AM, para llegar a la
+      // cima antes del amanecer, y regreso entre 12:00 y 1:00 PM (de ahí las
+      // 8–9 h). Antes decía de 3 a 4 AM y 7-8 h.
+      horaInicio: 4,
+      ventanaHrs: 0.5,
       nota: {
         es: "¿Te hospedas en Ciudad Valles? La salida es de madrugada desde Xilitla. Sí podemos ir por ti hasta allá con un costo extra de traslado: escríbenos y te lo cotizamos.",
         en: "Staying in Ciudad Valles? We leave from Xilitla in the small hours. We can come and get you there for an extra transfer fee — message us and we'll quote it.",
@@ -2305,9 +2312,9 @@ const TOURS_RAW: Tour[] = [
     precioUnidad:     "persona",
     urgencia:         "Salida de madrugada — se reserva con un día de anticipación",
     descripcion:
-      "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando sale el sol, muchas veces por encima del mar de nubes que cubre la sierra. Entre 7 y 8 horas, con guía acreditado y traslado desde tu hospedaje. {precio} por persona.",
+      "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando sale el sol, muchas veces por encima del mar de nubes que cubre la sierra. Entre 8 y 9 horas, con guía acreditado y traslado desde tu hospedaje. {precio} por persona.",
     descripcionLarga:
-      "Hay un momento, arriba del Cerro del Pilón, en el que el cielo se pone naranja y abajo no se ve la tierra: solo una capa de nubes que tapa los valles de un lado al otro del horizonte. Dura unos minutos. Para verlo hay que estar arriba antes de que amanezca, y por eso este recorrido empieza de madrugada.\n\nSalimos de noche desde tu hospedaje en Xilitla y subimos al bosque de la Trinidad, el bosque de niebla que corona la sierra a casi 2,000 metros. De ahí arranca la caminata: sendero entre pinos y encinos, con lámpara frontal, en subida constante y a oscuras. No hace falta experiencia de montaña, pero sí condición para caminar varias horas en pendiente.\n\nLa llegada a la cima se calcula para coincidir con el amanecer. Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Ahí se para todo: se toman fotos, se desayuna algo y se deja que pase.\n\nLa bajada se hace ya con luz, que es cuando se ve el bosque por el que subiste a ciegas: los madroños, los helechos, la niebla colgada entre los árboles.\n\nEn total son entre 7 y 8 horas contando el traslado. Arriba hace frío de verdad aunque en Xilitla haga calor: lleva chamarra, calzado de montaña con agarre y lámpara. Nosotros ponemos el equipo de seguridad y el guía acreditado.",
+      "Hay un momento, arriba del Cerro del Pilón, en el que el cielo se pone naranja y abajo no se ve la tierra: solo una capa de nubes que tapa los valles de un lado al otro del horizonte. Dura unos minutos. Para verlo hay que estar arriba antes de que amanezca, y por eso este recorrido empieza de madrugada.\n\nSalimos de noche desde tu hospedaje en Xilitla y subimos al bosque de la Trinidad, el bosque de niebla que corona la sierra a casi 2,000 metros. De ahí arranca la caminata: sendero entre pinos y encinos, con lámpara frontal, en subida constante y a oscuras. Son de 40 minutos a 1 hora, unos 4 a 5 km en pendiente: no hace falta experiencia de montaña, pero sí condición.\n\nLa llegada a la cima se calcula para coincidir con el amanecer. Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Ahí se para todo: se toman fotos y se deja que pase.\n\nLa bajada se hace ya con luz, que es cuando se ve el bosque por el que subiste a ciegas: los madroños, los helechos, la niebla colgada entre los árboles. Al bajar, gente de la comunidad ofrece comida —con costo aparte— y en La Trinidad hay un restaurante: el desayuno no va incluido.\n\nEn total son entre 8 y 9 horas contando el traslado: pasamos por ti entre las 4:00 y las 4:30 AM y vuelves entre las 12:00 y la 1:00 PM. Arriba hace frío de verdad aunque en Xilitla haga calor: lleva chamarra, calzado de montaña con agarre y lámpara. Nosotros ponemos el equipo de seguridad y el guía acreditado.",
     destinos: [
       "Bosque de niebla de La Trinidad",
       "Cerro del Pilón",
@@ -2322,23 +2329,28 @@ const TOURS_RAW: Tour[] = [
     ],
     imagen_hero: "/imagenes/tours/amanecer-de-nubes/hero.jpg",
     itinerario: [
-      { hora: "3:00–4:00 AM", momento: "Recogida",
+      { hora: "4:00–4:30 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Xilitla, de noche cerrada. Lleva chamarra: arriba el clima es otro." },
-      { hora: "4:30 AM", momento: "Subida a La Trinidad",
+      { hora: "4:45 AM", momento: "Subida a La Trinidad",
         texto: "Camino de sierra hasta el bosque de niebla, a casi 2,000 metros. Se sube de noche y con las ventanas empañadas." },
-      { hora: "5:00 AM", momento: "Arranca la caminata",
-        texto: "Sendero entre pinos y encinos, con lámpara frontal y en subida constante. No hace falta experiencia de montaña, pero sí condición." },
-      { hora: "6:45 AM", momento: "La cima",
+      { hora: "5:30 AM", momento: "Arranca la caminata",
+        texto: "Sendero entre pinos y encinos, con lámpara frontal y en subida constante: de 40 minutos a 1 hora, unos 4 a 5 km. No hace falta experiencia de montaña, pero sí condición." },
+      { hora: "6:30 AM", momento: "La cima",
         texto: "Llegas al Cerro del Pilón todavía a oscuras. Los últimos metros son de roca y hay tiempo de acomodarse antes de que salga el sol.",
         foto: "/imagenes/tours/amanecer-de-nubes/gallery-2.jpg" },
       { hora: "7:00 AM", momento: "El amanecer",
         texto: "Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Dura unos minutos y ahí se para todo.",
         foto: "/imagenes/tours/amanecer-de-nubes/hero.jpg" },
-      { hora: "8:30 AM", momento: "La bajada, ya con luz",
+      { hora: "8:00 AM", momento: "La bajada, ya con luz",
         texto: "Es cuando por fin ves el bosque por el que subiste a ciegas: los madroños, los helechos y la niebla colgada entre los árboles.",
         foto: "/imagenes/tours/amanecer-de-nubes/gallery-7.jpg" },
-      { hora: "10:00–11:00 AM", momento: "Regreso",
-        texto: "Te dejamos en tu hospedaje. Te queda el día entero por delante." },
+      // Erick, 17 nov 2026: el desayuno NO va incluido. Al bajar, gente de la
+      // comunidad ofrece comida con costo aparte, y en La Trinidad hay un
+      // restaurante.
+      { hora: "9:00 AM", momento: "Algo de comer en La Trinidad",
+        texto: "Al bajar, gente de la comunidad ofrece comida y en La Trinidad hay un restaurante. No va incluido: se paga aparte, ahí mismo." },
+      { hora: "12:00–1:00 PM", momento: "Regreso",
+        texto: "Te dejamos en tu hospedaje. Te queda la tarde por delante." },
     ],
     collage: [
       "/imagenes/tours/amanecer-de-nubes/gallery-7.jpg",
@@ -2408,9 +2420,9 @@ const TOURS_RAW: Tour[] = [
     precioUnidad:     "persona",
     urgencia:         "Solo se entra con guía de la comunidad — se reserva con anticipación",
     descripcion:
-      "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega tras una caminata guiada de unas 2 horas entre bosque, llanos y miradores. Entre 8 y 9 horas. {precio} por persona.",
+      "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega caminando con guía entre bosque, llanos y miradores: la caminata es de 2 h 30 a 3 horas, unos 9 a 10 km. Entre 8 y 9 horas en total. {precio} por persona.",
     descripcionLarga:
-      "La Olla de la Luz —también la verás escrita Hoya de la Luz— es de esos lugares que no se entienden en una foto. Es un sótano vertical de 193 metros de profundidad y 233 de diámetro abierto en lo alto de la sierra de Xilitla: un hueco en el bosque tan grande que en su fondo creció otro bosque, y tan hondo que la luz del sol solo entra por completo unas horas al día.\n\nPara llegar hay que subir primero a La Trinidad, la comunidad náhuatl que vive a unos 14 km de Xilitla, en uno de los bosques de niebla mejor conservados de la Huasteca. La carretera sube casi 2,000 metros por camino de sierra, y cuando llegas el clima ya es otro: fresco, húmedo, con la niebla enredada entre los pinos.\n\nDe ahí arranca la caminata, de unas 2 horas, con guía de la propia comunidad — es la única manera de entrar. Se atraviesan tramos de bosque cerrado, llanos abiertos y varios miradores. El camino pasa entre pinos, cedros y orquídeas, y si hay suerte se cruzan coatíes o se oyen las pavas.\n\nY entonces el bosque se abre. Asomarse al borde de la Olla de la Luz es la clase de vista que recalibra la escala de las cosas: la pared de roca cayendo a plomo, las copas de los árboles allá abajo como brócoli, y el silencio. El guía te enseña dónde pararse y dónde no.\n\nSon entre 8 y 9 horas contando traslados. Lleva calzado de senderismo, chamarra o impermeable, agua y algo de comer. Arriba hace frío aunque en Xilitla estés sudando.",
+      "La Olla de la Luz —también la verás escrita Hoya de la Luz— es de esos lugares que no se entienden en una foto. Es un sótano vertical de 193 metros de profundidad y 233 de diámetro abierto en lo alto de la sierra de Xilitla: un hueco en el bosque tan grande que en su fondo creció otro bosque, y tan hondo que la luz del sol solo entra por completo unas horas al día.\n\nPara llegar hay que subir primero a La Trinidad, la comunidad náhuatl que vive a unos 14 km de Xilitla, en uno de los bosques de niebla mejor conservados de la Huasteca. La carretera sube casi 2,000 metros por camino de sierra, y cuando llegas el clima ya es otro: fresco, húmedo, con la niebla enredada entre los pinos.\n\nDe ahí arranca la caminata, de 2 h 30 a 3 horas y unos 9 a 10 km, con guía de la propia comunidad — es la única manera de entrar. Se atraviesan tramos de bosque cerrado, llanos abiertos y varios miradores. El camino pasa entre pinos, cedros y orquídeas, y si hay suerte se cruzan coatíes o se oyen las pavas.\n\nY entonces el bosque se abre. Asomarse al borde de la Olla de la Luz es la clase de vista que recalibra la escala de las cosas: la pared de roca cayendo a plomo, las copas de los árboles allá abajo como brócoli, y el silencio. El guía te enseña dónde pararse y dónde no.\n\nSon entre 8 y 9 horas contando traslados. Lleva calzado de senderismo, chamarra o impermeable, agua y algo de comer. Arriba hace frío aunque en Xilitla estés sudando.",
     destinos: [
       "La Trinidad — Bosque de Niebla de Xilitla",
       "Miradores del Cerro de la Luz",
@@ -2418,7 +2430,7 @@ const TOURS_RAW: Tour[] = [
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla",
-      "Caminata guiada de unas 2 horas entre bosque, llanos y miradores",
+      "Caminata guiada de 2 h 30 a 3 horas (9 a 10 km) entre bosque, llanos y miradores",
       "Guía acreditado NOM-09 SECTUR",
       "Equipo de seguridad",
     ],

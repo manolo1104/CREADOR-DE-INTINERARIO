@@ -92,11 +92,11 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿A qué hora es la salida?",
-      a: "Salimos entre las 8:00 y las 9:00 AM. Confirmamos la hora exacta de tu recogida al reservar.",
+      a: "Pasamos por ti hacia las 8:00 AM y estás de vuelta entre las 8:00 y las 9:00 PM. La noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de tu recogida.",
     },
     {
       q: "¿Qué pasa si llueve?",
-      a: "Operamos con lluvia ligera: la selva con agua se ve mejor. Si el río no está seguro, primero te cambiamos de actividad —hay recorridos que no dependen del río, como Las Pozas o la Gruta— y si ninguno te late, eliges reembolso o cambio de fecha. La idea es que ese día la pases bien de todos modos.",
+      a: "Operamos con lluvia ligera: la selva con agua se ve mejor. Pero si por el nivel del río cierran Tamul, se suspende el recorrido completo —Tamul, la Cueva del Agua y el sótano—. En ese caso te ofrecemos el Meco u otra alternativa del mismo nivel, y si ninguna te late, eliges reembolso completo o cambio de fecha sin costo.",
     },
   ],
   "tour-edward-james": [
@@ -110,7 +110,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Cuánto tiempo estamos en cada lugar?",
-      a: "Aprox. 2h en Las Pozas, 1h en Huichihuayán, 45 min en cada atracción adicional.",
+      a: "Aprox. 1 h 30 de visita guiada en Las Pozas, 1 h en Huichihuayán y unos 45 min en cada una de las otras dos paradas. Desde Xilitla terminas entre las 4:30 y las 5:00 PM; si vienes de Ciudad Valles, llegas de vuelta hacia las 6:00–7:00 PM.",
     },
   ],
   "tour-meco": [
@@ -227,15 +227,15 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Qué tan difícil es la subida?",
-      a: "Es de dificultad media. Son varias horas de caminata en subida constante, buena parte de ellas a oscuras y con lámpara frontal, por un sendero entre pinos y encinos; los últimos metros antes de la cima son de roca. No hace falta experiencia de montaña, pero sí condición para caminar en pendiente.",
+      a: "Es de dificultad media. La caminata es de 40 minutos a 1 hora, unos 4 a 5 km en subida constante, casi toda a oscuras y con lámpara frontal, por un sendero entre pinos y encinos; los últimos metros antes de la cima son de roca. No hace falta experiencia de montaña, pero sí condición para caminar en pendiente.",
     },
     {
       q: "¿Hace frío arriba?",
       a: "Sí, de verdad, aunque en Xilitla haga calor. Se camina de madrugada por un bosque de niebla a casi 2,000 metros: lleva chamarra que corte el viento, calzado de montaña con buen agarre y lámpara frontal.",
     },
     {
-      q: "¿Se desayuna en la cima?",
-      a: "Sí, pero el desayuno no va incluido. Como se sale de madrugada, lleva agua y algo de comer: en la cima, después del amanecer, se para todo para tomar fotos y desayunar algo.",
+      q: "¿Está incluido el desayuno?",
+      a: "No. Al bajar, gente de la comunidad ofrece comida con costo aparte, y en La Trinidad hay un restaurante. Para la subida, lleva agua y algo ligero.",
     },
   ],
   // 🔴 Las medidas del sótano (193 m de caída, 233 de diámetro) repiten las de
@@ -252,7 +252,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Qué tan difícil es la caminata?",
-      a: "Es de dificultad media: unas 2 horas de caminata guiada para llegar, entre bosque cerrado, llanos abiertos y miradores, y el regreso por el mismo sendero, todo en altura. El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar, así que conviene ir con calzado de senderismo.",
+      a: "Es de dificultad media: de 2 h 30 a 3 horas de caminata guiada, unos 9 a 10 km, entre bosque cerrado, llanos abiertos y miradores, con el regreso por el mismo sendero y todo en altura. El recorrido se mueve entre los 1,950 y los 2,300 metros sobre el nivel del mar, así que conviene ir con calzado de senderismo.",
     },
     {
       q: "¿Qué tan cerca del borde se puede llegar?",

@@ -362,7 +362,7 @@ export const LOGISTICA = {
     },
   ],
   intra:
-    "Ya en la zona, nuestro transporte te lleva del hotel al inicio de cada tour y de regreso. Como referencia: Xilitla está a ~40 min de Aquismón y ~1 h de Ciudad Valles; Ciudad Valles a ~50 min de Tamasopo.",
+    "Ya en la zona, nuestro transporte te lleva del hotel al inicio de cada tour y de regreso. Como referencia: Xilitla está a ~40 min de Aquismón y ~1 h 30 de Ciudad Valles; Ciudad Valles a ~50 min de Tamasopo.",
 };
 
 // ── Reseñas (estilo real; sin contadores inventados) ────────────────────────
@@ -466,7 +466,7 @@ export const FAQS_PAQUETES = [
   },
   {
     q: "¿Cómo llego a Xilitla desde CDMX?",
-    a: "La forma más práctica es el autobús nocturno desde la Terminal Central del Norte (~10:15 PM, líneas Servicios Coordinados / ETN), que llega a Xilitla cerca de las 6:30 AM por unos $650 por persona. Un taxi de ~$60 te deja en el hotel en 7 minutos. Como llegas al amanecer, te entregamos la habitación temprano para descansar y ese mismo día arranca tu primer tour: no pierdes el Día 1.",
+    a: "La forma más práctica es el autobús nocturno desde la Terminal Central del Norte (~10:15 PM, líneas Servicios Coordinados / ETN), que llega a Xilitla cerca de las 6:30 AM por unos $650 por persona. Un taxi de $70–80 te deja en el hotel en 7 minutos. Como llegas al amanecer, te entregamos la habitación temprano para descansar y ese mismo día arranca tu primer tour: no pierdes el Día 1.",
   },
   {
     // La respuesta cerraba con "En el paquete Luna de Miel la Jungla ya va
@@ -566,13 +566,13 @@ const PAQUETES_RAW: Paquete[] = [
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
       "Equipo de seguridad y chaleco salvavidas",
-      "Seguro de viaje",
       "Fotografía y video del recorrido",
     ],
     noIncluye: [
       "Traslado hasta Xilitla (llegas por tu cuenta, consulta la sección 'Cómo llegar')",
       "Comidas y cenas (excepto desayunos)",
       "Habitación con vista a la montaña (escríbenos y te cotizamos el cambio)",
+      "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)",
       "Propinas y gastos personales",
     ],
     valor: [
@@ -625,13 +625,13 @@ const PAQUETES_RAW: Paquete[] = [
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
       "Equipo de seguridad y chaleco salvavidas",
-      "Seguro de viaje",
       "Fotografía y video del recorrido",
     ],
     noIncluye: [
       "Traslado hasta Xilitla (llegas por tu cuenta, consulta la sección 'Cómo llegar')",
       "Comidas y cenas (excepto desayunos)",
       "Habitación con vista a la montaña (escríbenos y te cotizamos el cambio)",
+      "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)",
       "Propinas y gastos personales",
     ],
     valor: [
@@ -683,13 +683,14 @@ const PAQUETES_RAW: Paquete[] = [
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
       "Equipo de seguridad: casco, chaleco salvavidas y remo",
-      "Seguro de viaje",
+      "Seguro de viajero en el RZR y en el rafting",
       "Fotografía y video del recorrido",
     ],
     noIncluye: [
       "Traslado hasta Xilitla (llegas por tu cuenta, consulta la sección 'Cómo llegar')",
       "Comidas y cenas (excepto desayunos)",
       "Habitación con vista a la montaña (escríbenos y te cotizamos el cambio)",
+      "Seguro de viajero en Minas Viejas y Micos: opcional, $80 por persona (pídelo al reservar)",
       "Propinas y gastos personales",
     ],
     valor: [
@@ -743,13 +744,13 @@ const PAQUETES_RAW: Paquete[] = [
       "Guías certificados NOM-09 SECTUR",
       "Entradas a todas las atracciones",
       "Equipo de seguridad y chaleco salvavidas",
-      "Seguro de viaje",
       "Fotografía y video de cada recorrido",
     ],
     noIncluye: [
       "Traslado hasta Xilitla (llegas por tu cuenta, consulta la sección 'Cómo llegar')",
       "Comidas y cenas (excepto desayunos)",
       "Habitación con vista a la montaña (escríbenos y te cotizamos el cambio)",
+      "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)",
       "Propinas y gastos personales",
     ],
     valor: [
@@ -992,7 +993,7 @@ const XANTOLO_2026: Paquete = {
   ],
   incluye: [
     "1 noche en el Hotel Paraíso Encantado de Xilitla, del domingo 1 al lunes 2 de noviembre",
-    "Ruta Surrealista completa: transporte desde el hotel, desayuno, entradas, guía certificado NOM-09 y seguro de viaje",
+    "Ruta Surrealista completa: transporte desde el hotel, desayuno, entradas y guía certificado NOM-09",
     "Degustación de temporada: tamales, atole, bocoles y pan de muerto",
     "Transporte con guía al centro de Xilitla para ver las comparsas y los shows más representativos del Xantolo",
   ],

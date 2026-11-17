@@ -219,7 +219,7 @@ export function getToursXilitla(locale: Locale): ToursXilitlaContent {
       faqs: [
         {
           q: "What does a Xilitla package include?",
-          a: `Nights at our hotel in Xilitla, each day's guided tours with transport, entrance fees, breakfast and a NOM-09 certified guide with traveler's insurance. Packages run from ${DIAS_MIN} to ${DIAS_MAX} days. ${notaPrecios("en")} From the third person on, you add their place on each tour and whatever room is needed; children pay less.`,
+          a: `Nights at our hotel in Xilitla, each day's guided tours with transport, entrance fees, breakfast and a NOM-09 certified guide. Packages run from ${DIAS_MIN} to ${DIAS_MAX} days. ${notaPrecios("en")} From the third person on, you add their place on each tour and whatever room is needed; children pay less.`,
         },
         {
           q: "Why stay in Xilitla instead of Ciudad Valles?",
@@ -344,7 +344,7 @@ export function getToursXilitla(locale: Locale): ToursXilitlaContent {
     faqs: [
       {
         q: "¿Qué incluye un paquete a Xilitla?",
-        a: `Las noches en nuestro hotel de Xilitla, los recorridos guiados de cada día con transporte, las entradas, el desayuno y el guía certificado NOM-09 con seguro de viajero. Los paquetes van de ${DIAS_MIN} a ${DIAS_MAX} días. ${notaPrecios("es")} Desde la tercera persona se suman su lugar en cada recorrido y la habitación que haga falta; los menores pagan menos.`,
+        a: `Las noches en nuestro hotel de Xilitla, los recorridos guiados de cada día con transporte, las entradas, el desayuno y el guía certificado NOM-09. Los paquetes van de ${DIAS_MIN} a ${DIAS_MAX} días. ${notaPrecios("es")} Desde la tercera persona se suman su lugar en cada recorrido y la habitación que haga falta; los menores pagan menos.`,
       },
       {
         q: "¿Por qué quedarse en Xilitla y no en Ciudad Valles?",

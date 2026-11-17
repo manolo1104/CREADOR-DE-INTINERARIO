@@ -880,7 +880,7 @@ const es: BookingMessages = {
 
     recogidaCadaRecorrido: "Cómo llegas a cada recorrido:",
     noHaceFaltaHospedarte: "No necesitas hospedarte con nosotros.",
-    horaExacta: "La hora exacta te la confirmamos por WhatsApp al reservar.",
+    horaExacta: "La hora exacta te la manda tu guía por WhatsApp la noche anterior, entre 8 y 9 pm.",
     porPersona: "por persona",
     porVehiculo: "por vehículo",
     porGrupo: "por el grupo",
@@ -1029,7 +1029,7 @@ const es: BookingMessages = {
       {
         q: "¿De dónde salimos y a qué hora?",
         clave: "salidas",
-        a: "Depende del recorrido: la mayoría pasa por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y algunos tienen horario y punto de encuentro propios. La hora exacta te la confirmamos por WhatsApp al reservar.",
+        a: "Depende del recorrido: la mayoría pasa por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y algunos tienen horario y punto de encuentro propios. La hora exacta te la manda tu guía por WhatsApp la noche anterior, entre 8 y 9 pm.",
       },
       {
         q: "¿Necesito hospedarme con ustedes?",
@@ -1070,7 +1070,7 @@ const es: BookingMessages = {
     elegiste: (opcion) => `Elegiste: ${opcion}`,
     loQueVaIncluido: "Lo que va incluido",
     trasladoPaquete: "Te llevamos de tu hotel en Xilitla al inicio de cada recorrido y de regreso.",
-    horaExacta: "Confirmamos tu hora exacta por WhatsApp.",
+    horaExacta: "Tu guía te manda la hora exacta por WhatsApp la noche anterior (8–9 pm).",
     cancelasGratis: "Cancelas gratis hasta 48 h antes, con reembolso completo.",
     cancelasGratisResto: "Lo demás: cancelas gratis hasta 48 h antes, con reembolso completo.",
     guiaEnIngles: "Sale un guía que habla inglés, sin costo extra.",
@@ -1512,7 +1512,7 @@ const en: BookingMessages = {
 
     recogidaCadaRecorrido: "How you get to each tour:",
     noHaceFaltaHospedarte: "You don't need to stay with us.",
-    horaExacta: "We confirm the exact time on WhatsApp when you book.",
+    horaExacta: "Your guide sends you the exact time on WhatsApp the night before, between 8 and 9 pm.",
     porPersona: "per person",
     porVehiculo: "per vehicle",
     porGrupo: "for the group",
@@ -1658,7 +1658,7 @@ const en: BookingMessages = {
       {
         q: "Where do we leave from and at what time?",
         clave: "salidas",
-        a: "It depends on the tour: most pick you up at your lodging —hotel, hostel, cabin or Airbnb— in Xilitla or Ciudad Valles, and a few have their own schedule and meeting point. We confirm the exact time on WhatsApp when you book.",
+        a: "It depends on the tour: most pick you up at your lodging —hotel, hostel, cabin or Airbnb— in Xilitla or Ciudad Valles, and a few have their own schedule and meeting point. Your guide sends you the exact time on WhatsApp the night before, between 8 and 9 pm.",
       },
       {
         q: "Do I have to stay at your hotel?",
@@ -1702,7 +1702,7 @@ const en: BookingMessages = {
     elegiste: (opcion) => `You chose: ${opcion}`,
     loQueVaIncluido: "What's included",
     trasladoPaquete: "We take you from your hotel in Xilitla to the start of each tour and back.",
-    horaExacta: "We confirm your exact time on WhatsApp.",
+    horaExacta: "Your guide sends your exact time on WhatsApp the night before (8–9 pm).",
     cancelasGratis: "Cancel free up to 48 h before, with a full refund.",
     cancelasGratisResto: "Everything else: cancel free up to 48 h before, with a full refund.",
     /** Pidió guía en inglés, sin costo (8 oct 2026). */

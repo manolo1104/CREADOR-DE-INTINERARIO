@@ -240,7 +240,7 @@ function preciosUI(locale: Locale) {
           ? [
               {
                 q: `How much does a ${paqCorto.dias}-day trip to the Huasteca Potosina with hotel cost?`,
-                a: `The shortest trip with hotel we run is ${paqCorto.duracion}: the ${paqCorto.nombre} package, built for ${paqCortoPerfiles}, at ${money(precioVisible(paqCorto))} MXN ${unidadPaquete(paqCorto, locale)}. It includes ${paqCorto.noches} nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, ${diasDeTour(paqCorto)} days of guided touring, transport from the hotel to each tour and back, entrance fees, NOM-09 SECTUR certified guides, safety gear and travel insurance. It does not include getting to Xilitla, or lunches and dinners.${otrosTexto}`,
+                a: `The shortest trip with hotel we run is ${paqCorto.duracion}: the ${paqCorto.nombre} package, built for ${paqCortoPerfiles}, at ${money(precioVisible(paqCorto))} MXN ${unidadPaquete(paqCorto, locale)}. It includes ${paqCorto.noches} nights at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, ${diasDeTour(paqCorto)} days of guided touring, transport from the hotel to each tour and back, entrance fees, NOM-09 SECTUR certified guides and safety gear. It does not include getting to Xilitla, or lunches and dinners.${otrosTexto}`,
               },
             ]
           : []),
@@ -250,7 +250,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "What is included in the price, and what is not?",
-          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes travel insurance and the photos and video of the trip. It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
+          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes the photos and video of the trip. Adventure tours (rafting, rappel and RZR) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
         },
         {
           q: "How much do you pay when you book?",
@@ -258,7 +258,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "Is there a discount for children?",
-          a: `Yes. On tours priced per person, children aged 6 to 10 pay around 70% of the adult price, and children under 6 pay 50%. The discount is applied automatically when you book online.${ninosOtraUnidad}`,
+          a: `Yes. On tours priced per person, kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. Tours with a minimum age of 8 have no child rate. The discount is applied automatically when you book online.${ninosOtraUnidad}`,
         },
         {
           q: "Can I pay by card, or do I have to pay cash?",
@@ -278,7 +278,7 @@ function preciosUI(locale: Locale) {
           ? [
               {
                 q: `¿Cuánto cuesta un viaje de ${paqCorto.dias} días a la Huasteca Potosina con hotel?`,
-                a: `El viaje con hotel más corto que armamos es de ${paqCorto.duracion}: el paquete ${paqCorto.nombre}, hecho para ${paqCortoPerfiles}, en ${money(precioVisible(paqCorto))} MXN ${unidadPaquete(paqCorto, locale)}. Incluye ${paqCorto.noches} noches en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, ${diasDeTour(paqCorto)} días de recorrido guiado, transporte del hotel al inicio de cada tour y de regreso, entradas, guías certificados NOM-09 SECTUR, equipo de seguridad y seguro de viaje. No incluye el traslado hasta Xilitla ni las comidas y cenas.${otrosTexto}`,
+                a: `El viaje con hotel más corto que armamos es de ${paqCorto.duracion}: el paquete ${paqCorto.nombre}, hecho para ${paqCortoPerfiles}, en ${money(precioVisible(paqCorto))} MXN ${unidadPaquete(paqCorto, locale)}. Incluye ${paqCorto.noches} noches en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, ${diasDeTour(paqCorto)} días de recorrido guiado, transporte del hotel al inicio de cada tour y de regreso, entradas, guías certificados NOM-09 SECTUR y equipo de seguridad. No incluye el traslado hasta Xilitla ni las comidas y cenas.${otrosTexto}`,
               },
             ]
           : []),
@@ -288,7 +288,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "¿Qué incluye el precio del tour y qué no?",
-          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen seguro de viaje y las fotos y el video del recorrido. No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
+          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen las fotos y el video del recorrido. Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
         },
         {
           q: "¿Cuánto se paga al reservar?",
@@ -296,7 +296,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "¿Hay descuento para niños?",
-          a: `Sí. En los recorridos que se cobran por persona, los niños de 6 a 10 años pagan alrededor del 70 % del precio de adulto y los menores de 6 años el 50 %. El descuento se aplica automáticamente al reservar en línea.${ninosOtraUnidad}`,
+          a: `Sí. En los recorridos que se cobran por persona, los niños de 4 a 7 años pagan el 50 %; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. Los recorridos con edad mínima de 8 años no tienen tarifa de niño. El descuento se aplica automáticamente al reservar en línea.${ninosOtraUnidad}`,
         },
         {
           q: "¿Puedo pagar con tarjeta o tengo que pagar en efectivo?",
@@ -397,8 +397,8 @@ function preciosUI(locale: Locale) {
     // la Gruta sale a las 7 PM y el Amanecer a las 3 AM. La hora va aparte, en
     // `salidas`, armada del catálogo.
     notaTabla: en
-      ? `On per-person tours, children aged 6 to 10 pay ~70% of the adult price; under 6, 50%.${GRUPO_TOURS.length ? ` ${lista(GRUPO_TOURS.map(nombre))}: the rate is for the whole group and each child counts as one person.` : ""} Free cancellation up to 48 h before${CON_CANCELACION_PROPIA.length ? ` (except ${lista(CON_CANCELACION_PROPIA.map(nombre))}, non-refundable)` : ""}.`
-      : `En los recorridos por persona, niños de 6 a 10 años pagan ~70 % del precio de adulto; menores de 6 años, 50 %.${GRUPO_TOURS.length ? ` ${lista(GRUPO_TOURS.map(nombre))}: la tarifa es del grupo completo y cada niño cuenta como una persona.` : ""} Cancelación gratuita con 48 h de anticipación${CON_CANCELACION_PROPIA.length ? ` (salvo ${lista(CON_CANCELACION_PROPIA.map(nombre))}, sin reembolso)` : ""}.`,
+      ? `On per-person tours, kids 4–7 pay 50 % of the adult price; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price.${GRUPO_TOURS.length ? ` ${lista(GRUPO_TOURS.map(nombre))}: the rate is for the whole group and each child counts as one person.` : ""} Free cancellation up to 48 h before${CON_CANCELACION_PROPIA.length ? ` (except ${lista(CON_CANCELACION_PROPIA.map(nombre))}, non-refundable)` : ""}.`
+      : `En los recorridos por persona, niños de 4 a 7 años pagan el 50 % del precio de adulto; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto.${GRUPO_TOURS.length ? ` ${lista(GRUPO_TOURS.map(nombre))}: la tarifa es del grupo completo y cada niño cuenta como una persona.` : ""} Cancelación gratuita con 48 h de anticipación${CON_CANCELACION_PROPIA.length ? ` (salvo ${lista(CON_CANCELACION_PROPIA.map(nombre))}, sin reembolso)` : ""}.`,
     salidas: (en ? "Departure times and pickup: " : "Horarios y recogida: ") + excepcionesSalida(locale),
 
     paqTitulo: en ? "How much does a full trip cost?" : "¿Cuánto cuesta un viaje completo?",
@@ -412,15 +412,15 @@ function preciosUI(locale: Locale) {
         .map((p) => `${p.nombre}, ${money(precioVisible(p))} MXN ${unidadPaquete(p, locale)} (${p.duracion}, ${diasDeTour(p)} ${en ? "tour days" : "días de recorrido"})`)
         .join("; ") +
       (en
-        ? ". All packages include lodging at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, transport, entrance fees, NOM-09 certified guides and travel insurance; they do not include getting to Xilitla, or lunches and dinners."
-        : ". Todos los paquetes incluyen hospedaje en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, transporte, entradas, guías certificados NOM-09 y seguro de viaje; no incluyen el traslado hasta Xilitla ni las comidas y cenas."),
+        ? ". All packages include lodging at Hotel Paraíso Encantado in Xilitla, buffet breakfast on tour days, transport, entrance fees and NOM-09 certified guides; they do not include getting to Xilitla, or lunches and dinners."
+        : ". Todos los paquetes incluyen hospedaje en el Hotel Paraíso Encantado de Xilitla, desayuno buffet los días de tour, transporte, entradas y guías certificados NOM-09; no incluyen el traslado hasta Xilitla ni las comidas y cenas."),
     paqGrupo: en
       ? "Traveling as a group or a family, or want more nights? We build custom quotes from 2 people. "
       : "¿Grupo, familia o más noches? Armamos cotizaciones a la medida desde 2 personas. ",
     paqCta: en ? "See the full packages →" : "Ver paquetes completos →",
 
     // Era "El precio SIEMPRE incluye" con el traslado desde las dos ciudades y
-    // el desayuno en la lista. Lo que va en todos (seguro, fotos) se dice sin
+    // el desayuno en la lista. Lo que va en todos (las fotos) se dice sin
     // matiz; lo demás, contado o "según el recorrido".
     incluyeTitulo: en ? "What the price includes" : "Qué incluye el precio",
     incluyeItems: en
@@ -430,7 +430,8 @@ function preciosUI(locale: Locale) {
           "Entrance fees to parks and attractions, depending on the tour",
           "A guide on every tour (NOM-09 SECTUR certified on most)",
           "Safety gear and first-aid kit, depending on the activity",
-          "Travel insurance and photos and video of the trip, on every tour",
+          "Photos and video of the trip, on every tour",
+          "Traveler insurance on adventure tours (rafting, rappel and RZR); optional on the rest: MXN $80 per person",
         ]
       : [
           `Traslado redondo desde tu hospedaje en ${N_TRASLADO} de los ${N_TOURS_DIA} recorridos (Xilitla o Ciudad Valles, o solo Xilitla)`,
@@ -438,7 +439,8 @@ function preciosUI(locale: Locale) {
           "Entradas a parques y atracciones, según el recorrido",
           "Guía en todos los recorridos (certificado NOM-09 SECTUR en la mayoría)",
           "Equipo de seguridad y botiquín, según la actividad",
-          "Seguro de viaje y fotos y video del recorrido, en todos",
+          "Fotos y video del recorrido, en todos",
+          "Seguro de viajero en los tours de aventura (rafting, rappel y RZR); en los demás es opcional: $80 por persona",
         ],
     noIncluyeTitulo: en ? "Not included" : "No incluye",
     noIncluyeItems: en

@@ -132,11 +132,11 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "What time do we leave?",
-      a: "Between 8:00 and 9:00 AM. We confirm your exact pickup time when you book.",
+      a: "We pick you up around 8:00 AM and you're back between 8:00 and 9:00 PM. The night before, between 8 and 9 PM, your guide messages you on WhatsApp with your exact pickup time.",
     },
     {
       q: "What happens if it rains?",
-      a: "We run in light rain. If there's an electrical storm, we reschedule at no cost.",
+      a: "We run in light rain: the jungle looks better wet. But if Tamul closes because of the river level, the whole tour is called off — Tamul, the Water Cave and the sinkhole. In that case we offer you El Meco or another option of the same level, and if none of them works for you, you choose a full refund or a free change of date.",
     },
   ],
   "tour-edward-james": [
@@ -150,7 +150,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "How long do we spend at each stop?",
-      a: "About 2 hours at Las Pozas, 1 hour at Huichihuayán, and 45 minutes at each additional stop.",
+      a: "About an hour and a half guided at Las Pozas, 1 hour at Huichihuayán, and around 45 minutes at each of the other two stops. From Xilitla you're done between 4:30 and 5:00 PM; if you're coming from Ciudad Valles, you're back around 6:00–7:00 PM.",
     },
   ],
   "tour-meco": [
@@ -230,15 +230,15 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "How hard is the climb?",
-      a: "Moderate. It's several hours of steady uphill walking, much of it in the dark by headlamp, on a trail through pines and oaks; the last stretch before the summit is rock. You don't need mountaineering experience, but you do need to be fit enough to walk uphill.",
+      a: "Moderate. The hike takes 40 minutes to an hour, some 4 to 5 km of steady uphill walking, almost all of it in the dark by headlamp, on a trail through pines and oaks; the last stretch before the summit is rock. You don't need mountaineering experience, but you do need to be fit enough to walk uphill.",
     },
     {
       q: "Is it cold at the top?",
       a: "Yes, genuinely, even when Xilitla is hot. You're walking through a cloud forest at nearly 2,000 metres before dawn: bring a windproof jacket, hiking shoes with good grip and a headlamp.",
     },
     {
-      q: "Do we have breakfast at the summit?",
-      a: "Yes, but breakfast isn't included. Since you leave in the middle of the night, bring water and something to eat: at the summit, after the sunrise, everything stops for photos and a bite.",
+      q: "Is breakfast included?",
+      a: "No. Back down, people from the community offer food at a separate cost, and there's a restaurant in La Trinidad. For the climb, bring water and a light snack.",
     },
   ],
   "tour-olla-de-la-luz": [
@@ -252,7 +252,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "How hard is the hike?",
-      a: "Moderate: about 2 hours of guided walking to get there, through dense forest, open clearings and lookouts, and the same trail back, all at altitude. The route runs between 1,950 and 2,300 metres above sea level, so wear hiking shoes.",
+      a: "Moderate: 2½ to 3 hours of guided walking, some 9 to 10 km, through dense forest, open clearings and lookouts, with the same trail back and all of it at altitude. The route runs between 1,950 and 2,300 metres above sea level, so wear hiking shoes.",
     },
     {
       q: "How close to the edge can I get?",

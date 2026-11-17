@@ -305,6 +305,7 @@ function construirDescripcion(
   salida: string | null,
   horaFija: boolean,
   aval: AvalGuia,
+  conSeguro: boolean,
   locale: Locale,
 ): string {
   const en = locale === "en";
@@ -316,10 +317,18 @@ function construirDescripcion(
   // fragmento de Google era decir algo que TOURS_DB no respalda.
   const guiaDe = (a: AvalGuia) => (a ? (en ? "certified guide" : `guía ${a}`) : en ? "guide" : "guía");
   const guia = guiaDe(aval);
-  const cola = (g: string) => (en ? `${g} and insurance included.` : `${g} y seguro incluidos.`);
+  // 🔴 17 nov 2026: el seguro solo va incluido en rafting, rappel y RZR. En
+  // los demás la meta prometía "seguro incluido" y es opcional ($80 por
+  // persona), así que solo se nombra donde el `incluye` del tour lo trae.
+  const cola = (g: string) => conSeguro
+    ? (en ? `${g} and insurance included.` : `${g} y seguro incluidos.`)
+    : (en ? `${g} included.` : `${g} incluido.`);
+  const pieza = (p: string) => conSeguro
+    ? `${p}, ${cola(guia)}`
+    : (en ? `${p} and ${guia} included.` : `${p} y ${guia} incluidos.`);
   const s2 = recogida.incluyeTraslado
-    ? en ? `Transport, ${cola(guia)}` : `Traslado, ${cola(guia)}`
-    : en ? `Gear, ${cola(guia)}` : `Equipo, ${cola(guia)}`;
+    ? pieza(en ? "Transport" : "Traslado")
+    : pieza(en ? "Gear" : "Equipo");
 
   const candidatas: string[] = [];
   if (recogida.valles) {
@@ -408,6 +417,7 @@ export function metadataPagina({ params }: Props, locale: Locale): Metadata {
         salidaCorta(base, en),
         Boolean(recogidaDeTour(base).horaTexto),
         avalDelGuia(base),
+        base.incluye.some((x) => /seguro/i.test(x)),
         locale,
       );
   return {
@@ -446,8 +456,9 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   const tour = localizeTour(base, locale);
   // 🔴 Lo que se le ENSEÑA al cliente como "qué incluye" (la lista visible y
   // la pregunta frecuente, que viaja al JSON-LD) pasa por `incluyeDeTour`, que
-  // suma el seguro de viaje y las fotos de `INCLUYE_SIEMPRE`. Con
-  // `tour.incluye` a pelo, la lista callaba el seguro que el párrafo citable
+  // suma las fotos de `INCLUYE_SIEMPRE` (el seguro ya no: desde el 17 nov
+  // 2026 solo lo traen rafting, rappel y RZR en su propio `incluye`). Con
+  // `tour.incluye` a pelo, la lista callaba lo que el párrafo citable
   // de esta misma ficha promete. En inglés recibe el tour ya localizado.
   // Las expresiones de más abajo que DETECTAN piezas (desayuno, entradas,
   // guía) siguen leyendo `base.incluye`: "…que toma tu guía" de
@@ -654,13 +665,19 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   else if (/gu[ií]a[^|]*acreditad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified guide" : "el guía acreditado");
   else if (/instructor certificad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified PADI instructor" : "el instructor certificado PADI");
   else if (/gu[ií]a/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the guide" : "el guía");
-  piezasIncluidas.push(locale === "en" ? "travel insurance for everyone in the group" : "el seguro de viaje para todo el grupo");
+  // El seguro solo va en los tours de aventura (rafting, rappel y RZR), que lo
+  // traen en su `incluye`; en los demás es opcional y se dice aparte.
+  const conSeguro = /seguro/.test(incluyeBase);
+  if (conSeguro) piezasIncluidas.push(locale === "en" ? "traveler insurance" : "el seguro de viajero");
   const listaIncluida = piezasIncluidas.length > 1
     ? `${piezasIncluidas.slice(0, -1).join(", ")} ${locale === "en" ? "and" : "y"} ${piezasIncluidas[piezasIncluidas.length - 1]}`
     : piezasIncluidas[0];
-  const fraseIncluye = locale === "en"
+  const fraseIncluye = (locale === "en"
     ? `The price includes ${listaIncluida}.`
-    : `El precio incluye ${listaIncluida}.`;
+    : `El precio incluye ${listaIncluida}.`)
+    + (conSeguro ? "" : locale === "en"
+      ? " Traveler insurance is optional: MXN $80 per person (just ask when you book)."
+      : " El seguro de viajero es opcional: $80 por persona (pídelo al reservar).");
 
   const tourUrl = `${SITE}${localePath(`/tours/${tour.slug}`, locale)}`;
   const tourImagen = tour.imagen_hero?.startsWith("http") ? tour.imagen_hero : `${SITE}${tour.imagen_hero}`;
@@ -811,7 +828,11 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           ? { q: "Is the price per person?", a: `No — it is a flat rate for the whole group, from ${money(tour.precio)} MXN for one person up to ${money(tour.tarifaGrupo?.[maxGrupo - 1] ?? tour.precio)} MXN for ${maxGrupo}, which is the maximum the garden allows. The more of you, the less each pays.` }
           : tour.soloAdultos
             ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This activity is for ages 10 and up, so there is no children's discount. The park admission is paid separately on site.` }
-            : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Children ages 6 to 10 pay 70% (${money(Math.round(tour.precio * 0.7))} MXN) and children under 6 pay 50% (${money(Math.round(tour.precio * 0.5))} MXN). The discount applies when you book online.` },
+          // Desde 8 años (rafting, rappel, Gruta, Amanecer, Olla): el niño más
+          // chico que entra ya paga como adulto, así que no hay descuento.
+          : (req?.edadMinima ?? 0) >= 8
+            ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This tour is for ages ${req?.edadMinima} and up, and from that age everyone pays the adult price, so there is no children's discount.` }
+            : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Kids 4–7 pay 50 % (${money(Math.round(tour.precio * 0.5))} MXN); ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. The discount applies when you book online.` },
         // No hay un punto de salida único: pasamos por el cliente a SU
         // hospedaje, en Xilitla o en Ciudad Valles. Solo el RZR (se maneja en
         // Xilitla) y Media Luna (Rioverde) tienen punto de encuentro fijo.
@@ -822,8 +843,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           : recogida.tipo === "hospedaje-xilitla"
             ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging in Xilitla and bring you back at the end.${recogida.nota ? " " + recogida.nota.en : ""}` }
           : ciudadUnica
-            ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging — hotel, hostel, cabin or Airbnb — in ${ciudadUnica} and bring you back at the end. Transport is included and you don't need to stay with us. We confirm the exact time and address by WhatsApp after you book.` }
-            : { q: "Where does the tour depart from?", a: `There is no single departure point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. ${recogida.cargoValles > 0 ? `Round-trip transport is included from Xilitla; from Ciudad Valles it's $${recogida.cargoValles.toLocaleString("en-US")} MXN extra per booking (not per person). You` : "Round-trip transport is included and you"} don't need to stay with us. We confirm the exact time and address by WhatsApp after you book.` },
+            ? { q: "Where does the tour depart from?", a: `We pick you up at your lodging — hotel, hostel, cabin or Airbnb — in ${ciudadUnica} and bring you back at the end. Transport is included and you don't need to stay with us. The night before, between 8 and 9 PM, your guide messages you on WhatsApp with the exact pickup time.` }
+            : { q: "Where does the tour depart from?", a: `There is no single departure point: we pick you up at your lodging — hotel, hostel, cabin or Airbnb — in Xilitla or Ciudad Valles, and bring you back at the end of the day. ${recogida.cargoValles > 0 ? `Round-trip transport is included from Xilitla; from Ciudad Valles it's $${recogida.cargoValles.toLocaleString("en-US")} MXN extra per booking (not per person). You` : "Round-trip transport is included and you"} don't need to stay with us. The night before, between 8 and 9 PM, your guide messages you on WhatsApp with the exact pickup time.` },
       ]
     : [
         { q: `¿Qué ${esPlural ? "incluyen" : "incluye"} ${conArticulo}?`, a: incluyeLista.join(", ") + (todoIncluido ? ". Todo incluido en el precio." : ". Todo esto va incluido en el precio.") },
@@ -839,7 +860,9 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           ? { q: "¿El precio es por persona?", a: `No: es una tarifa del grupo completo, desde ${money(tour.precio)} MXN si va una sola persona hasta ${money(tour.tarifaGrupo?.[maxGrupo - 1] ?? tour.precio)} MXN si van ${maxGrupo}, que es el máximo que permite el jardín. Entre más van, menos le toca a cada uno.` }
           : tour.soloAdultos
             ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona. Es una actividad para mayores de 10 años, por lo que no aplica descuento de niños. La entrada al parque se paga aparte en sitio.` }
-            : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Los niños de 6 a 10 años pagan el 70% (${money(Math.round(tour.precio * 0.7))} MXN) y los menores de 6 años el 50% (${money(Math.round(tour.precio * 0.5))} MXN). El descuento se aplica solo al reservar en línea.` },
+          : (req?.edadMinima ?? 0) >= 8
+            ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona. Es un recorrido desde los ${req?.edadMinima} años, y a partir de esa edad todos pagan como adulto, así que no aplica descuento de niños.` }
+            : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Los niños de 4 a 7 años pagan el 50 % (${money(Math.round(tour.precio * 0.5))} MXN); los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. El descuento se aplica solo al reservar en línea.` },
         recogida.tipo === "base-xilitla"
           ? { q: "¿Dónde es el punto de salida?", a: "El punto de encuentro es nuestra base en Xilitla, San Luis Potosí. El transporte hasta Xilitla no está incluido." }
           : recogida.tipo === "en-sitio"
@@ -847,8 +870,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           : recogida.tipo === "hospedaje-xilitla"
             ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje en Xilitla${recogida.vehiculo ? ` —en el propio ${recogida.vehiculo.es}—` : ""} y te regresamos al terminar.${recogida.nota ? " " + recogida.nota.es : ""}` }
           : ciudadUnica
-            ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en ${ciudadUnica} y te regresamos al terminar. El traslado va incluido y no necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar.` }
-            : { q: "¿Dónde es el punto de salida?", a: `No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. ${recogida.cargoValles > 0 ? `Desde Xilitla el traslado redondo va incluido; desde Ciudad Valles cuesta $${recogida.cargoValles.toLocaleString("es-MX")} más por reserva (no por persona). No` : "El traslado redondo va incluido y no"} necesitas hospedarte con nosotros. La hora y la dirección exactas las confirmamos por WhatsApp al reservar.` },
+            ? { q: "¿Dónde es el punto de salida?", a: `Pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en ${ciudadUnica} y te regresamos al terminar. El traslado va incluido y no necesitas hospedarte con nosotros. La noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de recogida.` }
+            : { q: "¿Dónde es el punto de salida?", a: `No hay un punto de salida único: pasamos por ti a tu hospedaje —hotel, hostal, cabaña o Airbnb— en Xilitla o en Ciudad Valles, y te regresamos al terminar el día. ${recogida.cargoValles > 0 ? `Desde Xilitla el traslado redondo va incluido; desde Ciudad Valles cuesta $${recogida.cargoValles.toLocaleString("es-MX")} más por reserva (no por persona). No` : "El traslado redondo va incluido y no"} necesitas hospedarte con nosotros. La noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de recogida.` },
       ];
 
   // `TOUR_FAQS` llevaba ~150 líneas de preguntas específicas por tour que
@@ -880,7 +903,9 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
         // única donde la haya, o al Rappel le prometía Xilitla también aquí,
         // y esta respuesta viaja al JSON-LD.
         a: fraseRecogida(tour, en).replace(pRec.lugar, lugarRecogida) + (conVentana
-          ? (en ? " We confirm the exact time by WhatsApp after you book." : " La hora exacta te la confirmamos por WhatsApp al reservar.")
+          ? (pRec.incluyeTraslado
+              ? (en ? " The night before, between 8 and 9 PM, your guide messages you on WhatsApp with the exact pickup time." : " La noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de recogida.")
+              : (en ? " We confirm the exact time by WhatsApp after you book." : " La hora exacta te la confirmamos por WhatsApp al reservar."))
           : ""),
       }]
     : [];
@@ -1187,8 +1212,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               </h2>
               <p className="text-crema/45 font-dm text-xs mb-6">
                 {locale === "en"
-                  ? "Approximate times. We confirm your exact pickup by WhatsApp when you book."
-                  : "Horas aproximadas. La hora exacta de tu recogida te la confirmamos por WhatsApp al reservar."}
+                  ? "Approximate times. Your guide sends you the exact pickup time on WhatsApp the night before, between 8 and 9 PM."
+                  : "Horas aproximadas. La hora exacta de tu recogida te la manda tu guía por WhatsApp la noche anterior, entre 8 y 9 PM."}
               </p>
               {/* La línea ya no es un `border-l`: es un elemento propio para
                   poder dibujarla al bajar (ver `.itinerario-linea`). El riel

@@ -286,7 +286,7 @@ function experienciasEs(): Experiencia[] {
     {
       titulo: "Asómate a la Olla de la Luz, el sótano del bosque de niebla",
       descripcion:
-        "A unos 14 km de Xilitla, en lo alto de la comunidad de La Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, tan grande que en su fondo creció otro bosque. Se llega tras unas 2 horas de caminata con guía de la propia comunidad. También lo verás escrito Hoya de la Luz.",
+        "A unos 14 km de Xilitla, en lo alto de la comunidad de La Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, tan grande que en su fondo creció otro bosque. Se llega con una caminata de 2 h 30 a 3 horas (9 a 10 km) con guía de la propia comunidad. También lo verás escrito Hoya de la Luz.",
       href: "/tours/olla-de-la-luz",
       cta: "Ver la Olla de la Luz",
     },
@@ -427,7 +427,7 @@ function experienciasEn(): Experiencia[] {
     {
       titulo: "Look into Olla de la Luz, the cloud-forest sinkhole",
       descripcion:
-        "About 9 miles (14 km) from Xilitla, high up in the community of La Trinidad, a vertical sinkhole opens up 633 ft (193 m) deep and 764 ft (233 m) across — so big that another forest grew at its bottom. You reach it after a walk of about 2 hours with a guide from the community itself. You'll also see it written Hoya de la Luz.",
+        "About 9 miles (14 km) from Xilitla, high up in the community of La Trinidad, a vertical sinkhole opens up 633 ft (193 m) deep and 764 ft (233 m) across — so big that another forest grew at its bottom. You reach it on a walk of 2½ to 3 hours (9 to 10 km) with a guide from the community itself. You'll also see it written Hoya de la Luz.",
       href: "/tours/olla-de-la-luz",
       cta: "See Olla de la Luz",
     },
@@ -585,11 +585,11 @@ export function getQueHacer(locale: Locale): QueHacerContent {
         },
         {
           q: "Is the Huasteca Potosina good for kids?",
-          a: "Yes. There are low-difficulty activities that work very well for families: the Micos waterfalls, Minas Viejas, the Edward James Surrealist Route and the spring-fed swimming spots. Kids pay less on our tours: 70% of the adult price for ages 6 to 10, and 50% under 6.",
+          a: "Yes. There are low-difficulty activities that work very well for families: the Micos waterfalls, Minas Viejas, the Edward James Surrealist Route and the spring-fed swimming spots. Kids pay less on our tours: ages 4–7 pay 50 %, ages 3 and under ride free (they still take a seat) and 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.",
         },
         {
           q: "How much do these activities cost?",
-          a: `Guided day tours range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person.${NO_POR_PERSONA.length ? ` Some aren't priced per head: ${listaEn(NO_POR_PERSONA.map((t) => `${nombreEn(t)} (${etiquetaUnidad(t, true)})`))}.` : ""} All include travel insurance plus the photos and video your guide takes; each tour's page details what else is included. Our pricing page has the full list.`,
+          a: `Guided day tours range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person.${NO_POR_PERSONA.length ? ` Some aren't priced per head: ${listaEn(NO_POR_PERSONA.map((t) => `${nombreEn(t)} (${etiquetaUnidad(t, true)})`))}.` : ""} All include the photos and video your guide takes, and adventure tours (rafting, rappel and RZR) also include traveler insurance; on the others it's optional: MXN $80 per person. Each tour's page details what else is included. Our pricing page has the full list.`,
         },
         {
           q: "Can I visit the Huasteca on my own, without a tour?",
@@ -662,11 +662,11 @@ export function getQueHacer(locale: Locale): QueHacerContent {
       },
       {
         q: "¿La Huasteca Potosina es para ir con niños?",
-        a: "Sí. Hay actividades de dificultad baja muy aptas para familias: las cascadas de Micos, Minas Viejas, la Ruta Surrealista de Edward James y los balnearios de nacimientos. Los niños pagan con descuento en nuestros tours (70 % de 6 a 10 años, 50 % menores de 6).",
+        a: "Sí. Hay actividades de dificultad baja muy aptas para familias: las cascadas de Micos, Minas Viejas, la Ruta Surrealista de Edward James y los balnearios de nacimientos. Los niños pagan con descuento en nuestros tours: de 4 a 7 años, el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.",
       },
       {
         q: "¿Cuánto cuesta hacer estas actividades?",
-        a: `Los recorridos guiados de un día van de ${money(rango.min)} a ${money(rango.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${listaEs(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen seguro de viaje y las fotos y el video que toma tu guía; la ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
+        a: `Los recorridos guiados de un día van de ${money(rango.min)} a ${money(rango.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${listaEs(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen las fotos y el video que toma tu guía, y los tours de aventura (rafting, rappel y RZR) también el seguro de viajero; en los demás es opcional: $80 por persona. La ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
       },
       {
         q: "¿Puedo visitar la Huasteca por mi cuenta, sin tour?",

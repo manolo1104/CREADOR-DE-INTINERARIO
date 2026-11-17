@@ -81,7 +81,7 @@ Momentos que vas a vivir:
 - El camino a la finca se hace en RZR desde tu hospedaje en Xilitla: subes entre la sierra hasta un cafetal que crece bajo la sombra de los árboles.
 - Caminas entre las matas con quien las cosecha y ves el proceso completo: cómo se despulpa el grano, el patio de secado y la tostaduría artesanal.
 - El cierre es una cata de café recién tostado en la barra de la finca: el sabor de Xilitla desde la mata hasta la taza.
-NOTA: Experiencia de ~3 h, dificultad baja, apta para toda la familia. $900 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA (el trayecto a la finca es en RZR), acceso a la finca, recorrido guiado y la cata. Es el plan tranquilo y de cultura local del catálogo: ideal para "Arte y cultura", "Relax total" y familias.`,
+NOTA: Experiencia de ~4 h, dificultad baja, apta para toda la familia. $900 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA (el trayecto a la finca es en RZR), acceso a la finca, recorrido guiado y la cata. Es el plan tranquilo y de cultura local del catálogo: ideal para "Arte y cultura", "Relax total" y familias.`,
 
   "tour-gruta-xilo": `
 Momentos que vas a vivir:
@@ -95,11 +95,11 @@ Momentos que vas a vivir:
 - Sales de madrugada, mientras el resto de la Huasteca duerme, y subes en senderismo por el bosque de niebla de La Trinidad.
 - Llegas a la cima del Cerro del Pilón justo cuando sale el sol: muchas veces por ENCIMA del mar de nubes que cubre la sierra, con la luz pintando las cimas.
 - Es el tour de fotografía por excelencia del catálogo: el amanecer sobre las nubes es la foto que nadie más trae de la Huasteca.
-NOTA: Senderismo de madrugada de 7-8 h, dificultad media (pide condición para caminar en subida). $1,700 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA, entradas, equipo de seguridad y guía acreditado NOM-09. Ideal para "Fotografía perfecta" y quien busca algo que casi nadie hace; NO es para quien quiere dormir hasta tarde.`,
+NOTA: Senderismo de madrugada, 8-9 h en total (recogida 4:00-4:30 AM, regreso 12:00-1:00 PM; la caminata en sí es de 40 min a 1 h, 4-5 km), dificultad media (pide condición para caminar en subida). El desayuno NO va incluido: al bajar, la comunidad ofrece comida con costo aparte y en La Trinidad hay restaurante. $1,700 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA, entradas, equipo de seguridad y guía acreditado NOM-09. Ideal para "Fotografía perfecta" y quien busca algo que casi nadie hace; NO es para quien quiere dormir hasta tarde.`,
 
   "tour-olla-de-la-luz": `
 Momentos que vas a vivir:
-- A 14 km de Xilitla, en lo alto de la comunidad de La Trinidad, caminas unas 2 horas guiadas entre bosque de niebla, llanos y miradores, entre pinos, cedros y orquídeas.
+- A 14 km de Xilitla, en lo alto de la comunidad de La Trinidad, caminas de 2 h 30 a 3 horas guiadas (9 a 10 km) entre bosque de niebla, llanos y miradores, entre pinos, cedros y orquídeas.
 - Llegas al borde de la Olla de la Luz: un sótano vertical de 193 metros de profundidad y 233 de diámetro que se abre de golpe en medio del bosque.
 - Los miradores del Cerro de la Luz regalan la vista de la sierra completa antes de bajar.
 NOTA: Caminata de montaña de 8-9 h en total, dificultad media. $1,800 MXN por persona. Incluye traslado redondo desde el hospedaje EN XILITLA, la caminata guiada, equipo de seguridad y guía acreditado NOM-09. Es montaña y bosque de niebla, NO actividad acuática: perfecto para senderistas y fotografía de paisaje.`,

@@ -276,10 +276,10 @@ function bloque(b: Bloque, full: boolean): string {
 const CABECERA: Record<Locale, string> = {
   es: `# Tours Huasteca Potosina
 
-> Operadora turística local certificada en la Huasteca Potosina, San Luis Potosí, México. Tours guiados con precio final en pesos mexicanos (MXN): seguro de viaje y fotografías en todos; transporte desde tu hospedaje, entradas, equipo de seguridad y desayuno según el recorrido. Guías certificados NOM-09 SECTUR. ${resenasTexto(false)}.`,
+> Operadora turística local certificada en la Huasteca Potosina, San Luis Potosí, México. Tours guiados con precio final en pesos mexicanos (MXN): fotografías en todos; transporte desde tu hospedaje, entradas, equipo de seguridad y desayuno según el recorrido. Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). Guías certificados NOM-09 SECTUR. ${resenasTexto(false)}.`,
   en: `# Huasteca Potosina Tours
 
-> Certified local tour operator in the Huasteca Potosina, San Luis Potosí, Mexico. Guided tours at a final price in Mexican pesos (MXN): travel insurance and photographs on every tour; transport from your lodging, entrance fees, safety gear and breakfast depending on the tour. NOM-09 SECTUR certified guides. ${resenasTexto(true)}.`,
+> Certified local tour operator in the Huasteca Potosina, San Luis Potosí, Mexico. Guided tours at a final price in Mexican pesos (MXN): photographs on every tour; transport from your lodging, entrance fees, safety gear and breakfast depending on the tour. Adventure tours (rafting, rappel and RZR) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). NOM-09 SECTUR certified guides. ${resenasTexto(true)}.`,
 };
 
 /**
@@ -300,9 +300,9 @@ function reserva(locale: Locale): Bloque {
 - Website: ${SITE}/en
 - Booking: online with secure payment (Stripe) or over WhatsApp. A ${ANTICIPO_PCT}% deposit holds any booking (packages included); the balance is settled on the day of the tour.
 - Cancellation: free up to 48 hours before the tour (full refund). Turquoise-water guarantee: if the water isn't turquoise on the day of your tour, you can reschedule once for free (notify on WhatsApp before departure).${cancelacionPropia(locale)}
-- Departures and pickup: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)}
+- Departures and pickup: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)} The night before, between 8 and 9 PM, the guide sends the exact pickup time on WhatsApp.
 - Prices are in Mexican pesos (MXN) and per person${otras ? ` (except — ${otras})` : ""}.
-  On per-person tours, children aged 6–10 pay ~70% and under 6 ~50% of the adult price.`,
+  On per-person tours, kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.`,
     };
   }
   return {
@@ -311,8 +311,8 @@ function reserva(locale: Locale): Bloque {
 - Sitio web: ${SITE}
 - Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Cualquier reserva (paquetes incluidos) se aparta con el ${ANTICIPO_PCT} %; el saldo se liquida el día del tour.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo). Garantía de caudal: si el día del tour el agua no está turquesa, se puede reagendar una vez sin costo (avisando por WhatsApp antes de la salida).${cancelacionPropia(locale)}
-- Salidas y recogida: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)}
-- Precios en pesos mexicanos (MXN) y por persona${otras ? ` (salvo — ${otras})` : ""}. En los recorridos por persona, niños de 6 a 10 años pagan ~70 % y menores de 6 ~50 % del precio adulto.`,
+- Salidas y recogida: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)} La noche anterior, entre 8 y 9 PM, el guía manda por WhatsApp la hora exacta de recogida.
+- Precios en pesos mexicanos (MXN) y por persona${otras ? ` (salvo — ${otras})` : ""}. En los recorridos por persona, niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.`,
   };
 }
 
@@ -369,7 +369,7 @@ const COMO_LLEGAR: Record<Locale, Bloque> = {
 - En autobús (lo más práctico para los paquetes): salida nocturna desde la ${AUTOBUS_CDMX.terminal}
   alrededor de las ${AUTOBUS_CDMX.hora} (líneas Servicios Coordinados / ETN), llegada a Xilitla cerca de
   las ${AUTOBUS_CDMX.llega}. Tarifa aproximada $${AUTOBUS_CDMX.min}–$${AUTOBUS_CDMX.max} MXN por persona y trayecto. Boletos: https://coordinados.conectagfa.com.mx/
-  Al llegar, un taxi de ~$60 MXN llega al Hotel Paraíso Encantado en unos 7 minutos.
+  Al llegar, un taxi de $70–80 MXN llega al Hotel Paraíso Encantado en unos 7 minutos.
 - Como llegas al amanecer, entregamos la habitación temprano para descansar y ese mismo día
   arranca el primer tour: el Día 1 del paquete NO se pierde.
 - En auto: ${enAuto("cdmx")} (aprox. ${distancia("cdmx")}) por carretera de sierra; se recomienda manejar de día.
@@ -383,7 +383,7 @@ const COMO_LLEGAR: Record<Locale, Bloque> = {
 - By bus from Mexico City (what most package travelers do): an overnight departure from the
   Terminal Central del Norte around 10:15 PM (Servicios Coordinados / ETN), arriving in Xilitla
   around 6:30 AM. Fare is about $650 MXN per person. Tickets: https://coordinados.conectagfa.com.mx/
-  On arrival a ~$60 MXN taxi reaches the Hotel Paraíso Encantado in about 7 minutes.
+  On arrival a $70–80 MXN taxi reaches the Hotel Paraíso Encantado in about 7 minutes.
 - Because you arrive at dawn, we hand over the room early so you can rest, and the first tour
   starts that same day: Day 1 of the package is not lost.`,
   },
@@ -493,9 +493,9 @@ function notaUnidadPaquetes(paquetes: Paquete[], locale: Locale): string {
   const porPersona = paquetes.filter((p) => p.precioPorPersona);
   // Las reglas de gente extra son las del motor (`computePaqueteCharge` en
   // `paquetePricing.ts`): no cotiza con menos de 2 adultos; cada persona arriba
-  // de la pareja suma un boleto de cada tour, los menores al 70 % (6 a 10 años)
-  // o al 50 % (menores de 6), y el hotel extra depende de cuántos duermen en
-  // cada habitación.
+  // de la pareja suma un boleto de cada tour (escala de niños del 17 nov 2026:
+  // 3 años o menos gratis, 4 a 7 el 50 %, 8 en adelante adulto), y el hotel
+  // extra depende de cuántos duermen en cada habitación.
   // 🔴 Decía "desde la tercera persona se suma su lugar para dormir y un boleto
   // de cada tour": la 4.ª persona NO suma hotel (la tarifa de 3 y de 4 es la
   // misma) y los menores no pagan el boleto entero. Un asistente le cobraba a
@@ -503,8 +503,8 @@ function notaUnidadPaquetes(paquetes: Paquete[], locale: Locale): string {
   // del hotel a propósito: la tabla de tarifas no se exporta y copiarla aquí es
   // como se desfasó este archivo la primera vez.
   const base = en
-    ? `a package is not sold to fewer than 2 adults; from the third traveler on you add one ticket per tour (70% of it for ages 6–10, 50% under 6) and, depending on how many share each room, a hotel charge the booking engine calculates.`
-    : `el paquete no se vende a menos de 2 adultos; desde la tercera persona se suma un boleto de cada tour (70 % de 6 a 10 años, 50 % menores de 6) y, según cuántos duerman por habitación, un cargo de hotel que el motor calcula al reservar.`;
+    ? `a package is not sold to fewer than 2 adults; from the third traveler on you add one ticket per tour (50 % of it for kids 4–7, free for ages 3 and under, full price from 8) and, depending on how many share each room, a hotel charge the booking engine calculates.`
+    : `el paquete no se vende a menos de 2 adultos; desde la tercera persona se suma un boleto de cada tour (50 % de 4 a 7 años, gratis de 3 años o menos y completo desde los 8) y, según cuántos duerman por habitación, un cargo de hotel que el motor calcula al reservar.`;
   const mayus = (s: string) => `${s.charAt(0).toUpperCase()}${s.slice(1)}`;
   // "Cada importe de los paquetes" y no "de arriba": en /llms.txt esta nota va
   // en el preámbulo, ANTES de la lista; en la versión completa, después.
@@ -928,11 +928,12 @@ export function buildLlmsFullTxt(locale: Locale = "es", blog: BlogLlms[] = [], v
         : `Duración: ~${tourDurTexto(t)} · ${grupoTour(t, locale)} · dificultad ${dificultad(t, locale)}`,
       en ? `What it is: ${t.descripcion}` : `Qué es: ${t.descripcion}`,
       en ? `Destinations visited: ${t.destinos.join(", ")}.` : `Destinos que visita: ${t.destinos.join(", ")}.`,
-      // 🔴 FALTA-03: `incluyeDeTour` y no `t.incluye` a pelo. El seguro de viaje
-      // y las fotos van en TODOS (`INCLUYE_SIEMPRE`, decisión del dueño) pero no
-      // están en el `incluye` de cada tour: el blockquote de arriba decía "en
-      // todos" y el "Incluye:" de la Gruta, seis líneas abajo, no los traía.
-      // En inglés `t` ya viene localizado y el locale traduce esas dos líneas.
+      // 🔴 FALTA-03: `incluyeDeTour` y no `t.incluye` a pelo. Las fotos van en
+      // TODOS (`INCLUYE_SIEMPRE`, decisión del dueño) pero no están en el
+      // `incluye` de cada tour: el blockquote de arriba decía "en todos" y el
+      // "Incluye:" de la Gruta, seis líneas abajo, no las traía. (El seguro
+      // salió de esa lista el 17 nov 2026: solo lo traen rafting, rappel y RZR.)
+      // En inglés `t` ya viene localizado y el locale traduce esa línea.
       // "; " y no ", ": renglones como "Equipo completo de rappel (arnés, casco,
       // guantes…)" traen comas dentro.
       en ? `Includes: ${incluyeDeTour(t, locale).join("; ")}.` : `Incluye: ${incluyeDeTour(t, locale).join("; ")}.`,

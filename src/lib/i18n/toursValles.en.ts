@@ -164,7 +164,7 @@ export function getToursValles(locale: Locale): ToursVallesContent {
         },
         {
           q: "How much does a tour from Ciudad Valles cost?",
-          a: `The ${n} day tours with pickup in Ciudad Valles range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person. They include pickup from your lodging${CON_CARGO.length ? ` (${listaEn(CON_CARGO.map((t) => `${nombreEn(t)}: ${cargoEn(t)} extra per booking from Valles`))})` : ""}, a certified guide, safety gear, travel insurance and photos of the tour${CV_DESAYUNO.length ? `; ${todosDesayuno ? "all of them" : `${CV_DESAYUNO.length} of them (${listaEn(CV_DESAYUNO.map(nombreEn))})`} also include a regional breakfast` : ""}. Full details of what each one includes are on its own page.`,
+          a: `The ${n} day tours with pickup in Ciudad Valles range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person. They include pickup from your lodging${CON_CARGO.length ? ` (${listaEn(CON_CARGO.map((t) => `${nombreEn(t)}: ${cargoEn(t)} extra per booking from Valles`))})` : ""}, a certified guide, safety gear and photos of the tour${CV_DESAYUNO.length ? `; ${todosDesayuno ? "all of them" : `${CV_DESAYUNO.length} of them (${listaEn(CV_DESAYUNO.map(nombreEn))})`} also include a regional breakfast` : ""}. Rafting and rappel include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). Full details of what each one includes are on its own page.`,
         },
         {
           q: "Can I book for tomorrow?",
@@ -255,7 +255,7 @@ export function getToursValles(locale: Locale): ToursVallesContent {
       },
       {
         q: "¿Cuánto cuesta un tour desde Ciudad Valles?",
-        a: `Los ${n} tours de un día con recogida en Ciudad Valles van de ${money(rango.min)} a ${money(rango.max)} MXN por persona. Incluyen traslado desde tu hospedaje${CON_CARGO.length ? ` (${listaEs(CON_CARGO.map((t) => `${t.nombreCorto}: $${cargoEs(t)} más por reserva desde Valles`))})` : ""}, guía certificado, equipo de seguridad, seguro de viaje y las fotos del recorrido${CV_DESAYUNO.length ? `; ${todosDesayuno ? "todos" : `${CV_DESAYUNO.length} de ellos (${listaEs(CV_DESAYUNO.map((t) => t.nombreCorto))})`} llevan además desayuno regional` : ""}. Lo que incluye cada uno, con detalle, está en su ficha.`,
+        a: `Los ${n} tours de un día con recogida en Ciudad Valles van de ${money(rango.min)} a ${money(rango.max)} MXN por persona. Incluyen traslado desde tu hospedaje${CON_CARGO.length ? ` (${listaEs(CON_CARGO.map((t) => `${t.nombreCorto}: $${cargoEs(t)} más por reserva desde Valles`))})` : ""}, guía certificado, equipo de seguridad y las fotos del recorrido${CV_DESAYUNO.length ? `; ${todosDesayuno ? "todos" : `${CV_DESAYUNO.length} de ellos (${listaEs(CV_DESAYUNO.map((t) => t.nombreCorto))})`} llevan además desayuno regional` : ""}. El rafting y el rappel incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). Lo que incluye cada uno, con detalle, está en su ficha.`,
       },
       {
         q: "¿Puedo reservar para mañana?",

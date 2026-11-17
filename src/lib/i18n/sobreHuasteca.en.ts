@@ -295,7 +295,7 @@ function contenidoEs(): SobreContent {
     ctaH2a: "Empieza tu aventura en la ",
     ctaH2em: "Huasteca",
     // Decía «con transporte, desayuno… incluido» de todos: ver la nota de arriba.
-    ctaTexto: `Tours guiados con guía certificado y seguro de viaje incluidos; ${CON_RECOGIDA.length} de nuestros ${TOURS_DB.length} recorridos pasan por ti a tu hospedaje. Grupos máximo ${GRUPO_MAX} personas — si son más, habla con el equipo y armamos una salida privada.`,
+    ctaTexto: `Tours guiados con guía certificado; ${CON_RECOGIDA.length} de nuestros ${TOURS_DB.length} recorridos pasan por ti a tu hospedaje. Grupos máximo ${GRUPO_MAX} personas — si son más, habla con el equipo y armamos una salida privada.`,
     ctaReservar: "Ver recorridos y reservar",
     ctaTours: "Conocer los tours a fondo →",
   };
@@ -437,7 +437,7 @@ function contenidoEn(): SobreContent {
     ctaEyebrow: "Ready to explore",
     ctaH2a: "Start your adventure in the ",
     ctaH2em: "Huasteca",
-    ctaTexto: `Guided tours with a certified guide and travel insurance included; ${CON_RECOGIDA.length} of our ${TOURS_DB.length} tours pick you up at your lodging. Groups of up to ${GRUPO_MAX} people — if there are more of you, talk to the team and we'll set up a private departure.`,
+    ctaTexto: `Guided tours with a certified guide; ${CON_RECOGIDA.length} of our ${TOURS_DB.length} tours pick you up at your lodging. Groups of up to ${GRUPO_MAX} people — if there are more of you, talk to the team and we'll set up a private departure.`,
     ctaReservar: "See tours and book",
     ctaTours: "Get to know the tours →",
   };

@@ -139,7 +139,7 @@ function construir(locale: Locale): GruposContent {
       h1Pre: "Viajes de grupo a la ",
       h1Em: "Huasteca Potosina",
       heroTexto:
-        "Si vienes organizando el viaje de otros, no empieces por armar un itinerario tú. Dinos las fechas, cuántos son y de dónde salen, y te proponemos el recorrido completo: qué destino cada día, dónde duermen, qué comen y cómo se mueven. Con guías certificados NOM-09 y seguro de viajero incluidos.",
+        "Si vienes organizando el viaje de otros, no empieces por armar un itinerario tú. Dinos las fechas, cuántos son y de dónde salen, y te proponemos el recorrido completo: qué destino cada día, dónde duermen, qué comen y cómo se mueven. Con guías certificados NOM-09; el seguro de viajero se suma a la propuesta si lo necesitan.",
       heroNota:
         "Los grupos se cotizan, no se reservan en línea: cada uno llega con un número de personas, un presupuesto y unos días distintos, y eso se resuelve platicándolo. ",
       heroNotaStrong: "Hay descuento según el número de personas.",
@@ -236,7 +236,7 @@ function construir(locale: Locale): GruposContent {
         },
         {
           q: "¿Los guías están certificados?",
-          a: "Sí. Todos nuestros recorridos van con guía certificado NOM-09 y seguro de viajero incluido. Para grupos escolares eso no es un detalle: es el requisito que normalmente pide la escuela.",
+          a: "Sí. Todos nuestros recorridos van con guía certificado NOM-09. El seguro de viajero va incluido en los tours de aventura (rafting, rappel y RZR) y en los demás se agrega por $80 por persona. Para grupos escolares eso no es un detalle —es el requisito que normalmente pide la escuela—, así que dinos si lo necesitan y va en la propuesta.",
         },
       ],
 
@@ -285,7 +285,7 @@ function construir(locale: Locale): GruposContent {
     h1Pre: "Group trips to the ",
     h1Em: "Huasteca Potosina",
     heroTexto:
-      "If you're organizing a trip for other people, don't start by building an itinerary yourself. Tell us your dates, how many of you there are and where you're leaving from, and we'll propose the whole trip: which destination each day, where you sleep, what you eat and how you get around. With guides certified under NOM-09 (Mexico's official standard for specialized guides) and traveler's insurance included.",
+      "If you're organizing a trip for other people, don't start by building an itinerary yourself. Tell us your dates, how many of you there are and where you're leaving from, and we'll propose the whole trip: which destination each day, where you sleep, what you eat and how you get around. With guides certified under NOM-09 (Mexico's official standard for specialized guides); traveler insurance goes into the proposal if you need it.",
     heroNota:
       "Groups are quoted, not booked online: each one comes with a different number of people, budget and number of days, and that gets sorted out by talking it through. ",
     heroNotaStrong: "There's a discount based on the number of people.",
@@ -378,7 +378,7 @@ function construir(locale: Locale): GruposContent {
       },
       {
         q: "Are the guides certified?",
-        a: "Yes. All our tours come with a NOM-09 certified guide and traveler's insurance included. For school groups that's not a detail: it's the requirement schools usually ask for.",
+        a: "Yes. All our tours come with a NOM-09 certified guide. Traveler insurance is included on adventure tours (rafting, rappel and RZR) and can be added on the others for MXN $80 per person. For school groups that's not a detail — it's the requirement schools usually ask for — so tell us if you need it and it goes into the proposal.",
       },
     ],
 

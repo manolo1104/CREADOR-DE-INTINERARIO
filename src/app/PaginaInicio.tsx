@@ -54,7 +54,7 @@ export function metadataPagina(locale: Locale): Metadata {
   const nTours = TOURS_DB.length;
   const desde = `$${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")}`;
   const description = locale === "en"
-    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 guide and insurance, from ${desde} MXN. 30% deposit holds your spot. Free cancellation.`
+    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 certified guides, from ${desde} MXN. 30% deposit holds your spot. Free cancellation.`
     : `La Huasteca Potosina desde Xilitla: Tamul, Las Pozas, cascadas, cuándo ir y cómo llegar. ${nTours} tours con guía local desde ${desde}; apartas con el 30 %.`;
   return {
     title,
@@ -522,7 +522,7 @@ export async function Pagina({ locale }: { locale: Locale }) {
                 <ul className="space-y-3.5 font-dm text-sm leading-relaxed text-negro/65">
                   <li className="flex gap-2.5">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-verde-vivo" aria-hidden="true" />
-                    <span><strong className="text-negro/85">Travel and adventure insurance</strong> for every traveler, already in the price.</span>
+                    <span><strong className="text-negro/85">Photos and video</strong> of your tour, taken by your guide, already in the price.</span>
                   </li>
                   <li className="flex gap-2.5">
                     <CheckCircle2 className="mt-0.5 h-4 w-4 flex-shrink-0 text-verde-vivo" aria-hidden="true" />
@@ -564,6 +564,10 @@ export async function Pagina({ locale }: { locale: Locale }) {
                     );
                   })}
                 </ul>
+                {/* 17 nov 2026: el seguro solo va incluido en rafting, rappel y RZR. */}
+                <p className="mb-4 font-dm text-sm leading-relaxed text-negro/65">
+                  <strong className="text-negro/85">Traveler insurance</strong>, except on adventure tours (rafting, rappel and RZR), which include it. On the rest it&apos;s optional: MXN $80 per person (just ask when you book).
+                </p>
                 <p className="font-dm text-sm leading-relaxed text-negro/65">
                   <strong className="text-negro/85">Flights</strong>, any meals not listed on your itinerary{TOURS_DB.length > nConTraslado ? <>, and getting to the meeting point on the {TOURS_DB.length - nConTraslado} tours that don&apos;t pick you up</> : null}. That&apos;s the whole list.
                 </p>
@@ -653,7 +657,7 @@ export async function Pagina({ locale }: { locale: Locale }) {
                   {/* Contra Costa Rica no se gana con adjetivos, se gana con el precio
                       real. Los paquetes son POR PAREJA: ese es el dato que convierte.
                       Va con `p.precio` a propósito: la frase dice «for two people». */}
-                  <p>{paqueteIngles.dias} days, {paqueteIngles.noches} nights, the tours, the hotel and the insurance: <strong className="text-verde-profundo">${paqueteIngles.precio.toLocaleString("en-US")} MXN for two people</strong>. The price you see on our booking page is the price you pay. Tampico is a short hop from Texas, and from the airport it&apos;s {enAuto("tampico", "xilitla", true)} to Xilitla, in a private vehicle driven by us.</p>
+                  <p>{paqueteIngles.dias} days, {paqueteIngles.noches} nights, the tours and the hotel: <strong className="text-verde-profundo">${paqueteIngles.precio.toLocaleString("en-US")} MXN for two people</strong>. The price you see on our booking page is the price you pay. Tampico is a short hop from Texas, and from the airport it&apos;s {enAuto("tampico", "xilitla", true)} to Xilitla, in a private vehicle driven by us.</p>
                 </>
               ) : (
                 /* La consulta que más impresiones trae al inicio es «huasteca

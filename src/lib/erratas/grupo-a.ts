@@ -520,8 +520,8 @@ export const ERRATAS_GRUPO_A: ErratasPorArticulo = {
     },
     {
       from: `Los tours organizados que combinan la Cascada del Meco y cascada el salto tienen un precio de <strong>$1,350 MXN</strong> por persona, con un descuento del <strong>20%</strong> para niños de <strong>3 a 8 años</strong>.`,
-      to: `Nuestro tour Cascadas del Meco, que combina la Cascada del Meco y cascada el salto, cuesta <strong>{{tour:cascadas-del-meco}}</strong> por persona; los niños de 6 a 10 años pagan el 70 % y los menores de 6, el 50 %.`,
-      porque: "Era el mismo tour con otro precio: el Cascadas del Meco cuesta $1,700 (`tours.ts`) y la escala de menores es 70 % (6–10 años) y 50 % (menores de 6) (`paquetePricing.ts`, `faqTours.ts`).",
+      to: `Nuestro tour Cascadas del Meco, que combina la Cascada del Meco y cascada el salto, cuesta <strong>{{tour:cascadas-del-meco}}</strong> por persona; los niños de 4 a 7 años pagan el 50 %, los de 3 años o menos van gratis (ocupan lugar) y de 8 en adelante pagan como adulto.`,
+      porque: "Era el mismo tour con otro precio: el Cascadas del Meco cuesta $1,700 (`tours.ts`). Escala de menores desde el 17 nov 2026: 4–7 años 50 %, 3 o menos gratis, 8+ adulto (`faqTours.ts`).",
     },
     {
       from: `\n    <tr>\n      <td>Tour organizado combinado (Meco + El Salto)</td>\n      <td><strong>$1,350 MXN</strong> por persona</td>\n      <td>20% descuento niños 3–8 años; solo efectivo; salida desde Ciudad Valles</td>\n    </tr>`,

@@ -315,14 +315,14 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
         q: "How much does a tour in the Huasteca Potosina cost, and what does the price include?",
         // «MXN» en los DOS extremos del rango: con «$900 to $1,950 MXN» un
         // lector de EE.UU. lee el primero en dólares (auditoría del 10 nov 2026).
-        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} MXN to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes travel insurance for everyone in the group and the photos and video your guide takes.${excepcionUnidad}`,
+        a: `Our guided day tours run from $${fmtNumber(rangoHoy().min, locale)} MXN to ${m(rangoHoy().max)} per person depending on the route, and the price you see is the final price. Depending on the tour it covers round-trip transport from your lodging (in Ciudad Valles or Xilitla, or in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to the parks and attractions on the route, a NOM-09 SECTUR certified guide and safety gear; ${CON_DESAYUNO.length} of them also include breakfast with regional dishes (${desayunos}). Every tour includes the photos and video your guide takes. Adventure tours (rafting, rappel and RZR) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book).${excepcionUnidad}`,
       },
       {
         q: "Where do the tours depart from? Do you pick me up at my hotel?",
         // 🔴 Decía "8:00–9:00 AM en Ciudad Valles o Xilitla… tres recorridos
         // funcionan distinto" escrito a mano; la Gruta sale a las 7 PM y ya
         // eran siete. La lista sale de `excepcionesSalida()`.
-        a: `There is no single meeting point, and you do not need to be staying at our hotel: any accommodation works — hotel, hostel, cabin or Airbnb. ${excepcionesSalida(locale)} We confirm your exact pickup time when you book.`,
+        a: `There is no single meeting point, and you do not need to be staying at our hotel: any accommodation works — hotel, hostel, cabin or Airbnb. ${excepcionesSalida(locale)} The night before, between 8 and 9 PM, your guide messages you on WhatsApp with your exact pickup time (usually between 8 and 9 AM on day tours).`,
       },
       {
         q: "How long does a tour last?",
@@ -341,7 +341,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
       },
       {
         q: "Can I bring children?",
-        a: `Yes. On tours priced per person there's a children's discount: about 70% of the adult price for ages 6 to 10, and 50% for children under 6.${ninosGrupo} Several low-difficulty routes work very well for families — El Meco Waterfalls, the Stepped Paradise (Minas Viejas and Micos) and the Edward James Surrealist Route.${ninosEdadMin}${ninosConsultar} On the RZR ride, children travel according to the vehicle (the RZR 500 seats 2 adults + 1 child; the Family Defender, 6 adults + 2 kids), so tell us their ages when you book.`,
+        a: `Yes. On tours priced per person, kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price.${ninosGrupo} Several low-difficulty routes work very well for families — El Meco Waterfalls, the Stepped Paradise (Minas Viejas and Micos) and the Edward James Surrealist Route.${ninosEdadMin}${ninosConsultar} On the RZR ride, children travel according to the vehicle (the RZR 500 seats 2 adults + 1 child; the Family Defender, 6 adults + 2 kids), so tell us their ages when you book.`,
       },
       {
         q: "What happens if it rains or the tour is called off?",
@@ -357,11 +357,11 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
   return [
     {
       q: "¿Cuánto cuesta un tour en la Huasteca Potosina y qué incluye el precio?",
-      a: `Los tours guiados de un día cuestan de $${fmtNumber(rangoHoy().min, locale)} a ${m(rangoHoy().max)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen seguro de viaje para todos los integrantes y las fotografías y el video que toma tu guía.${excepcionUnidad}`,
+      a: `Los tours guiados de un día cuestan de $${fmtNumber(rangoHoy().min, locale)} a ${m(rangoHoy().max)} por persona según el recorrido, y el precio que ves es el precio final. Según el tour incluye: traslado redondo desde tu hospedaje (en Ciudad Valles o Xilitla, o solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a los parques y atracciones de la ruta, guía certificado NOM-09 SECTUR y equipo de seguridad; ${CON_DESAYUNO.length} de ellos llevan además desayuno con platillos típicos de la región (${desayunos}). Todos incluyen las fotografías y el video que toma tu guía. Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar).${excepcionUnidad}`,
     },
     {
       q: "¿De dónde salen los tours? ¿Pasan por mi hotel?",
-      a: `No hay un punto de salida único y no hace falta que te hospedes en nuestro hotel: sirve cualquier hospedaje —hotel, hostal, cabaña o Airbnb—. ${excepcionesSalida(locale)} Confirmamos tu hora exacta de recogida al reservar.`,
+      a: `No hay un punto de salida único y no hace falta que te hospedes en nuestro hotel: sirve cualquier hospedaje —hotel, hostal, cabaña o Airbnb—. ${excepcionesSalida(locale)} La noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de recogida (en los de día completo suele ser entre 8 y 9 AM).`,
     },
     {
       q: "¿Cuánto dura cada tour?",
@@ -377,7 +377,7 @@ export function getToursFaqs(locale: Locale): FaqTour[] {
     },
     {
       q: "¿Se puede ir con niños?",
-      a: `Sí. En los recorridos que se cobran por persona hay descuento para menores: alrededor del 70 % del precio adulto para edades de 6 a 10 años y 50 % para menores de 6.${ninosGrupo} Los recorridos de dificultad baja más aptos para ir en familia son las Cascadas del Meco, el Paraíso Escalonado (Minas Viejas y Micos) y la Ruta Surrealista de Edward James.${ninosEdadMin}${ninosConsultar} En el Recorrido en RZR los niños viajan según el vehículo (el RZR 500 lleva 2 adultos y 1 niño; el Defender Familiar, 6 adultos y 2 niños), así que avísanos las edades al reservar.`,
+      a: `Sí. En los recorridos que se cobran por persona, los niños de 4 a 7 años pagan el 50 %; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto.${ninosGrupo} Los recorridos de dificultad baja más aptos para ir en familia son las Cascadas del Meco, el Paraíso Escalonado (Minas Viejas y Micos) y la Ruta Surrealista de Edward James.${ninosEdadMin}${ninosConsultar} En el Recorrido en RZR los niños viajan según el vehículo (el RZR 500 lleva 2 adultos y 1 niño; el Defender Familiar, 6 adultos y 2 niños), así que avísanos las edades al reservar.`,
     },
     {
       q: "¿Qué pasa si llueve o se suspende el tour?",

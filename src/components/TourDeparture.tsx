@@ -489,8 +489,8 @@ export function TourDeparture({ tourId, locale }: { tourId?: string; locale?: "e
 
         <p className="text-[10px] text-crema/40 font-dm">
           {en
-            ? "Staying somewhere else? Tell us where and we'll see if we can reach you. We confirm the exact pickup time and address by WhatsApp after you book."
-            : "¿Te hospedas en otro lado? Dinos dónde y vemos si podemos llegar por ti. La hora y la dirección exactas las confirmamos por WhatsApp al reservar."}
+            ? "Staying somewhere else? Tell us where and we'll see if we can reach you. The night before, between 8 and 9 PM, your guide messages you on WhatsApp with the exact pickup time."
+            : "¿Te hospedas en otro lado? Dinos dónde y vemos si podemos llegar por ti. La noche anterior, entre 8 y 9 PM, tu guía te escribe por WhatsApp con la hora exacta de recogida."}
         </p>
 
         {/* CTA WhatsApp */}
