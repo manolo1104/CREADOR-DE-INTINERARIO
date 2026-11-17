@@ -331,7 +331,9 @@ function setToolObserver(fn) { observarHerramienta = fn; }
  * Tének» (pruebas de Manolo, 17 nov). Solo toca ese patrón exacto.
  */
 function sinAutocorreccion(text) {
-  return String(text || "").replace(
+  // Caracteres invisibles (guion suave, espacios de ancho cero): el modelo
+  // llegó a escribir «Tén­ek» con un guion suave en medio (17 nov 2026).
+  return String(text || "").replace(/[\u00AD\u200B-\u200D\u2060\uFEFF]/g, "").replace(
     /\b(Soy|I'm|I am)\s+T[ée]n[\p{L}]*\s*(?:\.{2,}|…)\s*(?:perd[oó]n|digo|sorry|I mean)[,.:]?\s*(?:soy|I'm|I am)\s+(Tének)/giu,
     (_, soy, nombre) => `${soy} ${nombre}`,
   );
@@ -1446,7 +1448,7 @@ async function ejecutarHerramienta(name, input, phone) {
               // 🔴 Las herramientas que cotizan no conocen el privado: una COT
               // hecha con crear_cotizacion saldría a precio de salida
               // compartida y el privado se operaría $250 por persona abajo.
-              privadoComoCotizar: "El privado NO se cotiza con crear_cotizacion ni con cotizar_paquete_personalizado (cobrarían la salida compartida). Da el precio de referencia (precio por persona del tour + privadoExtraPorPersona, por persona) y llama escalar_a_humano (otro, avisar, hoy) para que el equipo le mande la cotización del privado.",
+              privadoComoCotizar: "El privado NO se cotiza con crear_cotizacion ni con cotizar_paquete_personalizado (cobrarían la salida compartida). Para un grupo que ya cumple el mínimo, da el precio de referencia (precio por persona del tour + privadoExtraPorPersona, por persona) y llama escalar_a_humano (otro, avisar, hoy) para que el equipo le mande la cotización del privado. Para UNA persona (o menos que el mínimo) NO des ningún precio de privado: ese lo cotiza el equipo.",
             } : {}),
         incluye: t.incluye, incluyeSiempre: t.incluyeSiempre, noIncluye: t.noIncluye,
         // Lo que el sitio publica en la ficha y el bot no recibía. Solo si
@@ -1471,6 +1473,7 @@ async function ejecutarHerramienta(name, input, phone) {
         idealPara: t.idealPara, cancelacion: t.cancelacion || EMPRESA.cancelacion,
         // Hechos cerrados: se responden con estos campos, nunca deduciéndolos.
         transporte: t.transporte, alimentos: t.alimentos, fotos: t.fotos,
+        ...(t.seguro ? { seguro: t.seguro } : {}),
       };
       if (esPorVehiculo(t)) {
         return {
@@ -2909,6 +2912,8 @@ Esto es WhatsApp, no un correo. Un mensaje largo hace que el cliente deje de lee
 • Cero relleno: ni listas de ocho viñetas, ni párrafos de despedida, ni repetir lo que ya dijiste.
 • *Formato WhatsApp:* negritas con UN asterisco *así*. Nunca dobles asteriscos, ni ### como título, ni --- como separador: WhatsApp no los entiende y el cliente ve los símbolos. Listas con "• ".
 • Emojis: uno o dos donde peguen. No decores.
+• *No adivines el género:* si el cliente escribe de sí «solo»/«sola», «cansado»/«cansada», respétalo; si no lo sabes, usa formas neutras («para una persona», «te ayudo»). Nunca le digas «sola» a quien dijo «viajo solo».
+• *No digas que ya hiciste algo que solo pediste:* si avisaste al equipo, es «ya le pregunté al equipo», no «ya lo revisé».
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🎯 LA ESTRUCTURA DE ORO — 9 etapas, una por intercambio
@@ -3031,7 +3036,7 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 *2. COMIDAS — ningún tour es "todo incluido".* No uses nunca esa frase. Usa el campo "alimentos" tal cual. Los tours de día completo incluyen *SOLO el desayuno buffet*, y NO es en el hotel: es una parada camino a los destinos, en *El Taco Loco*. La comida de mediodía y la cena NO van incluidas, salvo la comida del rafting. Los paquetes incluyen solo los desayunos.
 *3. FOTOS — nunca digas "profesional".* Lo que damos es: fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. Nada de fotógrafo dedicado, sesión, edición ni plazo de entrega. (Única excepción: en el rappel de Tamul sí hay tomas aéreas con dron.)
 *4. NUNCA repitas por dentro lo que dice una herramienta SOBRE SÍ MISMA.* El cliente no debe leer jamás palabras como "el sistema", "la herramienta", "la API", "simulacro", "mock" ni "folio de prueba". Si algo te llega raro, incompleto o marcado como prueba, no lo narres: sigue con lo que sí tienes y, si de plano falta un dato, di que se lo confirmas hoy mismo.
-*5. NO INVENTES NADA — ni hechos, ni cifras, ni políticas.* Solo sabes lo que viene de: (a) tus herramientas y el catálogo, (b) «📚 LO QUE CONTESTA EL EQUIPO» y (c) *consultar_politica*. Todo lo demás NO lo sabes, aunque suene obvio (¿hay cajero?, ¿aceptan dólares?, ¿puedo llevar dron?, ¿hay silla de ruedas?…): dilo como Erick —"Déjame confirmarlo con el equipo y te escribo en cuanto me respondan"— y llama *escalar_a_humano* (pregunta_sin_respuesta, avisar, normal) con la pregunta exacta. Vale mil veces más "lo confirmo" que una respuesta inventada.
+*5. NO INVENTES NADA — ni hechos, ni cifras, ni políticas.* Solo sabes lo que viene de: (a) tus herramientas y el catálogo, (b) «📚 LO QUE CONTESTA EL EQUIPO» y (c) *consultar_politica*. Todo lo demás NO lo sabes, aunque suene obvio o «lo sepa todo mundo» (¿hay cajero en el pueblo?, ¿aceptan dólares?, ¿puedo volar dron?, ¿es accesible en silla de ruedas?, ¿cuántos grados hace?, ¿los guías son biólogos?…): dilo como Erick —"Déjame confirmarlo con el equipo y te escribo en cuanto me respondan"— y llama *escalar_a_humano* (pregunta_sin_respuesta, avisar, normal) con la pregunta exacta. Vale mil veces más "lo confirmo" que una respuesta inventada.
   · Si preguntan por un lugar, usa *obtener_destino*. Si no hay ficha, dilo con naturalidad. NUNCA describas un lugar por lo que suena su nombre.
   · La Cascada de Tamul es la más alta de *San Luis Potosí* (105 m), *NO* de México.
   · *La DURACIÓN nunca se estima.* No digas "medio día", "día completo", "unas horitas" ni la hora de regreso de memoria: sale del campo "duracionTexto"/"horario" de *obtener_tour*, y el horario exacto se confirma al reservar. Casi todos nuestros tours son de 8 a 10 horas — dar por hecho que uno es corto le arruina el día al cliente.
@@ -3338,7 +3343,29 @@ async function leerComprobante(archivo) {
   }
 }
 
+// Lo que dice el bot cuando no sabe algo: la frase de Erick y sus variantes.
+const PROMETE_CONFIRMAR = /(?:\b(?:lo|te lo|se lo) (?:confirmo|consulto|reviso|pregunto)\b|d[eé]jame (?:confirmarlo|consultarlo|preguntarle|preguntarlo|revisarlo|checarlo)|lo (?:consulto|confirmo|veo) con el equipo|te escribo en cuanto (?:me )?respond|\b(?:i'?ll|let me) (?:check|confirm)\b)/i;
+
+/**
+ * Red de seguridad de «nunca inventar» (17 nov 2026): si el bot le dijo al
+ * cliente «déjame confirmarlo con el equipo» pero en ESTE turno no avisó a
+ * nadie, el aviso sale solo, con la pregunta del cliente. Si no, la promesa
+ * quedaba en el aire: el cliente esperando y el equipo sin enterarse.
+ */
+function avisoSiPrometioConfirmar(phone, session, respuesta, mensaje, inicioTurno) {
+  if (!PROMETE_CONFIRMAR.test(String(respuesta || ""))) return false;
+  if (session.escalacion && (session.escalacion.at || 0) >= inicioTurno) return false;
+  const pregunta = typeof mensaje === "string" ? mensaje : "";
+  escalarAHumano({
+    motivo: "pregunta_sin_respuesta", modo: "avisar", urgencia: "normal",
+    resumen: `El bot le dijo que lo confirma con el equipo. Pregunta del cliente: «${pregunta.slice(0, 400)}»`,
+  }, phone);
+  session.escalacion.auto = true;
+  return true;
+}
+
 async function processMessage(phone, message, opciones = {}) {
+  const inicioTurno = Date.now();
   pushHistory(phone, "user", message);
   // La foto o el PDF que mandó el cliente en este turno (index.js los junta).
   const visuales = (Array.isArray(opciones && opciones.visuales) ? opciones.visuales : []).map(bloqueVisual).filter(Boolean).slice(0, 3);
@@ -3378,6 +3405,7 @@ async function processMessage(phone, message, opciones = {}) {
 
   // El orden importa: primero markdown → WhatsApp, luego despegar los links.
   const final = sinAutocorreccion(sanitizeLinks(toWhatsAppFormat(reply)));
+  avisoSiPrometioConfirmar(phone, session, final, message, inicioTurno);
   // 🔴 Se guardaba la respuesta del MODELO, sin el resumen ni los datos de
   // pago que el código le pega: el modelo creía haber dicho cosas que el
   // cliente nunca leyó, y no sabía que ya le había mandado la CLABE. Ahora va
@@ -3634,7 +3662,7 @@ function contieneTexto(reply, texto) {
 }
 
 module.exports = {
-  sinAutocorreccion,
+  sinAutocorreccion, avisoSiPrometioConfirmar, PROMETE_CONFIRMAR,
   processMessage, buildSystemPrompt, sanearHistorial, setToolObserver, recomendarLocal, executeTool, needsHuman,
   setApiClient, sanitizeLinks, toWhatsAppFormat, tools,
   // Funciones puras para las pruebas sin red (test-fecha, test-escalacion…).

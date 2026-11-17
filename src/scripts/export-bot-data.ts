@@ -42,6 +42,11 @@ import { fechaInicioTexto } from "../lib/temporada";
 // ── Capa curada (lo que la fuente del sitio no expresa en datos) ─────────────
 // Se mantiene aquí, cerca de la generación, y es lo único que se edita a mano.
 
+// Seguro de viajero (Manolo, 17 nov 2026): solo los de aventura lo traen en su
+// `incluye`; en los demás es opcional.
+const SEGURO_OPCIONAL = "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)";
+const llevaSeguro = (t: { incluye?: string[] }) => (t.incluye ?? []).some((x) => /seguro/i.test(x));
+
 const NO_INCLUYE: Record<string, string[]> = {
   "rzr-xilitla": ["Transporte hasta Xilitla", "Alimentos"],
   // 6 oct 2026, Manolo: el rappel SÍ incluye el traslado desde Ciudad Valles
@@ -552,7 +557,12 @@ const tours = TOURS_DB.map((t) => ({
   // Solo lo propio: `incluyeSiempre` va aparte y el bot las dice en dos
   // frases. Con la lista cruda repetía "seguro de viaje" en las dos.
   incluye: incluyePropioDeTour(t),
-  noIncluye: NO_INCLUYE[t.slug] || [],
+  noIncluye: [...(NO_INCLUYE[t.slug] || []), ...(llevaSeguro(t) ? [] : [SEGURO_OPCIONAL])],
+  // El seguro, ya escrito (17 nov 2026): solo los de aventura lo traen. Sin
+  // este campo el bot llegó a decir «Tamul incluye seguro porque es aventura».
+  seguro: llevaSeguro(t)
+    ? "SÍ incluye seguro de viajero (es tour de aventura)."
+    : `NO incluye seguro: ${SEGURO_OPCIONAL}. Solo los tours de aventura (rafting, rappel y RZR) lo traen.`,
   puntoEncuentro: puntoEncuentro(t),
   // La recogida de ESTE tour (dónde, en qué, a qué hora y qué pasa con Valles).
   // Sin esto la herramienta del bot devolvía la salida GLOBAL junto a la ficha

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T21:59:44.903Z",
+  "generatedAt": "2026-11-17T22:10:52.491Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -67,6 +67,7 @@
         "Transporte hasta Xilitla",
         "Alimentos"
       ],
+      "seguro": "SÍ incluye seguro de viajero (es tour de aventura).",
       "puntoEncuentro": "Base en Xilitla",
       "salida": "Nos vemos en nuestra base en Xilitla a la hora que elijas, entre 9:00 AM y 5:00 PM. El transporte hasta Xilitla no está incluido.",
       "recogidaTipo": "base-xilitla",
@@ -310,6 +311,7 @@
         "Alimentos (no lleva desayuno ni comida)",
         "Propinas y gastos personales"
       ],
+      "seguro": "SÍ incluye seguro de viajero (es tour de aventura).",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Ciudad Valles (traslado incluido). Si te hospedas en otra zona, el punto de encuentro te lo confirma el equipo.",
       "salida": "Pasamos por ti a tu hospedaje en Ciudad Valles entre 8:00 y 9:00 AM. Si te hospedas en otra zona, el punto de encuentro te lo confirma el equipo.",
       "recogidaTipo": "hospedaje",
@@ -419,6 +421,7 @@
         "Bebidas alcohólicas",
         "Propinas y gastos personales"
       ],
+      "seguro": "SÍ incluye seguro de viajero (es tour de aventura).",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -544,8 +547,10 @@
       ],
       "noIncluye": [
         "Comida de mediodía",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -652,8 +657,10 @@
       ],
       "noIncluye": [
         "Comida de mediodía",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla (traslado redondo incluido) o en Ciudad Valles, con $400 MÁS POR RESERVA, no por persona (no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado cuesta $400 más por reserva (no por persona).",
       "recogidaTipo": "hospedaje",
@@ -760,8 +767,10 @@
         "Alimentos y bebidas: empieza muy temprano y no lleva desayuno",
         "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)",
         "Propinas y gastos personales",
-        "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte"
+        "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla a tiempo para su horario fijo (8:00 AM lun, mié, jue y vie · 7:00 AM sáb y dom · 5:00 PM de mié a lun). Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -885,8 +894,10 @@
       ],
       "noIncluye": [
         "Comida de mediodía",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -993,8 +1004,10 @@
       ],
       "noIncluye": [
         "Comida de mediodía",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1102,8 +1115,10 @@
       ],
       "noIncluye": [
         "Comida de mediodía",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1197,7 +1212,10 @@
         "Recorrido guiado por el cafetal y por todo el proceso del café",
         "Cata de café recién tostado"
       ],
-      "noIncluye": [],
+      "noIncluye": [
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
+      ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1279,8 +1297,10 @@
         "Alimentos y bebidas: es un recorrido de noche y no lleva cena",
         "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)",
         "Ropa de cambio y calzado que se pueda mojar",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta. Al recogerlo le entregamos el casco y la lámpara frontal: desde el inicio, no al llegar.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, a las 7:40 PM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1389,8 +1409,10 @@
         "Alimentos: se sale de madrugada y no lleva desayuno",
         "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)",
         "Chamarra y calzado de montaña — arriba hace frío de verdad",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 4:00 y 4:30 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1497,8 +1519,10 @@
         "Alimentos: conviene llevar agua y algo de comer para la caminata",
         "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)",
         "Calzado de senderismo y chamarra o impermeable",
-        "Propinas y gastos personales"
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 7:00 y 8:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",

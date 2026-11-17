@@ -104,6 +104,32 @@ async function prueba(nombre, fn) {
     assert.ok(r.error && /mínimo/.test(r.error), JSON.stringify(r));
   });
 
+  // Red de seguridad: si dijo «lo confirmo con el equipo» y no avisó, avisa solo.
+  const { getSession, clearSession } = require("./sessions");
+  await prueba("si promete confirmarlo con el equipo sin avisar, el aviso sale solo", () => {
+    const chat = "promete@c.us";
+    clearSession(chat);
+    const s = getSession(chat);
+    s.escalacion = null;
+    const inicio = Date.now();
+    const salio = agente.avisoSiPrometioConfirmar(chat, s, "Déjame confirmarlo con el equipo y te escribo en cuanto me respondan.", "¿Hay cajero en Xilitla?", inicio);
+    assert.strictEqual(salio, true);
+    assert.strictEqual(s.escalacion.motivo, "pregunta_sin_respuesta");
+    assert.strictEqual(s.escalacion.modo, "avisar");
+    assert.match(s.escalacion.resumen, /cajero/);
+  });
+  await prueba("…y no duplica si el bot ya avisó en ese turno, ni avisa sin la frase", () => {
+    const chat = "promete2@c.us";
+    clearSession(chat);
+    const s = getSession(chat);
+    const inicio = Date.now();
+    s.escalacion = { motivo: "factura", modo: "avisar", urgencia: "normal", resumen: "x", at: inicio };
+    assert.strictEqual(agente.avisoSiPrometioConfirmar(chat, s, "Lo veo con administración, déjame confirmarlo.", "factura", inicio), false);
+    s.escalacion = null;
+    assert.strictEqual(agente.avisoSiPrometioConfirmar(chat, s, "Te mando la cotización en un momento.", "precio", inicio), false);
+    assert.strictEqual(s.escalacion, null);
+  });
+
   console.log(fallas ? `\n❌ ${fallas} fallaron` : "\n✅ Todas pasaron");
   process.exit(fallas ? 1 : 0);
 })();

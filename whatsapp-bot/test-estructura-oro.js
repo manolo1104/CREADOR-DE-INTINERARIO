@@ -218,7 +218,8 @@ const ESCENARIOS = [
     doc: "Duda: niños, edad, seguridad → pedir edades; respetar edad mínima.",
     mensajes: [`Queremos hacer rafting el ${SABADO_TXT}, vamos 2 adultos y mi hijo de 7 años.`],
     reglas: [
-      ["dice que el rafting es desde 8 años", (t) => /8 a[nñ]os|ocho a[nñ]os|edad m[ií]nima/i.test(t[0].bot)],
+      // Cualquiera de las dos razones reales vale: desde 8 años o mínimo de 5.
+      ["dice por qué no va (desde 8 años o mínimo de 5)", (t) => /8 a[nñ]os|ocho a[nñ]os|edad m[ií]nima|m[ií]nimo (de )?5|5 personas/i.test(t[0].bot)],
       ["no cotiza el rafting con el niño", (t) => !usó(t[0], "crear_cotizacion")],
     ],
   },
@@ -437,11 +438,12 @@ const ESCENARIOS = [
   },
   {
     id: "29-golondrinas",
-    doc: "Fuera de catálogo: Golondrinas no se opera; ofrecer lo que sí hay (Huahuas).",
-    mensajes: ["¿Llevan al Sótano de las Golondrinas?"],
+    doc: "Fuera de catálogo (Erick, 17 nov 2026): Golondrinas SÍ se puede; lo explica y el precio lo cotiza el equipo.",
+    mensajes: ["¿Llevan al Sótano de las Golondrinas? ¿Cuánto cuesta?"],
     reglas: [
-      ["dice que no lo operamos", (t) => /no (lo )?(operamos|llevamos|incluimos|va)|no est[aá]/i.test(t[0].bot)],
-      ["ofrece las Huahuas o la Expedición Tamul", (t) => /Huahuas|Expedici[oó]n Tamul/i.test(t[0].bot)],
+      ["dice que sí se puede (no «no lo operamos»)", (t) => !/no (lo )?operamos/i.test(t[0].bot) && /s[ií]\b|se puede|podemos/i.test(t[0].bot)],
+      ["no da un precio de memoria", (t) => !/\$\s?\d/.test(t[0].bot)],
+      ["el precio lo confirma el equipo (fuera_catalogo)", (t) => escalo(t[0], ["fuera_catalogo", "pregunta_sin_respuesta"])],
     ],
   },
   {
@@ -602,11 +604,158 @@ const ESCENARIOS = [
       ["no diagnostica ni promete de más", (t) => !/no pasa nada|100\s?% seguro/i.test(t[0].bot)],
     ],
   },
+  ...ESCENARIOS_ERICK(),
+  ...ESCENARIOS_NO_SABE(),
 ];
+
+// ── Lo que contesta Erick (base de conocimiento, 17 nov 2026) ─────────
+// Preguntas reales del documento de Manolo: el bot tiene que contestar lo
+// que contestaba Erick, con las decisiones de Manolo encima.
+function ESCENARIOS_ERICK() {
+  const uno = (id, doc, mensaje, reglas) => ({ id: `e${id}`, doc, mensajes: [mensaje], reglas });
+  return [
+    uno("01-rzr-rios", "RZR: no se cruzan ríos (conservación), 40–45 km/h.", "¿En el RZR se cruzan ríos? ¿Qué tan rápido se va?", [
+      ["dice que no se cruzan ríos", (t) => /no se cruzan|no cruza|no pasamos? (por|ríos)/i.test(t[0].bot)],
+      ["da la velocidad (40–45 km/h)", (t) => /4[05]/.test(t[0].bot)],
+    ]),
+    uno("02-rzr-guia-maneja", "RZR: el guía maneja sin costo extra.", "No quiero manejar el RZR, ¿el guía puede manejar? ¿Cuesta más?", [
+      ["dice que cuesta lo mismo", (t) => /(cuesta|es) (lo )?mismo|sin costo|no (cuesta|tiene costo|cobra) (m[aá]s|extra)/i.test(t[0].bot)],
+    ]),
+    uno("03-oxxo-tope", "OXXO: tope de $5,000 por depósito.", "¿Puedo pagar los $23,250 en OXXO?", [
+      ["da el tope de $5,000", (t) => /5,?000/.test(t[0].bot)],
+      ["ofrece transferencia o liga", (t) => /transferencia|liga|tarjeta/i.test(t[0].bot)],
+    ]),
+    uno("04-pago-desde-brasil", "Extranjero: transferencia solo desde cuenta mexicana; liga con tarjeta.", "Estoy en Brasil, ¿cómo te transfiero el anticipo?", [
+      ["dice que la transferencia es de cuenta mexicana", (t) => /mexican/i.test(t[0].bot)],
+      ["ofrece la liga con tarjeta", (t) => /liga|link|tarjeta/i.test(t[0].bot)],
+    ]),
+    uno("05-tamul-cerrado", "Si cierra Tamul se suspende todo el tour y se ofrece Meco u otra alternativa.", "Si cierran Tamul por el río, ¿se suspende todo el tour o solo la cascada?", [
+      ["dice que se suspende todo", (t) => /todo el tour|se suspende (todo|el tour)|completo/i.test(t[0].bot)],
+      ["ofrece Meco o alternativa / reembolso", (t) => /Meco|alternativa|reembols|reagend/i.test(t[0].bot)],
+    ]),
+    uno("06-adulto-mayor", "Adulto mayor → Ruta Surrealista (a paso cómodo).", "Voy con mi mamá de 70 años, camina bien pero despacio, ¿qué tour le recomiendas?", [
+      ["recomienda la Ruta Surrealista", (t) => /Surrealista/i.test(t[0].bot)],
+      ["no le recomienda rafting ni Olla", (t) => !/rafting|Olla de la Luz/i.test(t[0].bot)],
+    ]),
+    uno("07-factura-iva", "Factura: sí, +16 % de IVA, total por adelantado; avisa a administración.", "Necesito factura para mi empresa, ¿se puede?", [
+      ["dice que sí con IVA", (t) => /IVA|16/.test(t[0].bot)],
+      ["avisa al equipo (factura)", (t) => escalo(t[0], "factura")],
+    ]),
+    uno("08-pronostico-lluvia", "Pronóstico de lluvia: normalmente no afecta; lo que cierra es el río crecido.", `Vi que va a llover el ${SABADO_TXT}, ¿se cancela la Expedición Tamul?`, [
+      ["explica que lo que cierra es el río", (t) => /r[ií]o|crec/i.test(t[0].bot)],
+      ["no da por hecho que se cancela", (t) => !/s[ií],? se cancela|se cancela (seguro|autom)/i.test(t[0].bot)],
+    ]),
+    uno("09-viajero-solo", "Viajero solo: sumarse a un grupo ya armado (lo revisa el equipo) o privado; no cotiza 1.", `Viajo solo, ¿puedo ir a la Expedición Tamul el ${SABADO_TXT}?`, [
+      ["ofrece grupo armado o privado", (t) => /grupo/i.test(t[0].bot) && /privad/i.test(t[0].bot)],
+      ["no cotiza a una persona", (t) => !usó(t[0], "crear_cotizacion")],
+    ]),
+    uno("10-kayak", "Kayak: no está en el catálogo; lo explica y el precio lo da el equipo.", "¿Tienen tour en kayak? ¿Cuánto cuesta?", [
+      ["habla del kayak", (t) => /kayak/i.test(t[0].bot)],
+      ["no inventa precio", (t) => !/\$\s?\d/.test(t[0].bot)],
+      ["el precio lo cotiza el equipo", (t) => escalo(t[0], ["fuera_catalogo", "pregunta_sin_respuesta"])],
+    ]),
+    uno("11-ninos-y-bebe", "Niños: 4–7 al 50 %, 0–3 gratis. Tamul 2 adultos + niña de 5 + bebé de 2 = $3,750.", `Vamos 2 adultos, una niña de 5 años y un bebé de 2 a la Expedición Tamul el ${SABADO_TXT}, ¿cuánto sería?`, [
+      ["calcula con el bebé y la niña en su tramo", (t) => { const e = entradaDe(t[0], "calcular_precio"); return Number(e.bebes) === 1 && Number(e.ninosSmall) === 1; }],
+      ["da $3,750", (t) => /3,?750/.test(t[0].bot)],
+      ["dice que el bebé va gratis", (t) => /gratis|no paga|sin costo/i.test(t[0].bot)],
+    ]),
+    uno("12-nino-de-9", "De 8 en adelante pagan como adulto.", "¿Mi hijo de 9 años paga completo en la Expedición Tamul?", [
+      ["dice que paga como adulto", (t) => /adulto|completo|precio normal/i.test(t[0].bot)],
+      ["no le da 70 %", (t) => !/70\s?%/.test(t[0].bot)],
+    ]),
+    uno("13-seguro-tamul", "Seguro: en Tamul (ecoturismo) es opcional, $80.", "¿La Expedición Tamul incluye seguro?", [
+      ["dice que es opcional o $80", (t) => /opcional|\$?\s?80/i.test(t[0].bot)],
+      ["no dice que todos los tours lo traen", (t) => !/todos (los tours|nuestros tours) (incluyen|traen) seguro/i.test(t[0].bot)],
+    ]),
+    uno("14-seguro-rafting", "Seguro: el rafting (aventura) sí lo incluye.", "¿El rafting incluye seguro?", [
+      ["dice que sí lo incluye", (t) => /s[ií]\b|incluye|incluido/i.test(t[0].bot) && !/no (lo )?incluye/i.test(t[0].bot)],
+    ]),
+    uno("15-att", "AT&T no funciona en Xilitla.", "Tengo AT&T, ¿funciona en Xilitla?", [
+      ["dice que no funciona", (t) => /no (funciona|hay se[nñ]al|tiene cobertura|jala)/i.test(t[0].bot)],
+    ]),
+    uno("16-oficina", "Oficina en Xilitla (La Conchita, camino a Las Pozas); en Valles no hay.", "¿Dónde están sus oficinas? ¿Puedo ir a pagar en persona?", [
+      ["da la oficina de Xilitla", (t) => /Conchita|camino a (Las Pozas|la[s]? Pozas)|Xilitla/i.test(t[0].bot)],
+      ["dice que sí se puede pagar en persona", (t) => /(^|[\s¡>])s[ií](?![a-zñáéíóú])|claro|puedes|a qu[eé] hora/i.test(t[0].bot)],
+    ]),
+    uno("17-color-agua", "Estado del agua de hoy: lo confirma el equipo; honestidad, sin prometer turquesa.", "¿Cómo está el agua de Tamul ahorita? ¿Ya está turquesa?", [
+      ["no promete que está turquesa", (t) => !/s[ií],? (ya )?est[aá] turquesa/i.test(t[0].bot)],
+      ["lo confirma con el equipo", (t) => escalo(t[0], ["clima", "pregunta_sin_respuesta"])],
+    ]),
+    uno("18-hora-recogida", "Hora de recogida: el guía avisa la noche anterior, 8–9 pm.", "¿A qué hora pasan por nosotros para el tour?", [
+      ["dice que el guía avisa la noche anterior", (t) => /noche (anterior|antes)|un d[ií]a antes|la v[ií]spera/i.test(t[0].bot)],
+    ]),
+    uno("19-fotos-del-tour", "Fotos del tour: se le pide al guía, sin prometer plazo.", "Hola, ¿me pasan las fotos del tour de ayer?", [
+      ["no promete plazo", (t) => !/en (media hora|\d+ (minutos|horas|d[ií]as))/i.test(t[0].bot)],
+      ["avisa al equipo", (t) => escalo(t[0])],
+    ]),
+    uno("20-escalada", "Escalada no; rappel sí.", "¿Tienen tours de escalada?", [
+      ["dice que no hay escalada", (t) => /no (tenemos|hay|manejamos)/i.test(t[0].bot)],
+      ["ofrece el rappel", (t) => /rappel|rapel/i.test(t[0].bot)],
+    ]),
+    uno("21-cuatrimotos", "Cuatrimotos ya no; solo RZR.", "¿Rentan cuatrimotos?", [
+      ["dice que ya no / solo RZR", (t) => /ya no|no (tenemos|rentamos|manejamos)|solo (vehículos )?RZR/i.test(t[0].bot)],
+    ]),
+    uno("22-descuento", "Descuento: nunca lo inventa; el escalón por grupo sale en la cotización; lo consulta.", `Somos 4, ¿nos haces descuento en la Expedición Tamul?`, [
+      ["no inventa un porcentaje", (t) => !/\d+\s?% de descuento/i.test(t[0].bot)],
+      ["lo consulta o explica el escalón", (t) => escalo(t[0], ["descuento", "grupo"]) || /desde 3|por persona baja|precio de grupo|\$1,500/i.test(t[0].bot)],
+    ]),
+    uno("23-surrealista-y-rzr", "Surrealista termina 4:30–5 pm y se puede hacer RZR de 2–3 h.", "¿Puedo hacer la Ruta Surrealista y el RZR el mismo día?", [
+      ["dice que sí", (t) => /s[ií]\b|se puede|claro/i.test(t[0].bot)],
+      ["da la hora en que termina la Surrealista", (t) => /4:30|5:00|5 ?pm|cinco/i.test(t[0].bot)],
+    ]),
+    uno("24-resto-en-partes", "El resto se liquida completo antes de iniciar; no la mitad al regresar.", "¿Puedo pagar el resto la mitad al salir y la otra mitad al regresar del tour?", [
+      ["dice que se liquida antes de iniciar", (t) => /antes de (iniciar|empezar|salir)|completo/i.test(t[0].bot)],
+      ["no acepta la mitad al regresar", (t) => !/s[ií],? (puedes|se puede) (pagar|dividir)/i.test(t[0].bot)],
+    ]),
+    uno("25-guia-ingles", "Guías bilingües: sí, con anticipación; lo confirma el equipo.", "Do you have English-speaking guides?", [
+      ["contesta en inglés", (t) => /\b(the|we|guide|yes)\b/i.test(t[0].bot)],
+      ["no lo garantiza: lo confirma el equipo", (t) => escalo(t[0]) || /confirm|advance|ahead/i.test(t[0].bot)],
+    ]),
+    uno("26-propuesta", "Propuesta de matrimonio: experiencia privada en el Jardín; lo arma el equipo.", "Quiero pedirle matrimonio a mi novia en el Jardín de Edward James, ¿me ayudan?", [
+      ["menciona la experiencia privada o la decoración", (t) => /privad|Ed[eé]n|decoraci|anillo/i.test(t[0].bot)],
+      ["avisa al equipo", (t) => escalo(t[0])],
+    ]),
+    uno("27-tirolesa", "Tirolesas en Xilitla y Micos, costo aparte.", "¿Hay tirolesa?", [
+      ["dice dónde (Xilitla o Micos)", (t) => /Xilitla|Micos/i.test(t[0].bot)],
+    ]),
+  ];
+}
+
+// ── Lo que NADIE le enseñó: tiene que avisar al equipo, nunca inventar ──
+function ESCENARIOS_NO_SABE() {
+  const avisa = (t) => escalo(t[0], ["pregunta_sin_respuesta", "otro", "fuera_catalogo", "salud", "hotel", "clima", "recogida"]);
+  const uno = (id, mensaje, noInventa) => ({
+    id: `n${id}`,
+    doc: "Pregunta sin respuesta escrita: «lo confirmo con el equipo» + pregunta_sin_respuesta; nada inventado.",
+    mensajes: [mensaje],
+    reglas: [
+      ["avisa al equipo (no lo contesta de memoria)", avisa],
+      ["no inventa la respuesta", (t) => !noInventa.test(t[0].bot)],
+    ],
+  });
+  return [
+    // «No tengo confirmado si aceptamos dólares» no es inventar: la afirmación tiene que abrir la frase.
+    uno("01-dolares", "¿Aceptan dólares en efectivo para el resto?", /(^|[.!¡>]\s*)s[íi],? (aceptamos|se aceptan|puedes pagar con) d[oó]lares|tipo de cambio de \$?\d/im),
+    uno("02-cajero", "¿Hay cajero automático en el centro de Xilitla?", /(^|[.!¡>]\s*)s[íi],? hay (un |varios )?cajero|(^|[.!¡>]\s*)hay (un |varios )?cajeros? (en|del) (el )?centro/im),
+    uno("03-dron", "¿Puedo volar mi dron en las cascadas de Micos?", /s[ií],? (puedes|se puede) (volar|llevar)/i),
+    uno("04-silla-ruedas", "¿El tour del Jardín de Edward James es accesible en silla de ruedas?", /s[ií],? (es|est[aá]) (totalmente )?accesible|s[ií] (se puede|puede ir) en silla/i),
+    // Real de Catorce: que NO está en el catálogo sí lo sabe; basta con no inventar el tour.
+    { ...uno("05-real-catorce", "¿Tienen tour a Real de Catorce?", /(^|[.!¡>]\s*)s[íi],? (tenemos|hacemos|manejamos) (un )?(tour|viaje)|\$\s?\d/im),
+      reglas: [
+        ["dice que no lo tenemos o lo consulta", (t) => /no (tenemos|hacemos|manejamos)/i.test(t[0].bot) || escalo(t[0])],
+        ["no inventa el tour", (t) => !/(^|[.!¡>]\s*)s[íi],? (tenemos|hacemos|manejamos) (un )?(tour|viaje)|\$\s?\d/im.test(t[0].bot)],
+      ] },
+    uno("06-grados", "¿Cuántos grados hace en la noche en Xilitla en enero?", /\d+\s?(°|grados)/i),
+    uno("07-biologos", "¿Los guías son biólogos?", /s[ií],? (son|todos son|nuestros guías son) bi[oó]logos/i),
+    uno("08-acta", "¿Los niños necesitan llevar acta de nacimiento al tour?", /s[ií],? (necesitan|deben|tienen que) llevar/i),
+  ];
+}
 
 // ── Correr ───────────────────────────────────────────────────────────
 (async () => {
-  const elegidos = ESCENARIOS.filter((e) => !FILTRO || e.id.includes(FILTRO));
+  // Uno o varios filtros separados por coma: «e,n,29-» corre los que empiezan así.
+  const filtros = FILTRO.split(",").map((f) => f.trim()).filter(Boolean);
+  const elegidos = ESCENARIOS.filter((e) => !filtros.length || filtros.some((f) => e.id.startsWith(f) || e.id.includes(f)));
   console.log(`\n🏆 Estructura de oro con ${MODEL} · ${elegidos.length} pláticas · sitio SIMULADO\n`);
   const md = [`# Pruebas de la Estructura de oro — ${new Date().toISOString().slice(0, 16)} · ${MODEL}\n`];
   let ok = 0;
