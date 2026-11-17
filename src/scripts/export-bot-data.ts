@@ -32,7 +32,8 @@ import { FAQS_PAQUETES_ES } from "../lib/i18n/paquetes.en";
 import { TRASLADOS } from "../lib/traslados";
 import { DESTINOS_DB } from "../lib/destinos";
 import { DESTINO_EN_TOURS } from "../lib/tourMapping";
-import { GOOGLE_RATING, GOOGLE_RESENAS } from "../lib/resenas";
+import { GOOGLE_RATING, GOOGLE_RESENAS, GOOGLE_MAPS_TOURS_URL } from "../lib/resenas";
+import { GOOGLE_REVIEW_URL } from "../lib/reviewRequest";
 import { TOUR_REQUISITOS } from "../lib/tourRequisitos";
 import { fechaInicioTexto } from "../lib/temporada";
 
@@ -476,8 +477,12 @@ const empresa = {
   // cuando piden redes o reseñas, o dudan antes de pagar. Solo la marca
   // Huasteca Potosina Tours: no se explican otros nombres (Manolo, 17 nov).
   confianza: {
-    resenasGoogle: "https://maps.app.goo.gl/SWGyihBFTiykTFFM6",
-    dejarResena: "https://g.page/r/CZg8hdQa_GI9EBM/review",
+    // 🔴 17 nov 2026: era maps.app.goo.gl/SWGyih…, que abre la ficha del
+    // HOTEL Paraíso Encantado (ver resenas.ts). Esta es la de Huasteca
+    // Potosina Tours en Google Maps (comprobada en Chrome: 4.7★, 169 reseñas).
+    resenasGoogle: GOOGLE_MAPS_TOURS_URL,
+    // El enlace oficial del Perfil de Empresa para escribir reseña (abre Maps).
+    dejarResena: GOOGLE_REVIEW_URL,
     facebook: "https://www.facebook.com/huastecatours",
     instagram: "https://www.instagram.com/huasteca_potosina_tours_/",
   },

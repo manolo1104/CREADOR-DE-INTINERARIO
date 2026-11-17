@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T17:15:49.115Z",
+  "generatedAt": "2026-11-17T18:16:57.306Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -15,9 +15,9 @@
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "ninos": "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni a los que se cobran por grupo.) Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
     "rating": 4.7,
-    "resenas": 168,
+    "resenas": 169,
     "confianza": {
-      "resenasGoogle": "https://maps.app.goo.gl/SWGyihBFTiykTFFM6",
+      "resenasGoogle": "https://www.google.com/maps?cid=4423374976196099224",
       "dejarResena": "https://g.page/r/CZg8hdQa_GI9EBM/review",
       "facebook": "https://www.facebook.com/huastecatours",
       "instagram": "https://www.instagram.com/huasteca_potosina_tours_/"
@@ -4069,7 +4069,7 @@
     {
       "tema": "vigencia",
       "titulo": "Cuánto dura una cotización",
-      "texto": "Una cotización vale 7 días (si el tour es antes, hasta un día antes del tour): hasta la fecha que trae la propia cotización se respetan su precio y su lugar. Si vence sin pago, se vuelve a cotizar con el precio y la disponibilidad de ese momento. La fecha de vencimiento la da el sistema al crear la cotización: cítala tal cual, no la calcules.",
+      "texto": "La vigencia de una cotización depende de qué tan cerca está el tour: 24 horas si es en menos de 3 días, 72 horas si es en menos de 15 días y 7 días si es más lejos; nunca después del día antes del tour. Hasta la fecha que trae la propia cotización se respetan su precio y su lugar. Si vence sin pago, se vuelve a cotizar con el precio y la disponibilidad de ese momento. La fecha de vencimiento la da el sistema al crear la cotización: cítala tal cual, no la calcules.",
       "claves": [
         "vigencia",
         "vence",

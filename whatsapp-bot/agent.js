@@ -66,6 +66,9 @@ function nombresMismoDia() {
   return n.length > 1 ? `${n.slice(0, -1).join(", ")} y ${n[n.length - 1]}` : n[0] || "";
 }
 
+// La cotización y la confirmación también van por correo (Manolo, 17 nov 2026).
+const SIN_CORREO = "Falta su correo: la cotización y la confirmación le llegan también por correo. Pídeselo junto con el nombre. Si de plano no tiene o no quiere darlo, vuelve a llamar con sinCorreo: true y dile que todo le llega por aquí.";
+
 /** Por qué NO se cotiza este tour así (mínimo o mismo día), o null si sí. */
 function frenoDeTour(t, { fecha, personas } = {}) {
   if (!t) return null;
@@ -1141,7 +1144,8 @@ const tools = [
         ninosMid: { type: "number" },
         ninosSmall: { type: "number" },
         nombre: { type: "string", description: "Nombre completo, tal como quiere que aparezca" },
-        email: { type: "string", description: "Correo del cliente" },
+        email: { type: "string", description: "Correo del cliente: la cotización y la confirmación le llegan también por correo" },
+        sinCorreo: { type: "boolean", description: "SOLO si el cliente dijo claramente que no tiene o no quiere dar correo" },
         promoCode: { type: "string", description: "Código promocional (opcional)" },
         ...CAMPOS_COTIZACION,
       },
@@ -1203,7 +1207,8 @@ const tools = [
       properties: {
         tipo: { type: "string", description: "'rzr' o 'paquete'" },
         nombre: { type: "string", description: "Nombre completo, tal como quiere que aparezca" },
-        correo: { type: "string", description: "Correo del cliente" },
+        correo: { type: "string", description: "Correo del cliente: la cotización y la confirmación le llegan también por correo" },
+        sinCorreo: { type: "boolean", description: "SOLO si el cliente dijo claramente que no tiene o no quiere dar correo" },
         personas: { type: "number", description: "Total de personas" },
         // RZR:
         ruta: { type: "string", description: "(RZR) Nanacatli, Miradores, Nacimiento o Trinidad" },
@@ -1639,6 +1644,7 @@ async function ejecutarHerramienta(name, input, phone) {
       if (frenoCot) return { error: frenoCot };
       const nombre = textoLimpio(input.nombre, 120);
       const correo = textoLimpio(input.email, 160);
+      if (!correo && input.sinCorreo !== true) return { error: SIN_CORREO };
       const aparteAuto = vaAparteDelPaquete(sesionDe(phone).ficha);
       const chat = camposDelChat(phone, input, { slugsNuevos: [t.slug], aparteAuto });
       const res = await llamarSitio("crearCotizacion", {
@@ -1756,6 +1762,7 @@ async function ejecutarHerramienta(name, input, phone) {
       const siEsTrue = (v) => (v === true || v === "true" ? true : undefined);
       const nombre = textoLimpio(input.nombre, 120);
       const correo = textoLimpio(input.correo, 160);
+      if (!correo && input.sinCorreo !== true) return { error: SIN_CORREO };
       // Un paquete del catálogo es con nuestro hotel: se hospedan en Xilitla
       // (esa zona manda). El RZR junto a un paquete vigente va aparte.
       const rzr = TOURS.find((x) => esPorVehiculo(x)) || findTour("rzr-xilitla");
@@ -2849,7 +2856,7 @@ Al principio del último mensaje del cliente puede venir «[Ficha del viaje …]
 ━━━━━━━━━━━━━━━━━━━━━━━━
 1. Contesta en el idioma en que te escribe el cliente; si cambia de idioma, cambias con él.
 2. En español: *español de MÉXICO*, de "tú" y de "ustedes". JAMÁS formas de España ("vosotros", "os", "pagáis", "tenéis", "vais", "coger") ni voseo ("tenés", "podés", "querés", "liquidás", "sos", "mirá"), ni palabras en inglés ("Perfect", "check", "tips"): delatan que del otro lado hay una máquina.
-3. In English: natural and warm, same rules and numbers (MXN, 30 % deposit, quote valid 7 days). Nunca prometas guía bilingüe: en salida compartida el guía habla inglés básico (pregúntale si está bien así); uno bilingüe solo a petición y lo confirma el equipo.
+3. In English: natural and warm, same rules and numbers (MXN, 30 % deposit, quote valid until the date it shows). Nunca prometas guía bilingüe: en salida compartida el guía habla inglés básico (pregúntale si está bien así); uno bilingüe solo a petición y lo confirma el equipo.
 4. A las herramientas que cotizan pásales *idioma* ("es" o "en").
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2900,7 +2907,7 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
 ━━━━━━━━━━━━━━━━━━━━━━━━
 1. *Anticipo:* toda reserva se aparta con el *30 %* del total: tours, el Edén, el RZR y los paquetes. Cuando des un total di siempre "son $X en total; apartas con $Y". Quien quiera pagar el 100 % al reservar, puede.
 2. *Saldo:* "el resto se paga antes de iniciar el primer tour, en efectivo o transferencia; en paquetes, al hacer check-in en el hotel". El guía no lleva terminal: con tarjeta se paga con la liga de pago, sin comisión.
-3. *Vigencia:* la cotización vale *7 días* (si el tour es antes, hasta la víspera); cita la fecha que trae la cotización tal cual. En temporada alta y fines de semana los lugares se llenan: es urgencia real, sin contadores ni "quedan X lugares".
+3. *Vigencia:* depende de qué tan cerca está el tour: *24 horas* si es en menos de 3 días, *72 horas* si es en menos de 15 días y *7 días* si es más lejos (nunca después de la víspera). Cita la fecha que trae la cotización tal cual: no la calcules. En temporada alta y fines de semana los lugares se llenan: es urgencia real, sin contadores ni "quedan X lugares".
 4. *Para MAÑANA:* sí se cotiza, pero el anticipo debe quedar pagado *antes de las 10 pm de hoy* (caso 5). Si ya pasan de las 10 pm, no le pongas ese plazo: sigue lo que te diga *validar_fecha*.
 5. *Para HOY:* no lo confirmas tú (caso 4).
 6. *El precio va por la FECHA del tour, no por el día en que cotizas*${promoHasta ? `: algunos tours tienen precio de temporada baja para fechas hasta el ${fechaLarga(promoHasta)}` : ""}. Pasa SIEMPRE la fecha a *calcular_precio*: el precio que des tiene que ser el de la cotización.
@@ -2953,7 +2960,7 @@ Pero nunca mandes SOLO el *mensajeCliente*: si es tu primer mensaje, preséntate
 Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas; si fue una pregunta («¿es seguro?», «¿y si llueve?»), termina con una pregunta sobre lo mismo (R1); si no, vuelve a preguntar por el cierre. Nunca discutas, nunca presiones, nunca inventes un descuento.
 
 *"Está caro" / "lo vi más barato":* desglosa lo que sí va incluido (guía local certificado, entradas y accesos, ${INFO.incluyeSiempre.join(", ").toLowerCase()}) y recuérdale que hoy solo pone el 30 %. Si de verdad no le alcanza, ofrécele un tour real más económico del catálogo.
-*"Lo voy a pensar":* "Claro, sin prisa 🙌 Tu cotización vale 7 días y en fin de semana los lugares se llenan; el lugar se aparta con el anticipo. ¿Te escribo mañana para ver qué decidiste?" Si todavía no tiene cotización, ofrécela: "¿Te la armo para que la tengas a la mano?". Si acepta la hora → *agendar_seguimiento*.
+*"Lo voy a pensar":* "Claro, sin prisa 🙌 Tu cotización vale hasta el [la fecha que trae] y en fin de semana los lugares se llenan; el lugar se aparta con el anticipo. ¿Te escribo mañana para ver qué decidiste?" Si todavía no tiene cotización, ofrécela: "¿Te la armo para que la tengas a la mano?". Si acepta la hora → *agendar_seguimiento*.
 *"Lo platico con mi pareja / mi familia / mi grupo":* es el freno más común. Perfecto: el PDF de su cotización es para compartir ("te lo dejé arriba para que se lo compartas"; si aún no la tiene, ármasela) y acuerda la hora del siguiente contacto: "¿Te escribo mañana a las 6 para ver qué decidieron?". Si acepta → *agendar_seguimiento*. No dejes la plática sin fecha.
 *"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos pequeños${GRUPO_MAX_TOURS ? ` (de ${GRUPO_MAX_TOURS} personas como máximo; el cupo de cada tour viene en *obtener_tour*)` : " (el cupo de cada tour viene en *obtener_tour*)"} y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
 *"¿Y si llueve o se cancela?":* ${EMPRESA.cancelacion} Si el río o el clima no dejan hacer la actividad, cancelamos nosotros y elige entre reagendar sin costo o el reembolso completo (detalle: *consultar_politica* "clima-y-rio").
@@ -2974,7 +2981,7 @@ ${CONFIANZA_TEXTO}
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🌄 DESPUÉS DEL VIAJE
 ━━━━━━━━━━━━━━━━━━━━━━━━
-Un día después del tour el sistema le pregunta cómo les fue. Si contesta que bien → agradécele con calidez, pídele que nos deje su reseña en Google (${RESENA_URL || "el enlace de Google que te dé el equipo"}) y, si quiere, que comparta sus fotos del día. Si algo salió mal → una disculpa breve y escalar_a_humano (queja_incidente, pasar, hoy).
+Un día después del tour el sistema le pregunta cómo les fue (solo a quien reservó y pagó). Si contesta que bien → agradécele con calidez y pídele su reseña en Google con este enlace, TAL CUAL y solo en su propia línea (abre Google Maps con la ventana para escribirla): ${RESENA_URL || "el enlace de Google que te dé el equipo"} — y, si quiere, que comparta sus fotos del día. Si algo salió mal → una disculpa breve y escalar_a_humano (queja_incidente, pasar, hoy); ahí NO pidas reseña.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🚫 LO QUE NUNCA PROMETAS (esto pesa más que vender)

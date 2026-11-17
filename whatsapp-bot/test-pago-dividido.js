@@ -84,6 +84,22 @@ async function prueba(nombre, fn) {
     assert.ok(c3.ok, JSON.stringify(c3.data));
   });
 
+  // «¿Cómo les fue?» solo con la reserva concretada y un pago registrado (17 nov 2026).
+  const seguimiento = require("./seguimiento");
+  const sinPagar = await api.crearCotizacion({ tourSlug: "expedicion-tamul", tourDate: "2026-12-19", adults: 2, customerName: "Sin Pago" });
+  await prueba("post-viaje: una cotización que nunca se pagó NO pregunta «¿cómo les fue?»", async () => {
+    const v = await seguimiento.viajeConPago(api, sinPagar.data.folio);
+    assert.strictEqual(v.ok, false);
+  });
+  await prueba("post-viaje: la reserva con pago (liga o transferencia) sí, desde la COT o la HP-M", async () => {
+    assert.deepStrictEqual(await seguimiento.viajeConPago(api, cot), { ok: true, reserva });
+    assert.deepStrictEqual(await seguimiento.viajeConPago(api, reserva), { ok: true, reserva });
+  });
+  await prueba("post-viaje: si el sitio no contesta, no decide (se reintenta)", async () => {
+    const caido = { consultarReserva: async () => ({ ok: false, status: 0, data: {} }) };
+    assert.strictEqual(await seguimiento.viajeConPago(caido, cot), null);
+  });
+
   fs.rmSync(dir, { recursive: true, force: true });
   console.log(fallas ? `\n❌ ${fallas} fallaron` : "\n✅ Todas pasaron");
   process.exit(fallas ? 1 : 0);

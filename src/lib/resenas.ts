@@ -27,7 +27,7 @@
 export const GOOGLE_RATING = 4.7;
 
 /** Número de reseñas en Google. Se actualiza mirando el perfil real. */
-export const GOOGLE_RESENAS = 168;
+export const GOOGLE_RESENAS = 169; // visto en Google Maps el 17 nov 2026
 
 /**
  * El perfil de Google donde se leen ESAS reseñas (el de la operadora).
@@ -38,6 +38,13 @@ export const GOOGLE_RESENAS = 168;
  * reseñas» ahí. Este (share.google) abre el panel de «Huasteca Potosina Tours».
  */
 export const GOOGLE_PERFIL_URL = "https://share.google/YS3dbxN4wrnHZ8lO9";
+
+/**
+ * La ficha de Huasteca Potosina Tours en Google MAPS (por su CID), para
+ * mandarla por WhatsApp: en el teléfono abre la app de Maps con las reseñas.
+ * Comprobada en Chrome el 17 nov 2026 (4.7★, 169 reseñas).
+ */
+export const GOOGLE_MAPS_TOURS_URL = "https://www.google.com/maps?cid=4423374976196099224";
 
 /** "4.7 · 161 reseñas de Google" / "4.7 · 161 Google reviews". */
 export function resenasTexto(en = false): string {

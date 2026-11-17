@@ -29,18 +29,18 @@ export const maxDuration = 60;
  * Da seguimiento a las cotizaciones enviadas —las del panel a mano y las del
  * bot—, que hasta ahora no tenían ninguno: se mandaban y ahí morían.
  *
- * Cadencia desde el envío: +1 hora, +24 horas y +72 horas. La misma del carrito
- * abandonado, y por la misma razón: quien acaba de pedir una cotización está
- * decidiendo AHORA. La versión anterior esperaba 2, 5 y 10 días y llegaba tarde
- * a su propia conversación.
+ * Cadencia desde el envío: +3 horas, +24 horas y +72 horas, la MISMA de los
+ * recordatorios de WhatsApp del bot (17 nov 2026; antes +1 h). Quien acaba de
+ * pedir una cotización está decidiendo AHORA. Cada paso sale solo si cae
+ * dentro de la vigencia (24 h, 72 h o 7 días según qué tan cerca está el
+ * tour); lo que caería después ya no sale y cierra «vence mañana».
  *
  * Si el cliente CONFIRMA la reserva de ESA cotización, pasa a «aceptada» y la
  * secuencia se pausa en el acto. Si el mismo correo reservó otra cosa, solo se
  * pausan sus correos (ver `reservaPosterior`, lote 4 de la auditoría).
  *
- * La secuencia se CANCELA si no cabe completa antes de la fecha del tour. Es
- * deliberado: tres correos que se cortan a la mitad, justo cuando la persona
- * iba a decidir, hacen más daño que no escribir.
+ * Desde el 17 nov 2026 ya no se cancela entera si no cabe completa antes del
+ * tour: con la vigencia corta de los viajes cercanos, la cierra «vence mañana».
  *
  * Desde oct 2026, además, la FECHA LÍMITE (`vencimientoCotizacion.ts`):
  *  - el día anterior (o el mismo día) sale UNA vez «tu cotización vence
@@ -264,7 +264,7 @@ export async function POST(req: NextRequest) {
     }
     if (meta.avisoVenceAt) continue;
 
-    const paso = siguientePaso(meta, q.tourDate, ahora);
+    const paso = siguientePaso(meta, q.tourDate, ahora, venceEl);
     if (!paso) continue;
 
     if ("corte" in paso) {

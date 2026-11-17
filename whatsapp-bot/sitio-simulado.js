@@ -38,7 +38,14 @@ const { sumarDias } = require("./horario");
 
 // El anticipo es el 30 % en todo (decisión de Manolo, 6 oct 2026).
 const PCT_ANTICIPO = 30;
-const VIGENCIA_DIAS = 7; // 16 nov 2026: las del bot valen 7 días (VIGENCIA_BOT del sitio)
+// Como vigenciaBotPara del sitio (17 nov 2026): según qué tan cerca está el
+// primer tour, 24 h (menos de 3 días), 72 h (menos de 15) o 7 días.
+const VIGENCIAS_BOT = { "24h": { dias: 1, es: "24 horas", en: "24 hours" }, "72h": { dias: 3, es: "72 horas", en: "72 hours" }, "7dias": { dias: 7, es: "7 días", en: "7 days" } };
+function vigenciaBotPara(primera, hoyYmd) {
+  if (!primera || !/^\d{4}-\d{2}-\d{2}$/.test(primera)) return "7dias";
+  const dias = Math.round((Date.parse(`${primera}T12:00:00Z`) - Date.parse(`${hoyYmd}T12:00:00Z`)) / 86400000);
+  return dias < 3 ? "24h" : dias < 15 ? "72h" : "7dias";
+}
 const METODOS = new Set(["efectivo", "transferencia", "deposito", "stripe", "otro"]);
 const COBRO_REPETIDO_MS = 15 * 60 * 1000; // el sitio rechaza el mismo pago en 15 min
 const FACTOR_NINO_MEDIO = 0.7;
@@ -377,8 +384,8 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
         : `⏳ Vale hasta el ${fechaVence}, la víspera del tour.`);
     } else {
       L.push("", en
-        ? `⏳ Valid for 7 days: until ${fechaVence}.`
-        : `⏳ Vale 7 días: hasta el ${fechaVence}.`);
+        ? `⏳ Valid for ${VIGENCIAS_BOT[reg.vigencia || "7dias"].en}: until ${fechaVence}.`
+        : `⏳ Vale ${VIGENCIAS_BOT[reg.vigencia || "7dias"].es}: hasta el ${fechaVence}.`);
     }
     L.push(en ? `🧾 Payment reference: ${reg.folio}` : `🧾 Concepto de tu pago: ${reg.folio}`);
     return L.join("\n");
@@ -422,10 +429,11 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     const reg = {
       folio, status: "enviada", etiqueta, locale,
       total: cuenta.total, anticipo: cuenta.anticipo, saldo: cuenta.saldo,
-      // Como calcularVencimiento del sitio: 7 días, pero nunca después de la
-      // víspera del primer tour (y nunca antes de hoy).
+      vigencia: vigenciaBotPara(fechas[0], hoy()),
+      // Como calcularVencimiento del sitio: la vigencia, pero nunca después de
+      // la víspera del primer tour (y nunca antes de hoy).
       venceEl: (() => {
-        let v = sumarDias(hoy(), VIGENCIA_DIAS);
+        let v = sumarDias(hoy(), VIGENCIAS_BOT[vigenciaBotPara(fechas[0], hoy())].dias);
         if (fechas[0] && sumarDias(fechas[0], -1) < v) v = sumarDias(fechas[0], -1);
         return v < hoy() ? hoy() : v;
       })(),
@@ -463,7 +471,7 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     ];
     return respuesta(200, {
       folio, total: reg.total, anticipo: reg.anticipo, saldo: reg.saldo, pctAnticipo: PCT_ANTICIPO, moneda: "MXN",
-      venceEl: reg.venceEl, vigencia: "7dias",
+      venceEl: reg.venceEl, vigencia: reg.vigencia,
       resumenWhatsApp: resumenWhatsApp(reg, reemplazo && reemplazo.ok ? { reemplazaA: reemplazo.folio } : {}),
       emailEnviado: Boolean(correo),
       linkPago,

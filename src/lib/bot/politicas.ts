@@ -5,7 +5,7 @@
  *
  * De dónde sale: de 26 chats reales que terminaron en reserva (jul–sep 2026),
  * resumidos en hechos cortos, más las decisiones de Manolo del 29 sep al 6 oct
- * (anticipo 30 %, vigencia 7 días, check-in 3 pm / check-out 12 pm, rafting con
+ * (anticipo 30 %, vigencia 24 h / 72 h / 7 días según la fecha del tour, check-in 3 pm / check-out 12 pm, rafting con
  * comida, rappel con traslado desde Ciudad Valles, RZR a la hora que elija el
  * cliente). `src/scripts/export-bot-data.ts` lo copia a `whatsapp-bot/data.json`
  * y el bot lo consulta con su herramienta `consultar_politica({tema})`.
@@ -200,7 +200,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "vigencia",
     titulo: "Cuánto dura una cotización",
     texto:
-      "Una cotización vale 7 días (si el tour es antes, hasta un día antes del tour): hasta la fecha que trae la propia cotización se respetan su precio y su lugar. " +
+      "La vigencia de una cotización depende de qué tan cerca está el tour: 24 horas si es en menos de 3 días, 72 horas si es en menos de 15 días y 7 días si es más lejos; nunca después del día antes del tour. Hasta la fecha que trae la propia cotización se respetan su precio y su lugar. " +
       "Si vence sin pago, se vuelve a cotizar con el precio y la disponibilidad de ese momento. " +
       "La fecha de vencimiento la da el sistema al crear la cotización: cítala tal cual, no la calcules.",
     claves: ["vigencia", "vence", "hasta cuándo", "cuánto dura la cotización", "respetan el precio", "expira", "valid", "expire"],

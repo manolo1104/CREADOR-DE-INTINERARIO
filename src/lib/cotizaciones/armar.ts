@@ -44,7 +44,7 @@ import { registrarEnBitacora, pesos, BOT, type Actor } from "@/lib/admin/bitacor
 import { lugaresDePaqueteSeguro } from "@/lib/cupoPaquete";
 import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
 import { mensajeSinCupo, pedidosSinCupo } from "@/lib/cupoTour";
-import { VIGENCIA_BOT, fechaLimite } from "@/lib/vencimientoCotizacion";
+import { vigenciaBotPara, fechaLimite } from "@/lib/vencimientoCotizacion";
 import { conMeta as conMetaSeguimiento, metaCotizacion as metaSeguimiento } from "@/lib/quoteFollowUp";
 import { precioWebDelBot } from "./reglasEnvio";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
@@ -1055,7 +1055,8 @@ export function calcularCotizacionBot(input: PrecioBotInput, opciones: OpcionesC
     anticipo,
     anticipoTipo:  "percent",
     anticipoValor: PCT,
-    vigencia:      VIGENCIA_BOT,
+    // 24 h, 72 h o 7 días según qué tan cerca está el primer tour (17 nov 2026).
+    vigencia:      vigenciaBotPara([...guardadas.map((l) => l.tourDate), paquete?.fecha, hospedaje?.checkin]),
     numPersonas,
     priceOverride,
     discountType:  descuentoFijo !== null ? "fixed" : null,

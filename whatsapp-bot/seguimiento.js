@@ -66,16 +66,23 @@ function decidirSeguimiento(s, { ahora, pausa = false } = {}) {
   const seg = s.seguimiento || {};
   const etapa = etapaDe(s, new Date(ahora));
 
-  // Post-viaje: una vez, del día siguiente al último tour hasta 3 días después.
-  if (etapa === "post_viaje") {
+  // Post-viaje: una vez, del día siguiente al último tour hasta 3 días
+  // después, y SOLO si la reserva se concretó con un pago registrado, por
+  // cualquier vía (Manolo, 17 nov 2026). Aquí no se ve el sitio: sale el
+  // folio del viaje y index.js lo verifica con `viajeConPago` antes de escribir
+  // (así cuenta también el pago que Erick registró en el panel).
+  const f = s.ficha || {};
+  const folioViaje = f.reservaFolio || f.folioVigente || (/^(COT-|HP)/i.test(String(s.lastFolio || "")) ? s.lastFolio : null);
+  const ultima = ultimaFechaDelViaje(f);
+  if (ultima && folioViaje && ultima < hoyMX(new Date(ahora))) {
     if (seg.postViajeAt) return { accion: "nada", motivo: "ya se preguntó cómo les fue" };
-    const ultima = ultimaFechaDelViaje(s.ficha);
     const hoy = hoyMX(new Date(ahora));
-    const dias = ultima ? Math.round((Date.parse(`${hoy}T12:00:00Z`) - Date.parse(`${ultima}T12:00:00Z`)) / 86400000) : 99;
+    const dias = Math.round((Date.parse(`${hoy}T12:00:00Z`) - Date.parse(`${ultima}T12:00:00Z`)) / 86400000);
     if (dias < 1 || dias > 3) return { accion: "nada", motivo: "fuera de la ventana de post-viaje" };
     if (horaMX(ahora) < 10 || !enHorario(ahora)) return { accion: "nada", motivo: "fuera de horario" };
-    return { accion: "post_viaje" };
+    return { accion: "post_viaje", folio: String(folioViaje).toUpperCase() };
   }
+  if (etapa === "post_viaje") return { accion: "nada", motivo: "viaje pasado sin folio" };
   if (etapa === "confirmado" || etapa === "comprobante") return { accion: "nada", motivo: etapa };
 
   // ¿Ya pagó con la liga? Se revisa cada 15 min mientras haya cotización viva.
@@ -111,15 +118,23 @@ function decidirSeguimiento(s, { ahora, pausa = false } = {}) {
   ].filter((f) => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
   if (fechas.length && fechas[fechas.length - 1] < hoyMX(new Date(ahora))) return { accion: "nada", motivo: "el viaje ya pasó" };
 
-  // Un día antes de que venza su cotización (día 6 de 7): «vence mañana».
-  // Va aunque ya salieron los 3 recordatorios (pruebas de Manolo, 17 nov: el
-  // de los 3 días se despedía y la cotización seguía viva 4 días más).
+  // La fecha límite de su cotización (24 h, 72 h o 7 días según qué tan cerca
+  // está el tour). La MISMA regla que el correo (cron secuencia-cotizaciones):
+  //  · ya venció → nada;
+  //  · le queda un día o menos → UNA vez «vence mañana / hoy», al menos 6 h
+  //    después de nuestro último mensaje; desde ahí ya no salen recordatorios;
+  //  · un recordatorio que caería después de la fecha límite no sale.
   const vc = s.venceCotizacion;
-  if (vc && vc.folio && /^\d{4}-\d{2}-\d{2}$/.test(String(vc.venceEl || "")) && seg.venceAvisado !== vc.folio) {
+  const conVence = Boolean(vc && vc.folio && /^\d{4}-\d{2}-\d{2}$/.test(String(vc.venceEl || "")));
+  if (conVence) {
     const hoy = hoyMX(new Date(ahora));
+    if (vc.venceEl < hoy) return { accion: "nada", motivo: "la cotización ya venció" };
+    if (seg.venceAvisado === vc.folio) return { accion: "nada", motivo: "ya se avisó que vence" };
     const [y, m, d] = hoy.split("-").map(Number);
     const manana = new Date(Date.UTC(y, m - 1, d + 1, 12)).toISOString().slice(0, 10);
-    if (vc.venceEl === manana && horaMX(ahora) >= 10) return { accion: "vence_manana", folio: vc.folio, venceEl: vc.venceEl };
+    if ((vc.venceEl === manana || vc.venceEl === hoy) && horaMX(ahora) >= 10 && ahora - s.botAt >= 6 * HORA) {
+      return { accion: "vence_manana", folio: vc.folio, venceEl: vc.venceEl };
+    }
   }
 
   const base = seg.base && seg.base >= clienteAt ? seg.base : s.botAt;
@@ -132,7 +147,38 @@ function decidirSeguimiento(s, { ahora, pausa = false } = {}) {
   let paso = -1;
   for (let i = n; i < PASOS_MS.length; i++) if (ahora - base >= PASOS_MS[i]) paso = i;
   if (paso < 0) return { accion: "nada", motivo: "todavía no" };
+  // Fuera de la vigencia de su cotización ya no sale (lo cierra «vence mañana»).
+  if (conVence && base + PASOS_MS[paso] > Date.parse(`${vc.venceEl}T23:59:59-06:00`)) return { accion: "nada", motivo: "fuera de la vigencia" };
   return { accion: "recordar", paso: paso + 1, saltados: paso - n };
+}
+
+/**
+ * ¿El viaje de este folio se concretó con un pago registrado? Consulta el
+ * sitio: la cotización → su reserva; la reserva no cancelada ni borrador, y
+ * «paid» o con algo pagado (la misma regla del correo de reseñas,
+ * `pedir-resenas`). Devuelve { ok, reserva } / { ok:false, motivo }, o null si
+ * el sitio no contestó (se reintenta en la siguiente vuelta). Nunca lanza.
+ */
+async function viajeConPago(api, folio) {
+  try {
+    const f = String(folio || "").trim().toUpperCase();
+    if (!f || !api || typeof api.consultarReserva !== "function") return { ok: false, motivo: "sin folio" };
+    let r = await api.consultarReserva(f);
+    if (!r || !r.ok) return r && r.status === 404 ? { ok: false, motivo: `no existe ${f}` } : null;
+    let d = r.data || {};
+    if (d.tipo === "cotizacion") {
+      if (!d.reservaFolio) return { ok: false, motivo: `${f} nunca se convirtió en reserva (sin pago)` };
+      r = await api.consultarReserva(d.reservaFolio);
+      if (!r || !r.ok) return r && r.status === 404 ? { ok: false, motivo: `no existe ${d.reservaFolio}` } : null;
+      d = r.data || {};
+    }
+    const folioReserva = String(d.folio || f).toUpperCase();
+    if (d.status === "cancelled" || d.status === "borrador") return { ok: false, motivo: `${folioReserva} está ${d.status === "cancelled" ? "cancelada" : "en borrador"}` };
+    if (d.status !== "paid" && !(Number(d.pagado) > 0)) return { ok: false, motivo: `${folioReserva} no tiene pago registrado` };
+    return { ok: true, reserva: folioReserva };
+  } catch {
+    return null;
+  }
 }
 
 /** La nota que lee el modelo para escribir el recordatorio (nunca la ve el cliente). */
@@ -150,8 +196,10 @@ function notaParaElModelo(paso, s, { agendado = false } = {}) {
 
 /** La nota del aviso «tu cotización vence mañana» (día 6). */
 function notaVenceManana(s, { folio, venceEl } = {}) {
-  return `[sistema] SEGUIMIENTO: el cliente NO escribió nada; este mensaje lo inicias tú. Su cotización ${folio || ""} vence MAÑANA (${venceEl || "mañana"}). `
-    + "Escríbele UN mensaje corto (2 o 3 líneas): que mañana vence su cotización de SU tour y fecha, que el lugar se aparta con el anticipo y una pregunta fácil (¿te mando los datos para apartarlo?). "
+  const hoy = venceEl && venceEl === hoyMX(new Date());
+  const cuando = hoy ? "HOY" : "MAÑANA";
+  return `[sistema] SEGUIMIENTO: el cliente NO escribió nada; este mensaje lo inicias tú. Su cotización ${folio || ""} vence ${cuando} (${venceEl || ""}). `
+    + `Escríbele UN mensaje corto (2 o 3 líneas): que ${hoy ? "hoy" : "mañana"} vence su cotización de SU tour y fecha, que el lugar se aparta con el anticipo y una pregunta fácil (¿te mando los datos para apartarlo?). `
     + "Nada de presión ni escasez inventada, y no repitas la cotización ni los datos de pago completos.";
 }
 
@@ -179,6 +227,7 @@ module.exports = {
   notaParaElModelo,
   notaVenceManana,
   textoPostViaje,
+  viajeConPago,
   ultimoTextoDelCliente,
   horaMX,
   PASOS_MS,

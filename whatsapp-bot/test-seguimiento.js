@@ -96,6 +96,22 @@ prueba("un día antes de que venza la cotización: «vence mañana», aunque ya 
   const otroDia = sesion({ ficha: s.ficha, venceCotizacion: { folio: "COT-1", venceEl: "2026-11-20" } });
   assert.notEqual(decidirSeguimiento(otroDia, { ahora: MEDIODIA }).accion, "vence_manana", "faltan 3 días: todavía no");
 });
+prueba("vigencia corta (24 h / 72 h): sin recordatorios fuera de la vigencia, «vence hoy» y nada al vencer", () => {
+  const ficha = { recorridos: [{ slug: "expedicion-tamul", fecha: "2026-11-20" }], folioVigente: "COT-2", fechasDichas: [] };
+  const seg = { revisadoPagoAt: MEDIODIA };
+  // Vence HOY (24 h) y ya pasaron 6 h desde nuestro último mensaje: «vence hoy».
+  const hoy = sesion({ botAt: MEDIODIA - 7 * HORA, ficha, seguimiento: { ...seg }, venceCotizacion: { folio: "COT-2", venceEl: "2026-11-17" } });
+  assert.deepEqual(decidirSeguimiento(hoy, { ahora: MEDIODIA }), { accion: "vence_manana", folio: "COT-2", venceEl: "2026-11-17" });
+  // Menos de 6 h desde nuestro último mensaje: todavía no (como el correo).
+  const pronto = sesion({ botAt: MEDIODIA - 2 * HORA, ficha, seguimiento: { ...seg }, venceCotizacion: { folio: "COT-2", venceEl: "2026-11-17" } });
+  assert.notEqual(decidirSeguimiento(pronto, { ahora: MEDIODIA }).accion, "vence_manana");
+  // Ya se avisó: no salen más recordatorios.
+  const avisado = sesion({ botAt: MEDIODIA - 30 * HORA, ficha, seguimiento: { ...seg, venceAvisado: "COT-2" }, venceCotizacion: { folio: "COT-2", venceEl: "2026-11-18" } });
+  assert.equal(decidirSeguimiento(avisado, { ahora: MEDIODIA }).motivo, "ya se avisó que vence");
+  // Ya venció: nada.
+  const vencida = sesion({ botAt: MEDIODIA - 30 * HORA, ficha, seguimiento: { ...seg }, venceCotizacion: { folio: "COT-2", venceEl: "2026-11-16" } });
+  assert.equal(decidirSeguimiento(vencida, { ahora: MEDIODIA }).motivo, "la cotización ya venció");
+});
 prueba("el de los 3 días ya no se despide (la cotización sigue viva)", () => {
   const n = seguimiento.notaParaElModelo(3, sesion());
   assert.ok(!/último recordatorio/i.test(n));
@@ -124,9 +140,12 @@ prueba("con cotización viva, primero revisa si ya pagó con la liga (cada 15 mi
   assert.equal(decidirSeguimiento(s, { ahora: MEDIODIA }).accion, "recordar");
 });
 prueba("confirmado no recibe recordatorios; post-viaje al día siguiente del tour, una vez", () => {
-  const f = { pagoValidado: true, recorridos: [{ fecha: "2026-11-16", nombre: "Expedición Tamul — Tamul" }] };
+  const f = { pagoValidado: true, reservaFolio: "HP-M-1", recorridos: [{ fecha: "2026-11-16", nombre: "Expedición Tamul — Tamul" }] };
   assert.equal(decidirSeguimiento(sesion({ ficha: f }), { ahora: Date.parse("2026-11-16T18:00:00Z") }).accion, "nada");
-  assert.equal(decidirSeguimiento(sesion({ ficha: f }), { ahora: MEDIODIA }).accion, "post_viaje");
+  assert.deepEqual(decidirSeguimiento(sesion({ ficha: f }), { ahora: MEDIODIA }), { accion: "post_viaje", folio: "HP-M-1" });
+  // Con solo la cotización (el pago lo registró Erick en el panel): sale el folio para verificarlo con el sitio.
+  const cot = { folioVigente: "COT-9", recorridos: [{ fecha: "2026-11-16", nombre: "Expedición Tamul" }] };
+  assert.deepEqual(decidirSeguimiento(sesion({ ficha: cot }), { ahora: MEDIODIA }), { accion: "post_viaje", folio: "COT-9" });
   assert.equal(decidirSeguimiento(sesion({ ficha: f, seguimiento: { postViajeAt: 1 } }), { ahora: MEDIODIA }).accion, "nada");
 });
 prueba("revisión: chat de hace 20 días no recibe recordatorio (plática vieja)", () => {

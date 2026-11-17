@@ -26,7 +26,7 @@ import { localizePaquete } from "@/lib/i18n/paquetes.en";
 import { fraseRecogidaCorreo, lineasCancelacion, pasamosPorEl } from "@/lib/recogidaCorreo";
 import { incluyeDesayuno } from "@/lib/catalogoResumen";
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
-import { VIGENCIAS, VIGENCIA_BOT, calcularVencimiento, fechaLimite, vigenciaDe } from "@/lib/vencimientoCotizacion";
+import { VIGENCIAS, calcularVencimiento, fechaLimite, vigenciaDe } from "@/lib/vencimientoCotizacion";
 import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { BOT } from "@/lib/admin/bitacora";
 import {
@@ -248,6 +248,12 @@ function nombrePaquete(p: Paquete | undefined, nombre: string, en: boolean): str
 }
 
 /** De la cuenta recién hecha (`calcularCotizacionBot`): trae el precio de cada recorrido. */
+/** «7 días» / «72 horas» / «24 horas», en el idioma del cliente. */
+function etiquetaVigencia(v: string, en: boolean): string {
+  const label = (VIGENCIAS[v] ?? VIGENCIAS["7dias"]).label;
+  return en ? label.replace("días", "days").replace("horas", "hours") : label;
+}
+
 function vistaDeCalculo(c: CotizacionCalculada, folio: string, venceEl: string | null, en: boolean): Vista {
   // Los recorridos guardados que NO están entre los sueltos son los del paquete.
   const pendientes = c.lineas.map((l) => `${l.slug}|${l.tourDate}`);
@@ -281,8 +287,8 @@ function vistaDeCalculo(c: CotizacionCalculada, folio: string, venceEl: string |
     ...(h ? { hotel: { habitacion: h.habitacion, checkin: h.checkin, checkout: h.checkout, noches: h.noches, habitaciones: h.habitaciones, subtotal: h.subtotal } } : {}),
     total: c.total, anticipo: c.anticipo, saldo: c.saldo, pct: c.pctAnticipo,
     venceEl,
-    // Las del bot nacen con VIGENCIA_BOT (`_meta.vigencia`): 7 días desde el 16 nov 2026.
-    vigencia: en ? VIGENCIAS[VIGENCIA_BOT].label.replace("días", "days") : VIGENCIAS[VIGENCIA_BOT].label,
+    // La del bot va en `_meta.vigencia`: 24 h, 72 h o 7 días según la fecha del tour (17 nov 2026).
+    vigencia: etiquetaVigencia(vigenciaDe(c.guardar.packageItems), en),
   };
 }
 
@@ -304,12 +310,10 @@ function vistaDeCotizacion(q: TourQuote, venceEl: string | null, en: boolean): V
   const recorridos = lineas.filter((l) => !esConcepto(l)).map(recorridoGuardado);
   const d = desgloseCotizacion(0, q.totalAmount, meta);
   const vig = vigenciaDe(q.packageItems);
-  const etiquetaVigencia = vig === "48h" ? "48 h" : (en ? VIGENCIAS[vig].label.replace("días", "days") : VIGENCIAS[vig].label);
-
   const base = {
     folio: q.quoteNumber,
     total: q.totalAmount, anticipo: d.anticipo, saldo: d.saldo, pct: d.anticipoPct,
-    venceEl, vigencia: etiquetaVigencia,
+    venceEl, vigencia: vig === "48h" ? "48 h" : etiquetaVigencia(vig, en),
   };
   if (def) {
     const grupo = lineas[0] ?? {};
@@ -852,7 +856,8 @@ export interface RespuestaCotizacionBot {
   moneda:         "MXN";
   /** Fecha límite (YYYY-MM-DD, hora de México). */
   venceEl:        string;
-  vigencia:       "7dias";
+  /** 24h | 72h | 7dias según qué tan cerca está el tour (17 nov 2026). */
+  vigencia:       string;
   /** Para pegar TAL CUAL como primer mensaje. Sin datos bancarios. */
   resumenWhatsApp: string;
   /** ¿Le llegó un correo AL CLIENTE? (sin su correo, la copia va solo al equipo). */
@@ -972,7 +977,8 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
   const locale: LocaleBot = input.locale === "en" ? "en" : "es";
   // Si ni anotar el envío se pudo, la que le corresponde por la vigencia del
   // bot: es la que el panel le calculará al mandarla.
-  const venceEl = envio.venceEl ?? calcularVencimiento(new Date(), VIGENCIA_BOT, quote.tourDate || null);
+  const vigencia = vigenciaDe(quote.packageItems);
+  const venceEl = envio.venceEl ?? calcularVencimiento(new Date(), vigencia, quote.tourDate || null);
   const avisos = avisosDe(calc);
   // La misma liga que ya lleva el correo (se reusa, no nace otra).
   const liga = await ligaParaCorreo(quote.id, quote.customerEmail);
@@ -993,7 +999,7 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
       pctAnticipo:     calc.pctAnticipo,
       moneda:          "MXN",
       venceEl,
-      vigencia:        VIGENCIA_BOT,
+      vigencia,
       resumenWhatsApp: resumenWhatsAppCotizacion(calc, {
         locale, folio: quote.quoteNumber, venceEl,
         ...(reemplazo?.ok ? { reemplazaA: reemplazo.folio } : {}),

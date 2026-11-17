@@ -109,17 +109,19 @@ const TEXTOS = {
         // (`lineasCancelacion`), y el Edén no tiene reembolso.
         cuerpo:  (a: Anticipo) => (a.completo
           ? "Con el pago completo queda apartado tu lugar y el día del recorrido ya no pagas nada."
-          : `Puedes apartar tu lugar ${conEs(a)} y liquidar el resto el día del recorrido, en efectivo o con tarjeta.`),
+          : `Puedes apartar tu lugar ${conEs(a)} y liquidar el resto el día del recorrido, antes de empezar, en efectivo, por transferencia o con liga de pago.`),
         cta:     (a: Anticipo) => (a.completo ? "Apartar mi lugar" : `Apartar ${conEs(a)}`),
         pie:     "Los fines de semana y los puentes se llenan primero. Si tienes una fecha en mente, mejor asegurarla.",
       },
       4: {
         subject: () => "¿Te ayudamos a decidir?",
-        h1a: () => "Última de",
-        h1b: () => "nuestra parte",
-        cuerpo:  () => "No te vamos a seguir escribiendo. Solo queríamos decirte que si algo no te terminó de convencer —las fechas, el precio, si es apto para tu grupo, cómo llegar— hay una persona de este lado que te contesta en menos de una hora.",
+        // 17 nov 2026: ya no se despide. Con 7 días de vigencia todavía sale
+        // «vence mañana» (igual que en WhatsApp).
+        h1a: () => "¿Te ayudamos",
+        h1b: () => "a decidir?",
+        cuerpo:  () => "Si algo no te terminó de convencer —las fechas, el precio, si es apto para tu grupo, cómo llegar— hay una persona de este lado que te contesta en menos de una hora.",
         cta:     () => "Escribirle a una persona",
-        pie:     "Tu cotización sigue guardada por si la quieres retomar más adelante.",
+        pie:     "Tu cotización sigue vigente hasta la fecha que trae.",
       },
     } as Record<QuotePaso, TextosPaso>,
     apartas:  (a: Anticipo) => (a.completo ? "Pago completo" : `Apartas hoy ${conEs(a)}`),
@@ -161,17 +163,17 @@ const TEXTOS = {
         h1b: (a: Anticipo) => (a.completo ? "today" : "pay it all today"),
         cuerpo:  (a: Anticipo) => (a.completo
           ? "Paying in full holds your spot, and there's nothing left to pay on the day of the tour."
-          : `You can hold your spot ${conEn(a)} and settle the rest on the day of the tour, in cash or by card.`),
+          : `You can hold your spot ${conEn(a)} and settle the rest on the day of the tour, before it starts, in cash, by bank transfer or with a payment link.`),
         cta:     (a: Anticipo) => (a.completo ? "Hold my spot" : `Hold my spot ${conEn(a)}`),
         pie:     "Weekends and long weekends fill up first. If you have a date in mind, it's worth locking it in.",
       },
       4: {
         subject: () => "Can we help you decide?",
-        h1a: () => "Last one",
-        h1b: () => "from us",
-        cuerpo:  () => "We won't keep writing. We just wanted to say that if something didn't quite convince you — the dates, the price, whether it suits your group, how to get here — there's a real person on this end who answers in under an hour.",
+        h1a: () => "Can we help",
+        h1b: () => "you decide?",
+        cuerpo:  () => "If something didn't quite convince you — the dates, the price, whether it suits your group, how to get here — there's a real person on this end who answers in under an hour.",
         cta:     () => "Message a real person",
-        pie:     "Your quote stays saved in case you want to pick it up later.",
+        pie:     "Your quote is still valid until the date it shows.",
       },
     } as Record<QuotePaso, TextosPaso>,
     apartas:  (a: Anticipo) => (a.completo ? "Full payment" : `You pay ${a.fijo ? a.monto : `${a.pct} %`} today`),

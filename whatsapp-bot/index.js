@@ -2042,7 +2042,15 @@ async function ejecutarSeguimiento(chatId, d) {
   }
 
   if (d.accion === "post_viaje") {
+    // Solo si la reserva se concretó con un pago registrado (17 nov 2026).
+    const v = await seguimiento.viajeConPago(api, d.folio);
+    if (!v) return; // el sitio no contestó: se reintenta en la siguiente vuelta
     seg.postViajeAt = Date.now();
+    if (!v.ok) {
+      seg.postViajeOmitido = v.motivo;
+      console.log(`🔕 [${etiquetaChat(chatId)}] sin «¿cómo les fue?»: ${v.motivo}`);
+      return;
+    }
     const texto = seguimiento.textoPostViaje(s);
     await enviar(chatId, texto);
     // Sin esta nota el modelo seguía con lo pendiente de antes del viaje

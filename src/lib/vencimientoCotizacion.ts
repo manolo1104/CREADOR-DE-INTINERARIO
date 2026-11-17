@@ -24,7 +24,10 @@ import { nombreDePila, telefonoWhatsapp } from "./reviewRequest";
 
 /** Las vigencias que se eligen en el paso 3 del panel. */
 export const VIGENCIAS: Record<string, { dias: number; label: string }> = {
+  // 24h y 72h: las del bot cuando el tour está cerca (17 nov 2026).
+  "24h":    { dias: 1,  label: "24 horas" },
   "48h":    { dias: 2,  label: "48 horas" },
+  "72h":    { dias: 3,  label: "72 horas" },
   "7dias":  { dias: 7,  label: "7 días" },
   "15dias": { dias: 15, label: "15 días" },
   "30dias": { dias: 30, label: "30 días" },
@@ -39,6 +42,23 @@ export const VIGENCIA_POR_DEFECTO = "7dias";
  * pone `calcularVencimiento`.
  */
 export const VIGENCIA_BOT = "7dias" as const;
+
+/**
+ * La vigencia de una cotización del bot según qué tan lejos está su PRIMER
+ * tour (Manolo, 17 nov 2026): en menos de 72 horas → 24 horas; de 3 a 14 días
+ * → 72 horas; a 15 días o más → 7 días. Sin fecha, 7 días. El tope del día
+ * antes del tour lo sigue poniendo `calcularVencimiento`.
+ */
+export type VigenciaBot = "24h" | "72h" | "7dias";
+export function vigenciaBotPara(fechas: string | (string | null | undefined)[] | null | undefined, hoy: string = hoyMX()): VigenciaBot {
+  const lista = (Array.isArray(fechas) ? fechas : [fechas]).filter(esYMD).sort();
+  const primera = lista[0];
+  if (!primera) return VIGENCIA_BOT;
+  const dias = diffDiasYMD(hoy, primera);
+  if (dias < 3) return "24h";
+  if (dias < 15) return "72h";
+  return "7dias";
+}
 
 const esYMD = (v: unknown): v is string => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 

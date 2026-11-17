@@ -752,6 +752,10 @@ async function simularTiempo(que) {
   if (que === "postviaje") {
     const f = s.ficha || {};
     if (!Array.isArray(f.recorridos) || !f.recorridos.length) return emitir({ tipo: "aviso", texto: "No hay tour en la ficha del viaje: el «¿cómo les fue?» sale al día siguiente del último tour de una reserva." });
+    // Como index.js: solo si la reserva se concretó con un pago registrado.
+    const folioViaje = f.reservaFolio || f.folioVigente || s.lastFolio;
+    const v = await seguimiento.viajeConPago(api, folioViaje);
+    if (!v || !v.ok) return emitir({ tipo: "aviso", texto: `🔕 No sale el «¿cómo les fue?»: ${v ? v.motivo : "el sitio no contestó"}. Solo se le pregunta a quien reservó y pagó (cualquier forma de pago).` });
     const texto = seguimiento.textoPostViaje({ ...s, nombre: f.nombre || "" });
     pushHistory(CHAT, "user", seguimiento.NOTA_POST_VIAJE);
     pushHistory(CHAT, "assistant", texto);

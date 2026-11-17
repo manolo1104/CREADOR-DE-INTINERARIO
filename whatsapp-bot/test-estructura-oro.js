@@ -124,7 +124,7 @@ const ESCENARIOS = [
       ["pide datos de pago con su sí", (t) => usó(t[2], "datos_pago")],
       ["pago en un mensaje: CLABE + OXXO + liga exacta", (t) => /CLABE/.test(t[2].bot) && /OXXO/.test(t[2].bot) && /buy\.stripe\.com\/test_COT-/.test(t[2].bot)],
       ["cierra esperando el comprobante", (t) => /espera de tu comprobante|waiting for your receipt/i.test(t[2].bot)],
-      ["vigencia 7 días", (t) => /7 d[ií]as|v[ií]spera/i.test(t[1].bot)],
+      ["vigencia (24 h, 72 h o 7 días según la fecha)", (t) => /7 d[ií]as|72 horas|24 horas|v[ií]spera/i.test(t[1].bot)],
     ],
   },
   {
@@ -293,7 +293,7 @@ const ESCENARIOS = [
       ["cotiza", (t) => usó(t[0], "crear_cotizacion")],
       ["manda una liga por persona", (t) => usó(t[1], "enviar_link_pago") && Number(entradaDe(t[1], "enviar_link_pago").partes) === 3],
       ["las ligas llegan al chat, exactas", (t) => (t[1].bot.match(/buy\.stripe\.com\/test_COT-SIM\d+_\d/g) || []).length >= 3],
-      ["cada liga lleva el nombre de quien paga", (t) => /Luis[^\n]*\n\s*https:\/\/buy\.stripe/i.test(t[1].bot) && /Ana[^\n]*\n\s*https:\/\/buy\.stripe/i.test(t[1].bot)],
+      ["cada liga lleva el nombre de quien paga", (t) => /Luis[^\n]*(\n\s*)?https:\/\/buy\.stripe/i.test(t[1].bot) && /Ana[^\n]*(\n\s*)?https:\/\/buy\.stripe/i.test(t[1].bot)],
     ],
   },
   {
@@ -373,6 +373,34 @@ const ESCENARIOS = [
     ],
   },
   {
+    id: "27b-vigencia-72h",
+    doc: "Vigencia según la fecha (Manolo, 17 nov): tour en ~10 días → la cotización vale 72 horas.",
+    mensajes: [(() => { const f = new Date(Date.now() + 10 * 86400000); return `Somos 2 adultos para la Expedición Tamul el ${f.getDate()} de ${MESES[f.getMonth()]}, nos quedamos en Xilitla. Soy Ana Prueba, ana@test.invalid`; })()],
+    reglas: [
+      ["cotiza", (t) => usó(t[0], "crear_cotizacion")],
+      ["dice que vale 72 horas", (t) => /72 horas/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "27c-vigencia-24h",
+    doc: "Tour en menos de 72 horas → la cotización vale 24 horas (o hasta la víspera).",
+    mensajes: [(() => { const f = new Date(Date.now() + 2 * 86400000); return `Somos 2 adultos para la Expedición Tamul el ${f.getDate()} de ${MESES[f.getMonth()]}, nos quedamos en Ciudad Valles. Soy Ana Prueba, ana@test.invalid`; })()],
+    reglas: [
+      ["cotiza", (t) => usó(t[0], "crear_cotizacion")],
+      ["no dice 7 días", (t) => !/7 d[ií]as/i.test(t[0].bot)],
+      ["da la fecha límite corta", (t) => /24 horas|v[ií]spera|vale (solo )?(hasta|hoy)|ma[ñn]ana/i.test(t[0].bot)],
+    ],
+  },
+  {
+    id: "27d-sin-correo",
+    doc: "La cotización también va por correo: si no dio correo, lo pide antes de cotizar.",
+    mensajes: [`Somos 2 adultos para la Expedición Tamul el ${SABADO_TXT}, en Xilitla. Me llamo Pepe Prueba.`],
+    reglas: [
+      ["pide el correo", (t) => /correo|e-?mail/i.test(t[0].bot)],
+      ["no cotiza sin correo", (t) => !usó(t[0], "crear_cotizacion") || /correo/i.test(t[0].bot)],
+    ],
+  },
+  {
     id: "28-para-hoy",
     doc: "Para hoy (Manolo, 17 nov): solo RZR, Travesía del Café y Gruta de Xilo; los demás, desde mañana.",
     mensajes: ["¿Hay algún tour para hoy? Somos 2 y estamos en Xilitla."],
@@ -387,7 +415,7 @@ const ESCENARIOS = [
     doc: "Tour que no va el mismo día: lo dice claro, ofrece mañana; no cotiza para hoy y no escala.",
     mensajes: ["Queremos ir hoy a la Expedición Tamul, somos 2 adultos en Ciudad Valles."],
     reglas: [
-      ["dice que hoy no se puede", (t) => /no (se )?(puede|alcanza|agenda|es posible)|ya no|desde mañana|anticipaci[oó]n/i.test(t[0].bot)],
+      ["dice que hoy no se puede", (t) => /no (se )?(puede|alcanza|agenda|es posible)|no podemos|ya no|desde mañana|anticipaci[oó]n/i.test(t[0].bot)],
       ["ofrece mañana u otra fecha", (t) => /mañana|otra fecha|otro d[ií]a/i.test(t[0].bot)],
       ["no cotiza Tamul para hoy", (t) => !usó(t[0], "crear_cotizacion")],
       ["no pasa el chat al equipo", (t) => !escalo(t[0], "para_hoy", "pasar")],

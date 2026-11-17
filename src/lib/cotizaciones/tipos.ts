@@ -280,7 +280,8 @@ export interface MetaCotizacionBot {
   anticipo:       number;
   anticipoTipo:   "percent";
   anticipoValor:  number;
-  vigencia:       "7dias";
+  /** 24h | 72h | 7dias según qué tan cerca está el primer tour (17 nov 2026). */
+  vigencia:       "24h" | "72h" | "7dias";
   numPersonas:    number | null;
   /** El total del bot cuando es MAYOR que la suma a precio de lista del panel (viajero solo). */
   priceOverride:  number | null;

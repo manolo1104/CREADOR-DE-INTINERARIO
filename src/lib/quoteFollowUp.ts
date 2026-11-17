@@ -28,9 +28,10 @@ export const PASOS_COTIZACION = 4;
  * El cron corre cada hora, así que el paso de +1 h es alcanzable.
  */
 export const ESPERA_HORAS: Record<number, number> = {
-  2: 1,   // "aquí la tienes a la mano"
+  // 17 nov 2026: alineados con los recordatorios de WhatsApp (3 h, 24 h, 72 h).
+  2: 3,   // "aquí la tienes a la mano"
   3: 24,  // aparta con el 30 %
-  4: 72,  // una persona del otro lado, y ya no insistimos
+  4: 72,  // una persona del otro lado
 };
 
 /** Lo que dura la secuencia completa, en horas. */
@@ -128,18 +129,15 @@ function instanteEnvio(seqDesde: string): number | null {
 }
 
 /**
- * ¿Cabe la secuencia COMPLETA antes de la fecha del tour?
+ * ¿Alcanza a salir al menos el primer recordatorio antes del tour?
  *
- * La regla que pidió Manolo: si el viaje ya está encima y no alcanzan a salir
- * todos los pasos, no se arranca una secuencia a medias. Mejor ninguna que tres
- * correos que se cortan justo cuando la persona iba a decidir.
+ * 17 nov 2026 (Manolo: «alinea los correos con los de WhatsApp»): ya no se
+ * cancela la secuencia entera cuando el viaje está cerca. Cada paso sale si
+ * cae dentro de la vigencia de la cotización (24 h, 72 h o 7 días según la
+ * fecha del tour); lo que caería después ya no sale, y la cierra el aviso
+ * «vence mañana», igual que en WhatsApp.
  *
- * Con la cadencia en horas la secuencia dura 3 días en vez de 10, así que
- * ahora cabe en casi todos los casos: solo se cancela cuando el recorrido es
- * dentro de menos de cuatro días.
- *
- * Una cotización SIN fecha (el bot las crea así muy seguido) no tiene contra
- * qué medirse: ahí la secuencia corre completa.
+ * Una cotización SIN fecha no tiene contra qué medirse: ahí corre completa.
  */
 export function alcanzaLaSecuencia(
   enviada: string,
@@ -152,7 +150,14 @@ export function alcanzaLaSecuencia(
   const desde = instanteEnvio(enviada);
   if (desde === null) return true;
 
-  return desde + (DURACION_HORAS + MARGEN_HORAS) * HORA_MS <= inicio;
+  return desde + ESPERA_HORAS[2] * HORA_MS <= inicio;
+}
+
+/** El último instante del día `YYYY-MM-DD` en México (la fecha límite vale todo ese día). */
+function finDelDia(ymd: string): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return null;
+  const t = Date.parse(`${ymd}T23:59:59-06:00`);
+  return Number.isNaN(t) ? null : t;
 }
 
 /**
@@ -183,6 +188,7 @@ export function siguientePaso(
   meta: MetaCotizacion,
   tourDate: string | null | undefined,
   ahora: Date = new Date(),
+  venceEl?: string | null,
 ): { paso: number } | { corte: "terminado" | "sin-tiempo" | "fecha-pasada" } | null {
   if (meta.seqEstado && meta.seqEstado !== "activo") return null;
 
@@ -204,6 +210,10 @@ export function siguientePaso(
   // punto" no debe saltarse un envío por unos segundos.
   const margen = 5 * 60 * 1000;
   const toca = desde + ESPERA_HORAS[paso] * HORA_MS;
+  // Un paso que caería después de la fecha límite (o ya el día del tour) no
+  // sale, ni los que siguen: ahí la secuencia la cierra «vence mañana».
+  const fin = venceEl ? finDelDia(venceEl) : null;
+  if ((fin !== null && toca > fin) || (inicio !== null && toca >= inicio)) return { corte: "terminado" };
   if (ahora.getTime() + margen < toca) return null;
   return { paso };
 }
