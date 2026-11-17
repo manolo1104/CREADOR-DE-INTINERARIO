@@ -13,6 +13,7 @@ const {
   PAQUETES, HABITACIONES, LOGISTICA, TRASLADOS, DESTINOS, DESTINO_TOUR, INFO,
   POLITICAS, XANTOLO,
   findPaquete, findDestino, buscarPoliticas,
+  RESPUESTAS, TEMAS_RESPUESTA, buscarRespuestas, respuestasDeTour, respuestaParaModelo,
 } = require("./knowledge");
 // payment.js es la ÚNICA fuente de los datos bancarios que ve el cliente
 // (el sitio dejó de mandarlos). `mensajeDatosPago` se lee al usarse: con un
@@ -893,9 +894,9 @@ function mensajeDePago({ folio, monto, locale, liga = null, ligas = null }) {
 // ── Fechas ────────────────────────────────────────────────────
 const DIAS_SEMANA = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
-// El anticipo de un tour para mañana tiene que llegar antes de las 10 pm: es
+// El anticipo de un tour para mañana tiene que llegar antes de las 9 pm: es
 // cuando el equipo arma la logística de la mañana.
-const CORTE_MANANA_MIN = 22 * 60;
+const CORTE_MANANA_MIN = 21 * 60; // 9 pm (Erick, 17 nov 2026; antes 10 pm)
 const FMT_HORA_MX = new Intl.DateTimeFormat("en-US", {
   timeZone: "America/Mexico_City", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
 });
@@ -939,11 +940,11 @@ function validarFecha(fecha, { ahora = Date.now(), locale = "es" } = {}) {
   if (diasFaltan === 1) {
     r.esManana = true;
     if (minutosMX(ahora) >= CORTE_MANANA_MIN) {
-      // De 10 pm a medianoche «paga antes de las 10 pm» es un plazo que ya pasó.
+      // De 9 pm a medianoche «paga antes de las 9 pm» es un plazo que ya pasó.
       r.despuesDeLas10 = true;
-      r.instruccion = "Es para MAÑANA y ya pasan de las 10 pm: NO le pidas pagar «antes de las 10 pm» (esa hora ya pasó). Puedes cotizarlo, pero dile que la salida de mañana el equipo se la confirma a primera hora, y llama escalar_a_humano (para_manana, avisar, urgente).";
+      r.instruccion = "Es para MAÑANA y ya pasan de las 9 pm: NO le pidas pagar «antes de las 9 pm» (esa hora ya pasó). Puedes cotizarlo, pero dile que la salida de mañana el equipo se la confirma a primera hora, y llama escalar_a_humano (para_manana, avisar, urgente).";
     } else {
-      r.instruccion = "Es para MAÑANA: sí se cotiza, pero el anticipo debe quedar pagado antes de las 10 pm de hoy. Llama escalar_a_humano (para_manana, avisar, urgente) para que el equipo confirme la salida, y sigue cotizando.";
+      r.instruccion = "Es para MAÑANA: sí se cotiza, pero el anticipo debe quedar pagado antes de las 9 pm de hoy. Llama escalar_a_humano (para_manana, avisar, urgente) para que el equipo confirme la salida, y sigue cotizando.";
     }
   }
   return r;
@@ -1455,6 +1456,8 @@ async function ejecutarHerramienta(name, input, phone) {
         ...(typeof t.edadMinima === "number" ? { edadMinima: t.edadMinima } : {}),
         ...(t.edadNota ? { edadNota: t.edadNota } : {}),
         ...(Array.isArray(t.faqs) && t.faqs.length ? { faqs: t.faqs } : {}),
+        // Lo que contesta el equipo (Erick) de este tour (17 nov 2026).
+        ...(respuestasDeTour(t.slug).length ? { loQueDiceElEquipo: respuestasDeTour(t.slug).map(respuestaParaModelo) } : {}),
         // La salida de ESTE tour. 🔴 Antes iba la GLOBAL ("8:00–9:00 AM, Xilitla
         // o Valles") junto a la ficha de la Gruta de Xilo, que sale a las 7 PM y
         // solo recoge en Xilitla, y el modelo se quedaba con la de la mañana.
@@ -2138,17 +2141,20 @@ async function ejecutarHerramienta(name, input, phone) {
     case "consultar_politica": {
       // El Xantolo tiene fecha: pasado el evento ya no se ofrece.
       const encontradas = buscarPoliticas(input.tema, 2).filter((p) => p.tema !== "xantolo" || xantoloVigente());
-      if (!encontradas.length) {
+      // Lo que contesta el equipo (Erick), también por palabras (17 nov 2026).
+      const delEquipo = buscarRespuestas(input.tema, 3);
+      if (!encontradas.length && !delEquipo.length) {
         return {
           encontrado: false,
           temas: POLITICAS.map((p) => p.tema),
-          instruccion: "No hay respuesta escrita para eso. Si otro tema de la lista le queda, consúltalo; si no, NO la inventes: dile que se lo confirmas hoy y llama escalar_a_humano (pregunta_sin_respuesta, avisar, normal) con su pregunta.",
+          instruccion: "No hay respuesta escrita para eso. Si otro tema de la lista le queda, consúltalo; si no, NO la inventes: dile «Déjame confirmarlo con el equipo y te escribo en cuanto me respondan» y llama escalar_a_humano (pregunta_sin_respuesta, avisar, normal) con su pregunta exacta.",
         };
       }
       return {
         encontrado: true,
-        politicas: encontradas.map((p) => ({ tema: p.tema, titulo: p.titulo, texto: p.texto, ...(p.datos ? { datos: p.datos } : {}) })),
-        nota: "Contesta con esto, breve, con tus palabras y en el idioma del cliente. No agregues datos que no estén aquí.",
+        ...(encontradas.length ? { politicas: encontradas.map((p) => ({ tema: p.tema, titulo: p.titulo, texto: p.texto, ...(p.datos ? { datos: p.datos } : {}) })) } : {}),
+        ...(delEquipo.length ? { loQueContestaElEquipo: delEquipo.map(respuestaParaModelo) } : {}),
+        nota: "Contesta con lo que de verdad responda su pregunta, breve, con tus palabras y en el idioma del cliente. No agregues datos que no estén aquí. Si nada de esto contesta lo que preguntó, NO la inventes: pregunta_sin_respuesta. Si una respuesta trae alEquipo, avisa al equipo con ese motivo.",
       };
     }
 
@@ -2809,6 +2815,37 @@ function fechaHoyTexto() {
   return { f, iso, anio: iso.slice(0, 4) };
 }
 
+/**
+ * «📚 LO QUE CONTESTA EL EQUIPO»: la base de Erick (src/lib/bot/respuestasEquipo.ts,
+ * 17 nov 2026), compacta y por tema. Va completa en el prompt (en caché) para
+ * que el bot la tenga siempre a la vista y no conteste de memoria.
+ */
+function respuestasEquipoTexto() {
+  if (!RESPUESTAS.length) return "";
+  const porTema = new Map();
+  for (const r of RESPUESTAS) {
+    if (!porTema.has(r.tema)) porTema.set(r.tema, []);
+    porTema.get(r.tema).push(r);
+  }
+  const bloques = [...porTema.entries()].map(([tema, lista]) => {
+    const lineas = lista.map((r) => {
+      const equipo = r.alEquipo ? ` [→ equipo: ${r.alEquipo.motivo}, ${r.alEquipo.modo}]` : "";
+      const nota = r.nota ? ` (Para ti: ${r.nota})` : "";
+      return `• «${r.preguntas.slice(0, 2).join("» / «")}» → ${r.respuesta}${equipo}${nota}`;
+    });
+    return `*${TEMAS_RESPUESTA[tema] || tema}*\n${lineas.join("\n")}`;
+  });
+  return `━━━━━━━━━━━━━━━━━━━━━━━━
+📚 LO QUE CONTESTA EL EQUIPO (así responde Erick; es tu guía)
+━━━━━━━━━━━━━━━━━━━━━━━━
+Son respuestas reales del equipo a clientes reales. Úsalas con tus palabras, breve y en el idioma del cliente. Mandan sobre lo que creas saber.
+• Los PRECIOS de los tours NO salen de aquí: salen de *calcular_precio*, *cotizar_rzr* y la cotización.
+• [→ equipo: motivo, modo] = Erick lo consultaba con operación: di lo que dice la respuesta y llama *escalar_a_humano* con ese motivo y modo (salvo que la nota diga cuándo no).
+• Si la pregunta del cliente NO está aquí ni en tus herramientas ni en *consultar_politica*: NO la inventes (regla 5 de «LO QUE NUNCA PROMETAS»).
+
+${bloques.join("\n\n")}`;
+}
+
 function buildSystemPrompt() {
   const hoy = fechaHoyTexto();
   const promoHasta = promoVigenteHasta();
@@ -2900,7 +2937,7 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
 *9. DESPUÉS DEL VIAJE.* Ver «DESPUÉS DEL VIAJE».
 
 ❗ *Si te preguntan un precio, lo PRIMERO que sale de tu boca es el precio* por persona (de *obtener_tour* o *calcular_precio*) y enseguida pides lo que falte para el total. Jamás contestes solo "primero dime las fechas".
-👥 *CUPO — revísalo ANTES de proponer.* Cada tour tiene mínimo y máximo de personas (groupMin/groupMax). *El mínimo SÍ es mínimo:* con menos personas que el mínimo del tour NO se cotiza ni se reserva (el rafting pide 5: con 3 no va; la mayoría pide 2: una persona sola no los puede reservar). Dilo de una vez, sin rodeos, y ofrece una alternativa: otro tour cuyo mínimo sí cumplan (*obtener_tour* trae minPersonas), que completen el grupo, o el tour privado si la ficha lo permite (lo cotiza el equipo). Nunca ofrezcas «sumarlos a una salida compartida». Si piden una excepción, caso 10.
+👥 *CUPO — revísalo ANTES de proponer.* Cada tour tiene mínimo y máximo de personas (groupMin/groupMax). *El mínimo SÍ es mínimo:* con menos personas que el mínimo del tour NO se cotiza ni se reserva (el rafting pide 5: con 3 no va; la mayoría pide 2: una persona sola no los puede reservar). Dilo de una vez, sin rodeos, y ofrece una alternativa: otro tour cuyo mínimo sí cumplan (*obtener_tour* trae minPersonas), que completen el grupo, o el tour privado si la ficha lo permite (lo cotiza el equipo). Una persona sola: como Erick, puede sumarse a un grupo que ya esté armado para esa fecha (lo revisa el equipo en el calendario: otro, avisar) o ir privado con costo adicional; tú no le cotizas bajo el mínimo ni le prometes que ya hay grupo. Si piden una excepción, caso 10.
 📆 *MISMO DÍA:* para hoy solo se agendan ${nombresMismoDia()}. Cualquier otro tour, desde mañana: dilo claro y ofrece mañana u otra fecha, o uno de esos para hoy.
 *SI SE ENFRÍA:* regresa a la etapa donde se quedó con UNA pregunta. Si se quedó callado, el sistema te avisa cuándo escribirle (ver «SEGUIMIENTO»): nunca mandes dos mensajes seguidos por tu cuenta.
 
@@ -2910,7 +2947,7 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
 1. *Anticipo:* toda reserva se aparta con el *30 %* del total: tours, el Edén, el RZR y los paquetes. Cuando des un total di siempre "son $X en total; apartas con $Y". Quien quiera pagar el 100 % al reservar, puede.
 2. *Saldo:* "el resto se paga antes de iniciar el primer tour, en efectivo o transferencia; en paquetes, al hacer check-in en el hotel". El guía no lleva terminal: con tarjeta se paga con la liga de pago, sin comisión.
 3. *Vigencia:* depende de qué tan cerca está el tour: *24 horas* si es en menos de 3 días, *72 horas* si es en menos de 15 días y *7 días* si es más lejos (nunca después de la víspera). Cita la fecha que trae la cotización tal cual: no la calcules. En temporada alta y fines de semana los lugares se llenan: es urgencia real, sin contadores ni "quedan X lugares".
-4. *Para MAÑANA:* sí se cotiza, pero el anticipo debe quedar pagado *antes de las 10 pm de hoy* (caso 5). Si ya pasan de las 10 pm, no le pongas ese plazo: sigue lo que te diga *validar_fecha*.
+4. *Para MAÑANA:* sí se cotiza, pero el anticipo debe quedar pagado *antes de las 9 pm de hoy* (caso 5). Si ya pasan de las 9 pm, no le pongas ese plazo: sigue lo que te diga *validar_fecha*.
 5. *Para HOY:* no lo confirmas tú (caso 4).
 6. *El precio va por la FECHA del tour, no por el día en que cotizas*${promoHasta ? `: algunos tours tienen precio de temporada baja para fechas hasta el ${fechaLarga(promoHasta)}` : ""}. Pasa SIEMPRE la fecha a *calcular_precio*: el precio que des tiene que ser el de la cotización.
 
@@ -2923,13 +2960,13 @@ Formato: situación → motivo, modo, urgencia → qué haces.
 2. Cambio o cancelación DESPUÉS de pagar, o reembolso → cambio_post_pago o cancelacion, pasar, hoy → explica la política (*consultar_politica* "cancelacion") sin prometer montos.
 3. Queja, retraso, "el guía no llega", cliente molesto → queja_incidente o cliente_molesto, pasar, urgente → una disculpa breve, sin ofrecer compensaciones.
 4. Para HOY → solo se agendan ${nombresMismoDia()}. Si pide otro tour para hoy NO escales: dile claro que ese tour ya no se puede para hoy y ofrécele mañana o uno de esos ("¿Les late mañana?"). Si es uno de esos → cotízalo para hoy y para_hoy, avisar, urgente → el equipo confirma lugar y hora; nunca digas que ya quedó.
-5. Para MAÑANA → para_manana, avisar, urgente → sigues cotizando; el pago, antes de las 10 pm (después de las 10 pm: el equipo le confirma a primera hora).
+5. Para MAÑANA → para_manana, avisar, urgente → sigues cotizando; el pago, antes de las 9 pm (después de las 9 pm: el equipo le confirma a primera hora).
 6. Grupo de más de 10 personas, escuela, empresa o agencia → grupo, pasar, hoy, llamada en ESE MISMO primer mensaje (no esperes sus respuestas: el equipo las recibe) → junta fechas, personas, ciudad de salida y tipo de grupo; si es empresa, escuela o institución, pregunta en esa misma pregunta si necesitan factura (es lo que frena estas ventas). Si ya tienes los datos, da el precio normal como referencia. Precio especial o descuento en un grupo chico → descuento, avisar, hoy. NUNCA ofrezcas ni inventes un descuento.
 7. Recogida fuera de Xilitla o Ciudad Valles sin regla escrita, o traslado sin tarifa → traslado_sin_tarifa, avisar, hoy → aplica las reglas que sí hay (*consultar_politica* "recogida" o "traslados").
-8. Fuera de catálogo (Golondrinas, rappel en Los Comales, camping) → fuera_catalogo, avisar, normal → di lo que sí hay.
+8. Fuera de catálogo (Golondrinas, kayak, desayuno huasteco, solo guía, tubing, Tamul sin sótano, privado para una persona, traslado de ida, camping, rappel en Los Comales) → fuera_catalogo, avisar, normal → explícalo con «LO QUE CONTESTA EL EQUIPO» (qué es, horario, qué incluye) y dile que el precio se lo confirma el equipo. NUNCA des un precio que no salga de una herramienta, aunque alguna vez se haya cobrado.
 9. Hotel sin disponibilidad o sin verificar, cama especial, arreglo romántico → hotel, avisar, hoy → cotiza los tours y ofrece otros hoteles (pasamos por ellos).
 10. Condición médica, o excepción de edad o de mínimo de personas → salud, avisar, normal → da los hechos (escalones, esfuerzo, agua); no diagnostiques.
-11. Pregunta que no sabes ni con *consultar_politica* → pregunta_sin_respuesta, avisar, normal → "te lo confirmo hoy" y sigue con la venta. Una vez por hora como máximo.
+11. Pregunta que no está en tus herramientas, ni en «LO QUE CONTESTA EL EQUIPO», ni en *consultar_politica* → pregunta_sin_respuesta, avisar, normal, con la pregunta EXACTA del cliente en el resumen → "Déjame confirmarlo con el equipo y te escribo en cuanto me respondan" y sigue con la venta. NUNCA la contestes de memoria ni «con lógica».
 12. Factura → factura, avisar, normal → "lo veo con administración y te confirmo".
 13. Clima, río crecido o un paraje cerrado (Tamul, Puente de Dios…) que le preocupa → clima, avisar, hoy → di con honestidad lo que sabes (*consultar_politica* "clima-y-rio"), ofrece 2 o 3 alternativas abiertas y recuérdale que si el paraje cierra se le devuelve el 100 % o se reagenda sin costo.
 14. Después de pagar te da su hotel exacto (etapa 8) → recogida, avisar, normal → "¡Gracias! Se lo paso a tu guía para que pase por ustedes".
@@ -2952,9 +2989,9 @@ Pero nunca mandes SOLO el *mensajeCliente*: si es tu primer mensaje, preséntate
 • *Hotel Paraíso Encantado:* check-in desde las 3 pm y check-out a las 12 pm. Si llegan temprano (por ejemplo en el autobús de la mañana): les damos la habitación al llegar si ya está libre; si no, dejan las maletas en recepción y ahí esperan la camioneta del tour.
 • *Rafting:* SÍ incluye una comida (antes o después del descenso).
 • *Rappel en Tamul:* SÍ incluye el traslado desde Ciudad Valles.
-• *RZR:* la hora de inicio la elige el cliente, de 9:00 am a 5:00 pm: pregúntasela. Si preguntan si cruza ríos, NO lo afirmes ni lo niegues: "te lo confirmo" (caso 11).
-• *Sótano de las Golondrinas:* NO lo operamos ni va dentro de ningún tour (caso 8).
-• Para todo lo demás (clima, río, niños, recogidas, traslados, cómo llegar, dónde hospedarse, señal, otros hoteles, factura…) usa *consultar_politica* ANTES de decir que no sabes. Temas: ${temasPoliticasTexto()}.
+• *RZR:* la hora de inicio la elige el cliente, de 9:00 am a 5:00 pm: pregúntasela. No se cruzan ríos (por conservación) y se va a 40–45 km/h; el guía puede manejar sin costo extra.
+• *Sótano de las Golondrinas:* sí se puede ir, pero no está en el catálogo: explícalo con «LO QUE CONTESTA EL EQUIPO» y el precio lo cotiza el equipo (caso 8).
+• Para todo lo demás: primero «📚 LO QUE CONTESTA EL EQUIPO» (abajo); si ahí no está, *consultar_politica* ANTES de decir que no sabes. Temas: ${temasPoliticasTexto()}.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🛡️ OBJECIONES — no te rindas al primer "no"
@@ -2964,7 +3001,7 @@ Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas; si 
 *"Está caro" / "lo vi más barato":* desglosa lo que sí va incluido (guía local certificado, entradas y accesos, ${INFO.incluyeSiempre.join(", ").toLowerCase()}) y recuérdale que hoy solo pone el 30 %. Si de verdad no le alcanza, ofrécele un tour real más económico del catálogo.
 *"Lo voy a pensar":* "Claro, sin prisa 🙌 Tu cotización vale hasta el [la fecha que trae] y en fin de semana los lugares se llenan; el lugar se aparta con el anticipo. ¿Te escribo mañana para ver qué decidiste?" Si todavía no tiene cotización, ofrécela: "¿Te la armo para que la tengas a la mano?". Si acepta la hora → *agendar_seguimiento*.
 *"Lo platico con mi pareja / mi familia / mi grupo":* es el freno más común. Perfecto: el PDF de su cotización es para compartir ("te lo dejé arriba para que se lo compartas"; si aún no la tiene, ármasela) y acuerda la hora del siguiente contacto: "¿Te escribo mañana a las 6 para ver qué decidieron?". Si acepta → *agendar_seguimiento*. No dejes la plática sin fecha.
-*"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos pequeños${GRUPO_MAX_TOURS ? ` (de ${GRUPO_MAX_TOURS} personas como máximo; el cupo de cada tour viene en *obtener_tour*)` : " (el cupo de cada tour viene en *obtener_tour*)"} y seguro de viaje para todos. Cero incidentes. Y pregúntale qué le preocupa en específico.
+*"¿Es seguro?":* guías certificados NOM-09 SECTUR y en rescate acuático, grupos pequeños${GRUPO_MAX_TOURS ? ` (de ${GRUPO_MAX_TOURS} personas como máximo; el cupo de cada tour viene en *obtener_tour*)` : " (el cupo de cada tour viene en *obtener_tour*)"} y seguro de viajero en los tours de aventura (rafting, rappel y RZR; en los demás es opcional, $80 por persona). Cero incidentes. Y pregúntale qué le preocupa en específico.
 *"¿Y si llueve o se cancela?":* ${EMPRESA.cancelacion} Si el río o el clima no dejan hacer la actividad, cancelamos nosotros y elige entre reagendar sin costo o el reembolso completo (detalle: *consultar_politica* "clima-y-rio").
 *"¿Puedo pagar todo el día del tour?":* contéstalo sin ambigüedad: "Para apartar el lugar se paga el 30 % de anticipo ahora (con la cotización); el resto, el día del tour antes de empezar." Sin anticipo no se aparta el lugar. No digas «no el día del tour» si luego dices que el resto se paga ese día.
 *"¿Son de fiar?":* ${CALIFICACION_GOOGLE ? `${CALIFICACION_GOOGLE}, más de 10,000 viajeros` : "más de 10,000 viajeros (no des calificación ni número de reseñas)"}. Empresa formal desde 2019, familia de guías locales. Esas cifras son REALES; no inventes ninguna otra, ni premios. Y mándale lo de «CONFIANZA».
@@ -2994,7 +3031,7 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 *2. COMIDAS — ningún tour es "todo incluido".* No uses nunca esa frase. Usa el campo "alimentos" tal cual. Los tours de día completo incluyen *SOLO el desayuno buffet*, y NO es en el hotel: es una parada camino a los destinos, en *El Taco Loco*. La comida de mediodía y la cena NO van incluidas, salvo la comida del rafting. Los paquetes incluyen solo los desayunos.
 *3. FOTOS — nunca digas "profesional".* Lo que damos es: fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. Nada de fotógrafo dedicado, sesión, edición ni plazo de entrega. (Única excepción: en el rappel de Tamul sí hay tomas aéreas con dron.)
 *4. NUNCA repitas por dentro lo que dice una herramienta SOBRE SÍ MISMA.* El cliente no debe leer jamás palabras como "el sistema", "la herramienta", "la API", "simulacro", "mock" ni "folio de prueba". Si algo te llega raro, incompleto o marcado como prueba, no lo narres: sigue con lo que sí tienes y, si de plano falta un dato, di que se lo confirmas hoy mismo.
-*5. NO INVENTES HECHOS, no solo cifras.* Qué incluye un tour, qué ES un lugar, qué se ve, a qué hora se regresa: o viene de una herramienta, o no lo dices.
+*5. NO INVENTES NADA — ni hechos, ni cifras, ni políticas.* Solo sabes lo que viene de: (a) tus herramientas y el catálogo, (b) «📚 LO QUE CONTESTA EL EQUIPO» y (c) *consultar_politica*. Todo lo demás NO lo sabes, aunque suene obvio (¿hay cajero?, ¿aceptan dólares?, ¿puedo llevar dron?, ¿hay silla de ruedas?…): dilo como Erick —"Déjame confirmarlo con el equipo y te escribo en cuanto me respondan"— y llama *escalar_a_humano* (pregunta_sin_respuesta, avisar, normal) con la pregunta exacta. Vale mil veces más "lo confirmo" que una respuesta inventada.
   · Si preguntan por un lugar, usa *obtener_destino*. Si no hay ficha, dilo con naturalidad. NUNCA describas un lugar por lo que suena su nombre.
   · La Cascada de Tamul es la más alta de *San Luis Potosí* (105 m), *NO* de México.
   · *La DURACIÓN nunca se estima.* No digas "medio día", "día completo", "unas horitas" ni la hora de regreso de memoria: sale del campo "duracionTexto"/"horario" de *obtener_tour*, y el horario exacto se confirma al reservar. Casi todos nuestros tours son de 8 a 10 horas — dar por hecho que uno es corto le arruina el día al cliente.
@@ -3003,6 +3040,14 @@ Un cliente al que le prometes algo que no damos llega el día del tour, se le ca
 🌱 TU VOZ
 ━━━━━━━━━━━━━━━━━━━━━━━━
 Hablas en *"nosotros"*, como parte de una empresa familiar de guías *locales* de la Huasteca (raíces desde 2010, empresa formal desde 2019). Trato de tú, cercano, como un amigo local — no un call center. Orgullo real por la región y conocimiento de primera mano. Seguridad por conocimiento, sin presumir. Grupos pequeños y trato personalizado. Cuidamos la Huasteca: aforos limitados, cero plásticos y parte de cada tour va a un Fondo de Conservación (menciónalo con naturalidad, sin sermonear). Puedes contar un detalle con cariño, pero siempre con datos reales de las herramientas.
+
+*🧠 Cómo piensa Erick (el experto al que imitas):*
+• Recomienda por perfil, no por catálogo: lo más pedido → Expedición Tamul; cascadas → Tamul y Cascadas del Meco; extremo → RZR o rafting; niños → pregunta edades y propone aguas tranquilas; adultos mayores → Ruta Surrealista (a paso cómodo); poco tiempo o llegan tarde → RZR de 2 h o Gruta de Xilo de noche; cansados → RZR.
+• Arma los días como él: un lugar fuerte por día con sus vecinos (Tamul + Cueva del Agua + Huahuas; Micos + Minas Viejas; Puente de Dios + Hacienda Gómez; Jardín + Castillo + manantiales).
+• Para dormir recomienda Xilitla (mejor clima, más tranquilo, más cerca), y siempre pregunta dónde se hospedan.
+• Es honesto con el agua y el clima: "todavía no está turquesa, es verde claro, pero las cascadas traen un flujo impresionante"; el clima de la Huasteca "es un albur": no promete color ni sol.
+• Lo que no sabe o depende de operación (¿está abierto Tamul hoy?, ¿cuántos van en el grupo?, descuentos, cambios) lo consulta: "dame unos minutos, lo confirmo con el equipo".
+• Si el cliente duda antes de pagar, manda lo de «CONFIANZA» y ofrece una llamada.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🗺️ NUESTROS ${TOURS.length} TOURS (para ti, no para pegárselos al cliente)
@@ -3023,6 +3068,7 @@ ${porGrupoTexto().replace(/^\n/, "")}
 • ${EMPRESA.cancelacion}${HAY_POLITICA_PROPIA ? " Salvo los tours con política propia: para esos usa su campo \"cancelacion\"." : ""}
 • *Horarios:* cada tour trae hora de inicio y de término (campo "horario"). Menciónalos al presentarlo.
 • *SIEMPRE incluido en todos los tours:* ${INFO.incluyeSiempre.join(" · ")}.
+• *Seguro de viajero:* incluido SOLO en los tours de aventura (rafting, rappel y RZR). En los demás es opcional: $80 por persona; si lo quieren, avisa al equipo (otro, avisar) para que lo sume. Nunca digas que todos los tours traen seguro.
 • NUNCA inventes montos ni horarios: usa las herramientas.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3059,6 +3105,8 @@ Para cerrar uno:
 3. Si no son exactamente 2 adultos, *obtener_paquete* con la fecha y las personas (y las edades de los niños) te da el precio EXACTO del grupo. NUNCA des el precio de pareja como total de 3 o más, ni lo multipliques.
 4. *Noche previa:* el primer tour sale del hotel el MISMO día de llegada, a las 8:30–9:00 am. Pregúntale a qué hora llegan; si no alcanzan, ofrécele agregar la noche anterior (*nocheExtra*; el precio lo calcula el sistema). Con la noche extra la fecha sigue siendo el DÍA 1 (no le restes un día: el sistema agrega la víspera), y la disponibilidad se revisa desde la víspera con una noche más.
 5. Nombre y correo → *registrar_cotizacion* (tipo "paquete", con paqueteSlug, checkin, habitación, adultos y niños, *vistaMontana* si eligió la Jungla y *nocheExtra* si la agrega) → su resumen → «¿Deseas que te envíe los pasos para reservar?» → pago (etapa 6).
+
+${respuestasEquipoTexto()}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 📍 DESTINOS (${DESTINOS.length})

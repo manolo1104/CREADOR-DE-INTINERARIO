@@ -105,15 +105,17 @@ prueba("validar_fecha: «mañana» a las 7 pm de México SÍ se cotiza", () => {
   assert.equal(r.valida, true, JSON.stringify(r));
   assert.equal(r.esManana, true);
   assert.equal(r.diasFaltan, 1);
-  assert.ok(/10 pm/.test(r.instruccion), "no recuerda que el anticipo es antes de las 10 pm");
+  assert.ok(/9 pm/.test(r.instruccion), "no recuerda que el anticipo es antes de las 9 pm");
 });
 
 prueba("validar_fecha: a las 11:59 pm sigue siendo «mañana»; a las 12:01 am ya es «hoy»", () => {
   const tarde = validarFecha("2026-11-11", { ahora: mx("2026-11-10", "23:59").getTime() });
   assert.equal(tarde.esManana, true);
-  assert.equal(tarde.despuesDeLas10, true, "después de las 10 pm ya no se pide «paga antes de las 10 pm»");
+  assert.equal(tarde.despuesDeLas10, true, "después de las 9 pm ya no se pide «paga antes de las 9 pm»");
   assert.ok(/primera hora/.test(tarde.instruccion), tarde.instruccion);
-  assert.equal(validarFecha("2026-11-11", { ahora: mx("2026-11-10", "21:59").getTime() }).despuesDeLas10, undefined, "a las 9:59 pm todavía alcanza");
+  // Corte a las 9 pm (Erick, 17 nov 2026; antes 10 pm).
+  assert.equal(validarFecha("2026-11-11", { ahora: mx("2026-11-10", "20:59").getTime() }).despuesDeLas10, undefined, "a las 8:59 pm todavía alcanza");
+  assert.equal(validarFecha("2026-11-11", { ahora: mx("2026-11-10", "21:00").getTime() }).despuesDeLas10, true, "a las 9 pm ya no alcanza");
   const hoy = validarFecha("2026-11-11", { ahora: mx("2026-11-11", "00:01").getTime() });
   assert.equal(hoy.valida, false);
   assert.equal(hoy.motivo, "hoy");

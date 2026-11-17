@@ -166,7 +166,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "saldo",
     titulo: "Cuándo y cómo se paga el resto",
     texto:
-      "Tour suelto: el resto se paga antes de iniciar el primer tour, en efectivo al guía o por transferencia (avisándole al guía). " +
+      "Tour suelto: el resto se paga el primer día, antes de iniciar el tour (cuando llega el guía), en efectivo, por transferencia o con liga de pago. Se puede ir abonando antes de la fecha, pero se liquida completo antes de empezar: no se deja una parte para después del tour. " +
       "Paquete con hotel: el saldo se paga al hacer check-in en la recepción del hotel, en efectivo, con tarjeta o por transferencia. " +
       "Con tarjeta, el saldo se paga con una liga de pago (sin comisión) o en la recepción del hotel: el guía no lleva terminal. " +
       "No hay depósito en garantía ni cargos extra al llegar: el precio cotizado es el precio final.",
@@ -182,8 +182,11 @@ export const POLITICAS_BOT: PoliticaBot[] = [
       "Concepto de la transferencia: el folio de la cotización (COT-…). " +
       "Al pagar, el cliente manda el comprobante (foto o PDF) a este mismo chat y el equipo lo valida. " +
       "Los datos bancarios salen de la herramienta de pago con el monto y el folio: nunca los escribas de memoria. " +
-      "Pagar con la liga no lleva comisión. Meses sin intereses: lo confirma el equipo.",
-    claves: ["transferencia", "clabe", "oxxo", "depósito", "tarjeta", "cuenta", "datos bancarios", "concepto", "comprobante", "cuenta inexistente", "liga", "link de pago", "meses sin intereses", "msi", "spei", "card", "bank transfer"],
+      "Pagar con la liga no lleva comisión: es el mismo monto. Meses sin intereses: lo confirma el equipo. " +
+      "En OXXO el límite es de $5,000 por depósito: para montos mayores, transferencia o liga con tarjeta. " +
+      "Se puede combinar (por ejemplo, anticipo por transferencia y el resto con tarjeta). " +
+      "También se puede pagar en persona en nuestra oficina de Xilitla (colonia La Conchita, camino a Las Pozas), avisando más o menos a qué hora llegan; en Ciudad Valles no hay oficina.",
+    claves: ["transferencia", "clabe", "oxxo", "depósito", "tarjeta", "cuenta", "datos bancarios", "concepto", "comprobante", "cuenta inexistente", "liga", "link de pago", "meses sin intereses", "msi", "spei", "oxxo límite", "5,000", "oficina", "en persona", "combinar", "card", "bank transfer"],
   },
   {
     tema: "extranjeros",
@@ -209,7 +212,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "para-manana",
     titulo: "Tours para mañana o para hoy",
     texto:
-      "Para MAÑANA sí se cotiza, pero el anticipo tiene que quedar pagado antes de las 10:00 pm de hoy, para organizar la logística de la mañana; el equipo confirma que haya salida armada para esa fecha y zona. " +
+      "Para MAÑANA sí se cotiza, pero el anticipo tiene que quedar pagado antes de las 9:00 pm de hoy (Erick: el guía avisa la hora entre 8 y 9 pm), para organizar la logística de la mañana; el equipo confirma que haya salida armada para esa fecha y zona. " +
       `Para HOY (el mismo día) NO se agendan tours, salvo ${listaY(NOMBRES_MISMO_DIA)}. ` +
       `Si piden otro tour para hoy, dilo claro y ofrece mañana u otra fecha, o uno de esos ${NOMBRES_MISMO_DIA.length}. ` +
       "Si es uno de esos, se cotiza para hoy y el equipo confirma lugar y hora: avísale al equipo y nunca digas que ya quedó.",
@@ -240,7 +243,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
       "Temporada de lluvias: julio a octubre; las cascadas van a todo caudal, el agua puede bajar con sedimento y el rafting depende del nivel del río ese día (si crece, aplica «si cancelamos nosotros»: reagendar sin costo o reembolso). " +
       `Del ${fechaInicioTexto("es")} a diciembre es «la mejor temporada para venir» (aflojan las lluvias, el agua se aclara y todavía no llegan las multitudes de primavera; las fechas de fin de año sí se llenan): no prometas para esas fechas el turquesa más intenso. ` +
       "Si un paraje está cerrado por el río, se ofrece la alternativa del tour al mismo precio o reagendar. " +
-      "Nunca digas que la lluvia no afecta a los ríos: sí los afecta.",
+      "Si preguntan por un pronóstico de lluvia: aunque marque lluvia, normalmente no afecta a los ríos de los parajes; lo que cierra un paraje es que el río crezca, y eso se confirma con operación antes del tour. No prometas clima ni color del agua: el clima de la Huasteca es un albur.",
     claves: ["lluvia", "llueve", "clima", "río", "crecido", "turquesa", "café", "temporada", "cerrado", "tormenta", "septiembre", "octubre", "rain", "weather", "river"],
   },
   {
@@ -266,6 +269,8 @@ export const POLITICAS_BOT: PoliticaBot[] = [
       "Por WhatsApp el mínimo SÍ es mínimo: con menos personas NO se cotiza ni se reserva. " +
       (MINIMOS_ALTOS.length ? `Dilo al vender, sobre todo en los de mínimo alto: ${listaY(MINIMOS_ALTOS)}. ` : "") +
       "Si no les alcanza, ofrece una alternativa: otro tour cuyo mínimo sí cumplan, que completen el grupo, o el tour privado si su ficha lo permite (lo cotiza el equipo). " +
+      "Viajero solo (como lo hace Erick): puede sumarse a un grupo que ya esté armado para esa fecha —eso lo revisa el equipo en el calendario— o ir privado con costo adicional. No le cotices tú a una persona bajo el mínimo: avisa al equipo. " +
+      "Nunca llevamos grupos de más de 12 por salida. " +
       "Una excepción al mínimo no la decides tú: la decide el equipo.",
     claves: ["mínimo", "mínimo de personas", "solo", "sola", "viajo solo", "una persona", "1 persona", "me puedo unir", "unirme", "grupo armado", "solo traveler", "alone", "minimum"],
   },
@@ -286,7 +291,8 @@ export const POLITICAS_BOT: PoliticaBot[] = [
       "Casos especiales: desde El Naranjo se puede recoger, alrededor de las 10:00 am en vez de la hora normal; desde Jalpan u otra zona fuera de Xilitla y Ciudad Valles, el cliente llega al Hotel Paraíso Encantado (Xilitla) antes de las 8:30 am y de ahí sale la unidad; en Tamasopo no recogemos (solo Ciudad Valles y Xilitla, por logística). " +
       "El RZR es en nuestra base de Xilitla, aunque se hospede cerca (por ejemplo en Huichihuayán). " +
       "En paquetes con hotel los recorridos salen del hotel: estar 15 minutos antes en el estacionamiento. " +
-      "La hora exacta de recogida la da el guía la tarde anterior al tour.",
+      "La hora exacta de recogida se la manda el guía al cliente la noche anterior, entre 8 y 9 pm (casi siempre la recogida es entre 8 y 9 am). " +
+      "También recogemos en la central de autobuses de Ciudad Valles. En Aquismón se puede, pero el equipo confirma si tiene costo extra. Si llegan en su carro, lo dejan en el estacionamiento de nuestra base en Xilitla.",
     claves: ["recogida", "recogen", "pasan por", "punto de encuentro", "dónde empieza", "de dónde sale", "hotel", "airbnb", "jalpan", "el naranjo", "tamasopo", "huichihuayán", "a qué hora pasan", "pickup", "meeting point"],
   },
   {
@@ -355,7 +361,8 @@ export const POLITICAS_BOT: PoliticaBot[] = [
       "Requisitos: el conductor presenta su licencia de conducir y todos firman una responsiva; no se necesita experiencia (hay briefing de manejo y un guía instructor abre la ruta). " +
       "No incluye alimentos; se puede llevar una mochila con agua y algo de comer. " +
       "El precio es por vehículo, según la ruta y la unidad, y es el precio final (no hay depósito en garantía). " +
-      "Si preguntan si se cruzan ríos: no lo afirmes ni lo niegues; di «te lo confirmo» y avisa al equipo.",
+      "No se cruzan ríos (por conservación) y se va a 40–45 km/h: son rutas para ver el paisaje, por terracería y asfalto, no difíciles. En la ruta Nacimiento se nada en un río cristalino y se hace kayak. " +
+      "Es totalmente automático; pueden manejar ellos o el guía, cuesta lo mismo (cuando manejan ellos, el guía va adelante en moto).",
     claves: ["rzr", "razer", "cuatrimoto", "todoterreno", "off-road", "can-am", "polaris", "defender", "maverick", "licencia", "manejar", "cruza ríos", "hora rzr", "atv", "utv", "driver license"],
   },
   {
@@ -381,35 +388,35 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "tamul",
     titulo: "Expedición Tamul: esfuerzo y detalles",
     texto:
-      "Al llegar a la cascada se va en canoa (remar es opcional), aproximadamente 1 hora y media de ida y 1 hora de regreso. " +
+      "Antes de subir a la canoa se firma una responsiva. Se va en canoa hasta la cascada: cerca de una hora remando (remar es opcional). " +
       "Si el río lo permite, después de la cascada se bajan de la canoa y flotan unos 20 minutos, con chaleco, hasta la Cueva del Agua. " +
       "A la Cueva del Agua se suben unos 35 escalones. Lo más pesado es el Sótano de las Huahuas: unos 600 escalones de bajada y de subida. Si alguien tiene problemas de rodillas o de movilidad, que lo diga antes. " +
-      "Si cierran la cascada por el río, hay alternativa al mismo precio: se ve la cascada desde arriba, se baja por un costado para fotos y se visita el Sótano de las Huahuas; si el río mejora, se hace completo.",
+      "Si cierran Tamul por el río, se suspende TODO el tour (Tamul, Cueva del Agua y sótano) y se ofrece Cascadas del Meco u otra alternativa del mismo nivel al mismo precio, o reagendar sin costo o el reembolso del 100 %.",
     claves: ["tamul", "canoa", "escalones", "cueva del agua", "huahuas", "flotar", "nadar", "rodilla", "esfuerzo", "cascada cerrada", "canoe", "stairs"],
   },
   {
     tema: "meco",
     titulo: "Cascadas del Meco",
     texto:
-      "Es el recorrido más tranquilo: el indicado para adultos mayores o para quien no quiere mucho esfuerzo físico. " +
-      "Incluye el paseo en canoa. Kayak, paddle board o tubing son opcionales y tienen costo aparte.",
+      "Es de las mejores cascadas y un recorrido tranquilo; para adultos mayores Erick recomienda la Ruta Surrealista (a paso cómodo y sin prisas). " +
+      "Incluye el paseo en canoa hasta el pie de la cascada (para verla bien hay que ir en lancha). Kayak, paddle board o tubing son opcionales y tienen costo aparte (lo confirma el equipo). Fue la alternativa cuando otros parajes cerraron por lluvia.",
     claves: ["meco", "el salto", "adulto mayor", "abuelo", "abuela", "tercera edad", "tranquilo", "poco esfuerzo", "tubing", "kayak", "paddle", "elderly"],
   },
   {
     tema: "golondrinas",
     titulo: "Sótano de las Golondrinas",
     texto:
-      "El Sótano de las Golondrinas NO lo operamos ni va dentro de ningún tour (tampoco de la Expedición Tamul). " +
-      "Si el cliente quiere ir por su cuenta: está en Aquismón, a poco más de 1 hora de Ciudad Valles por sierra; lo mejor es al amanecer, cuando salen las aves (hacia las 5:45 am). Más datos en la ficha del destino `sotano-de-las-golondrinas`. " +
-      "Ofrece lo que sí hay: la Expedición Tamul, que visita el Sótano de las Huahuas, otro sótano de aves.",
-    claves: ["golondrinas", "sótano de las golondrinas", "vencejos", "aves", "swallows", "cave of swallows"],
+      "Sí se puede ir con nosotros, pero no está en el catálogo: sale con grupo o como privado y el precio lo cotiza el equipo (fuera_catalogo, avisar). " +
+      "Dos horarios: de madrugada (salida 4 am; las aves salen hacia las 5:45 am) o al atardecer (salida 3–4 pm, para verlas entrar: más de mil cotorritos y vencejos girando hacia el sótano). Está en Aquismón, por carretera de mucha subida y curvas. Más datos en la ficha del destino `sotano-de-las-golondrinas`. " +
+      "Erick recomienda más el Sótano de las Huahuas, que va dentro de la Expedición Tamul: es más chico, pero el espectáculo se aprecia mejor.",
+    claves: ["golondrinas", "sótano de las golondrinas", "vencejos", "aves", "cotorros", "swallows", "cave of swallows"],
   },
   {
     tema: "guia-en-ingles",
     titulo: "Guía en inglés",
     texto:
-      "En una salida compartida el guía habla inglés básico: pregúntale al cliente si está bien así. " +
-      "Un guía bilingüe solo se consigue si se pide con anticipación y no está garantizado: nunca lo prometas; di que el equipo lo revisa.",
+      "Sí hay guías bilingües, pero se piden con anticipación y el equipo confirma según la fecha: no lo des por hecho; avisa al equipo. En una salida compartida el guía puede hablar inglés básico: pregúntale al cliente si está bien así. " +
+      "En el Jardín de Edward James el guía en inglés cuesta $500 extra (es regla del Jardín).",
     claves: ["inglés", "english", "bilingüe", "bilingual", "guía en inglés", "speak english", "idioma"],
   },
   {
@@ -417,19 +424,15 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Fotos y video",
     texto:
       "Las fotos y el video los toma el guía durante el recorrido, sin costo extra. " +
-      "Nunca digas «fotógrafo profesional» ni prometas sesión, edición o un plazo de entrega. " +
-      "ÚNICA EXCEPCIÓN, Huasteca Instagrameable: ese recorrido SÍ promete entrega, porque es lo que se cobra en él. " +
-      "De 25 a 30 fotografías editadas, en una carpeta privada, dentro de 3 días. Las toma el guía con una cámara " +
-      "Fujifilm X-T30 II: no va un fotógrafo aparte y no hay dron (en Las Pozas está prohibido, igual que el tripié). " +
-      "Esa promesa es SOLO de Huasteca Instagrameable; en cualquier otro recorrido no se promete número ni plazo. " +
-      "Si al cliente no le han llegado, avisa al equipo.",
-    claves: ["fotos", "video", "fotógrafo", "dron", "fotografías", "photos", "pictures", "editadas", "icons", "instagrameable", "instagram", "reels", "contenido"],
+      "Nunca digas «fotógrafo profesional» ni prometas sesión, edición, número de fotos o un plazo de entrega. " +
+      "Si después del tour piden sus fotos o no les han llegado: «le pido a tu guía que te las haga llegar» y avisa al equipo.",
+    claves: ["fotos", "video", "fotógrafo", "dron", "fotografías", "photos", "pictures", "editadas", "reels", "contenido"],
   },
   {
     tema: "factura",
     titulo: "Factura",
     texto:
-      "Si el cliente pide factura: «lo veo con administración y te confirmo». Avisa al equipo; no prometas que se puede ni en cuánto tiempo.",
+      "Sí se factura: se factura a otra cuenta, se paga el total de las actividades por adelantado y se suma el IVA del 16 % (los precios no incluyen IVA). Lo coordina administración: avisa al equipo (factura) y no mandes los datos de pago normales hasta que el equipo responda.",
     claves: ["factura", "facturar", "cfdi", "rfc", "constancia fiscal", "invoice"],
   },
   {

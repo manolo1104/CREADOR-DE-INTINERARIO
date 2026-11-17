@@ -365,11 +365,11 @@ const ESCENARIOS = [
   },
   {
     id: "27-para-manana",
-    doc: "Para mañana: se cotiza; el anticipo antes de las 10 pm; avisa al equipo.",
+    doc: "Para mañana: se cotiza; el anticipo antes de las 9 pm; avisa al equipo.",
     mensajes: [(() => { const m = new Date(Date.now() + 86400000); return `¿Tienen lugar para mañana ${m.getDate()} de ${MESES[m.getMonth()]} en Tamul? Somos 2 y estamos en Ciudad Valles.`; })()],
     reglas: [
       ["avisa al equipo (para mañana)", (t) => escalo(t[0], "para_manana")],
-      ["menciona el plazo de las 10 pm o que el equipo confirma", (t) => /10 ?pm|22:00|primera hora|confirm/i.test(t[0].bot)],
+      ["menciona el plazo de las 9 pm o que el equipo confirma", (t) => /9 ?pm|21:00|primera hora|confirm/i.test(t[0].bot)],
     ],
   },
   {

@@ -223,7 +223,57 @@ function buscarPoliticas(q, max = 2) {
   return puntuadas.slice(0, max).map((x) => x.p);
 }
 
+// ── Lo que contesta el equipo (Erick) ─────────────────────────────────
+// La guía de lo que sabe el bot (17 nov 2026): src/lib/bot/respuestasEquipo.ts,
+// exportada a data.json como `respuestas`. Va completa en el prompt; aquí se
+// busca para `consultar_politica` y para la ficha de cada tour.
+const RESPUESTAS = (Array.isArray(DATA.respuestas) ? DATA.respuestas : [])
+  .filter((r) => r && r.id && r.respuesta && Array.isArray(r.preguntas));
+const TEMAS_RESPUESTA = (DATA.temasRespuesta && typeof DATA.temasRespuesta === "object") ? DATA.temasRespuesta : {};
+
+/** Lo que se le pasa al modelo de una respuesta (sin las preguntas de ejemplo). */
+function respuestaParaModelo(r) {
+  return {
+    pregunta: r.preguntas[0],
+    respuesta: r.respuesta,
+    ...(r.alEquipo ? { alEquipo: r.alEquipo } : {}),
+    ...(r.nota ? { nota: r.nota } : {}),
+  };
+}
+
+// «bebés» y «bebé», «ríos» y «río» tienen que verse iguales.
+const raiz = (w) => (w.length > 3 ? w.replace(/s$/, "") : w);
+const raices = (t) => palabrasPol(t).map(raiz);
+
+/** Hasta `max` respuestas del equipo para la consulta, de la más a la menos cercana. */
+function buscarRespuestas(q, max = 3) {
+  const deLaConsulta = new Set(raices(q));
+  if (!deLaConsulta.size) return [];
+  return RESPUESTAS.map((r) => {
+    let score = 0;
+    const propias = new Set(raices(`${r.id.replace(/-/g, " ")} ${r.preguntas.join(" ")}`));
+    for (const w of deLaConsulta) if (propias.has(w)) score += 2;
+    const enRespuesta = new Set(raices(r.respuesta));
+    for (const w of deLaConsulta) if (!propias.has(w) && enRespuesta.has(w)) score += 1;
+    return { r, score };
+  })
+    .filter((x) => x.score >= 2)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, max)
+    .map((x) => x.r);
+}
+
+/** Las respuestas del equipo que hablan de este tour (para obtener_tour). */
+function respuestasDeTour(slug) {
+  return RESPUESTAS.filter((r) => Array.isArray(r.tours) && r.tours.includes(slug));
+}
+
 module.exports = {
+  RESPUESTAS,
+  TEMAS_RESPUESTA,
+  buscarRespuestas,
+  respuestasDeTour,
+  respuestaParaModelo,
   PAQUETES,
   HABITACIONES,
   LOGISTICA,

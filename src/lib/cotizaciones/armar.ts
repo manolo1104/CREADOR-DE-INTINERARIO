@@ -123,10 +123,10 @@ function problemaDeFecha(fecha: string, que: string): string | null {
 }
 
 /**
- * El anticipo de un tour para mañana tiene que llegar antes de las 10 pm
+ * El anticipo de un tour para mañana tiene que llegar antes de las 9 pm
  * (regla del equipo: es cuando se arma la logística de la mañana).
  */
-export const CORTE_MANANA_MIN = 22 * 60;
+export const CORTE_MANANA_MIN = 21 * 60; // 9 pm (Erick, 17 nov 2026; antes 10 pm)
 
 /** Minutos transcurridos del día en México (el servidor corre en UTC). */
 export function minutosDelDiaMX(d: Date = new Date()): number {
@@ -140,10 +140,10 @@ export function minutosDelDiaMX(d: Date = new Date()): number {
 /** Lo que hay que decir de una fecha que SÍ se cotiza. */
 function avisosDeFecha(fecha: string): string[] {
   if (fecha !== addDaysYMD(hoyMX(), 1)) return [];
-  // De 10 pm a medianoche «antes de las 10 pm» es un plazo que ya pasó.
+  // De 9 pm a medianoche «antes de las 9 pm» es un plazo que ya pasó.
   return minutosDelDiaMX() >= CORTE_MANANA_MIN
-    ? ["Es para MAÑANA y ya pasan de las 10 pm: no le pidas pagar antes de las 10 pm; el equipo le confirma a primera hora si hay salida."]
-    : ["Es para MAÑANA: el anticipo tiene que llegar antes de las 10 pm y el equipo confirma la salida."];
+    ? ["Es para MAÑANA y ya pasan de las 9 pm: no le pidas pagar antes de las 9 pm; el equipo le confirma a primera hora si hay salida."]
+    : ["Es para MAÑANA: el anticipo tiene que llegar antes de las 9 pm y el equipo confirma la salida."];
 }
 
 /**

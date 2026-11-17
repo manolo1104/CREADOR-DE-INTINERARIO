@@ -578,16 +578,16 @@ function lineaVigencia(v: Vista, en: boolean, hoy: string, despuesDeLas10 = fals
     return en ? `⏳ This quote expired on ${cuando}.` : `⏳ Esta cotización venció el ${cuando}.`;
   }
   if (v.venceEl === hoy) {
-    // Para mañana el anticipo tiene que llegar antes de las 10 pm (regla del
+    // Para mañana el anticipo tiene que llegar antes de las 9 pm (regla del
     // equipo: es cuando se arma la logística de la mañana).
     if (primera === addDaysYMD(hoy, 1)) {
-      // De 10 pm a medianoche ese plazo ya pasó: no se le promete al cliente.
+      // De 9 pm a medianoche ese plazo ya pasó: no se le promete al cliente.
       if (despuesDeLas10) {
         return en
           ? "⏳ The tour is tomorrow: once you pay, our team will confirm first thing in the morning whether there's space."
           : "⏳ El tour es mañana: en cuanto pagues, el equipo te confirma a primera hora si hay lugar.";
       }
-      return en ? "⏳ The tour is tomorrow: book it today before 10 pm." : "⏳ El tour es mañana: apártalo hoy antes de las 10 pm.";
+      return en ? "⏳ The tour is tomorrow: book it today before 9 pm." : "⏳ El tour es mañana: apártalo hoy antes de las 9 pm.";
     }
     return en ? "⏳ Valid until today." : "⏳ Vale solo hoy.";
   }

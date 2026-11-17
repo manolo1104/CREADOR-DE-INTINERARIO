@@ -23,6 +23,7 @@ import { queLlevarDe } from "../lib/tourRequisitos";
 import { ANTICIPO_PCT } from "../lib/carrito";
 import { CONFIRMA_SALIDA_DIAS } from "../lib/tourBooking";
 import { POLITICAS_BOT, TOURS_MISMO_DIA } from "../lib/bot/politicas";
+import { RESPUESTAS_EQUIPO, TEMAS_RESPUESTA } from "../lib/bot/respuestasEquipo";
 // 🔴 `FAQS_PAQUETES_ES`, no el `FAQS_PAQUETES` pelado del catálogo: la respuesta
 // de «¿el precio es por persona o por pareja?» sigue diciendo allí «son por
 // pareja (2 personas)». Camila lee estas FAQ tal cual, así que con la del
@@ -911,6 +912,10 @@ const out = {
   // Lo que el equipo sabe y el catálogo no (`src/lib/bot/politicas.ts`). El bot
   // lo consulta por tema con `consultar_politica`.
   politicas: POLITICAS_BOT,
+  // Lo que contesta el equipo (Erick) en WhatsApp: la guía de lo que sabe el
+  // bot (17 nov 2026). Va en el prompt y en `consultar_politica`.
+  respuestas: RESPUESTAS_EQUIPO,
+  temasRespuesta: TEMAS_RESPUESTA,
   xantolo: xantolo(),
 };
 
@@ -918,5 +923,5 @@ const dest = join(process.cwd(), "whatsapp-bot", "data.json");
 writeFileSync(dest, JSON.stringify(out, null, 2) + "\n", "utf8");
 
 console.log(
-  `✅ data.json generado: ${tours.length} tours, ${paquetes.length} paquetes, ${destinos.length} destinos, ${POLITICAS_BOT.length} políticas${out.xantolo ? ", Xantolo" : ""} → ${dest}`
+  `✅ data.json generado: ${tours.length} tours, ${paquetes.length} paquetes, ${destinos.length} destinos, ${POLITICAS_BOT.length} políticas, ${RESPUESTAS_EQUIPO.length} respuestas del equipo${out.xantolo ? ", Xantolo" : ""} → ${dest}`
 );
