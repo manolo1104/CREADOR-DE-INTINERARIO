@@ -171,6 +171,23 @@ prueba("nombre del archivo según folio e idioma", () => {
   assert.equal(adjuntos.nombrePdf("HP-M-3", "en"), "Booking confirmation HP-M-3.pdf");
 });
 
+console.log("\n🔗 Enlaces intactos (el «_» se borraba)\n");
+{
+  process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || "x";
+  const { sanitizeLinks, toWhatsAppFormat } = require("./agent");
+  const f = (t) => sanitizeLinks(toWhatsAppFormat(t));
+  prueba("el enlace de reseñas de Google conserva su «_»", () => {
+    assert.equal(f("Tu reseña: https://g.page/r/CZg8hdQa_GI9EBM/review"), "Tu reseña: https://g.page/r/CZg8hdQa_GI9EBM/review");
+  });
+  prueba("asteriscos y guiones pegados al enlace sí se quitan", () => {
+    assert.equal(f("*https://buy.stripe.com/test_COT-1*"), "https://buy.stripe.com/test_COT-1");
+    assert.equal(f("_https://x.com/a_b_."), "https://x.com/a_b.");
+  });
+  prueba("[texto](url) queda como «texto: url» con su «_»", () => {
+    assert.equal(f("[pago](https://buy.stripe.com/abc_d)"), "pago: https://buy.stripe.com/abc_d");
+  });
+}
+
 console.log("\n🔎 Lectura del comprobante (aviso al dueño)\n");
 const { textoLecturaComprobante } = require("./medios");
 

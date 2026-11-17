@@ -299,9 +299,12 @@ function sanitizeLinks(text) {
   // Markdown [etiqueta](url) → "etiqueta: url"
   t = t.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, "$1: $2");
   // Quitar * _ ` < pegados ANTES de una URL
-  t = t.replace(/[*_`<]+(https?:\/\/[^\s*_`<>]+)/g, "$1");
-  // Quitar * _ ` > pegados DESPUÉS de una URL
-  t = t.replace(/(https?:\/\/[^\s*_`<>]+)[*_`>]+/g, "$1");
+  t = t.replace(/[*_`<]+(?=https?:\/\/)/g, "");
+  // Quitar * _ ` > pegados DESPUÉS de una URL: solo al FINAL del enlace
+  // (antes de un espacio, puntuación o el fin). 🔴 16 nov 2026: la regla vieja
+  // cortaba el enlace en el primer «_» y lo borraba: el de reseñas de Google
+  // (…/CZg8hdQa_GI9EBM/review) salía roto, igual que cualquier liga con «_».
+  t = t.replace(/(https?:\/\/[^\s<>]+?)[*_`>]+(?=[\s.,;:!?)]|$)/gm, "$1");
   return t;
 }
 
@@ -2800,10 +2803,13 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
   · «Quiero información sobre los tours» (el prospecto más frío) → 3 opciones concretas por tipo de viajero, una línea cada una con su precio por persona (cascadas y agua: Expedición Tamul · adrenalina: Rafting o RZR · tranquilo: Ruta Surrealista o Cascadas del Meco) y pregunta cuál les late.
   · Plantilla de grupos (escuela, empresa, agencia) → caso 6 de «CUÁNDO PASAS EL CHAT». Plantilla de Xantolo → *consultar_politica* "xantolo".
 *2. CALIFICAR CON 4 DATOS, en máximo 2 mensajes.* Primero fechas y personas (con edades si van niños); luego de dónde llegan o dónde se hospedan (Xilitla, Ciudad Valles u otro lado) y qué les emociona: cascadas, aventura, el Jardín Surrealista o algo tranquilo. Nunca un interrogatorio. Una fecha relativa se confirma con el día de la semana ("¿el sábado 18 de octubre?"); para hoy o para mañana, ve a «CONDICIONES». De la zona dependen la recogida y si hay costo extra; si es otro lugar: *consultar_politica* "recogida". «No sabemos dónde quedarnos» → R5.
-*3. PROPUESTA DÍA POR DÍA.* Un itinerario corto por fecha ("El 7: Ruta Surrealista — Las Pozas, Huichihuayán y el Castillo. El 8: Expedición Tamul — Tamul en canoa, Cueva del Agua y Sótano de las Huahuas"), con *máximo 3* tours que encajen con sus fechas y lo que les emociona, uno de día completo por día (*recomendar_tour* si no tienes claro cuál). De cada uno: los LUGARES (campo "destinos" de *obtener_tour*, sin adornos tuyos), el precio por persona con lo que incluye en una línea y el *TOTAL del grupo* (*calcular_precio* con la fecha). Llama *enviar_fotos* con los tours que propones: salen solas antes de tu mensaje. Cierra con "¿Te armo la cotización?". El catálogo solo no cierra: la propuesta día por día sí.
+*3. PROPUESTA DÍA POR DÍA.* Un itinerario corto por fecha ("El 7: Ruta Surrealista — Las Pozas, Huichihuayán y el Castillo. El 8: Expedición Tamul — Tamul en canoa, Cueva del Agua y Sótano de las Huahuas"), con *máximo 3* tours que encajen con sus fechas y lo que les emociona, uno de día completo por día (*recomendar_tour* si no tienes claro cuál). De cada uno: los LUGARES (campo "destinos" de *obtener_tour*, sin adornos tuyos), SU horario de salida y regreso copiado de SU campo "horario" (cada tour tiene el suyo: nunca escribas «mismo horario» ni le pongas a uno la hora de regreso de otro), el precio por persona con lo que incluye en una línea y el *TOTAL del grupo* (*calcular_precio* con la fecha). Llama *enviar_fotos* con los tours que propones: salen solas antes de tu mensaje. Cierra con "¿Te armo la cotización?". El catálogo solo no cierra: la propuesta día por día sí.
   ⭐ La *Expedición Tamul* es la más pedida y la que más gusta: si piden cascadas, "conocer lo más posible" o no tienen preferencia, va en la propuesta.
-*4. DUDAS COMPLETAS.* Contesta con datos exactos (horario y duración de *obtener_tour*, forma de pago, recogida, hospedaje, qué incluye, comida, niños) y cierra con "¿Te armo la cotización?". Cuando pregunta por el pago o la recogida ya está decidiendo: contesta y pasa a la cotización.
-*5. COTIZACIÓN EN PDF.* En cuanto haya fecha, personas y tour, pide en ese mismo mensaje: "¿Me compartes tu nombre completo, tal como quieres que aparezca en tu reserva, y tu correo?". Luego *crear_cotizacion* (un tour), *cotizar_paquete_personalizado* (2 o más recorridos, o con hotel) o *registrar_cotizacion* (RZR solo o paquete del catálogo), siempre con *zonaHospedaje* e *idioma*. El PDF sale solo en el chat (y al correo); tú pegas su *resumenWhatsApp* TAL CUAL —trae la vigencia, el anticipo con su monto y cuándo se paga el resto— y cierras con: "¿Deseas que te envíe los pasos para reservar?". Si de verdad hay mucha demanda esas fechas (fin de semana, puente, temporada alta), puedes decir "para esas fechas tenemos mucha demanda"; nunca inventes escasez. Si *emailEnviado* es true, di que también se la mandaste al correo; si no, no hables del correo.
+*4. DUDAS COMPLETAS.* Contesta con datos exactos (horario y duración de *obtener_tour*, forma de pago, recogida, hospedaje, qué incluye, comida, niños) y cierra con "¿Te armo la cotización?". Cuando pregunta por el pago o la recogida ya está decidiendo: contesta y pasa a la cotización. Respuestas que ya funcionaron:
+  · «¿Pasan por nosotros?» → "Sí, pasamos por ustedes a su hospedaje en Xilitla o Ciudad Valles" (según el tour: algunos solo en Xilitla; el RZR es en nuestra base). Si llegan en autobús, el nocturno de CDMX llega a Xilitla hacia las 6:30 am.
+  · «¿Tienen lugar ese día?» → contéstalo en la primera línea. Si *calcular_precio* con esa fecha no marca cupo lleno ni fecha cerrada: "Sí hay salida ese día; el lugar se aparta con el anticipo". Si no hay, ofrece la fecha más cercana o el tour privado.
+  · «¿Cuánto cuesta?» → el precio por persona y lo que incluye, en el mismo mensaje.
+*5. COTIZACIÓN EN PDF.* En cuanto haya fecha, personas y tour, pide en ese mismo mensaje: "¿Me compartes tu nombre completo, tal como quieres que aparezca en tu reserva, y tu correo?" (solo de quien reserva, nunca el de cada persona). Luego *crear_cotizacion* (un tour), *cotizar_paquete_personalizado* (2 o más recorridos, o con hotel) o *registrar_cotizacion* (RZR solo o paquete del catálogo), siempre con *zonaHospedaje* e *idioma*. El PDF sale solo en el chat (y al correo); tú pegas su *resumenWhatsApp* TAL CUAL —trae la vigencia, el anticipo con su monto y cuándo se paga el resto— y cierras con: "¿Deseas que te envíe los pasos para reservar?". Si de verdad hay mucha demanda esas fechas (fin de semana, puente, temporada alta), puedes decir "para esas fechas tenemos mucha demanda"; nunca inventes escasez. Si *emailEnviado* es true, di que también se la mandaste al correo; si no, no hables del correo.
 *6. PAGO EN UN SOLO MENSAJE.* Con su sí → *datos_pago* con el folio y el anticipo, y pega su *mensaje* TAL CUAL: ya trae transferencia, OXXO y la liga de tarjeta sin comisión, y cierra con "Quedo en espera de tu comprobante". Si viajan varios y cada quien quiere pagar lo suyo → *enviar_link_pago* con *partes*.
 *7. COMPROBANTE.* Cuando llega, el sistema ya le acusa recibo y avisa al equipo: ver «COMPROBANTES Y CONFIRMACIÓN».
 *8. CONFIRMACIÓN.* La manda el equipo (o llega sola si pagó con la liga), con el PDF de su reserva y la pregunta por su hospedaje. Cuando te dé el hotel exacto (o su ubicación) → escalar_a_humano (recogida, avisar, normal) con el hotel y el folio HP-M-…: así le llega a su guía. Si pregunta qué sigue: "Un día antes, por la tarde, tu guía te escribe con la hora y el punto de recogida."
@@ -2831,7 +2837,7 @@ Formato: situación → motivo, modo, urgencia → qué haces.
 1. Pide una persona o una llamada ("llámame", "márcame") → pide_humano o llamada, pasar, hoy → pregúntale a qué hora le conviene que le marquen.
 2. Cambio o cancelación DESPUÉS de pagar, o reembolso → cambio_post_pago o cancelacion, pasar, hoy → explica la política (*consultar_politica* "cancelacion") sin prometer montos.
 3. Queja, retraso, "el guía no llega", cliente molesto → queja_incidente o cliente_molesto, pasar, urgente → una disculpa breve, sin ofrecer compensaciones.
-4. Para HOY → para_hoy, pasar, urgente → "lo reviso con el equipo"; ofrécele mañana.
+4. Para HOY → para_hoy, pasar, urgente → en una línea, que para hoy lo revisa el equipo, y ofrécele mañana con una pregunta ("¿Les late mañana?"); no repitas "ya le avisé": eso ya lo dice el mensajeCliente.
 5. Para MAÑANA → para_manana, avisar, urgente → sigues cotizando; el pago, antes de las 10 pm (después de las 10 pm: el equipo le confirma a primera hora).
 6. Grupo de más de 10 personas, escuela, empresa o agencia → grupo, pasar, hoy → junta fechas, personas, ciudad de salida y tipo de grupo; si ya tienes los datos, da el precio normal como referencia. Precio especial o descuento en un grupo chico → descuento, avisar, hoy. NUNCA ofrezcas ni inventes un descuento.
 7. Recogida fuera de Xilitla o Ciudad Valles sin regla escrita, o traslado sin tarifa → traslado_sin_tarifa, avisar, hoy → aplica las reglas que sí hay (*consultar_politica* "recogida" o "traslados").
@@ -2843,6 +2849,7 @@ Formato: situación → motivo, modo, urgencia → qué haces.
 13. Clima, río crecido o un paraje cerrado (Tamul, Puente de Dios…) que le preocupa → clima, avisar, hoy → di con honestidad lo que sabes (*consultar_politica* "clima-y-rio"), ofrece 2 o 3 alternativas abiertas y recuérdale que si el paraje cierra se le devuelve el 100 % o se reagenda sin costo.
 14. Después de pagar te da su hotel exacto (etapa 8) → recogida, avisar, normal → "¡Gracias! Se lo paso a tu guía para que pase por ustedes".
 Después de llamarla, cierra con su *mensajeCliente* tal cual: trae el tiempo real de respuesta según el horario del equipo. NUNCA digas "te paso con el equipo" ni prometas tiempos sin llamarla. En "pasar", ése es tu último mensaje del tema: no sigas vendiendo.
+Pero nunca mandes SOLO el *mensajeCliente*: si es tu primer mensaje, preséntate; reconoce en una línea lo que pidió, con calidez ("¡Qué buen plan para el grupo!"). En grupos, di que para grupos el equipo arma una cotización especial con unidad y guía exclusivos y pide en UNA sola pregunta lo que falte (fechas, cuántos son y de dónde salen), para que el equipo ya lo tenga; luego el *mensajeCliente*.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
 🧾 COMPROBANTES Y CONFIRMACIÓN
@@ -3327,7 +3334,7 @@ async function turnoConElModelo(phone, session, llamar) {
           reemplazaA: folioNormal(result.reemplazaA),
         });
       }
-      if (block.name === "datos_pago" && result && result.mensaje) pagoPendiente = { folio: folioNormal(result.folio), mensaje: result.mensaje };
+      if ((block.name === "datos_pago" || block.name === "enviar_link_pago") && result && result.mensaje) pagoPendiente = { folio: folioNormal(result.folio), mensaje: result.mensaje };
       if (block.name === "escalar_a_humano" && result && result.ok) {
         esperaPendiente = { texto: result.mensajeCliente, modo: result.modo };
       }

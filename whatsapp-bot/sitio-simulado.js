@@ -38,7 +38,7 @@ const { sumarDias } = require("./horario");
 
 // El anticipo es el 30 % en todo (decisión de Manolo, 6 oct 2026).
 const PCT_ANTICIPO = 30;
-const VIGENCIA_DIAS = 2; // 48 h
+const VIGENCIA_DIAS = 7; // 16 nov 2026: las del bot valen 7 días (VIGENCIA_BOT del sitio)
 const METODOS = new Set(["efectivo", "transferencia", "deposito", "stripe", "otro"]);
 const COBRO_REPETIDO_MS = 15 * 60 * 1000; // el sitio rechaza el mismo pago en 15 min
 const FACTOR_NINO_MEDIO = 0.7;
@@ -155,7 +155,7 @@ function fechaLarga(ymd, locale = "es") {
  */
 function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), prefijo = "SIM", habitacionesOcupadas = [] } = {}) {
   // `reemplazo`: cada intento de reemplazo ({ folioViejo, folioNuevo, ok, motivo? }).
-  const calls = { precio: [], quote: [], lead: [], paquete: [], confirm: [], lookup: [], escalacion: [], activa: [], hotel: [], reemplazo: [] };
+  const calls = { precio: [], quote: [], lead: [], paquete: [], confirm: [], lookup: [], escalacion: [], activa: [], hotel: [], reemplazo: [], documento: [], ligas: [] };
   const cotizaciones = new Map(); // folio → registro
   const reservas = new Map();     // folio → registro
   let consecutivo = 0;
@@ -359,14 +359,14 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     }
     const cuando = reg.esPaquete
       ? (en ? "at hotel check-in" : "al hacer check-in en el hotel")
-      : (en ? "on the day of the tour, in cash or by bank transfer" : "el día del tour en efectivo o transferencia");
+      : (en ? "before the tour starts, in cash or by bank transfer" : "antes de iniciar el tour, en efectivo o transferencia");
     L.push("", en ? `💰 *Total: ${mx(reg.total)} MXN*` : `💰 *Total: ${mx(reg.total)} MXN*`);
     L.push(en
       ? `You book it with ${mx(reg.anticipo)} (${PCT_ANTICIPO} %) and the rest, ${mx(reg.saldo)}, is paid ${cuando}.`
       : `Apartas con ${mx(reg.anticipo)} (${PCT_ANTICIPO} %) y el resto, ${mx(reg.saldo)}, se paga ${cuando}.`);
     L.push("", en
-      ? `⏳ Valid for 48 h: until ${fechaLarga(reg.venceEl, reg.locale)}.`
-      : `⏳ Vale 48 h: hasta el ${fechaLarga(reg.venceEl, reg.locale)}.`);
+      ? `⏳ Valid for 7 days: until ${fechaLarga(reg.venceEl, reg.locale)}.`
+      : `⏳ Vale 7 días: hasta el ${fechaLarga(reg.venceEl, reg.locale)}.`);
     L.push(en ? `🧾 Payment reference: ${reg.folio}` : `🧾 Concepto de tu pago: ${reg.folio}`);
     return L.join("\n");
   }
@@ -434,11 +434,9 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     // después de mandarla): el cliente nunca se queda sin una cotización válida.
     const reemplazo = reemplazaA ? reemplazar(reemplazaA, reg, { aparte }) : null;
 
-    const unSoloTourPorPersona = reg.recorridos.length === 1 && reg.recorridos[0].cobro !== "vehiculo" && !reg.paquete && !reg.hospedaje;
-    const base = String(EMPRESA.sitio || "").replace(/\/$/, "") + (locale === "en" ? "/en" : "");
-    const linkPago = unSoloTourPorPersona
-      ? `${base}/reservar-tour/${reg.recorridos[0].slug}`
-      : reg.paquete && !reg.recorridos.length ? `${base}/reservar-paquete/${reg.paquete.slug}` : null;
+    // Como el sitio desde el 16 nov 2026: la liga de Stripe de ESTE folio, por el anticipo.
+    reg.ligaPago = `https://buy.stripe.com/test_${folio}`;
+    const linkPago = reg.ligaPago;
     const avisos = [
       ...cuenta.lineas.flatMap((l) => l.avisos || []),
       ...((reg.paquete && reg.paquete.avisos) || []),
@@ -446,10 +444,12 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     ];
     return respuesta(200, {
       folio, total: reg.total, anticipo: reg.anticipo, saldo: reg.saldo, pctAnticipo: PCT_ANTICIPO, moneda: "MXN",
-      venceEl: reg.venceEl, vigencia: "48h",
+      venceEl: reg.venceEl, vigencia: "7dias",
       resumenWhatsApp: resumenWhatsApp(reg, reemplazo && reemplazo.ok ? { reemplazaA: reemplazo.folio } : {}),
       emailEnviado: Boolean(correo),
       linkPago,
+      linkPagoTipo: "liga",
+      linkPagoMonto: reg.anticipo,
       tourName: reg.tourName, tourDate: reg.tourDate,
       personas: reg.recorridos.length === 1 ? reg.recorridos[0].personas : (reg.paquete ? reg.paquete.personas : null),
       recorridos: reg.recorridos,
@@ -560,7 +560,7 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     }
     const etapa = etapaDe(reg);
     const status = etapa === "vencida" ? "expirada" : etapa === "aceptada" ? "aceptada" : reg.status;
-    const cuando = reg.esPaquete ? "al hacer check-in" : "el día del tour en efectivo o transferencia";
+    const cuando = reg.esPaquete ? "al hacer check-in" : "antes de iniciar el tour, en efectivo o transferencia";
     const resumenPago = reg.reservaFolio
       ? `Esta cotización ya es la reserva ${reg.reservaFolio}.`
       : etapa === "vencida"
@@ -572,12 +572,16 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       total: reg.total, anticipo: reg.anticipo, saldo: reg.saldo, pctAnticipo: PCT_ANTICIPO,
       venceEl: reg.venceEl, esPaquete: reg.esPaquete, customerName: reg.customerName,
       locale: reg.locale, reservaFolio: reg.reservaFolio, resumenPago,
+      ligaPago: !reg.reservaFolio && etapa !== "vencida" ? reg.ligaPago || null : null,
+      ...(reg.ligaPago ? { ligaMonto: reg.anticipo } : {}),
+      ...(reg.partes && reg.partes.length ? { partes: reg.partes } : {}),
+      pagadaConLiga: false,
     };
   }
 
   function vistaReserva(r) {
     const pctPagado = r.totalAmount ? Math.round((r.pagado / r.totalAmount) * 100) : 0;
-    const cuando = r.esPaquete ? "al hacer check-in" : "el día del tour en efectivo o transferencia";
+    const cuando = r.esPaquete ? "al hacer check-in" : "antes de iniciar el tour, en efectivo o transferencia";
     return {
       tipo: "reserva", folio: r.folio, tourName: r.tourName, tourSlug: r.tourSlug, tourDate: r.tourDate,
       adults: r.adults, children: r.children, totalAmount: r.totalAmount, status: "paid",
@@ -733,6 +737,30 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       r.pagado += pago;
       r.saldo -= pago;
       return respuesta(200, confirmacion(r, { folioPedido: f, yaConfirmada: true, cobro: pago, metodo: m, reservaNueva: false, comprobante }));
+    },
+
+    // El HTML del PDF (en el simulacro, una hoja mínima con el folio).
+    async documento(folio) {
+      calls.documento.push(folio);
+      const f = String(folio || "").trim().toUpperCase();
+      if (!cotizaciones.has(f) && !reservas.has(f)) return respuesta(404, { error: `No existe ${f}.` });
+      return { ok: true, status: 200, html: `<html><body><h1>${f}</h1></body></html>` };
+    },
+
+    // Una liga por persona: el anticipo repartido en partes (como repartirEnPartes del sitio).
+    async ligasPorPersona(folio, partes, base = "anticipo") {
+      calls.ligas.push({ folio, partes, base });
+      const f = String(folio || "").trim().toUpperCase();
+      const reg = cotizaciones.get(f);
+      if (!reg) return respuesta(404, { error: `No existe la cotización ${f}.` });
+      const n = Math.floor(Number(partes));
+      if (!(n >= 2 && n <= 12)) return respuesta(400, { error: "`partes` va de 2 a 12." });
+      const monto = base === "total" ? reg.total : reg.anticipo;
+      const parte = Math.floor(monto / n);
+      const sobra = monto - parte * n;
+      reg.partes = Array.from({ length: n }, (_, i) => ({ parte: i + 1, de: n, url: `https://buy.stripe.com/test_${f}_${i + 1}`, monto: parte + (i < sobra ? 1 : 0), pagada: false }));
+      reg.ligaPago = null;
+      return respuesta(200, { folio: f, base, ligas: reg.partes });
     },
 
     async consultarReserva(folio) {
