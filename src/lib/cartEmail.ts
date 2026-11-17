@@ -44,7 +44,8 @@ export interface CartEmailLinea {
   tourDate:      string;
   adults:        number;
   childrenMid?:  number;  // 6–10 años, 70 %
-  childrenSmall?: number; // menores de 6, 50 %
+  childrenSmall?: number; // 4 a 7 años, 50 %
+  infants?: number;       // 0 a 3 años, gratis
   children?:     number;  // total, si no vienen los tramos
   subtotal?:     number;
   eleccion?:     string;
@@ -88,7 +89,7 @@ import {
 } from "./emailLayout";
 import { lineasCancelacion, lineasRecogida } from "./recogidaCorreo";
 
-/** "2 adultos · 1 de 6 a 10 años · 1 menor de 6" — el desglose que importa. */
+/** "2 adultos · 1 niño de 4 a 7 años · 1 bebé" — el desglose que importa. */
 function gente(l: CartEmailLinea, locale: Locale): string {
   const c = getEmails(locale).carrito;
   if (l.unidades) return c.vehiculos(l.unidades);
@@ -96,7 +97,8 @@ function gente(l: CartEmailLinea, locale: Locale): string {
   if (l.adults) partes.push(c.adultos(l.adults));
   if (l.childrenMid)   partes.push(c.de6a10(l.childrenMid));
   if (l.childrenSmall) partes.push(c.menoresDe6(l.childrenSmall));
-  if (!l.childrenMid && !l.childrenSmall && l.children) {
+  if (l.infants)       partes.push(c.bebes(l.infants));
+  if (!l.childrenMid && !l.childrenSmall && !l.infants && l.children) {
     partes.push(c.menores(l.children));
   }
   return partes.join(" · ") || c.unaPersona;

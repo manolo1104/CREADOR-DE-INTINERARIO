@@ -24,11 +24,14 @@ export interface ItemTourBot {
   slug:        string;
   /** YYYY-MM-DD, hora de México. Decide la promo de temporada baja. */
   tourDate:    string;
+  /** Adultos y niños de 8 en adelante (pagan como adulto, `ninos.ts`). */
   adultos:     number;
-  /** 6 a 10 años: pagan el 70 %. */
+  /** Tramo viejo 6–10 años al 70 %. Ya no se llena: al leer la entrada pasa a adultos. */
   ninosMid?:   number;
-  /** Menores de 6: pagan el 50 %. */
+  /** De 4 a 7 años: pagan el 50 %. */
   ninosSmall?: number;
+  /** Bebés de 0 a 3 años: gratis; ocupan lugar pero no cuentan para el mínimo. */
+  bebes?:      number;
   /** Actividades opcionales: del bot SOLO se acepta el id y la cantidad. */
   addOns?:     { id: string; cantidad: number }[];
 }
@@ -63,6 +66,9 @@ export interface ItemBotCrudo {
   adultos?:    number;
   ninosMid?:   number;
   ninosSmall?: number;
+  /** Alias de `ninosSmall` (de 4 a 7 años). */
+  ninos4a7?:   number;
+  bebes?:      number;
   addOns?:     { id: string; cantidad: number }[];
   ruta?:       string;
   vehiculo?:   string;
@@ -80,7 +86,10 @@ export interface PaqueteCotizacionBot {
   fecha:         string;
   adultos:       number;
   ninosMid?:     number;
+  /** De 4 a 7 años (50 %). Los bebés de 0 a 3 no pagan ni se cuentan en paquetes. */
   ninosSmall?:   number;
+  /** Alias de `ninosSmall`. */
+  ninos4a7?:     number;
   vistaMontana?: boolean;
   /** Llega la víspera: una noche más, check-in el día anterior. */
   nocheExtra?:   boolean;
@@ -181,6 +190,8 @@ export interface LineaPrecio {
   adultos:         number;
   ninosMid:        number;
   ninosSmall:      number;
+  /** Bebés de 0 a 3 años (gratis). */
+  bebes?:          number;
   /** Lo que se cobra por este recorrido (la cuenta de la web). */
   total:           number;
   /** Precio por adulto en esa fecha (solo cobro por persona). */

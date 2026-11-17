@@ -1,3 +1,4 @@
+import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "./ninos";
 import { nochesGratis } from "./habitaciones";
 // Cálculo AUTORITATIVO del precio de un paquete en el servidor.
 // El cliente nunca decide el monto: aquí se recalcula desde PAQUETES_DB.
@@ -43,12 +44,13 @@ export const MAX_POR_HABITACION = 4;
 export const MAX_PERSONAS_PAQUETE = 12;
 
 /**
- * La escala de menores de siempre (la de los tours sueltos): de 6 a 10 años
- * pagan el 70 % y los menores de 6 el 50 %. Los bebés menores de 3 no pagan y
- * no se cuentan.
+ * La escala de menores (la misma de los tours sueltos, `ninos.ts`, 17 nov
+ * 2026): de 4 a 7 años pagan el 50 % (`childrenSmall`), de 8 en adelante como
+ * adulto, y los bebés de 3 o menos no pagan y no se cuentan.
+ * `FACTOR_NINO_MEDIO` (6–10 al 70 %) solo recalcula paquetes cobrados antes.
  */
-export const FACTOR_NINO_MEDIO = 0.7;
-export const FACTOR_NINO_CHICO = 0.5;
+export const FACTOR_NINO_MEDIO = FACTOR_NINO_ANTERIOR;
+export const FACTOR_NINO_CHICO = FACTOR_NINO;
 
 /**
  * Cuánto se puede pagar hoy. 30 % es el mínimo desde el 12 de agosto de 2026

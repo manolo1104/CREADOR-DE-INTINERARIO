@@ -211,20 +211,24 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       };
     }
 
-    const adultos = entero(item.adultos ?? item.adults);
-    const ninosMid = entero(item.ninosMid ?? item.childrenMid);
-    const ninosSmall = entero(item.ninosSmall ?? item.childrenSmall);
+    // Regla de niños del sitio (17 nov 2026, src/lib/ninos.ts): de 4 a 7 al 50 %,
+    // bebés de 0 a 3 gratis (ocupan lugar, no cuentan para mínimo ni escalón),
+    // el tramo viejo de 6 a 10 que llegue se cuenta como adulto.
+    const adultos = entero(item.adultos ?? item.adults) + entero(item.ninosMid ?? item.childrenMid);
+    const ninosMid = 0;
+    const ninosSmall = entero(item.ninosSmall ?? item.ninos4a7 ?? item.childrenSmall);
+    const bebes = entero(item.bebes ?? item.infants);
     const personas = adultos + ninosMid + ninosSmall;
     if (personas < 1) return falla("Faltan las personas.");
 
     // El Edén: una tarifa por el grupo completo, por escalones.
     if (Array.isArray(t.tarifaGrupo) && t.tarifaGrupo.length) {
-      if (personas > t.tarifaGrupo.length) return falla(`Máximo ${t.tarifaGrupo.length} personas.`);
+      if (personas + bebes > t.tarifaGrupo.length) return falla(`Máximo ${t.tarifaGrupo.length} personas.`);
       return {
         linea: {
           slug: t.slug, nombre: t.nombre, tourDate, cobro: "grupo",
-          personas, adultos, ninosMid, ninosSmall,
-          total: t.tarifaGrupo[personas - 1],
+          personas: personas + bebes, adultos, ninosMid, ninosSmall, ...(bebes ? { bebes } : {}),
+          total: t.tarifaGrupo[personas + bebes - 1],
           promo: { aplica: false },
           ...(avisos.length ? { avisos } : {}),
         },
@@ -235,11 +239,11 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     // mínimo de un tour por persona se vende a tarifa normal.
     const viajeroSolo = vaBajoElMinimo(t, personas);
     if (personas < t.groupMin && !viajeroSolo) return falla(`Este tour sale con mínimo ${t.groupMin} personas.`);
-    if (typeof t.groupMax === "number" && personas > t.groupMax) {
+    if (typeof t.groupMax === "number" && personas + bebes > t.groupMax) {
       return falla(`Este tour admite máximo ${t.groupMax} personas por salida.`);
     }
-    if (t.soloAdultos && (ninosMid || ninosSmall)) return falla("Solo para mayores de 10 años.");
-    if (ninosSmall && typeof t.edadMinima === "number" && t.edadMinima >= 6) {
+    if (t.soloAdultos && (ninosSmall || bebes)) return falla("Solo para adultos.");
+    if ((ninosSmall || bebes) && typeof t.edadMinima === "number" && t.edadMinima > 4) {
       return falla(`La edad mínima es de ${t.edadMinima} años.`);
     }
     // Como `precioPorCabeza` del sitio: la escalera del tamaño del grupo baja el
@@ -254,7 +258,7 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     return {
       linea: {
         slug: t.slug, nombre: t.nombre, tourDate, cobro: "persona",
-        personas, adultos, ninosMid, ninosSmall, total, porPersona,
+        personas: personas + bebes, adultos, ninosMid, ninosSmall, ...(bebes ? { bebes } : {}), total, porPersona,
         promo: conPromo
           ? { aplica: true, precioLista: precioLista(t), precioPromo: promo.precio, vence: promo.vence }
           : { aplica: false, precioLista: precioLista(t) },
@@ -278,9 +282,9 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
     const fecha = esXantolo ? p.fecha : String(pq.fecha || "").trim();
     if (!fechaReal(fecha)) return falla("Falta la fecha de llegada (AAAA-MM-DD).");
     if (fecha < hoy()) return falla("Esa fecha ya pasó.");
-    const adultos = entero(pq.adultos);
-    const ninosMid = entero(pq.ninosMid);
-    const ninosSmall = entero(pq.ninosSmall);
+    const adultos = entero(pq.adultos) + entero(pq.ninosMid);
+    const ninosMid = 0;
+    const ninosSmall = entero(pq.ninosSmall ?? pq.ninos4a7);
     if (adultos < 2) return falla("Los paquetes son por pareja: mínimo 2 adultos.");
     const personas = adultos + ninosMid + ninosSmall;
     const dias = (Array.isArray(p.itinerario) ? p.itinerario : []).filter((d) => d && d.tourSlug && findTour(d.tourSlug));
@@ -340,7 +344,8 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       if (l.cobro === "vehiculo") return `${l.unidades} × ${l.vehiculo} · ${l.ruta}${l.hora ? ` · ${en ? "start" : "inicio"} ${l.hora}` : ""}`;
       const partes = [`${l.adultos} ${en ? (l.adultos === 1 ? "adult" : "adults") : (l.adultos === 1 ? "adulto" : "adultos")}`];
       if (l.ninosMid) partes.push(`${l.ninosMid} ${en ? "aged 6–10" : "de 6 a 10 años"}`);
-      if (l.ninosSmall) partes.push(`${l.ninosSmall} ${en ? "under 6" : "menores de 6"}`);
+      if (l.ninosSmall) partes.push(`${l.ninosSmall} ${en ? "aged 4–7" : "de 4 a 7 años"}`);
+      if (l.bebes) partes.push(`${l.bebes} ${en ? (l.bebes === 1 ? "baby (free)" : "babies (free)") : (l.bebes === 1 ? "bebé (gratis)" : "bebés (gratis)")}`);
       return partes.join(" + ") + (l.viajeroSolo ? (en ? " (solo traveler)" : " (viajero solo)") : "");
     };
     const L = [en ? `📋 *Your quote* · ${reg.folio}` : `📋 *Tu cotización* · folio ${reg.folio}`];
@@ -670,7 +675,7 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
 
     async crearCotizacion(p = {}) {
       calls.quote.push(p);
-      const item = { slug: p.tourSlug, tourDate: p.tourDate, adultos: p.adults, ninosMid: p.childrenMid, ninosSmall: p.childrenSmall };
+      const item = { slug: p.tourSlug, tourDate: p.tourDate, adultos: p.adults, ninosMid: p.childrenMid, ninosSmall: p.childrenSmall, bebes: p.infants };
       return cotizar(p, calcular({ items: [item] }), { etiqueta: "quote" });
     },
 

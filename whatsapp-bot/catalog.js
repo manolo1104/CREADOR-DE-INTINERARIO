@@ -5,7 +5,9 @@
 //     npx tsx src/scripts/export-bot-data.ts
 // NO edites los datos aquí — cambia el sitio y regenera data.json.
 // Precios POR PERSONA (MXN), salvo el RZR (por vehículo).
-// Niños 6–10 = 70 %, menores de 6 = 50 %.
+// Niños de 4 a 7 = 50 %; bebés de 0 a 3 gratis; de 8 en adelante adulto
+// (src/lib/ninos.ts, 17 nov 2026). El tramo viejo de 6 a 10 al 70 % solo
+// queda para leer cotizaciones anteriores.
 //
 // ⚠️ El precio que vale es el del SITIO (/api/bot/precio): las cuentas de
 // aquí son el RESPALDO para cuando el sitio no contesta, y copian sus reglas

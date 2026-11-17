@@ -66,7 +66,9 @@ export function htmlCotizacion(q: TourQuote, origen: string, hoy: Date = new Dat
     // Sin el `_meta` de seguimiento: no es una línea de tour.
     const lineasTour = Array.isArray((q as any).lineItems) ? (q as any).lineItems.filter((l: any) => l && !l._meta) : [];
     const items: LineItem[] = lineasTour.length
-      ? lineasTour.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.children ?? 0), childrenSmall: l.childrenSmall ?? 0 }))
+      // Sin desglose (renglón viejo) los menores se leen como el tramo de antes; con
+      // bebés o niños de 4 a 7 guardados, `children` ya no se reparte.
+      ? lineasTour.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.childrenSmall === undefined && l.infants === undefined ? (l.children ?? 0) : 0), childrenSmall: l.childrenSmall ?? 0 }))
       : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }];
 
     const today    = hoy;
@@ -103,7 +105,7 @@ export function htmlCotizacion(q: TourQuote, origen: string, hoy: Date = new Dat
     const duracion     = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / 86400000) + 1);
     // Tamaño REAL del grupo (no sumar por tour: es el mismo grupo en todos los tours).
     // Prioridad: el número capturado en la cotización → máximo por tour → total guardado.
-    const perTourMax   = items.length ? Math.max(...items.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0))) : 0;
+    const perTourMax   = items.length ? Math.max(...items.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0) + ((l as { infants?: number }).infants ?? 0))) : 0;
     const grupoQ       = grupoDe(q as any);
     const desgloseQ     = grupoLargo(grupoQ);
     const numPersonas  = Number(meta.numPersonas) > 0
@@ -156,13 +158,15 @@ export function htmlCotizacion(q: TourQuote, origen: string, hoy: Date = new Dat
     const tourRows = items.map(l => {
       const esVeh = !!l.vehiculo; // línea por vehículo (RZR): sin conteo de personas
       const un    = Math.max(1, Number(l.unidades) || 1);
-      const total = l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+      const bebes = (l as { infants?: number }).infants ?? 0;
+      const total = l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0) + bebes;
       const sub   = esVeh
         ? "Precio por vehículo · gasolina, equipo y guía incluidos"
         : [
             l.adults > 0 ? `${l.adults} adulto${l.adults !== 1 ? "s" : ""}` : "",
             (l.childrenMid ?? 0) > 0 ? `${l.childrenMid} niño${l.childrenMid !== 1 ? "s" : ""} (6-10)` : "",
-            (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (<6)` : "",
+            (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (4-7, 50 %)` : "",
+            bebes > 0 ? `${bebes} bebé${bebes !== 1 ? "s" : ""} (0-3, gratis)` : "",
           ].filter(Boolean).join(" · ");
       const fd = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
       // La actividad opcional se cobra dentro de este renglón: si no se nombra,

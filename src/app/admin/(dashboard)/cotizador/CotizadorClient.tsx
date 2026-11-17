@@ -34,7 +34,7 @@ interface SimLinea {
   /** Solo con proveedor: cuál de sus dos versiones del recorrido se cotiza. */
   variante?:  string;
   adultos:    number;
-  ninosMid:   number;
+  bebes:   number;
   ninosSmall: number;
   ruta?:      string;
   vehiculo?:  string;
@@ -42,7 +42,7 @@ interface SimLinea {
   personasVehiculo?: number;
 }
 
-const LINEA_VACIA: SimLinea = { tourSlug: "", adultos: 4, ninosMid: 0, ninosSmall: 0 };
+const LINEA_VACIA: SimLinea = { tourSlug: "", adultos: 4, bebes: 0, ninosSmall: 0 };
 
 /** La línea tal como la entiende el catálogo, para cobrar EXACTAMENTE lo mismo
  *  que cobraría la cotización. Si el precio se recalculara aquí a mano, el
@@ -50,7 +50,8 @@ const LINEA_VACIA: SimLinea = { tourSlug: "", adultos: 4, ninosMid: 0, ninosSmal
 function aLineItem(l: SimLinea): LineItem {
   return {
     tourSlug: l.tourSlug, tourName: "", tourDate: "",
-    adults: l.adultos, childrenMid: l.ninosMid, childrenSmall: l.ninosSmall,
+    // Regla del 17 nov 2026 (`ninos.ts`): de 4 a 7 al 50 %, bebés de 0 a 3 gratis.
+    adults: l.adultos, childrenMid: 0, childrenSmall: l.ninosSmall, infants: l.bebes,
     subtotal: 0, ruta: l.ruta, vehiculo: l.vehiculo, unidades: l.unidades,
     // La versión del proveedor ES la opción del catálogo (Ruta Acuática:
     // «tamasopo» suma $150 por persona a la venta, igual que en la cotización).
@@ -61,7 +62,8 @@ function aLineItem(l: SimLinea): LineItem {
 /** Cuánta gente va en esa línea (para repartir el costo por persona). */
 function personasDe(l: SimLinea): number {
   if (esTourVehiculo(l.tourSlug)) return Math.max(1, l.personasVehiculo ?? 2);
-  return Math.max(0, l.adultos) + Math.max(0, l.ninosMid) + Math.max(0, l.ninosSmall);
+  // Los bebés no comen buffet ni pagan entrada: no reparten costo.
+  return Math.max(0, l.adultos) + Math.max(0, l.ninosSmall);
 }
 
 function Chip({ ok, children }: { ok: boolean; children: React.ReactNode }) {
@@ -285,7 +287,7 @@ export default function CotizadorClient(
         const esVeh = esTourVehiculo(l.tourSlug);
         const linea: SimLinea = esVeh
           ? { ...l, personasVehiculo: n }
-          : { ...l, adultos: n, ninosMid: 0, ninosSmall: 0 };
+          : { ...l, adultos: n, bebes: 0, ninosSmall: 0 };
         venta += calcTourLine(aLineItem(linea));
         if (modo === "proveedor") {
           const tarifa = tarifaDeLinea(l);
@@ -798,12 +800,12 @@ export default function CotizadorClient(
                           onChange={e => up("adultos", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
                       </div>
                       <div>
-                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Pagan el 70%">Niños 6–10</label>
-                        <input type="number" min={0} max={20} value={l.ninosMid}
-                          onChange={e => up("ninosMid", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="0 a 3 años: gratis">Bebés 0–3</label>
+                        <input type="number" min={0} max={20} value={l.bebes}
+                          onChange={e => up("bebes", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
                       </div>
                       <div>
-                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Pagan el 50%">Niños &lt;6</label>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="4 a 7 años: pagan el 50%">Niños 4–7</label>
                         <input type="number" min={0} max={20} value={l.ninosSmall}
                           onChange={e => up("ninosSmall", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
                       </div>

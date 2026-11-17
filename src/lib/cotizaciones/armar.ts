@@ -21,6 +21,7 @@
 // `calcularCotizacionBot` es PURA (no toca la base): la usa `/api/bot/precio`,
 // que solo pregunta. `guardarCotizacionBot` la llama y guarda.
 
+import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "@/lib/ninos";
 import { randomInt } from "crypto";
 import type { TourQuote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -187,7 +188,7 @@ function promoDeTour(t: Tour, fecha: string): PromoLinea {
 /**
  * Lo que vale un renglón para EL PANEL: copia exacta de `calcTourLine`
  * (ReservaModal.tsx, que es "use client" y no se puede importar aquí). Precio
- * de lista de `TOURS_LISTA`, 70 % / 50 % para menores, matriz flota × ruta en
+ * de lista de `TOURS_LISTA`, 50 % de 4 a 7 años (bebés gratis), matriz flota × ruta en
  * el RZR, actividades opcionales a precio de catálogo y, en los conceptos a
  * mano, su precio por persona.
  *
@@ -200,12 +201,15 @@ export function subtotalPanel(l: LineItem): number {
   if (l.tourSlug === SLUG_PERSONALIZADO) {
     const p = Math.max(0, Number(l.precioPersona) || 0);
     return p * Math.max(0, l.adults || 0)
-         + Math.round(p * 0.7) * (l.childrenMid ?? 0)
-         + Math.round(p * 0.5) * (l.childrenSmall ?? 0);
+         + Math.round(p * FACTOR_NINO_ANTERIOR) * (l.childrenMid ?? 0)
+         + Math.round(p * FACTOR_NINO) * (l.childrenSmall ?? 0);
   }
   const t = TOURS_LISTA.find((x) => x.slug === l.tourSlug);
   if (!t) return 0;
-  const personas = (l.adults || 0) + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+  // Igual que `calcTourLine`: los que pagan deciden el escalón; en la tarifa de
+  // GRUPO cuentan todos, bebés incluidos (`ninos.ts`).
+  const pagan    = (l.adults || 0) + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+  const personas = pagan + (l.infants ?? 0);
   // 🔴 Tarifa del GRUPO completo (el Edén): una sola cifra para todos, igual que
   // `calcTourLine`. Faltaba aquí también: un Edén de 4 salía en $11,960
   // ($2,990 × 4) contra los $3,480 del escalón de cuatro que cobra la web.
@@ -214,7 +218,7 @@ export function subtotalPanel(l: LineItem): number {
   // (`escalaPersona`, desde 3 personas). TOURS_LISTA no lleva promo, así que
   // aquí siempre aplica la escalera, como en el editor del panel. Con el extra
   // de la opción elegida (Ruta Acuática → Tamasopo, +$150), como `calcTourLine`.
-  const porCabeza = precioPorCabeza(t, personas) + extraDeEleccion(t, l.eleccion);
+  const porCabeza = precioPorCabeza(t, pagan) + extraDeEleccion(t, l.eleccion);
   const base = delGrupo !== null
     ? delGrupo
     : (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
@@ -226,8 +230,8 @@ export function subtotalPanel(l: LineItem): number {
       })()
     : (
         porCabeza * l.adults +
-        Math.round(porCabeza * 0.7) * (l.childrenMid   ?? 0) +
-        Math.round(porCabeza * 0.5) * (l.childrenSmall ?? 0)
+        Math.round(porCabeza * FACTOR_NINO_ANTERIOR) * (l.childrenMid   ?? 0) +
+        Math.round(porCabeza * FACTOR_NINO) * (l.childrenSmall ?? 0)
       );
   const cat = t.addOns ?? [];
   const addOns = cat.length
@@ -361,8 +365,12 @@ function normalizarItem(crudo: ItemEntradaBot): ItemCotizacionBot {
   }
   return {
     tipo: "tour", slug, tourDate: texto(r.tourDate, 10),
-    adultos: entero(r.adultos ?? r.adults), ninosMid: entero(r.ninosMid ?? r.childrenMid),
-    ninosSmall: entero(r.ninosSmall ?? r.childrenSmall),
+    // Regla del 17 nov 2026 (`ninos.ts`): el tramo viejo de 6 a 10 ya no existe.
+    // Si alguien lo manda todavía, esos niños se cuentan como adultos (de 8 en
+    // adelante pagan completo; si alguno tiene 6 o 7, el equipo lo corrige).
+    adultos: entero(r.adultos ?? r.adults) + entero(r.ninosMid ?? r.childrenMid), ninosMid: 0,
+    ninosSmall: entero(r.ninosSmall ?? r.ninos4a7 ?? r.childrenSmall),
+    bebes: entero(r.bebes ?? r.infants),
     addOns: Array.isArray(r.addOns) ? (r.addOns as { id: string; cantidad: number }[]) : undefined,
   };
 }
@@ -380,8 +388,10 @@ function lineaTour(item: ItemTourBot, panel = false): Resultado<LineaArmada> {
   const malFecha = problemaDeFecha(fecha, nombre);
   if (malFecha) return falla(malFecha);
 
-  const a = entero(item.adultos), m = entero(item.ninosMid), s = entero(item.ninosSmall);
-  const personas = a + m + s;
+  const a = entero(item.adultos), m = entero(item.ninosMid), s = entero(item.ninosSmall), b = entero(item.bebes);
+  // `personas` = lugares (cupo, bebés incluidos); `pagan` = mínimo y escalón.
+  const pagan = a + m + s;
+  const personas = pagan + b;
   // `computeTourCharge` devuelve null sin decir por qué, y además RECORTA en
   // silencio los adultos al cupo. Las reglas se revisan aquí antes, una por
   // una, para que el bot pueda explicarle al cliente qué falló.
@@ -392,11 +402,11 @@ function lineaTour(item: ItemTourBot, panel = false): Resultado<LineaArmada> {
   if (personas > tour.groupMax && !panel) {
     return falla(`${nombre} se aparta en línea para máximo ${tour.groupMax} personas por salida y son ${personas}. Un grupo así se cotiza a mano: lo ve el equipo (otra unidad o una salida privada).`);
   }
-  if (personas < minimoPersonas(tour)) {
-    return falla(`${nombre} sale con mínimo ${plural(tour.groupMin, "persona", "personas")} y son ${personas}.`);
+  if (pagan < minimoPersonas(tour)) {
+    return falla(`${nombre} sale con mínimo ${plural(tour.groupMin, "persona", "personas")} y son ${pagan}${b ? " (los bebés de 0 a 3 no cuentan para el mínimo)" : ""}.`);
   }
   const req = TOUR_REQUISITOS[tour.id];
-  if (tour.soloAdultos && m + s > 0) {
+  if (tour.soloAdultos && m + s + b > 0) {
     return falla(`${nombre} es solo para adultos${req?.edadMinima ? ` (desde ${req.edadMinima} años)` : ""}: no lleva precio de niño.`);
   }
 
@@ -404,10 +414,10 @@ function lineaTour(item: ItemTourBot, panel = false): Resultado<LineaArmada> {
   // 🔴 La edad mínima NO bloquea: Manolo la dejó informativa el 2 oct (la web
   // vende boleto de niño en esos recorridos) y el equipo hace excepciones. Va
   // como aviso para que el bot pregunte y, si toca, lo pase al equipo.
-  if (req?.edadMinima && s > 0) {
-    avisos.push(`${nombre} es desde ${req.edadMinima} años y van menores de 6: confírmalo con el equipo antes de apartar.`);
-  } else if (req?.edadMinima && req.edadMinima > 6 && m > 0) {
-    avisos.push(`${nombre} es desde ${req.edadMinima} años: pregunta la edad exacta de los niños de 6 a 10.`);
+  if (req?.edadMinima && (s > 0 || b > 0)) {
+    avisos.push(`${nombre} es desde ${req.edadMinima} años y van ${s > 0 ? "niños de 4 a 7" : "bebés"}: confírmalo con el equipo antes de apartar.`);
+  } else if (req?.edadMinima && req.edadMinima > 8 && a > 0) {
+    avisos.push(`${nombre} es desde ${req.edadMinima} años: si va algún niño de 8 en adelante, pregunta su edad exacta.`);
   }
 
   const pedidos = (Array.isArray(item.addOns) ? item.addOns : [])
@@ -420,7 +430,7 @@ function lineaTour(item: ItemTourBot, panel = false): Resultado<LineaArmada> {
   }
 
   const charge = computeTourCharge({
-    tourSlug: tour.slug, adults: a, childrenMid: m, childrenSmall: s,
+    tourSlug: tour.slug, adults: a, childrenMid: m, childrenSmall: s, infants: b,
     addOns: pedidos, tourDate: fecha, pct: 100,
     // Solo el panel cotiza arriba del tope de la salida; el bot, nunca.
     sinTopeDeCupo: panel,
@@ -432,6 +442,7 @@ function lineaTour(item: ItemTourBot, panel = false): Resultado<LineaArmada> {
     slug: tour.slug, nombre: tour.nombre, tourDate: fecha,
     cobro: porGrupo ? "grupo" : "persona",
     personas, adultos: a, ninosMid: m, ninosSmall: s,
+    ...(b ? { bebes: b } : {}),
     total: charge.total,
     ...(porGrupo ? {} : { porPersona: charge.tour.precio }),
     promo: porGrupo ? { aplica: false } : promoDeTour(tour, fecha),
@@ -442,6 +453,7 @@ function lineaTour(item: ItemTourBot, panel = false): Resultado<LineaArmada> {
   const guardada: LineaGuardada = {
     tourSlug: tour.slug, tourName: tour.nombre, tourDate: fecha,
     adults: a, childrenMid: m, childrenSmall: s, subtotal: 0,
+    ...(b ? { infants: b } : {}),
     ...(charge.addOns.length ? { addOns: charge.addOns } : {}),
     // Viaja con el renglón: el correo le explica la tarifa al cliente.
     ...(charge.viajeroSolo ? { viajeroSolo: true } : {}),
@@ -719,7 +731,9 @@ function armarPaquete(paq: PaqueteCotizacionBot): Resultado<PaqueteArmado> {
     const hay = [...PAQUETES_DB, ...paquetesEventoALaVenta()].map((x) => x.slug).join(", ");
     return falla(`No existe el paquete «${slug}». Paquetes: ${hay}.`);
   }
-  const a = entero(paq.adultos), m = entero(paq.ninosMid), s = entero(paq.ninosSmall);
+  // Regla del 17 nov 2026 (`ninos.ts`): de 4 a 7 al 50 %; el tramo viejo de 6 a
+  // 10 que llegue todavía se cuenta como adulto; los bebés de 0 a 3 no se cuentan.
+  const a = entero(paq.adultos) + entero(paq.ninosMid), m = 0, s = entero(paq.ninosSmall ?? paq.ninos4a7);
   const personas = a + m + s;
   const ev = p.evento;
   const avisos: string[] = [];
@@ -1144,7 +1158,7 @@ async function cupoDelDia(input: PrecioBotInput, panel: boolean): Promise<{ porR
     const item = normalizarItem(crudo);
     if (item.tipo !== "tour") return;
     const tour = tourPorSlug(texto(item.slug, 80));
-    const personas = entero(item.adultos) + entero(item.ninosMid) + entero(item.ninosSmall);
+    const personas = entero(item.adultos) + entero(item.ninosMid) + entero(item.ninosSmall) + entero(item.bebes);
     // Arriba del tope en línea ya lo explica `lineaTour` (es para el equipo):
     // contarlo aquí diría «ya no hay lugar» de un día que a lo mejor está vacío.
     if (!tour || (!panel && personas > tour.groupMax)) return;
@@ -1158,7 +1172,7 @@ async function cupoDelDia(input: PrecioBotInput, panel: boolean): Promise<{ porR
     if (r.ok) {
       delPaquete = r.lineas
         .filter((l) => !l.unidades)
-        .map((l) => ({ slug: l.tourSlug, fecha: l.tourDate, personas: (l.adults || 0) + (l.childrenMid || 0) + (l.childrenSmall || 0) }));
+        .map((l) => ({ slug: l.tourSlug, fecha: l.tourDate, personas: (l.adults || 0) + (l.childrenMid || 0) + (l.childrenSmall || 0) + (l.infants || 0) }));
     }
   }
 
@@ -1199,7 +1213,7 @@ export async function calcularCotizacionBotConCupo(input: PrecioBotInput, opcion
   }
   const p = input.paquete ? getPaquete(texto(input.paquete.slug, 80)) : undefined;
   if (!p?.evento || !input.paquete) return calcularCotizacionBot(input, calculo);
-  const personas = entero(input.paquete.adultos) + entero(input.paquete.ninosMid) + entero(input.paquete.ninosSmall);
+  const personas = entero(input.paquete.adultos) + entero(input.paquete.ninosMid) + entero(input.paquete.ninosSmall ?? input.paquete.ninos4a7);
   const lugares = await lugaresDePaqueteSeguro(p);
   if (lugares && !cabeEnCupo(lugares, personas)) {
     const sin = calcularCotizacionBot({ ...input, paquete: undefined }, calculo);

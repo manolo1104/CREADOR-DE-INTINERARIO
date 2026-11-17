@@ -43,6 +43,7 @@ export function itemDesdeTour(
     tourDate:  "",
     childrenMid:   0,
     childrenSmall: 0,
+    infants:       0,
   };
 
   // Tours cobrados por vehículo (RZR, café): entran con la primera ruta y el

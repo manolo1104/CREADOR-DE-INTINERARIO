@@ -158,15 +158,20 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                         // sumar adultos, así que una familia con dos niños
                         // pagaba cuatro boletos completos en el carrito y solo
                         // veía la tarifa de menor si entraba por la ficha del
-                        // tour. Los tramos son los mismos de siempre:
-                        // 6–10 años al 70 %, menores de 6 al 50 %.
+                        // tour. Tramos (17 nov 2026, `ninos.ts`): de 4 a 7
+                        // años al 50 %, de 0 a 3 gratis, de 8 en adelante adulto.
                         <span className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                           {([
                             // `singular` porque con un solo acompañante se leía
-                            // "1 adultos" y "1 niños 6–10".
-                            { campo: "adults"        as const, etiqueta: t.adultos,    singular: t.adulto,     nota: "" },
-                            { campo: "childrenMid"   as const, etiqueta: t.de6a10,     singular: t.de6a10,     nota: "70 %" },
-                            { campo: "childrenSmall" as const, etiqueta: t.menoresDe6, singular: t.menorDe6,   nota: "50 %" },
+                            // "1 adultos" y "1 niños".
+                            { campo: "adults"        as const, etiqueta: t.adultos,  singular: t.adulto,  nota: "8+" },
+                            // Un carrito viejo con el tramo de 6 a 10 lo sigue
+                            // enseñando para que se pueda bajar a cero.
+                            ...((i.childrenMid ?? 0) > 0
+                              ? [{ campo: "childrenMid" as const, etiqueta: locale === "en" ? "kids 6–10" : "niños de 6 a 10", singular: locale === "en" ? "kid 6–10" : "niño de 6 a 10", nota: "70 %" }]
+                              : []),
+                            { campo: "childrenSmall" as const, etiqueta: t.ninos4a7, singular: t.nino4a7, nota: "50 %" },
+                            { campo: "infants"       as const, etiqueta: t.bebes,    singular: t.bebe,    nota: t.gratis },
                           ])
                             // El buceo en Media Luna es solo para adultos y el
                             // servidor rechaza la reserva con menores. Enseñar

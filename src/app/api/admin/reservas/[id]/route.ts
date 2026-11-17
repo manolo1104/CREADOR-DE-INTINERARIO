@@ -171,7 +171,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       }
       const lineas = lineasDe(antes as never).filter(l => l.tourSlug && l.tourDate);
       const pedidos = (lineas.length ? lineas : [{ tourSlug: antes.tourSlug, tourDate: antes.tourDate, adults: antes.adults, childrenMid: antes.children, childrenSmall: 0 }])
-        .map(l => ({ slug: String(l.tourSlug), fecha: String(l.tourDate), personas: Number(l.adults || 0) + Number((l as { childrenMid?: number }).childrenMid || 0) + Number((l as { childrenSmall?: number }).childrenSmall || 0) }));
+        .map(l => ({ slug: String(l.tourSlug), fecha: String(l.tourDate), personas: Number(l.adults || 0) + Number((l as { childrenMid?: number }).childrenMid || 0) + Number((l as { childrenSmall?: number }).childrenSmall || 0) + Number((l as { infants?: number }).infants || 0) }));
       const sinLugar = await pedidosSinCupo(pedidos).catch(() => []);
       if (sinLugar.length) {
         return NextResponse.json({

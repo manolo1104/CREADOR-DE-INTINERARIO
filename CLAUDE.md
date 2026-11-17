@@ -33,9 +33,11 @@ npx tsx src/scripts/<file>.ts  # run a one-off script
 
 ## Pricing
 
-Two-tier children pricing via `calcTourTotal()` in `src/lib/tourBooking.ts`:
-- `childrenMid` (6–10 yrs) → 70% of adult price
-- `childrenSmall` (<6 yrs) → 50% of adult price
+Children rule (Manolo, 17 nov 2026, "everywhere") lives in `src/lib/ninos.ts`; the math in `calcTourTotal()` / `totalRecorrido()` in `src/lib/tourBooking.ts`:
+- `infants` (0–3 yrs) → free; they take a seat (capacity/max) but don't count for the minimum or the group-size price step. On per-group tariffs (Edén) they count as a person.
+- `childrenSmall` (4–7 yrs) → 50% of adult price
+- 8 and older → adult
+- `childrenMid` (old 6–10 bracket, 70%) is kept ONLY to read/recalculate bookings and quotes made before 17 nov 2026; no new UI fills it.
 
 This is the canonical pricing function. `TourCalculadora.tsx` (widget) and `reservar-tour/[slug]/page.tsx` (full booking flow) both use it.
 

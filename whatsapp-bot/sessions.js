@@ -237,7 +237,7 @@ function clearSession(chatId) {
 // ══════════════════════════════════════════════════════════════
 // FICHA DEL VIAJE
 // ══════════════════════════════════════════════════════════════
-const CLAVES_RECORRIDO = ["slug", "nombre", "fecha", "adultos", "ninosMid", "ninosSmall", "ruta", "vehiculo", "unidades", "hora"];
+const CLAVES_RECORRIDO = ["slug", "nombre", "fecha", "adultos", "ninosMid", "ninosSmall", "bebes", "ruta", "vehiculo", "unidades", "hora"];
 // Un viaje real lleva pocos recorridos; el tope evita que una plática de
 // muchas consultas llene la ficha de tours que solo se preguntaron.
 const MAX_RECORRIDOS = 8;
@@ -337,6 +337,7 @@ function normalizarRecorrido(r) {
     adultos: cantidad(o.adultos),
     ninosMid: cantidad(o.ninosMid),
     ninosSmall: cantidad(o.ninosSmall),
+    bebes: cantidad(o.bebes),
     ruta: texto(o.ruta, 60),
     vehiculo: texto(o.vehiculo, 60),
     unidades: cantidad(o.unidades),
@@ -616,8 +617,10 @@ function personasTexto(r) {
   if (r.ruta || r.vehiculo) return r.adultos ? plural(r.adultos, "persona", "personas") : "";
   const partes = [];
   if (r.adultos) partes.push(plural(r.adultos, "adulto", "adultos"));
+  // Regla de niños del 17 nov 2026 (src/lib/ninos.ts); el tramo de 6 a 10 solo en fichas viejas.
   if (r.ninosMid) partes.push(`${plural(r.ninosMid, "niño", "niños")} de 6 a 10`);
-  if (r.ninosSmall) partes.push(`${plural(r.ninosSmall, "menor", "menores")} de 6`);
+  if (r.ninosSmall) partes.push(`${plural(r.ninosSmall, "niño", "niños")} de 4 a 7`);
+  if (r.bebes) partes.push(`${plural(r.bebes, "bebé", "bebés")} (gratis)`);
   return unirConY(partes);
 }
 

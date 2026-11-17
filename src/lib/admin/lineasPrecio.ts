@@ -5,6 +5,7 @@
  * y de confirmación que descarga el panel (el bot lo manda por WhatsApp). Un
  * módulo «use client» no se puede llamar desde una ruta del servidor.
  */
+import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "@/lib/ninos";
 import type { LineItem, PackageItem } from "@/components/admin/ReservaModal";
 import { TOURS_LISTA, precioGrupo, precioPorCabeza, cargoVallesDe, extraDeEleccion } from "@/lib/tours";
 import { ID_TRASLADO_VALLES } from "@/lib/tourPricing";
@@ -65,18 +66,21 @@ export function calcTourLine(l: LineItem): number {
   // lista que lo recalcule, vale lo que se cobró (lote 5, 5 nov 2026).
   if (!l.tourSlug) return esConceptoSinTour(l) ? importeDeConcepto(l) : 0;
   // Concepto escrito a mano: manda el precio por persona que se tecleó, con el
-  // MISMO descuento de menores que cualquier recorrido del catálogo (6-10 años
-  // pagan el 70 %, menores de 6 el 50 %). Una regla distinta aquí obligaría a
-  // acordarse de cuál aplica en cada renglón.
+  // MISMO descuento de menores que cualquier recorrido del catálogo (de 4 a 7
+  // años el 50 %, bebés de 0 a 3 gratis; `ninos.ts`). Una regla distinta aquí
+  // obligaría a acordarse de cuál aplica en cada renglón.
   if (esLineaPersonalizada(l.tourSlug)) {
     const p = Math.max(0, Number(l.precioPersona) || 0);
     return p * Math.max(0, l.adults || 0)
-         + Math.round(p * 0.7) * (l.childrenMid   ?? 0)
-         + Math.round(p * 0.5) * (l.childrenSmall ?? 0);
+         + Math.round(p * FACTOR_NINO_ANTERIOR) * (l.childrenMid   ?? 0)
+         + Math.round(p * FACTOR_NINO) * (l.childrenSmall ?? 0);
   }
   const t = TOURS_LISTA.find(t => t.slug === l.tourSlug);
   if (!t) return 0;
-  const personas = (l.adults || 0) + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+  // Los que pagan deciden el escalón; en la tarifa del GRUPO (Edén) cuentan todos,
+  // bebés incluidos, porque ocupan lugar y ahí no hay tramo de menor.
+  const pagan    = (l.adults || 0) + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0);
+  const personas = pagan + (l.infants ?? 0);
   // 🔴 Tarifa del GRUPO completo (el Edén): una sola cifra para todos. Faltaba,
   // y el panel cotizaba un Edén de 4 en $11,960 ($2,990 × 4) cuando la web lo
   // cobra en $3,480 — el escalón de cuatro.
@@ -86,8 +90,8 @@ export function calcTourLine(l: LineItem): number {
   // al tamaño del grupo (`escalaPersona`). Sin escalera, el precio de siempre.
   // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$150) va dentro
   // del precio por cabeza, igual que en la web (`totalRecorrido`): los menores
-  // pagan su 70 % / 50 % también de él.
-  const porCabeza = precioPorCabeza(t, personas) + extraDeEleccion(t, l.eleccion);
+  // pagan su 50 % también de él.
+  const porCabeza = precioPorCabeza(t, pagan) + extraDeEleccion(t, l.eleccion);
   // Tours por vehículo (RZR): la matriz flota×ruta manda; los niños no cambian el precio.
   const base = (t.precioUnidad === "vehiculo" && t.rutas && t.flota)
     ? (() => {
@@ -98,8 +102,8 @@ export function calcTourLine(l: LineItem): number {
       })()
     : (
         porCabeza * l.adults +
-        Math.round(porCabeza * 0.7) * (l.childrenMid   ?? 0) +
-        Math.round(porCabeza * 0.5) * (l.childrenSmall ?? 0)
+        Math.round(porCabeza * FACTOR_NINO_ANTERIOR) * (l.childrenMid   ?? 0) +
+        Math.round(porCabeza * FACTOR_NINO) * (l.childrenSmall ?? 0)
       );
   return base + calcAddOnsLinea(l);
 }

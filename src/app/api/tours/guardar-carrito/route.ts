@@ -299,7 +299,7 @@ async function guardarCarritoCompleto(
       locale:    locale === "en" ? "en" : "es",
       lineas:    tarifa.lineItems.map((l) => ({
         tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,
-        adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
+        adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall, infants: l.infants,
         subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
       })),
       hotel,
@@ -347,7 +347,7 @@ async function guardarCarritoCompleto(
           restoreUrl,
           lineas: tarifa.lineItems.map((l) => ({
             tourName: l.tourName, tourSlug: l.tourSlug, tourDate: l.tourDate,
-            adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall,
+            adults: l.adults, childrenMid: l.childrenMid, childrenSmall: l.childrenSmall, infants: l.infants,
             subtotal: l.subtotal, eleccion: l.eleccion, unidades: l.unidades,
           })),
           hospedaje: hotel,

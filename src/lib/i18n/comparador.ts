@@ -40,15 +40,14 @@ const ES = {
     titulo: "¿Cuántos viajan?",
     cambiar: "Cambiar",
     listo: "Listo",
-    adultos: "Adultos",
-    de6a10: "De 6 a 10 años",
-    menoresDe6: "Menores de 6",
+    adultos: "Adultos (8+ años)",
+    de4a7: "Niños de 4 a 7 años (50 %)",
     menos: (etiqueta: string) => `Uno menos: ${etiqueta.toLowerCase()}`,
     mas: (etiqueta: string) => `Uno más: ${etiqueta.toLowerCase()}`,
     resumen: (g: Grupo) => {
       const partes = [`${g.adultos} ${g.adultos === 1 ? "adulto" : "adultos"}`];
       if (g.ninosMid) partes.push(`${g.ninosMid} de 6 a 10 años`);
-      if (g.ninosSmall) partes.push(`${g.ninosSmall} ${g.ninosSmall === 1 ? "menor" : "menores"} de 6`);
+      if (g.ninosSmall) partes.push(`${g.ninosSmall} ${g.ninosSmall === 1 ? "niño" : "niños"} de 4 a 7`);
       return `Para ${lista(partes, "es")}`;
     },
     tope: (n: number) => `¿Son más de ${n}? Escríbenos y lo armamos.`,
@@ -143,7 +142,7 @@ const ES = {
     porGrupo: "Tarifa del grupo completo",
     habitaciones: (n: number) => (n === 1 ? "Incluye 1 habitación" : `Incluye ${n} habitaciones`),
     vehiculo: (desde: string) => `Desde ${desde} por vehículo. Eliges ruta y vehículo al reservar.`,
-    edadMinima: (n: number) => `Es desde ${n} años: no va con menores de 6.`,
+    edadMinima: (n: number) => `Es desde ${n} años: no va con niños de 4 a 7.`,
     maximo: (n: number) => `Máximo ${n} personas por salida.`,
     minimo: (n: number) => `Sale a partir de ${n} personas.`,
     escribenos: "Escríbenos",
@@ -200,15 +199,14 @@ const EN: ComparadorUI = {
     titulo: "How many are traveling?",
     cambiar: "Change",
     listo: "Done",
-    adultos: "Adults",
-    de6a10: "Ages 6 to 10",
-    menoresDe6: "Under 6",
+    adultos: "Adults (8+)",
+    de4a7: "Kids 4–7 (50 %)",
     menos: (etiqueta: string) => `One less: ${etiqueta.toLowerCase()}`,
     mas: (etiqueta: string) => `One more: ${etiqueta.toLowerCase()}`,
     resumen: (g: Grupo) => {
       const partes = [`${g.adultos} ${g.adultos === 1 ? "adult" : "adults"}`];
       if (g.ninosMid) partes.push(`${g.ninosMid} aged 6 to 10`);
-      if (g.ninosSmall) partes.push(`${g.ninosSmall} under 6`);
+      if (g.ninosSmall) partes.push(`${g.ninosSmall} ${g.ninosSmall === 1 ? "kid" : "kids"} 4–7`);
       return `For ${lista(partes, "en")}`;
     },
     tope: (n: number) => `More than ${n}? Message us and we'll set it up.`,
@@ -305,7 +303,7 @@ const EN: ComparadorUI = {
     porGrupo: "Rate for the whole group",
     habitaciones: (n: number) => (n === 1 ? "Includes 1 room" : `Includes ${n} rooms`),
     vehiculo: (desde: string) => `From ${desde} MXN per vehicle. You pick the route and vehicle when you book.`,
-    edadMinima: (n: number) => `Ages ${n}+: not for children under 6.`,
+    edadMinima: (n: number) => `Ages ${n}+: not for kids 4–7.`,
     maximo: (n: number) => `Up to ${n} people per departure.`,
     minimo: (n: number) => `Runs from ${n} people.`,
     escribenos: "Message us",

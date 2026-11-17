@@ -1103,15 +1103,15 @@ const tools = [
   },
   {
     name: "calcular_precio",
-    description: "Precio EXACTO de un tour por persona (o por grupo, el Edén), el mismo de la cotización: promo según la FECHA del tour y niños (6–10 años 70 %, menores de 6 50 %). Devuelve total, anticipo (30 %) y saldo. No sirve para el RZR: cotizar_rzr.",
+    description: "Precio EXACTO de un tour por persona (o por grupo, el Edén), el mismo de la cotización: promo según la FECHA del tour y niños (de 4 a 7 años 50 %; bebés de 0 a 3 gratis; de 8 en adelante adulto). Devuelve total, anticipo (30 %) y saldo. No sirve para el RZR: cotizar_rzr.",
     input_schema: {
       type: "object",
       properties: {
         slug: { type: "string" },
         tourDate: { type: "string", description: "AAAA-MM-DD. Pásala SIEMPRE que la sepas: el precio depende de ella." },
-        adultos: { type: "number" },
-        ninosMid: { type: "number", description: "niños 6–10 años (default 0)" },
-        ninosSmall: { type: "number", description: "menores de 6 años (default 0)" },
+        adultos: { type: "number", description: "personas de 8 años en adelante (pagan como adulto)" },
+        ninosSmall: { type: "number", description: "niños de 4 a 7 años: pagan el 50 % (default 0)" },
+        bebes: { type: "number", description: "bebés de 0 a 3 años: gratis, pero ocupan lugar (default 0)" },
       },
       required: ["slug", "adultos"],
     },
@@ -1140,9 +1140,9 @@ const tools = [
       properties: {
         slug: { type: "string" },
         tourDate: { type: "string", description: "Fecha en formato YYYY-MM-DD" },
-        adultos: { type: "number" },
-        ninosMid: { type: "number" },
-        ninosSmall: { type: "number" },
+        adultos: { type: "number", description: "personas de 8 años en adelante" },
+        ninosSmall: { type: "number", description: "niños de 4 a 7 años (50 %)" },
+        bebes: { type: "number", description: "bebés de 0 a 3 años (gratis)" },
         nombre: { type: "string", description: "Nombre completo, tal como quiere que aparezca" },
         email: { type: "string", description: "Correo del cliente: la cotización y la confirmación le llegan también por correo" },
         sinCorreo: { type: "boolean", description: "SOLO si el cliente dijo claramente que no tiene o no quiere dar correo" },
@@ -1167,9 +1167,9 @@ const tools = [
             properties: {
               slug:       { type: "string", description: "slug del tour" },
               tourDate:   { type: "string", description: "fecha AAAA-MM-DD" },
-              adultos:    { type: "number", description: "solo en tours por persona" },
-              ninosMid:   { type: "number", description: "niños de 6 a 10 años" },
-              ninosSmall: { type: "number", description: "menores de 6 años" },
+              adultos:    { type: "number", description: "solo en tours por persona: personas de 8 años en adelante" },
+              ninosSmall: { type: "number", description: "niños de 4 a 7 años (50 %)" },
+              bebes:      { type: "number", description: "bebés de 0 a 3 años (gratis, ocupan lugar)" },
               ruta:       { type: "string", description: "(RZR) Nanacatli, Miradores, Nacimiento o Trinidad" },
               vehiculo:   { type: "string", description: "(RZR) unidad de la flota, ej: 'RZR 500'" },
               unidades:   { type: "number", description: "(RZR) cuántos vehículos" },
@@ -1221,9 +1221,8 @@ const tools = [
         habitacion: { type: "string", description: "(paquete) habitación elegida, ej: 'Jungla'" },
         checkin: { type: "string", description: "(paquete) DÍA 1 del paquete AAAA-MM-DD: el del primer tour. Con nocheExtra NO le restes un día: el sistema agrega la noche anterior" },
         checkout: { type: "string", description: "(paquete) salida AAAA-MM-DD" },
-        adultos: { type: "number", description: "(paquete) los de +10 años cuentan como adultos" },
-        ninosMid: { type: "number", description: "(paquete) de 6 a 10 años" },
-        ninosSmall: { type: "number", description: "(paquete) menores de 6" },
+        adultos: { type: "number", description: "(paquete) los de 8 años en adelante cuentan como adultos" },
+        ninosSmall: { type: "number", description: "(paquete) niños de 4 a 7 años (50 %); los bebés de 0 a 3 no pagan ni se cuentan" },
         vistaMontana: { type: "boolean", description: "(paquete) eligió vista a la montaña (Jungla)" },
         nocheExtra: { type: "boolean", description: "(paquete) agrega la noche anterior" },
         notas: { type: "string", description: "Peticiones del cliente (pueden salir en su cotización)" },
@@ -1293,9 +1292,8 @@ const tools = [
       properties: {
         id: { type: "string", description: "id (de listar_paquetes) o 'xantolo'" },
         fecha: { type: "string", description: "DÍA 1 del paquete AAAA-MM-DD (el del primer tour). Con nocheExtra NO le restes un día" },
-        adultos: { type: "number", description: "Los de +10 años cuentan como adultos" },
-        ninosMid: { type: "number", description: "de 6 a 10 años" },
-        ninosSmall: { type: "number", description: "menores de 6" },
+        adultos: { type: "number", description: "Los de 8 años en adelante cuentan como adultos" },
+        ninosSmall: { type: "number", description: "niños de 4 a 7 años (50 %); los bebés de 0 a 3 no pagan ni se cuentan" },
         vistaMontana: { type: "boolean" },
         nocheExtra: { type: "boolean", description: "agrega la noche anterior" },
       },
@@ -1520,9 +1518,12 @@ async function ejecutarHerramienta(name, input, phone) {
       if (esPorVehiculo(t)) {
         return { error: "El RZR se cobra por vehículo, no por persona. Usa cotizar_rzr con la ruta y el vehículo." };
       }
+      // Regla de niños (17 nov 2026, `src/lib/ninos.ts`): de 4 a 7 al 50 %, bebés
+      // de 0 a 3 gratis (ocupan lugar, no cuentan para el mínimo), 8+ adulto.
       const adultos = entero(input.adultos);
-      const mid = entero(input.ninosMid);
+      const mid = 0;
       const small = entero(input.ninosSmall);
+      const bebes = entero(input.bebes);
       const totalPersonas = adultos + mid + small;
       // Por WhatsApp el mínimo SÍ es mínimo (Manolo, 17 nov 2026; del 8 oct
       // al 17 nov se vendía bajo el mínimo con salida compartida). Tampoco se
@@ -1534,17 +1535,17 @@ async function ejecutarHerramienta(name, input, phone) {
       if (totalPersonas < t.groupMin) {
         return { error: `Este tour requiere mínimo ${t.groupMin} personas. Dilo de una vez y ofrece una alternativa; si piden una excepción al mínimo, escala (salud, avisar, normal).` };
       }
-      if (t.soloAdultos && (mid > 0 || small > 0)) {
-        return { error: "Esta actividad es solo para mayores de 10 años; no aplica precio de niños." };
+      if (t.soloAdultos && (small > 0 || bebes > 0)) {
+        return { error: "Esta actividad es solo para adultos; no aplica precio de niños." };
       }
-      if (typeof t.groupMax === "number" && totalPersonas > t.groupMax) {
+      if (typeof t.groupMax === "number" && totalPersonas + bebes > t.groupMax) {
         return { error: `Esta experiencia admite máximo ${t.groupMax} personas por salida. Para más, da el precio de ${t.groupMax} como referencia y escala (grupo, avisar, hoy): el equipo arma la salida del grupo.` };
       }
       const fecha = fechaISO(input.tourDate);
       if (fecha) {
         // El precio que vale es el del SITIO: el mismo de la cotización y de la
         // web (promo por fecha del tour, grupo bajo el mínimo, tarifa del grupo).
-        const res = await llamarSitio("precio", { items: [{ slug: t.slug, tourDate: fecha, adultos, ninosMid: mid, ninosSmall: small }] });
+        const res = await llamarSitio("precio", { items: [{ slug: t.slug, tourDate: fecha, adultos, ninosSmall: small, bebes }] });
         if (res.ok && res.data.ok !== false) {
           const problema = (res.data.errores || [])[0];
           if (problema) return { error: problema.motivo || "Ese grupo no se puede cotizar así." };
@@ -1555,7 +1556,7 @@ async function ejecutarHerramienta(name, input, phone) {
         }
         // El sitio no contestó: sigue la cuenta de aquí, marcada como referencia.
       }
-      return precioDeReferencia(t, { adultos, mid, small, fecha, bajoMinimo });
+      return precioDeReferencia(t, { adultos, mid, small, bebes, fecha, bajoMinimo });
     }
 
     case "cotizar_rzr": {
@@ -1640,7 +1641,7 @@ async function ejecutarHerramienta(name, input, phone) {
       if (esPorVehiculo(t)) {
         return { error: "El RZR se cobra por vehículo: da el precio con cotizar_rzr y cotízalo con registrar_cotizacion (tipo 'rzr', con ruta, vehículo, unidades, fecha y hora)." };
       }
-      const frenoCot = frenoDeTour(t, { fecha: input.tourDate, personas: entero(input.adultos) + entero(input.ninosMid) + entero(input.ninosSmall) });
+      const frenoCot = frenoDeTour(t, { fecha: input.tourDate, personas: entero(input.adultos) + entero(input.ninosSmall) });
       if (frenoCot) return { error: frenoCot };
       const nombre = textoLimpio(input.nombre, 120);
       const correo = textoLimpio(input.email, 160);
@@ -1651,8 +1652,8 @@ async function ejecutarHerramienta(name, input, phone) {
         tourSlug: t.slug,
         tourDate: input.tourDate,
         adults: entero(input.adultos),
-        childrenMid: entero(input.ninosMid),
         childrenSmall: entero(input.ninosSmall),
+        infants: entero(input.bebes),
         customerName: nombre,
         customerEmail: correo,
         promoCode: textoLimpio(input.promoCode, 40),
@@ -1664,7 +1665,7 @@ async function ejecutarHerramienta(name, input, phone) {
       if (fechaISO(input.tourDate) === hoyMX()) {
         escalarAHumano({
           motivo: "para_hoy", modo: "avisar", urgencia: "urgente", folio: res.data && res.data.folio,
-          resumen: `Cotización para HOY: ${t.nombre.split("—")[0].trim()}, ${entero(input.adultos) + entero(input.ninosMid) + entero(input.ninosSmall)} persona(s). Confirmar lugar y hora.`,
+          resumen: `Cotización para HOY: ${t.nombre.split("—")[0].trim()}, ${entero(input.adultos) + entero(input.ninosSmall) + entero(input.bebes)} persona(s). Confirmar lugar y hora.`,
         }, phone);
       }
       // { folio, total, anticipo, saldo, venceEl, resumenWhatsApp, reemplazo?, … }
@@ -1673,7 +1674,7 @@ async function ejecutarHerramienta(name, input, phone) {
         aparte: Boolean(chat.aparte), aparteAuto,
         recorridosPedidos: [{
           slug: t.slug, nombre: t.nombre, fecha: fechaISO(input.tourDate),
-          adultos: entero(input.adultos), ninosMid: entero(input.ninosMid), ninosSmall: entero(input.ninosSmall),
+          adultos: entero(input.adultos), ninosSmall: entero(input.ninosSmall), bebes: entero(input.bebes),
         }],
         hotelPedido: null,
       });
@@ -1690,7 +1691,7 @@ async function ejecutarHerramienta(name, input, phone) {
       // Mínimo y mismo día, recorrido por recorrido (17 nov 2026).
       for (const i of items) {
         const ti = findTour(i.slug);
-        const f = frenoDeTour(ti, { fecha: i.tourDate, personas: entero(i.adultos) + entero(i.ninosMid) + entero(i.ninosSmall) });
+        const f = frenoDeTour(ti, { fecha: i.tourDate, personas: entero(i.adultos) + entero(i.ninosSmall) });
         if (f) return { error: f };
       }
       // La hora solo cuenta en el RZR (por vehículo), y ahí tiene que estar en rango.
@@ -1712,8 +1713,8 @@ async function ejecutarHerramienta(name, input, phone) {
           slug: i.slug,
           tourDate: i.tourDate,
           adultos: entero(i.adultos),
-          ninosMid: entero(i.ninosMid),
           ninosSmall: entero(i.ninosSmall),
+          bebes: entero(i.bebes),
           // Solo los usa el servidor cuando el recorrido se cobra por vehículo.
           ruta: i.ruta,
           vehiculo: i.vehiculo,
@@ -1737,8 +1738,8 @@ async function ejecutarHerramienta(name, input, phone) {
           return {
             slug: t ? t.slug : i.slug, nombre: t ? t.nombre : null, fecha: fechaISO(i.tourDate),
             adultos: porVehiculo ? entero(i.personas) || null : entero(i.adultos),
-            ninosMid: porVehiculo ? null : entero(i.ninosMid),
             ninosSmall: porVehiculo ? null : entero(i.ninosSmall),
+            bebes: porVehiculo ? null : entero(i.bebes),
             ruta: porVehiculo ? i.ruta : null,
             vehiculo: porVehiculo ? i.vehiculo : null,
             unidades: porVehiculo ? entero(i.unidades) || 1 : null,
@@ -1793,7 +1794,6 @@ async function ejecutarHerramienta(name, input, phone) {
         checkin: input.checkin,
         checkout: input.checkout,
         adultos: opcional(input.adultos),
-        ninosMid: opcional(input.ninosMid),
         ninosSmall: opcional(input.ninosSmall),
         vistaMontana: siEsTrue(input.vistaMontana),
         nocheExtra: siEsTrue(input.nocheExtra),
@@ -2250,9 +2250,9 @@ function lineaDeTour(t, l, d) {
     fecha: l.tourDate,
     cobro: l.cobro === "grupo" ? "por grupo (tarifa del grupo completo, no por persona)" : "por persona",
     ...(porPersona != null
-      ? { precioAdulto: porPersona, precioNino6a10: Math.round(porPersona * 0.7), precioMenor6: Math.round(porPersona * 0.5) }
+      ? { precioAdulto: porPersona, precioNino4a7: Math.round(porPersona * 0.5), precioBebe0a3: 0 }
       : {}),
-    adultos: l.adultos, ninosMid: l.ninosMid, ninosSmall: l.ninosSmall, totalPersonas: l.personas,
+    adultos: l.adultos, ninos4a7: l.ninosSmall, bebes: l.bebes || 0, totalPersonas: l.personas,
     total: l.total,
     anticipo,
     saldo: typeof d.saldo === "number" ? d.saldo : l.total - anticipo,
@@ -2270,7 +2270,8 @@ function lineaDeTour(t, l, d) {
  * grupo bajo el mínimo, tarifa del grupo del Edén). Sirve cuando todavía no hay fecha
  * o cuando el sitio no contesta; en ese caso va marcado como referencia.
  */
-function precioDeReferencia(t, { adultos, mid, small, fecha, bajoMinimo }) {
+function precioDeReferencia(t, { adultos, mid, small, bebes = 0, fecha, bajoMinimo }) {
+  // Los que pagan deciden el escalón; en la tarifa por grupo cuentan todos.
   const totalPersonas = adultos + mid + small;
   // Todos pagan por cabeza con la escalera del tamaño del grupo —también quien
   // va bajo el mínimo—, salvo que la fecha lleve promo: la promo y la escalera
@@ -2283,12 +2284,12 @@ function precioDeReferencia(t, { adultos, mid, small, fecha, bajoMinimo }) {
   if (esPorGrupo(t)) {
     // La misma cuenta que el sitio (`precioGrupo`): el escalón de ese número
     // de personas, sin tramos de niño.
-    total = t.tarifaGrupo[Math.min(Math.max(1, totalPersonas), t.tarifaGrupo.length) - 1];
+    total = t.tarifaGrupo[Math.min(Math.max(1, totalPersonas + bebes), t.tarifaGrupo.length) - 1];
   } else {
     const c = calcPrecio(precio, adultos, mid, small);
     total = c.total;
     desglose = {
-      precioAdulto: precio, precioNino6a10: c.precioMid, precioMenor6: c.precioSmall,
+      precioAdulto: precio, precioNino4a7: c.precioSmall, precioBebe0a3: 0,
       ...(menosPorGrupo ? { precioDeGrupo: { personas: totalPersonas, menosPorPersona: menosPorGrupo, precioLista: precioLista(t) } } : {}),
     };
   }
@@ -2307,7 +2308,7 @@ function precioDeReferencia(t, { adultos, mid, small, fecha, bajoMinimo }) {
     ...(fecha ? { fecha, referencia: true } : { sinFecha: true }),
     cobro: esPorGrupo(t) ? "por grupo (tarifa del grupo completo, no por persona)" : "por persona",
     ...desglose,
-    adultos, ninosMid: mid, ninosSmall: small, totalPersonas,
+    adultos, ninos4a7: small, bebes, totalPersonas: totalPersonas + bebes,
     total, anticipo, saldo: total - anticipo, pctAnticipo: 30, moneda: "MXN",
     ...(conPromo ? { promo: { aplica: true, precioLista: precioLista(t), precioPromo: p.precio, vence: p.vence } } : {}),
     ...(bajoMinimo ? { bajoElMinimo: true } : {}),
@@ -2488,6 +2489,7 @@ function recorridoDeLinea(l) {
     adultos: porVehiculo ? (entero(l.personas) || entero(l.adultos) || null) : l.adultos,
     ninosMid: porVehiculo ? null : l.ninosMid,
     ninosSmall: porVehiculo ? null : l.ninosSmall,
+    bebes: porVehiculo ? null : (l.bebes || 0),
     ruta: l.ruta || null, vehiculo: l.vehiculo || null, unidades: l.unidades || null, hora: l.hora || null,
   };
 }
@@ -2593,8 +2595,8 @@ function anotarEnFicha(name, input, r, chatId) {
         consultado: {
           slug: t.slug, nombre: t.nombre, fecha: r.fecha || fechaISO(input.tourDate),
           adultos: r.adultos ?? entero(input.adultos),
-          ninosMid: r.ninosMid ?? entero(input.ninosMid),
-          ninosSmall: r.ninosSmall ?? entero(input.ninosSmall),
+          ninosSmall: r.ninos4a7 ?? entero(input.ninosSmall),
+          bebes: r.bebes ?? entero(input.bebes),
         },
       });
       return;

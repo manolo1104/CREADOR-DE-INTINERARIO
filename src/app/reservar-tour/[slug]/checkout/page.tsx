@@ -463,6 +463,7 @@ export default function CheckoutTourPage() {
           adults:        state.adults,
           childrenMid:   state.childrenMid,
           childrenSmall: state.childrenSmall,
+          infants:       state.infants ?? 0,
           promoCode:     state.promoCode,
           pct:           state.pct,
           // Tours por vehículo (RZR): el servidor cobra desde la matriz flota×ruta.

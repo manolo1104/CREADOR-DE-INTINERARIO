@@ -208,17 +208,20 @@ export function buildTourEmailHtml(data: {
     }
     // Desglose del grupo. Decir solo "4 personas" le escondía al equipo que
     // van menores: cambia el equipo de seguridad que hay que preparar, y hay
-    // recorridos con edad mínima. El precio ya cobrado los distingue (70 % de 6
-    // a 10, 50 % por debajo), así que el correo también debe.
+    // recorridos con edad mínima. El precio ya cobrado los distingue (de 4 a 7
+    // al 50 %, bebés de 0 a 3 gratis; el tramo viejo de 6 a 10 al 70 %), así
+    // que el correo también debe.
     const mid   = Number(t.childrenMid) || 0;
     const small = Number(t.childrenSmall) || 0;
+    const bebes = Number((t as { infants?: number }).infants) || 0;
     const ad    = Number(t.adults) || 0;
     const otros = Number(t.children) || 0;
     const partes: string[] = [];
     if (ad)    partes.push(T.adultos(ad));
     if (mid)   partes.push(T.de6a10(mid));
     if (small) partes.push(T.menoresDe6(small));
-    if (!mid && !small && otros) partes.push(T.menores(otros));
+    if (bebes) partes.push(T.bebes(bebes));
+    if (!mid && !small && !bebes && otros) partes.push(T.menores(otros));
     const gente = partes.length
       ? partes.join(" · ")
       : (tourParts(t) === 1 ? T.unaPersona : T.personas(tourParts(t)));
@@ -1228,10 +1231,11 @@ export function buildPaquetePersonalizadoEmailHtml(data: {
     const r = new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
     return r.charAt(0).toUpperCase() + r.slice(1);
   };
-  const personasTexto = (it: { adults: number; childrenMid?: number; childrenSmall?: number }) =>
+  const personasTexto = (it: { adults: number; childrenMid?: number; childrenSmall?: number; infants?: number }) =>
     [`${it.adults} adulto${it.adults !== 1 ? "s" : ""}`,
      (it.childrenMid ?? 0) > 0 ? `${it.childrenMid} niño${it.childrenMid !== 1 ? "s" : ""} (6–10)` : "",
-     (it.childrenSmall ?? 0) > 0 ? `${it.childrenSmall} menor${it.childrenSmall !== 1 ? "es" : ""} de 6` : ""]
+     (it.childrenSmall ?? 0) > 0 ? `${it.childrenSmall} niño${it.childrenSmall !== 1 ? "s" : ""} de 4 a 7` : "",
+     (it.infants ?? 0) > 0 ? `${it.infants} bebé${it.infants !== 1 ? "s" : ""} (gratis)` : ""]
       .filter(Boolean).join(" · ");
 
   const dias = data.lineItems.map((it, i) => `

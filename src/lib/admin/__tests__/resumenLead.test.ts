@@ -30,7 +30,8 @@ describe("resumen del lead", () => {
     expect(r.hospedaje).toEqual(["Paraíso Encantado · 2 noches · Suite"]);
     expect(r.extras).toEqual(["Desayuno × 3"]);
     expect(r.descuento).toBe("10 %");
-    expect(r.grupo).toBe("2 adultos · 1 niño (6–10)");
+    // Cotización anterior al 17 nov 2026: el tramo viejo se sigue diciendo.
+    expect(r.grupo).toBe("2 adultos · 1 niño (6–10, tarifa anterior)");
     expect(r.notasInternas).toBe("Pidió precio de grupo");
   });
   it("sin anticipo pactado usa el 30 %", () => {

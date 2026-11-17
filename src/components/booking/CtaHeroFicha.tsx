@@ -26,7 +26,7 @@ export function CtaHeroFicha({ slug, tourId, className }: { slug: string; tourId
     const personas = sel.adultos + sel.ninos;
     return (
       <Link
-        href={lp(`/reservar/carrito?agregar=${slug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosMid=${sel.ninosMid}&ninosSmall=${sel.ninosSmall}`)}
+        href={lp(`/reservar/carrito?agregar=${slug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosSmall=${sel.ninosSmall}&bebes=${sel.bebes}`)}
         onClick={() => {
           marcarToqueHumano();
           trackTourEvent("CHECKOUT_STARTED", { tour: tourId, amount: sel.total, fecha: sel.fecha, adults: sel.adultos, children: sel.ninos, source: "ficha_hero" });

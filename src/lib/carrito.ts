@@ -30,8 +30,11 @@ export interface CarritoItem {
   tourImage:     string;
   tourDate:      string; // YYYY-MM-DD
   adults:        number;
-  childrenMid:   number; // 6–10 años
-  childrenSmall: number; // menores de 6
+  /** Tramo viejo 6–10 años al 70 %: solo carritos anteriores al 17 nov 2026 (`ninos.ts`). */
+  childrenMid:   number;
+  childrenSmall: number; // 4 a 7 años → 50 %
+  /** 3 años o menos: gratis, ocupan lugar. */
+  infants?:      number;
   promoCode?:    string;
   /** Solo en tours cobrados por vehículo (RZR, café). */
   ruta?:         string;
@@ -155,10 +158,10 @@ export function vaciarCarrito(): CarritoItem[] {
   return guardar([]);
 }
 
-/** Cuántas personas van en un renglón (los vehículos no cuentan personas). */
+/** Cuántas personas van en un renglón, bebés incluidos (los vehículos no cuentan personas). */
 export function personasDeItem(i: CarritoItem): number {
   if (i.unidades) return 0;
-  return (i.adults || 0) + (i.childrenMid || 0) + (i.childrenSmall || 0);
+  return (i.adults || 0) + (i.childrenMid || 0) + (i.childrenSmall || 0) + (i.infants || 0);
 }
 
 export interface ResumenCarrito {

@@ -180,11 +180,15 @@ export function useCarritoCheckout() {
         return Number.isInteger(n) && n >= 0 && n <= tope ? n : undefined;
       };
       const adultos = entero("adultos", 30);
+      // `ninosMid` (6–10 al 70 %) es de enlaces anteriores al 17 nov 2026: con
+      // la regla nueva no se sabe si ya tienen 8, así que entran como adultos
+      // y el cliente los ve y los cambia en el renglón antes de pagar.
       const mid     = entero("ninosMid", 30);
       const small   = entero("ninosSmall", 30);
-      if (adultos !== undefined && adultos > 0) extras.adults = adultos;
-      if (mid     !== undefined) extras.childrenMid   = mid;
+      const bebes   = entero("bebes", 30);
+      if (adultos !== undefined && adultos > 0) extras.adults = adultos + (mid ?? 0);
       if (small   !== undefined) extras.childrenSmall = small;
+      if (bebes   !== undefined) extras.infants       = bebes;
     }
 
     let carrito = leerCarrito();
@@ -542,13 +546,14 @@ export function useCarritoCheckout() {
   /**
    * Suma o resta gente de un tramo concreto y recalcula el subtotal.
    *
-   * `totalRecorrido` es la MISMA cuenta que hace el servidor, así que los
-   * tramos de menor (70 % de 6 a 10 años, 50 % por debajo de 6), la tarifa de
-   * viajero solo y la del grupo completo salen igual aquí que al cobrar.
+   * `totalRecorrido` es la MISMA cuenta que hace el servidor, así que el
+   * tramo de menor (4 a 7 años al 50 %; los bebés de 0 a 3 gratis, ver
+   * `ninos.ts`), la tarifa de viajero solo y la del grupo completo salen igual
+   * aquí que al cobrar.
    */
   function cambiarPersonas(
     i: CarritoItem,
-    campo: "adults" | "childrenMid" | "childrenSmall",
+    campo: "adults" | "childrenMid" | "childrenSmall" | "infants",
     delta: number,
   ) {
     const tour = TOURS_DB.find((t) => t.slug === i.tourSlug);
@@ -560,7 +565,8 @@ export function useCarritoCheckout() {
     const piso  = campo === "adults"
       ? (aceptaViajeroSolo(tour) ? 1 : Math.max(1, tour.groupMin))
       : 0;
-    const otros = (["adults", "childrenMid", "childrenSmall"] as const)
+    // Los bebés ocupan lugar: cuentan para el cupo (no para el mínimo).
+    const otros = (["adults", "childrenMid", "childrenSmall", "infants"] as const)
       .filter((c) => c !== campo)
       .reduce((s, c) => s + (i[c] ?? 0), 0);
     const valor = Math.min(
@@ -571,6 +577,7 @@ export function useCarritoCheckout() {
     const adultos       = campo === "adults"        ? valor : i.adults;
     const childrenMid   = campo === "childrenMid"   ? valor : i.childrenMid;
     const childrenSmall = campo === "childrenSmall" ? valor : i.childrenSmall;
+    const infants       = campo === "infants"       ? valor : (i.infants ?? 0);
 
     // El mínimo del tour (el rafting no sale con menos de 5) cuenta a TODOS los
     // que van, no solo a los adultos.
@@ -594,7 +601,7 @@ export function useCarritoCheckout() {
       const c = tour.addOns?.find((x) => x.id === a.id);
       return s + (c ? c.precio * a.cantidad : 0);
     }, 0);
-    cambiar(i.uid, { adults: adultos, childrenMid, childrenSmall, addOns, total: total + extras });
+    cambiar(i.uid, { adults: adultos, childrenMid, childrenSmall, infants, addOns, total: total + extras });
   }
 
   // Sin fecha no se puede cobrar: el servidor la valida, pero es mejor decirlo

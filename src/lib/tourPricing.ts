@@ -21,8 +21,12 @@ export interface TourChargeInput {
   tourId?:        string;
   tourSlug?:      string;
   adults:         number;
+  /** Tramo viejo 6–10 años al 70 %: solo registros anteriores al 17 nov 2026 (`ninos.ts`). */
   childrenMid:    number;
+  /** 4 a 7 años → 50 %. */
   childrenSmall:  number;
+  /** 3 años o menos: gratis. Ocupan lugar (cupo) pero no cuentan para el mínimo ni el escalón. */
+  infants?:       number;
   promoCode?:     string;
   /** 30 (anticipo) o 100 (pago completo). Por defecto 100. */
   pct?:           number;
@@ -128,9 +132,11 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   // además, se llevaba el escalón más barato. Se rechaza en vez de recortar: el
   // sitio nunca manda más del cupo, así que esto sólo corta peticiones armadas
   // a mano.
+  // Los bebés (0–3, gratis) también ocupan lugar: cuentan para el cupo.
   const pedidas = (Number(input.adults) || 0)
     + (Number(input.childrenMid) || 0)
-    + (Number(input.childrenSmall) || 0);
+    + (Number(input.childrenSmall) || 0)
+    + (Number(input.infants) || 0);
   if (pedidas > tour.groupMax && !input.sinTopeDeCupo) return null;
 
   // Tours cobrados POR VEHÍCULO (ej. RZR) no se venden por el flujo por persona:
@@ -143,9 +149,11 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   const adults        = clampInt(input.adults, 1, tope);
   const childrenMid   = clampInt(input.childrenMid, 0, tope);
   const childrenSmall = clampInt(input.childrenSmall, 0, tope);
+  const infants       = clampInt(input.infants, 0, tope);
 
+  // `personas` = las que pagan: deciden el mínimo y el escalón. Los bebés no.
   const personas = adults + childrenMid + childrenSmall;
-  if (personas > tope) return null;
+  if (personas + infants > tope) return null;
 
   // Mínimo del tour. Existía en los datos pero solo lo miraba el bot: por la web
   // se podía pagar un rafting para 2 cuando la balsa no sale con menos de 4, y
@@ -157,7 +165,7 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   // Tours solo para adultos (ej. buceo Media Luna, edad mínima 10): el servidor
   // RECHAZA cualquier reserva con niños aunque la UI los oculte. Sin esta guarda
   // se podía pagar con descuento de niño manipulando el sessionStorage.
-  if (tour.soloAdultos && childrenMid + childrenSmall > 0) return null;
+  if (tour.soloAdultos && childrenMid + childrenSmall + infants > 0) return null;
 
   const promo = input.promoCode ? validatePromoCode(input.promoCode) : { valid: false, discount: 0 };
   const promoDiscount = promo.valid ? promo.discount : 0;
@@ -165,7 +173,7 @@ export function computeTourCharge(input: TourChargeInput): TourChargeResult | nu
   // Tarifa por GRUPO (ej. el Edén en el Jardín) o precio por cabeza: lo decide
   // `totalRecorrido`, que es exactamente lo que pinta el carrito y el módulo de
   // la ficha. Una sola cuenta para lo que se enseña y lo que se cobra.
-  const totalTour = totalRecorrido(tour, adults, childrenMid, childrenSmall, promoDiscount, input.eleccion);
+  const totalTour = totalRecorrido(tour, adults, childrenMid, childrenSmall, promoDiscount, input.eleccion, infants);
 
   // ── Add-ons ───────────────────────────────────────────────────────────────
   // El precio se lee SIEMPRE del catálogo del propio tour, nunca del cliente.
@@ -268,6 +276,8 @@ export interface LineaCarrito {
   adults: number; children: number; subtotal: number;
   /** Los tramos por separado: el correo dice "2 adultos · 1 niño · 1 menor". */
   childrenMid?: number; childrenSmall?: number;
+  /** Bebés de 0 a 3 años (gratis). */
+  infants?: number;
   ruta?: string; vehiculo?: string; unidades?: number;
   eleccion?: string;
   /**
@@ -367,17 +377,18 @@ function motivoSinTarifa(raw: Record<string, unknown>): string | null {
   const tour = TOURS_DB.find((t) => t.id === raw.tourId || t.slug === raw.tourSlug);
   if (!tour) return null;
   const nombre = tour.nombreCorto || tour.nombre;
+  const bebes = Number(raw.infants) || 0;
   const pedidas = (Number(raw.adults) || 0)
     + (Number(raw.childrenMid) || 0)
     + (Number(raw.childrenSmall) || 0);
-  const ninos = (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0);
+  const ninos = (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0) + bebes;
 
-  if (pedidas > tour.groupMax) {
-    return `${nombre} sale con grupos de hasta ${tour.groupMax} personas y el carrito pide ${pedidas}. Quita a alguien o escríbenos por WhatsApp.`;
+  if (pedidas + bebes > tour.groupMax) {
+    return `${nombre} sale con grupos de hasta ${tour.groupMax} personas y el carrito pide ${pedidas + bebes}. Quita a alguien o escríbenos por WhatsApp.`;
   }
   const minimo = minimoPersonas(tour);
   if (pedidas < minimo) {
-    return `${nombre} sale desde ${minimo} ${minimo === 1 ? "persona" : "personas"} y el carrito tiene ${pedidas}. Súbelo o escríbenos por WhatsApp.`;
+    return `${nombre} sale desde ${minimo} ${minimo === 1 ? "persona" : "personas"} y el carrito tiene ${pedidas}${bebes ? " (los bebés no cuentan para el mínimo)" : ""}. Súbelo o escríbenos por WhatsApp.`;
   }
   if (tour.soloAdultos && ninos > 0) {
     return `${nombre} es solo para adultos: quita a los menores de ese recorrido.`;
@@ -446,6 +457,7 @@ export function tarifarRecorridos(items: unknown[], { zona }: { zona?: ZonaHospe
       adults:        raw.adults as number,
       childrenMid:   raw.childrenMid as number,
       childrenSmall: raw.childrenSmall as number,
+      infants:       raw.infants as number,
       promoCode:     raw.promoCode as string,
       pct:           100,
       addOns:        raw.addOns as { id: string; cantidad: number }[],
@@ -475,9 +487,10 @@ export function tarifarRecorridos(items: unknown[], { zona }: { zona?: ZonaHospe
       tourName: charge.tour.nombre,
       tourDate: String(raw.tourDate),
       adults:   Number(raw.adults) || 1,
-      children: (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0),
+      children: (Number(raw.childrenMid) || 0) + (Number(raw.childrenSmall) || 0) + (Number(raw.infants) || 0),
       childrenMid:   Number(raw.childrenMid) || 0,
       childrenSmall: Number(raw.childrenSmall) || 0,
+      ...(Number(raw.infants) > 0 ? { infants: Math.floor(Number(raw.infants)) } : {}),
       subtotal: charge.total,
       ...(eleccionValida ? { eleccion: eleccionValida } : {}),
       // Ya validados contra el catálogo por `computeTourCharge`: van con su

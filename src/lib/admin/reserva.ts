@@ -17,8 +17,9 @@ export interface LineaTour {
   tourDate?: string;
   adults?: number;
   children?: number;       // formato viejo
-  childrenMid?: number;
-  childrenSmall?: number;
+  childrenMid?: number;     // tramo viejo 6–10 (70 %), solo registros anteriores al 17 nov 2026
+  childrenSmall?: number;   // 4 a 7 años (50 %); antes «menores de 6»
+  infants?: number;         // 0 a 3 años, gratis (desde el 17 nov 2026)
   subtotal?: number;
   /** Elección obligatoria del recorrido (ej. Siete Cascadas o Tamasopo). */
   eleccion?: string;
@@ -40,9 +41,13 @@ export interface ConLineas {
 
 export interface Grupo {
   adultos: number;
-  ninosMid: number;    // 6–10 años
-  ninosSmall: number;  // menores de 6
+  ninosMid: number;    // tramo viejo 6–10 años (registros anteriores al 17 nov 2026)
+  ninosSmall: number;  // 4 a 7 años (antes «menores de 6»)
+  /** Bebés de 0 a 3 años: no pagan, sí ocupan lugar. */
+  bebes: number;
+  /** Todos los menores, bebés incluidos. */
   ninos: number;
+  /** Lugares que ocupan (bebés incluidos). */
   total: number;
 }
 
@@ -105,7 +110,7 @@ export function conMeta(lineItems: unknown, campos: Record<string, unknown>): un
   return base;
 }
 
-const ninosDe = (l: LineaTour) => (l.childrenMid ?? l.children ?? 0) + (l.childrenSmall ?? 0);
+const ninosDe = (l: LineaTour) => (l.childrenMid ?? l.children ?? 0) + (l.childrenSmall ?? 0) + (l.infants ?? 0);
 
 /**
  * Tamaño real del grupo. Máximo por línea, no suma.
@@ -119,26 +124,28 @@ export function grupoDe(b: ConLineas): Grupo {
     const adultos    = Math.max(0, ...lineas.map(l => l.adults ?? 0));
     const ninosMid   = Math.max(0, ...lineas.map(l => l.childrenMid ?? l.children ?? 0));
     const ninosSmall = Math.max(0, ...lineas.map(l => l.childrenSmall ?? 0));
-    const total      = adultos + ninosMid + ninosSmall;
-    if (total > 0) return { adultos, ninosMid, ninosSmall, ninos: ninosMid + ninosSmall, total };
+    const bebes      = Math.max(0, ...lineas.map(l => l.infants ?? 0));
+    const total      = adultos + ninosMid + ninosSmall + bebes;
+    if (total > 0) return { adultos, ninosMid, ninosSmall, bebes, ninos: ninosMid + ninosSmall + bebes, total };
 
     // Solo líneas por vehículo: el conteo vive en el `_meta`.
     const capturado = Number(metaDe(b).numPersonas) || 0;
-    if (capturado > 0) return { adultos: capturado, ninosMid: 0, ninosSmall: 0, ninos: 0, total: capturado };
+    if (capturado > 0) return { adultos: capturado, ninosMid: 0, ninosSmall: 0, bebes: 0, ninos: 0, total: capturado };
   }
 
   // Reserva vieja de un solo tour, sin `lineItems`: las columnas SÍ son el grupo.
   const adultos = b.adults ?? 0;
   const ninos   = b.children ?? 0;
-  return { adultos, ninosMid: ninos, ninosSmall: 0, ninos, total: adultos + ninos };
+  return { adultos, ninosMid: ninos, ninosSmall: 0, bebes: 0, ninos, total: adultos + ninos };
 }
 
 /** "2 adultos · 3 niños" — para el PDF y la ficha de detalle. */
 export function grupoLargo(g: Grupo): string {
   const partes: string[] = [];
   partes.push(`${g.adultos} ${g.adultos === 1 ? "adulto" : "adultos"}`);
-  if (g.ninosMid > 0)   partes.push(`${g.ninosMid} ${g.ninosMid === 1 ? "niño" : "niños"} (6–10)`);
-  if (g.ninosSmall > 0) partes.push(`${g.ninosSmall} ${g.ninosSmall === 1 ? "niño" : "niños"} (−6)`);
+  if (g.ninosMid > 0)   partes.push(`${g.ninosMid} ${g.ninosMid === 1 ? "niño" : "niños"} (6–10, tarifa anterior)`);
+  if (g.ninosSmall > 0) partes.push(`${g.ninosSmall} ${g.ninosSmall === 1 ? "niño" : "niños"} (4–7)`);
+  if (g.bebes > 0)      partes.push(`${g.bebes} ${g.bebes === 1 ? "bebé" : "bebés"} (0–3)`);
   return partes.join(" · ");
 }
 

@@ -35,7 +35,10 @@ export interface EmailMessages {
     vehiculos: (n: number) => string;
     adultos: (n: number) => string;
     de6a10: (n: number) => string;
+    /** Niños de 4 a 7 años (antes «menores de 6»; el nombre de la clave se quedó). */
     menoresDe6: (n: number) => string;
+    /** Bebés de 0 a 3 años (gratis). */
+    bebes: (n: number) => string;
     menores: (n: number) => string;
     unaPersona: string;
     eligio: (opcion: string) => string;
@@ -125,7 +128,10 @@ export interface EmailMessages {
     adultos: (n: number) => string;
     menores: (n: number) => string;
     de6a10: (n: number) => string;
+    /** Niños de 4 a 7 años (antes «menores de 6»; el nombre de la clave se quedó). */
     menoresDe6: (n: number) => string;
+    /** Bebés de 0 a 3 años (gratis). */
+    bebes: (n: number) => string;
     vehiculos: (n: number) => string;
     /** Solo cuando no se sabe qué recorrido es: sin ciudad ni hora que prometer. */
     pickupDefault: string;
@@ -286,7 +292,8 @@ const ES: EmailMessages = {
     vehiculos: (n) => `${n} vehículo${n !== 1 ? "s" : ""}`,
     adultos: (n) => `${n} adulto${n !== 1 ? "s" : ""}`,
     de6a10: (n) => `${n} de 6 a 10 años`,
-    menoresDe6: (n) => `${n} menor${n !== 1 ? "es" : ""} de 6`,
+    menoresDe6: (n) => `${n} niño${n !== 1 ? "s" : ""} de 4 a 7 años`,
+    bebes: (n) => `${n} bebé${n !== 1 ? "s" : ""} de 0 a 3 (gratis)`,
     menores: (n) => `${n} menor${n !== 1 ? "es" : ""}`,
     unaPersona: "1 persona",
     eligio: (opcion) => ` · Eligió: ${opcion}`,
@@ -362,7 +369,8 @@ const ES: EmailMessages = {
     adultos: (n) => `${n} adulto${n !== 1 ? "s" : ""}`,
     menores: (n) => `${n} menor${n !== 1 ? "es" : ""}`,
     de6a10: (n) => `${n} de 6 a 10 años`,
-    menoresDe6: (n) => `${n} menor${n !== 1 ? "es" : ""} de 6`,
+    menoresDe6: (n) => `${n} niño${n !== 1 ? "s" : ""} de 4 a 7 años`,
+    bebes: (n) => `${n} bebé${n !== 1 ? "s" : ""} de 0 a 3 (gratis)`,
     vehiculos: (n) => `${n} vehículo${n !== 1 ? "s" : ""}`,
     pickupDefault: "Te confirmamos por WhatsApp la hora y el punto de salida.",
     confirmaDireccion: "Confirma tu dirección exacta por WhatsApp.",
@@ -459,7 +467,7 @@ const ES: EmailMessages = {
       [
         `${adultos} ${adultos === 1 ? "adulto" : "adultos"}`,
         mid   ? `${mid} ${mid === 1 ? "niño" : "niños"} (6–10)`   : "",
-        small ? `${small} ${small === 1 ? "menor" : "menores"} de 6` : "",
+        small ? `${small} ${small === 1 ? "niño" : "niños"} de 4 a 7` : "",
       ].filter(Boolean).join(" · "),
     habitacion: "Habitación",
     entradaHotel: "Entrada al hotel",
@@ -509,7 +517,8 @@ const EN: EmailMessages = {
     vehiculos: (n) => `${n} vehicle${n !== 1 ? "s" : ""}`,
     adultos: (n) => `${n} adult${n !== 1 ? "s" : ""}`,
     de6a10: (n) => `${n} aged 6 to 10`,
-    menoresDe6: (n) => `${n} under 6`,
+    menoresDe6: (n) => `${n} aged 4 to 7`,
+    bebes: (n) => `${n} ${n !== 1 ? "babies" : "baby"} 0–3 (free)`,
     menores: (n) => `${n} child${n !== 1 ? "ren" : ""}`,
     unaPersona: "1 person",
     eligio: (opcion) => ` · Chose: ${opcion}`,
@@ -587,7 +596,8 @@ const EN: EmailMessages = {
     adultos: (n) => `${n} adult${n !== 1 ? "s" : ""}`,
     menores: (n) => `${n} child${n !== 1 ? "ren" : ""}`,
     de6a10: (n) => `${n} aged 6 to 10`,
-    menoresDe6: (n) => `${n} under 6`,
+    menoresDe6: (n) => `${n} aged 4 to 7`,
+    bebes: (n) => `${n} ${n !== 1 ? "babies" : "baby"} 0–3 (free)`,
     vehiculos: (n) => `${n} vehicle${n !== 1 ? "s" : ""}`,
     pickupDefault: "We'll confirm the pickup time and place on WhatsApp.",
     confirmaDireccion: "Confirm your exact address on WhatsApp.",
@@ -682,7 +692,7 @@ const EN: EmailMessages = {
       [
         `${adultos} ${adultos === 1 ? "adult" : "adults"}`,
         mid   ? `${mid} ${mid === 1 ? "child" : "children"} (6–10)` : "",
-        small ? `${small} under 6`                                  : "",
+        small ? `${small} aged 4 to 7`                              : "",
       ].filter(Boolean).join(" · "),
     habitacion: "Room",
     entradaHotel: "Hotel check-in",

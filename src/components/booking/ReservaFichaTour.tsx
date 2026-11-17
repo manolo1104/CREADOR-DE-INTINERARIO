@@ -98,8 +98,10 @@ export function ReservaFichaTour({
   // Arranca en DOS aunque se pueda bajar a uno: así viaja casi todo el mundo y
   // así se leen los precios del resto del sitio.
   const [adultos, setAdultos]       = useState(porGrupo ? minAdultos : Math.max(2, groupMin || 1));
-  const [ninosMid, setNinosMid]     = useState(0);
+  // Niños de 4 a 7 (50 %) y bebés de 0 a 3 (gratis, ocupan lugar). Regla del
+  // 17 nov 2026 en `ninos.ts`; el tramo viejo de 6 a 10 al 70 % ya no existe.
   const [ninosSmall, setNinosSmall] = useState(0);
+  const [bebes, setBebes]           = useState(0);
   // La fecha elegida ya no tiene lugar para este grupo: lo dice el calendario.
   const [sinLugar, setSinLugar]     = useState(false);
 
@@ -127,9 +129,9 @@ export function ReservaFichaTour({
         const previa = leerSeleccionSesion(slug);
         if (previa) {
           if (previa.fecha && previa.fecha >= minBookingDate()) setFecha(previa.fecha);
-          if (previa.adultos >= minAdultos && previa.adultos + previa.ninosMid + previa.ninosSmall <= groupMax) {
+          if (previa.adultos >= minAdultos && previa.adultos + previa.ninosSmall + previa.bebes <= groupMax) {
             setAdultos(previa.adultos);
-            if (!porGrupo && !soloMayores) { setNinosMid(previa.ninosMid); setNinosSmall(previa.ninosSmall); }
+            if (!porGrupo && !soloMayores) { setNinosSmall(previa.ninosSmall); setBebes(previa.bebes); }
           }
         }
         return;
@@ -148,13 +150,15 @@ export function ReservaFichaTour({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const personas = adultos + ninosMid + ninosSmall;
+  // `personas` = lugares que ocupan (cupo); `pagan` = sin bebés (mínimo y escalón).
+  const personas = adultos + ninosSmall + bebes;
+  const pagan = adultos + ninosSmall;
   const total = porGrupo
     ? (precioGrupo({ tarifaGrupo }, personas) ?? 0)
     // `totalRecorrido`: la misma cuenta que el carrito y el cobro, con la
     // tarifa de viajero solo cuando va una persona.
-    : totalRecorrido(reglaTour, adultos, ninosMid, ninosSmall);
-  const viajaSolo = !porGrupo && esViajeroSolo(reglaTour, adultos, ninosMid, ninosSmall);
+    : totalRecorrido(reglaTour, adultos, 0, ninosSmall);
+  const viajaSolo = !porGrupo && esViajeroSolo(reglaTour, adultos, 0, ninosSmall);
   // ── Escalera por tamaño de grupo ──────────────────────────────────────────
   // `precioPorCabeza` ya decide si manda la promo de temporada o el escalón:
   // aquí no se vuelve a decidir nada, solo se pinta.
@@ -164,11 +168,12 @@ export function ReservaFichaTour({
   // será el escalón de 6, pero solo a partir del 30 de octubre.
   const llevaPromoFecha = precioFecha < (tourCat?.precioLista ?? precioFecha);
   const conEscalera = !porGrupo && !llevaPromoFecha && !!tourCat?.escalaPersona?.length;
-  const porCabezaAhora = conEscalera ? precioPorCabeza(reglaTour, personas) : 0;
-  // El primer tamaño de grupo que todavía baja el precio, dentro del cupo.
+  const porCabezaAhora = conEscalera ? precioPorCabeza(reglaTour, pagan) : 0;
+  // El primer tamaño de grupo que todavía baja el precio, dentro del cupo
+  // (los bebés ocupan lugar pero no cuentan para el escalón).
   const siguienteEscalon = (() => {
     if (!conEscalera) return null;
-    for (let n = personas + 1; n <= (groupMax || personas); n++) {
+    for (let n = pagan + 1; n <= (groupMax ? groupMax - bebes : pagan); n++) {
       const p = precioPorCabeza(reglaTour, n);
       if (p < porCabezaAhora) return { personas: n, precio: p };
     }
@@ -184,15 +189,15 @@ export function ReservaFichaTour({
   // Lo elegido, publicado para el WhatsApp del cuadro lateral y la barra del
   // celular (`lib/seleccionFicha.ts`): así escriben con fecha, personas y total.
   useEffect(() => {
-    publicarSeleccion({ slug, fecha, adultos, ninosMid, ninosSmall, ninos: ninosMid + ninosSmall, total, sinLugar });
-  }, [slug, fecha, adultos, ninosMid, ninosSmall, total, sinLugar]);
+    publicarSeleccion({ slug, fecha, adultos, ninosMid: 0, ninosSmall, bebes, ninos: ninosSmall + bebes, total, sinLugar });
+  }, [slug, fecha, adultos, ninosSmall, bebes, total, sinLugar]);
   // Y se guarda en la pestaña, después de leer la anterior (el efecto de arriba
   // del montaje corre primero): recargar no la borra.
   const leida = useRef(false);
   useEffect(() => {
     if (!leida.current) { leida.current = true; return; }
-    guardarSeleccionSesion({ slug, fecha, adultos, ninosMid, ninosSmall });
-  }, [slug, fecha, adultos, ninosMid, ninosSmall]);
+    guardarSeleccionSesion({ slug, fecha, adultos, ninosSmall, bebes });
+  }, [slug, fecha, adultos, ninosSmall, bebes]);
 
   // «Ver fechas disponibles» (arriba de la ficha) y «Reservar» (menú) son
   // anclas a este módulo; si todavía no hay fecha, además se abre el
@@ -253,7 +258,7 @@ export function ReservaFichaTour({
   const href = lp(
     `/reservar/carrito?agregar=${slug}` +
     (fecha ? `&fecha=${fecha}` : "") +
-    `&adultos=${adultos}&ninosMid=${ninosMid}&ninosSmall=${ninosSmall}`,
+    `&adultos=${adultos}&ninosSmall=${ninosSmall}&bebes=${bebes}`,
   );
 
   return (
@@ -292,11 +297,11 @@ export function ReservaFichaTour({
 
       <div className="space-y-2.5 border-t border-white/8 pt-4">
         <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">{tf.cuantosVan}</p>
-        <Contador etiqueta={porGrupo ? tf.personas : t.adultos} valor={adultos} set={(n) => { setAdultos(n); trackParticipants(nombre, n, ninosMid + ninosSmall); }} min={minAdultos} />
+        <Contador etiqueta={porGrupo ? tf.personas : (soloMayores ? t.adultos : t.adultos8)} valor={adultos} set={(n) => { setAdultos(n); trackParticipants(nombre, n, ninosSmall + bebes); }} min={minAdultos} />
         {!porGrupo && !soloMayores && (
           <>
-            <Contador etiqueta={t.de6a10}     valor={ninosMid}   set={setNinosMid}   min={0} />
-            <Contador etiqueta={t.menoresDe6} valor={ninosSmall} set={setNinosSmall} min={0} />
+            <Contador etiqueta={`${t.ninos4a7} · 50 %`} valor={ninosSmall} set={setNinosSmall} min={0} />
+            <Contador etiqueta={`${t.bebes} · ${t.gratis}`} valor={bebes} set={setBebes} min={0} />
           </>
         )}
         {personas >= groupMax && (
@@ -361,7 +366,7 @@ export function ReservaFichaTour({
               // personas puestas): `add_to_cart`. El `begin_checkout` lo manda el
               // carrito al abrirse. El evento interno no cambia.
               trackAddToCart({ tourId, tourName: nombre, total, cantidad: personas, source: "widget" });
-              trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosMid + ninosSmall, amount: total, fecha, source: "ficha" });
+              trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosSmall + bebes, amount: total, fecha, source: "ficha" });
             }}
             className={BOTON_RESERVAR}
           >
@@ -386,7 +391,7 @@ export function ReservaFichaTour({
             onClick={() => {
               marcarToqueHumano();
               trackAddToCart({ tourId, tourName: nombre, total, cantidad: personas, source: "widget" });
-              trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosMid + ninosSmall, amount: total, source: "ficha_sin_fecha" });
+              trackTourEvent("CHECKOUT_STARTED", { tour: tourId, tour_name: nombre, adults: adultos, children: ninosSmall + bebes, amount: total, source: "ficha_sin_fecha" });
             }}
             className="block text-center font-dm text-[10px] text-crema/45 hover:text-crema/70 underline underline-offset-2 mt-2"
           >

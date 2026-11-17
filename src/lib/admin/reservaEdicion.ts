@@ -60,7 +60,7 @@ export function importeDeConcepto(l: { subtotal?: unknown }): number {
 }
 
 /**
- * El renglón como se guarda: `children` = los dos tramos de menores. 🔴 El
+ * El renglón como se guarda: `children` = todos los menores (bebés incluidos). 🔴 El
  * carrito guarda `children` ADEMÁS de `childrenMid` y `childrenSmall`; si en
  * Editar se quitaban los niños, el `children` viejo se quedaba y el cupo, las
  * Salidas del día y el corte (que toman el mayor de los dos) los seguían
@@ -69,7 +69,8 @@ export function importeDeConcepto(l: { subtotal?: unknown }): number {
 export function lineaParaGuardar<T extends object>(l: T): T {
   const r = l as Record<string, unknown>;
   if (!("children" in r)) return l;
-  return { ...l, children: Math.max(0, num(r.childrenMid)) + Math.max(0, num(r.childrenSmall)) };
+  // Los bebés de 0 a 3 (gratis, 17 nov 2026) también ocupan lugar.
+  return { ...l, children: Math.max(0, num(r.childrenMid)) + Math.max(0, num(r.childrenSmall)) + Math.max(0, num(r.infants)) };
 }
 
 // ── Lo que manda el servidor al guardar ─────────────────────────────────────

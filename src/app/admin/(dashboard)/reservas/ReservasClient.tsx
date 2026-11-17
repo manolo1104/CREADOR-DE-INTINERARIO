@@ -212,7 +212,8 @@ export default function ReservasClient(
     const lines: LineItem[] = cleanLines?.length
       ? cleanLines.map((l: any) => ({
           ...l,
-          childrenMid:   l.childrenMid   ?? (l.children ?? 0),
+          // Sin desglose (renglón viejo): los menores son el tramo de antes.
+          childrenMid:   l.childrenMid   ?? (l.childrenSmall === undefined && l.infants === undefined ? (l.children ?? 0) : 0),
           childrenSmall: l.childrenSmall ?? 0,
         }))
       : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children ?? 0, childrenSmall: 0, subtotal: b.totalAmount }];

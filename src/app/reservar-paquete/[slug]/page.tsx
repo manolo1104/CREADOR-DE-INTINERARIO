@@ -1,5 +1,6 @@
 "use client";
 
+import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "@/lib/ninos";
 import { useState, useMemo, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
@@ -759,8 +760,8 @@ export default function ReservarPaquetePage() {
                     // diría «2 × $990 = $1,980» y abajo «Total $4,780».
                     const uno    = (f = 1) => Math.round((paquete.precio + (cotizacion.conTour ? cotizacion.toursPorPersona : 0)) * f);
                     const pAdult = uno();
-                    const pMedio = uno(0.7);
-                    const pChico = uno(0.5);
+                    const pMedio = uno(FACTOR_NINO_ANTERIOR);
+                    const pChico = uno(FACTOR_NINO);
                     return (
                     <div className="mt-3 border-t border-negro/8 pt-3 space-y-1">
                       <p className="flex justify-between font-dm text-[12px] text-negro/55">
@@ -828,7 +829,9 @@ export default function ReservarPaquetePage() {
                   {/* Menores, con la misma escala que los tours sueltos. */}
                   <div className="mt-4 space-y-2.5 border-t border-negro/8 pt-3">
                     {[
-                      { label: t.ninos610, nota: sinHotel ? fmx(conTour ? precioNocheConTour("medio", rutaPorPersona) : precioNinoNoche("medio")) : t.ninos610Nota, v: childrenMid,   set: setChildrenMid },
+                      // El tramo de 6 a 10 al 70 % ya no se ofrece (17 nov 2026,
+                      // `ninos.ts`): solo aparece si un pedido viejo lo trae.
+                      ...(childrenMid > 0 ? [{ label: t.ninos610, nota: sinHotel ? fmx(conTour ? precioNocheConTour("medio", rutaPorPersona) : precioNinoNoche("medio")) : t.ninos610Nota, v: childrenMid,   set: setChildrenMid }] : []),
                       { label: t.menores6, nota: sinHotel ? fmx(conTour ? precioNocheConTour("chico", rutaPorPersona) : precioNinoNoche("chico")) : t.menores6Nota, v: childrenSmall, set: setChildrenSmall },
                     ].map((c) => (
                       <div key={c.label} className="flex items-center justify-between">
@@ -853,7 +856,7 @@ export default function ReservarPaquetePage() {
                     ))}
                     <p className="font-dm text-[10px] text-negro/35 leading-snug">
                       {sinHotel
-                        ? "Los bebés menores de 3 no pagan. Avísanos en una nota para contarlos en la camioneta."
+                        ? "Los bebés de 0 a 3 años no pagan. Avísanos en una nota para contarlos en la camioneta."
                         : t.bebesNota}
                     </p>
                   </div>

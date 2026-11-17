@@ -353,9 +353,15 @@ export function CheckoutPaquete({ slug }: { slug: string }) {
               </div>
               <div className="border-t border-negro/[0.07] pt-5">
                 <p className={`mb-2 ${ETIQUETA_GRUPO}`}>{en ? "How many of you?" : "¿Cuántos van?"}</p>
-                <Contador etiqueta={t.adultos} valor={pedido.adultos} set={(n) => cambiar({ adultos: n })} min={2} />
-                <Contador etiqueta={t.de6a10} valor={pedido.childrenMid} set={(n) => cambiar({ childrenMid: n })} min={0} />
-                <Contador etiqueta={t.menoresDe6} valor={pedido.childrenSmall} set={(n) => cambiar({ childrenSmall: n })} min={0} />
+                <Contador etiqueta={t.adultos8} valor={pedido.adultos} set={(n) => cambiar({ adultos: n })} min={2} />
+                {/* Regla del 17 nov 2026 (`ninos.ts`): de 4 a 7 al 50 %; los de 8+ son
+                    adultos y los bebés de 0 a 3 no pagan ni se cuentan. Un pedido
+                    viejo con el tramo de 6 a 10 lo sigue enseñando para bajarlo a 0. */}
+                {pedido.childrenMid > 0 && (
+                  <Contador etiqueta={en ? "kids 6–10 (old rate)" : "niños de 6 a 10 (tarifa anterior)"} valor={pedido.childrenMid} set={(n) => cambiar({ childrenMid: n })} min={0} />
+                )}
+                <Contador etiqueta={`${t.ninos4a7} · 50 %`} valor={pedido.childrenSmall} set={(n) => cambiar({ childrenSmall: n })} min={0} />
+                <p className="mt-1 font-dm text-[12px] text-negro/50">{en ? "Babies 0–3 travel free and aren't counted." : "Los bebés de 0 a 3 años van gratis y no se cuentan."}</p>
                 <p className="mt-2 font-dm text-[12px] text-negro/50">{en ? "The price is for two people sharing a room; extra people are added automatically." : "El precio es por pareja; las personas extra se suman solas."}</p>
               </div>
               {habitaciones.length > 0 && (

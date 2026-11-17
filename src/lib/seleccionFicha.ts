@@ -18,9 +18,13 @@ export interface SeleccionFicha {
   slug: string;
   fecha: string;        // YYYY-MM-DD o ""
   adultos: number;
+  /** Tramo viejo (6–10): ya no se elige; queda en 0 (ver `ninos.ts`). */
   ninosMid: number;
+  /** Niños de 4 a 7 años (50 %). */
   ninosSmall: number;
-  /** ninosMid + ninosSmall */
+  /** Bebés de 0 a 3 años (gratis, ocupan lugar). */
+  bebes: number;
+  /** ninosMid + ninosSmall + bebes */
   ninos: number;
   total: number;
   /** La fecha elegida ya no tiene lugar para este grupo (lo dice el calendario). */
@@ -67,16 +71,17 @@ export function textoDiaBoton(ymd: string, en: boolean, corto = false): string {
 
 const CLAVE = (slug: string) => `hp_sel_${slug}`;
 
-export function guardarSeleccionSesion(s: Pick<SeleccionFicha, "slug" | "fecha" | "adultos" | "ninosMid" | "ninosSmall">): void {
-  try { window.sessionStorage.setItem(CLAVE(s.slug), JSON.stringify({ f: s.fecha, a: s.adultos, m: s.ninosMid, s: s.ninosSmall })); } catch { /* sin almacenamiento: no pasa nada */ }
+export function guardarSeleccionSesion(s: Pick<SeleccionFicha, "slug" | "fecha" | "adultos" | "ninosSmall" | "bebes">): void {
+  try { window.sessionStorage.setItem(CLAVE(s.slug), JSON.stringify({ f: s.fecha, a: s.adultos, s: s.ninosSmall, b: s.bebes })); } catch { /* sin almacenamiento: no pasa nada */ }
 }
 
-export function leerSeleccionSesion(slug: string): { fecha: string; adultos: number; ninosMid: number; ninosSmall: number } | null {
+export function leerSeleccionSesion(slug: string): { fecha: string; adultos: number; ninosSmall: number; bebes: number } | null {
   try {
     const d = JSON.parse(window.sessionStorage.getItem(CLAVE(slug)) || "null");
     if (!d || typeof d !== "object") return null;
     const n = (v: unknown) => (Number.isInteger(v) && (v as number) >= 0 && (v as number) <= 30 ? (v as number) : 0);
-    return { fecha: typeof d.f === "string" ? d.f : "", adultos: n(d.a), ninosMid: n(d.m), ninosSmall: n(d.s) };
+    // `m` (el tramo viejo de 6 a 10) ya no se lee: desde el 17 nov 2026 esos niños pagan como adulto.
+    return { fecha: typeof d.f === "string" ? d.f : "", adultos: n(d.a), ninosSmall: n(d.s), bebes: n(d.b) };
   } catch {
     return null;
   }

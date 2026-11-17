@@ -9,6 +9,7 @@
  * vuelve a correr este script para actualizar al bot.
  */
 
+import { REGLA_NINOS } from "../lib/ninos";
 import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, TOURS_LISTA, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, recogidaDeTour, ventanaSalida, regresoDeTour, fraseRecogida, fmtHora12, PROMO_TEMPORADA, PROMO_VENCE, promoVigente } from "../lib/tours";
@@ -465,7 +466,8 @@ const empresa = {
   ].join(" "),
   cancelacion: "Cancela gratis hasta 48 h antes.",
   ninos: [
-    "Niños 6–10 años: 70 % del precio adulto. Menores de 6: 50 %. (No aplica a tours por vehículo ni a los que se cobran por grupo.)",
+    // La regla de `ninos.ts` (Manolo, 17 nov 2026), dicha igual que en la web.
+    REGLA_NINOS.es,
     edadesMinimasTexto(),
   ].filter(Boolean).join(" "),
   // 🔴 La calificación del NEGOCIO en Google, de `resenas.ts`. El prompt de

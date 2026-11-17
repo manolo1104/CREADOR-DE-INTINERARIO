@@ -114,12 +114,17 @@ function hora12(hhmm: string): string {
   return m ? fmtHora12(Number(m[1]) + Number(m[2]) / 60) : hhmm;
 }
 
-/** «2 adultos + 1 niño de 6 a 10 + 1 menor de 6»: los tramos se dicen, si no el total no cuadra. */
-function textoPersonas(a: number, m: number, s: number, en: boolean): string {
+/**
+ * «2 adultos + 1 niño de 4 a 7 + 1 bebé (gratis)»: los tramos se dicen, si no
+ * el total no cuadra. Regla del 17 nov 2026 en `ninos.ts`; el tramo de 6 a 10
+ * solo sale en cotizaciones viejas.
+ */
+function textoPersonas(a: number, m: number, s: number, en: boolean, b = 0): string {
   const partes: string[] = [];
   if (a > 0) partes.push(en ? plural(a, "adult", "adults") : plural(a, "adulto", "adultos"));
   if (m > 0) partes.push(en ? `${plural(m, "child", "children")} (6–10)` : `${plural(m, "niño", "niños")} de 6 a 10`);
-  if (s > 0) partes.push(en ? `${plural(s, "child", "children")} under 6` : `${plural(s, "menor", "menores")} de 6`);
+  if (s > 0) partes.push(en ? `${plural(s, "kid", "kids")} 4–7` : `${plural(s, "niño", "niños")} de 4 a 7`);
+  if (b > 0) partes.push(en ? `${plural(b, "baby", "babies")} (free)` : `${plural(b, "bebé", "bebés")} (gratis)`);
   return partes.join(" + ");
 }
 
@@ -138,6 +143,8 @@ interface Recorrido {
   adultos:     number;
   ninosMid:    number;
   ninosSmall:  number;
+  /** Bebés de 0 a 3 años (gratis). */
+  bebes?:      number;
   /** RZR: la gente que dijo (el precio es por unidad). */
   personas:    number;
   rzr?:        { ruta: string; vehiculo: string; unidades: number; capacidad?: string };
@@ -198,6 +205,7 @@ function recorridoDeLinea(l: LineaPrecio): Recorrido {
   return {
     tour: tourDe(l.slug), nombre: l.nombre, fecha: l.tourDate,
     adultos: l.adultos, ninosMid: l.ninosMid, ninosSmall: l.ninosSmall, personas: l.personas,
+    ...(l.bebes ? { bebes: l.bebes } : {}),
     ...(l.cobro === "vehiculo" && l.ruta && l.vehiculo
       ? { rzr: { ruta: l.ruta, vehiculo: l.vehiculo, unidades: l.unidades ?? 1, capacidad: l.capacidadTexto } }
       : {}),
@@ -215,7 +223,8 @@ function recorridoGuardado(g: Record<string, any>): Recorrido {
   return {
     tour: tourDe(g.tourSlug), nombre: String(g.tourName ?? ""), fecha: String(g.tourDate ?? ""),
     adultos: num(g.adults), ninosMid: num(g.childrenMid), ninosSmall: num(g.childrenSmall),
-    personas: num(g.adults) + num(g.childrenMid) + num(g.childrenSmall),
+    ...(num(g.infants) ? { bebes: num(g.infants) } : {}),
+    personas: num(g.adults) + num(g.childrenMid) + num(g.childrenSmall) + num(g.infants),
     ...(g.ruta && g.vehiculo ? { rzr: { ruta: String(g.ruta), vehiculo: String(g.vehiculo), unidades: Math.max(1, num(g.unidades)) } } : {}),
     ...(typeof g.hora === "string" && g.hora ? { hora: g.hora } : {}),
     ...(Array.isArray(g.addOns) && g.addOns.length
@@ -367,7 +376,7 @@ function bloqueRecorrido(r: Recorrido, en: boolean, hoy: string): string[] {
   } else if (r.viajeroSolo) {
     L.push(`${en ? "1 person (solo traveler rate)" : "1 persona (tarifa de viajero solo)"}${precio}`);
   } else {
-    L.push(`${textoPersonas(r.adultos, r.ninosMid, r.ninosSmall, en)}${precio}`);
+    L.push(`${textoPersonas(r.adultos, r.ninosMid, r.ninosSmall, en, r.bebes ?? 0)}${precio}`);
   }
   for (const a of r.addOns ?? []) L.push(`➕ ${a.nombre}${a.cantidad > 1 ? ` (×${a.cantidad})` : ""}`);
   if (r.promo) {
@@ -747,7 +756,8 @@ export function itemsDelBot(v: unknown): ItemBotCrudo[] {
     tourDate:   i.tourDate ?? i.fecha,
     adultos:    i.adultos ?? i.adults,
     ninosMid:   i.ninosMid ?? i.childrenMid,
-    ninosSmall: i.ninosSmall ?? i.childrenSmall,
+    ninosSmall: i.ninosSmall ?? i.ninos4a7 ?? i.childrenSmall,
+    bebes:      i.bebes ?? i.infants,
     ...(Array.isArray(i.addOns) ? { addOns: i.addOns } : {}),
     ruta:       i.ruta,
     vehiculo:   i.vehiculo,
@@ -760,7 +770,8 @@ export function itemsDelBot(v: unknown): ItemBotCrudo[] {
 /** El grupo más grande de los recorridos: cuánta gente duerme si no lo dijo. */
 export function grupoDeItems(items: ItemBotCrudo[]): number {
   return items.reduce((max, i) => {
-    const gente = (enteroOpcional(i.adultos) ?? 0) + (enteroOpcional(i.ninosMid) ?? 0) + (enteroOpcional(i.ninosSmall) ?? 0);
+    // Los bebés duermen en la habitación: cuentan para los huéspedes.
+    const gente = (enteroOpcional(i.adultos) ?? 0) + (enteroOpcional(i.ninosMid) ?? 0) + (enteroOpcional(i.ninosSmall) ?? 0) + (enteroOpcional(i.bebes) ?? 0);
     return Math.max(max, gente, enteroOpcional(i.personas) ?? 0);
   }, 0);
 }
@@ -795,7 +806,7 @@ export function paqueteDelBot(v: unknown): PaqueteCotizacionBot | undefined {
   const slug = texto(v.slug ?? v.paqueteSlug, 80);
   if (!slug) return undefined;
   const ninosMid = enteroOpcional(v.ninosMid);
-  const ninosSmall = enteroOpcional(v.ninosSmall);
+  const ninosSmall = enteroOpcional(v.ninosSmall ?? v.ninos4a7);
   const porPersonas = enteroOpcional(v.personas) !== undefined
     ? Math.max(0, enteroOpcional(v.personas)! - (ninosMid ?? 0) - (ninosSmall ?? 0))
     : undefined;

@@ -1,6 +1,7 @@
 // Estado del carrito de reserva de tours — persiste en sessionStorage
 
 import { extraDeEleccion, precioGrupo, precioPorCabeza, type Tour } from "./tours";
+import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "./ninos";
 
 export interface TourBookingState {
   tourId:        string;
@@ -11,9 +12,12 @@ export interface TourBookingState {
   priceAdult:    number;
   tourDate:      string; // YYYY-MM-DD
   adults:        number;
-  children:      number; // total menores (childrenMid + childrenSmall)
-  childrenMid:   number; // 6–10 años → 70 % del precio adulto
-  childrenSmall: number; // menores de 6 → 50 % del precio adulto
+  children:      number; // total menores (childrenMid + childrenSmall + infants)
+  /** Tramo VIEJO 6–10 años al 70 %: solo reservas anteriores al 17 nov 2026 (ver `ninos.ts`). */
+  childrenMid:   number;
+  childrenSmall: number; // 4 a 7 años → 50 % del precio adulto
+  /** 3 años o menos: gratis; ocupan lugar pero no cuentan para el mínimo ni el escalón. */
+  infants?:      number;
   promoCode:     string;
   promoDiscount: number; // porcentaje 0–100
   subtotal:      number;
@@ -60,15 +64,20 @@ export function formatMXN(n: number) {
 
 // ── Precios ──────────────────────────────────────────────────
 
+/**
+ * Lo que paga cada tramo. La regla vive en `ninos.ts`: de 4 a 7 años el 50 %,
+ * de 3 o menos gratis (no entran aquí: cuestan $0), de 8 en adelante adulto.
+ * `childrenMid` (6–10 al 70 %) solo llega de reservas y cotizaciones viejas.
+ */
 export function calcTourTotal(
   priceAdult:    number,
   adults:        number,
-  childrenMid:   number, // 6–10 años → 70 %
-  childrenSmall: number, // menores de 6 → 50 %
+  childrenMid:   number, // tramo viejo 6–10 años → 70 % (solo registros anteriores al 17 nov 2026)
+  childrenSmall: number, // 4 a 7 años → 50 %
   promoDiscount: number
 ) {
-  const childPriceMid   = Math.round(priceAdult * 0.7);
-  const childPriceSmall = Math.round(priceAdult * 0.5);
+  const childPriceMid   = Math.round(priceAdult * FACTOR_NINO_ANTERIOR);
+  const childPriceSmall = Math.round(priceAdult * FACTOR_NINO);
   const subtotal = priceAdult * adults + childPriceMid * childrenMid + childPriceSmall * childrenSmall;
   const discount = Math.round(subtotal * promoDiscount / 100);
   return { subtotal, discount, total: subtotal - discount, childPriceMid, childPriceSmall };
@@ -151,17 +160,23 @@ export function totalRecorrido(
   promoDiscount = 0,
   /** La opción elegida (id o nombre en español); la de Tamasopo suma $150 por cabeza. */
   eleccion?: string | null,
+  /**
+   * Bebés de 0 a 3 años. En la tarifa por GRUPO (el Edén) cuentan como persona
+   * —la regla de niños no aplica ahí—; por cabeza no pagan ni mueven el escalón.
+   */
+  infants = 0,
 ): number {
-  const delGrupo = precioGrupo(tour, adults + childrenMid + childrenSmall);
+  const delGrupo = precioGrupo(tour, adults + childrenMid + childrenSmall + (Number(infants) || 0));
   if (delGrupo !== null) return delGrupo - Math.round(delGrupo * promoDiscount / 100);
   // 🔴 Aquí vivía la tarifa de viajero solo (precio × 2 − $2). Se fue el 8 oct
   // 2026: quien va solo paga su lugar y punto. Lo que cuida el margen es que la
   // salida no corre bajo el mínimo, no cobrarle el doble.
-  // El escalón lo decide el total de cabezas —los niños también ocupan lugar—
-  // y después cada quien paga lo suyo sobre ESE precio: el adulto completo, el
-  // de 6 a 10 el 70 % y el menor de 6 el 50 %.
+  // El escalón lo decide el total de cabezas QUE PAGAN —los bebés de 0 a 3 van
+  // gratis y no entran (17 nov 2026)— y después cada quien paga lo suyo sobre
+  // ESE precio: el adulto completo y el niño de 4 a 7 el 50 % (el tramo viejo
+  // de 6 a 10 al 70 % solo existe en registros anteriores).
   // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$150) va DENTRO
-  // del precio por cabeza: el menor paga su 70 % / 50 % también de él.
+  // del precio por cabeza: el menor paga su 50 % también de él.
   const porCabeza = precioPorCabeza(tour, adults + childrenMid + childrenSmall) + extraDeEleccion(tour, eleccion);
   return calcTourTotal(porCabeza, adults, childrenMid, childrenSmall, promoDiscount).total;
 }

@@ -140,16 +140,22 @@ export interface BookingMessages {
     unidades: (n: number) => string;
     adultos: string;
     adulto: string;
-    de6a10: string;
-    menoresDe6: string;
+    /** «adultos (8+ años)»: desde los 8 pagan como adulto (`ninos.ts`). */
+    adultos8: string;
+    /** Niños de 4 a 7 años (50 %). */
+    ninos4a7: string;
+    nino4a7: string;
+    /** Bebés de 0 a 3 años (gratis). */
+    bebes: string;
+    bebe: string;
+    gratis: string;
     /**
      * Etiqueta del contador cuando el recorrido se cobra por GRUPO: ahí no hay
-     * tramos de menor que mostrar, porque un niño no paga el 70 % de una tarifa
+     * tramos de menor que mostrar, porque un niño no paga el 50 % de una tarifa
      * plana. Ver `precioUnidad: "grupo"` en tours.ts.
      */
     personaSing: string;
     personaPl: string;
-    menorDe6: string;
     menos: (etiqueta: string, tour: string) => string;
     mas: (etiqueta: string, tour: string) => string;
     soloMayores: string;
@@ -710,7 +716,7 @@ const es: BookingMessages = {
     // Sin "transporte desde tu hospedaje": no es de todos (el RZR y el buceo
     // no recogen) y con él la meta pasaba de 155 y Google la cortaba.
     metaDescription:
-      "Aparta con el 30 % y liquida el resto el día del tour. Cancela gratis hasta 48 h antes. Guía NOM-09, entradas y seguro incluidos.",
+      "Aparta con el 30 % y liquida el resto el día del tour. Cancela gratis hasta 48 h antes. Guía NOM-09 y entradas incluidos.",
     ogTitle: "Reservar tour en la Huasteca Potosina",
     ogDescription: "Aparta con el 30 % y liquida el resto el día del tour. Cancelación gratuita hasta 48 h antes.",
     // «Motor de reservas» era lenguaje interno (auditoría del 13 nov 2026).
@@ -753,7 +759,7 @@ const es: BookingMessages = {
     sinRiesgo: [
       "Cancelación gratuita hasta 48 h antes del tour, sin preguntas y sin penalización.",
       "Hoy solo pagas el 30 % y liquidas el resto el día del recorrido.",
-      "El precio que ves es el final: transporte, entradas, guía, equipo y seguro incluidos.",
+      "El precio que ves es el final: transporte, entradas, guía y equipo incluidos (los tours de aventura traen además seguro de viajero).",
       "Si el río no está en condiciones seguras, eliges tú: reembolso del 100 % o cambiar la fecha sin costo.",
       "Pago con tarjeta procesado por Stripe. Nosotros no guardamos tus datos bancarios.",
       "¿Dudas antes de pagar? Te contestamos por WhatsApp y reservas cuando quieras.",
@@ -830,11 +836,14 @@ const es: BookingMessages = {
     unidades: (n) => `${n} unidad${n > 1 ? "es" : ""}`,
     adultos: "adultos",
     adulto: "adulto",
-    de6a10: "de 6 a 10 años",
-    menoresDe6: "menores de 6",
+    adultos8: "adultos (8+ años)",
+    ninos4a7: "niños de 4 a 7",
+    nino4a7: "niño de 4 a 7",
+    bebes: "bebés de 0 a 3",
+    bebe: "bebé de 0 a 3",
+    gratis: "gratis",
     personaSing: "persona",
     personaPl: "personas",
-    menorDe6: "menor de 6",
     menos: (etiqueta, tour) => `Menos ${etiqueta} en ${tour}`,
     mas: (etiqueta, tour) => `Más ${etiqueta} en ${tour}`,
     soloMayores: "Este recorrido es solo para mayores de 10 años.",
@@ -999,7 +1008,7 @@ const es: BookingMessages = {
 
     resenasGoogle: `${GOOGLE_RESENAS} reseñas en Google`,
     verlas: "Verlas →",
-    credenciales: "+10,000 viajeros guiados · Guías certificados NOM-09 SECTUR · Seguro de viaje incluido",
+    credenciales: "+10,000 viajeros guiados · Guías certificados NOM-09 SECTUR · Seguro en tours de aventura",
     confianzaCancelas: "Cancelas gratis hasta 48 h antes",
     confianzaPago: (pct) => pct >= 100
       ? "Pago seguro con Stripe · Pagas el total y no queda saldo"
@@ -1300,7 +1309,7 @@ const es: BookingMessages = {
     pagoTarjeta: "Con tarjeta de crédito o débito, y con Apple Pay o Google Pay si tu teléfono los tiene.",
     pagoMsi: "Y a 3, 6 o 9 meses sin intereses con tarjetas participantes, si eliges pagar el viaje completo hoy.",
     pagoAlterno: "¿Prefieres transferencia SPEI o pagar en OXXO? Se arma por WhatsApp: te mandamos los datos y apartamos tus lugares al recibir el comprobante.",
-    edadNinos: "Sí. De 6 a 10 años pagan el 70 % y los menores de 6, el 50 %.",
+    edadNinos: "Sí. De 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto.",
     edadMinima: (tour, edad) => `${tour}: desde ${edad} años.`,
     soloAdultos: (tour) => `${tour} es solo para adultos.`,
     nadoSinSaber: "No necesitas saber nadar: llevas chaleco salvavidas todo el recorrido y vas con guía certificado.",
@@ -1342,7 +1351,7 @@ const en: BookingMessages = {
   catalogo: {
     metaTitle: "Book a Huasteca Potosina tour — 30 % deposit",
     metaDescription:
-      "Pay 30 % today and settle the rest on tour day. Free cancellation up to 48 h before. NOM-09 guide, entrance fees and insurance included.",
+      "Pay 30 % today and settle the rest on tour day. Free cancellation up to 48 h before. NOM-09 guide and entrance fees included.",
     ogTitle: "Book a Huasteca Potosina tour",
     ogDescription: "A 30 % deposit holds your spot. Free cancellation up to 48 h before.",
     eyebrow: "Book your tour",
@@ -1382,7 +1391,7 @@ const en: BookingMessages = {
     sinRiesgo: [
       "Free cancellation up to 48 h before the tour, no questions and no penalty.",
       "You only pay 30 % today and settle the rest on tour day.",
-      "The price you see is final: transport, entrance fees, guide, gear and insurance included.",
+      "The price you see is final: transport, entrance fees, guide and gear included (adventure tours also include traveler insurance).",
       "If the weather forces a cancellation, we reschedule or refund your deposit.",
       "Card payment processed by Stripe. We never store your bank details.",
       "Questions before paying? We answer on WhatsApp and you book whenever you want.",
@@ -1459,11 +1468,14 @@ const en: BookingMessages = {
     unidades: (n) => `${n} unit${n > 1 ? "s" : ""}`,
     adultos: "adults",
     adulto: "adult",
-    de6a10: "ages 6 to 10",
+    adultos8: "adults (8+)",
+    ninos4a7: "kids 4–7",
+    nino4a7: "kid 4–7",
+    bebes: "babies 0–3",
+    bebe: "baby 0–3",
+    gratis: "free",
     personaSing: "person",
     personaPl: "people",
-    menoresDe6: "under 6",
-    menorDe6: "under 6",
     menos: (etiqueta, tour) => `Fewer ${etiqueta} on ${tour}`,
     mas: (etiqueta, tour) => `More ${etiqueta} on ${tour}`,
     soloMayores: "This tour is for ages 10 and over only.",
@@ -1622,7 +1634,7 @@ const en: BookingMessages = {
 
     resenasGoogle: `${GOOGLE_RESENAS} Google reviews`,
     verlas: "Read them →",
-    credenciales: "10,000+ travellers guided · NOM-09 SECTUR certified guides · Travel insurance included",
+    credenciales: "10,000+ travellers guided · NOM-09 SECTUR certified guides · Insurance on adventure tours",
     confianzaCancelas: "Free cancellation up to 48 h before",
     confianzaPago: (pct) => pct >= 100
       ? "Secure payment with Stripe · Paid in full, no balance left"
@@ -1931,7 +1943,7 @@ const en: BookingMessages = {
     pagoTarjeta: "By credit or debit card, and with Apple Pay or Google Pay if your phone has them.",
     pagoMsi: "And in 3, 6 or 9 interest-free monthly payments with participating Mexican cards, if you choose to pay for the whole trip today.",
     pagoAlterno: "Prefer a SPEI transfer or paying in cash at OXXO? We set it up on WhatsApp: we send you the details and hold your spots once we get the receipt.",
-    edadNinos: "Yes. Kids aged 6 to 10 pay 70% and under-6s pay 50%.",
+    edadNinos: "Yes. Kids aged 4 to 7 pay 50%; ages 3 and under ride free (they still take a seat), and 8 and up pay the adult price.",
     edadMinima: (tour, edad) => `${tour}: ages ${edad} and up.`,
     soloAdultos: (tour) => `${tour} is adults only.`,
     nadoSinSaber: "You don't need to swim: you wear a life jacket the whole way and go with a certified guide.",

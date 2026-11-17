@@ -118,6 +118,7 @@ export async function POST(req: NextRequest) {
       adults:        tourDetails?.adults,
       childrenMid:   tourDetails?.childrenMid,
       childrenSmall: tourDetails?.childrenSmall,
+      infants:       tourDetails?.infants,
       promoCode:     tourDetails?.promoCode,
       pct:           tourDetails?.pct,
       addOns:        tourDetails?.addOns,
@@ -132,7 +133,7 @@ export async function POST(req: NextRequest) {
     }
 
     const childrenTotal =
-      (Number(tourDetails?.childrenMid) || 0) + (Number(tourDetails?.childrenSmall) || 0);
+      (Number(tourDetails?.childrenMid) || 0) + (Number(tourDetails?.childrenSmall) || 0) + (Number(tourDetails?.infants) || 0);
 
     // 🔴 El cupo de ESE día, antes de cobrar (`lib/cupoTour.ts`). El calendario
     // ya pinta los días llenos, pero lo que llega aquí sale del sessionStorage:

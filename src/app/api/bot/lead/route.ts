@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
     const paquete = paqueteDelBot({
       slug: body.paqueteSlug ?? body.slug, fecha: body.checkin ?? body.fecha ?? body.tourDate,
       adultos: body.adultos, personas: body.personas,
-      ninosMid: body.ninosMid, ninosSmall: body.ninosSmall,
+      ninosMid: body.ninosMid, ninosSmall: body.ninosSmall ?? body.ninos4a7,
       vistaMontana: body.vistaMontana, nocheExtra: body.nocheExtra,
       eleccion: body.eleccion, reparto: body.reparto, habitacion: body.habitacion,
     });

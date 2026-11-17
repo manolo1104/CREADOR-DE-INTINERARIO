@@ -34,6 +34,8 @@ export interface LineaRecuperada {
   subtotal:  number;
   childrenMid?:   number;
   childrenSmall?: number;
+  /** Bebés de 0 a 3 años (gratis). */
+  infants?:       number;
   ruta?:     string;
   vehiculo?: string;
   unidades?: number;
@@ -55,9 +57,10 @@ export interface LineaRecuperada {
  * catálogo al rehacerlo.
  */
 interface ExtraDeLinea {
-  /** childrenMid / childrenSmall */
+  /** childrenMid / childrenSmall / infants (bebés de 0 a 3, gratis) */
   m?: number;
   s?: number;
+  b?: number;
   /** La elección obligatoria (su nombre, ya validado contra el catálogo). */
   e?: string;
   /** Actividades opcionales: [id, cantidad, precio]. Sin el traslado de Valles. */
@@ -92,6 +95,7 @@ export function metadataDeRenglones(lineas: LineaCarrito[]): Record<string, stri
     const x: ExtraDeLinea = {};
     if (l.childrenMid) x.m = l.childrenMid;
     if (l.childrenSmall) x.s = l.childrenSmall;
+    if (l.infants) x.b = l.infants;
     if (l.eleccion) x.e = l.eleccion.slice(0, 120);
     const actividades = (l.addOns ?? [])
       .filter((a) => a.id !== ID_TRASLADO_VALLES)
@@ -138,6 +142,7 @@ function renglonCompleto(base: LineaRecuperada, slug: string, x: ExtraDeLinea): 
   } else {
     l.childrenMid = Number(x.m) || 0;
     l.childrenSmall = Number(x.s) || 0;
+    if (Number(x.b) > 0) l.infants = Number(x.b);
   }
   if (x.e) l.eleccion = x.e;
   const actividades = (Array.isArray(x.a) ? x.a : []).map(([id, cantidad, precio]) => ({

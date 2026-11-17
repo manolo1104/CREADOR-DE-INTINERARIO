@@ -262,7 +262,7 @@ function datosParaPdf(folio) {
   if (!reg) return null;
   const lineas = (reg.recorridos || []).map((l) => ({
     tourSlug: l.slug, tourName: l.nombre, tourDate: l.tourDate || "",
-    adults: l.adultos || 0, childrenMid: l.ninosMid || 0, childrenSmall: l.ninosSmall || 0, subtotal: l.total,
+    adults: l.adultos || 0, childrenMid: l.ninosMid || 0, childrenSmall: l.ninosSmall || 0, ...(l.bebes ? { infants: l.bebes } : {}), subtotal: l.total,
     ...(l.cobro === "vehiculo" ? { ruta: l.ruta, vehiculo: l.vehiculo, unidades: l.unidades } : {}),
   }));
   const p = reg.paquete;

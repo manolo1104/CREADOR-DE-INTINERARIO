@@ -152,7 +152,7 @@ export default function ReservaDetalle({
             <div className="space-y-2">
               {(lineas.length ? lineas : [{ tourSlug: b.tourSlug, tourName: b.tourName, tourDate: b.tourDate, adults: b.adults, childrenMid: b.children, subtotal: b.totalAmount }]).map((l, i) => {
                 const t = TOURS_LISTA.find(t => t.slug === l.tourSlug);
-                const pax = (l.adults ?? 0) + (l.childrenMid ?? (l as any).children ?? 0) + (l.childrenSmall ?? 0);
+                const pax = (l.adults ?? 0) + (l.childrenMid ?? (l.childrenSmall === undefined && l.infants === undefined ? (l as any).children ?? 0 : 0)) + (l.childrenSmall ?? 0) + (l.infants ?? 0);
                 return (
                   <div key={i} className="flex items-start gap-3 bg-[#FAFAF8] border border-[#1B4332]/8 rounded-sm p-3">
                     <span className="font-mono text-[10px] text-[#1B4332]/35 mt-0.5">{String(i + 1).padStart(2, "0")}</span>

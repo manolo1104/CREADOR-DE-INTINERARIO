@@ -53,7 +53,7 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   // El RZR no publica selección (su ruta y vehículo no caben en esta URL): su
   // botón siempre baja al módulo, donde está «Continuar».
   const hrefConSeleccion = sel && sel.fecha && !esVehiculo
-    ? lp(`/reservar/carrito?agregar=${tourSlug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosMid=${sel.ninosMid}&ninosSmall=${sel.ninosSmall}`)
+    ? lp(`/reservar/carrito?agregar=${tourSlug}&fecha=${sel.fecha}&adultos=${sel.adultos}&ninosSmall=${sel.ninosSmall}&bebes=${sel.bebes}`)
     : null;
   const dinero = (n: number) => `$${n.toLocaleString(en ? "en-US" : "es-MX")}`;
   // Esta barra es la ÚNICA de abajo en las fichas de tour EN EL CELULAR:

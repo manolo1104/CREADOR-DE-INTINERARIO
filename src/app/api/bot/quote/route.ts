@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 /**
  * POST /api/bot/quote — la cotización de UN recorrido (herramienta crear_cotizacion).
  *
- * Pedido de siempre: { tourSlug, tourDate, adults, childrenMid?, childrenSmall?,
+ * Pedido de siempre: { tourSlug, tourDate, adults, childrenSmall? (4–7), infants? (0–3),
  * customerName, customerPhone?, customerEmail?, promoCode? }, más lo del bot
  * nuevo: { waChatId, telefono, zonaHospedaje, locale, notasInternas }.
  *
@@ -50,7 +50,9 @@ export async function POST(req: NextRequest) {
       tourDate:   body.tourDate,
       adultos:    body.adults ?? body.adultos,
       ninosMid:   body.childrenMid ?? body.ninosMid,
-      ninosSmall: body.childrenSmall ?? body.ninosSmall,
+      ninosSmall: body.childrenSmall ?? body.ninosSmall ?? body.ninos4a7,
+      // Bebés de 0 a 3 años: gratis, ocupan lugar (`ninos.ts`).
+      bebes:      body.infants ?? body.bebes,
       addOns:     body.addOns,
       ruta:       body.ruta,
       vehiculo:   body.vehiculo,

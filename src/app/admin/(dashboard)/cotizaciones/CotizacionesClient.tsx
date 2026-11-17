@@ -283,7 +283,7 @@ export default function CotizacionesClient(
         if (omision) up.eleccion = omision;
         if (t?.precioUnidad === "vehiculo" && t.rutas && t.flota) {
           up.ruta = t.rutas[0].nombre; up.vehiculo = t.flota[0].nombre; up.unidades = 1;
-          up.adults = 0; up.childrenMid = 0; up.childrenSmall = 0;
+          up.adults = 0; up.childrenMid = 0; up.childrenSmall = 0; up.infants = 0;
         } else {
           delete up.ruta; delete up.vehiculo; delete up.unidades;
           up.adults = Math.max(1, up.adults || 2);
@@ -292,6 +292,7 @@ export default function CotizacionesClient(
       if (field === "adults")        up.adults        = Math.max(1, Number(val) || 1);
       if (field === "childrenMid")   up.childrenMid   = Math.max(0, Number(val) || 0);
       if (field === "childrenSmall") up.childrenSmall = Math.max(0, Number(val) || 0);
+      if (field === "infants")       up.infants       = Math.max(0, Number(val) || 0);
       if (field === "unidades")      up.unidades      = Math.max(1, Number(val) || 1);
       if (field === "precioPersona") up.precioPersona = Math.max(0, Number(val) || 0);
       if (esTourVehiculo(up.tourSlug)) up.tourName = vehiculoLineName(up);
@@ -423,7 +424,8 @@ export default function CotizacionesClient(
     const editLines: LineItem[] = storedLines?.length
       ? storedLines.map(l => ({
           ...l,
-          childrenMid:   l.childrenMid   ?? (l.children ?? 0),
+          // Sin desglose (renglón viejo): los menores son el tramo de antes.
+          childrenMid:   l.childrenMid   ?? (l.childrenSmall === undefined && l.infants === undefined ? (l.children ?? 0) : 0),
           childrenSmall: l.childrenSmall ?? 0,
         }))
       : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }];
@@ -1369,13 +1371,22 @@ export default function CotizacionesClient(
                                 </div>
                               </div>
                               <div className="grid grid-cols-2 gap-2">
+                                {/* Regla del 17 nov 2026 (`ninos.ts`): de 4 a 7 al 50 %, de 0 a 3
+                                    gratis, de 8 en adelante adulto. El tramo de 6 a 10 solo se
+                                    enseña si la cotización vieja lo trae, para bajarlo a 0. */}
+                                {(line.childrenMid ?? 0) > 0 && (
+                                  <div className="col-span-2">
+                                    <label className="block text-[9px] tracking-[2px] uppercase text-[#8a6a1a] font-dm mb-1 truncate" title="Tarifa anterior al 17 nov 2026: 70 %">Niños 6–10 (tarifa anterior, 70 %)</label>
+                                    <input type="number" min={0} max={12} value={line.childrenMid} onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
+                                  </div>
+                                )}
                                 <div>
-                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="6-10 años — 30% descuento">Niños 6–10 años</label>
-                                  <input type="number" min={0} max={12} value={line.childrenMid} onChange={e => updateLine(i, "childrenMid", Number(e.target.value))} className={inputCls} />
+                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="4 a 7 años — 50 % del adulto">Niños 4–7 (50 %)</label>
+                                  <input type="number" min={0} max={12} value={line.childrenSmall} onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
                                 </div>
                                 <div>
-                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="Menores de 6 — 50% descuento">Niños &lt;6 años</label>
-                                  <input type="number" min={0} max={12} value={line.childrenSmall} onChange={e => updateLine(i, "childrenSmall", Number(e.target.value))} className={inputCls} />
+                                  <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="0 a 3 años — gratis, ocupan lugar">Bebés 0–3 (gratis)</label>
+                                  <input type="number" min={0} max={12} value={line.infants ?? 0} onChange={e => updateLine(i, "infants", Number(e.target.value))} className={inputCls} />
                                 </div>
                               </div>
                             </>

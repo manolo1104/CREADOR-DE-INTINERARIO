@@ -247,12 +247,13 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "ninos-y-edades",
     titulo: "Niños y edades",
     texto:
-      "En los tours que se cobran por persona: niños de 6 a 10 años pagan el 70 % del precio de adulto y menores de 6 el 50 %; de 11 años en adelante pagan como adulto. " +
-      "Cada tour tiene su edad mínima en su ficha (`edadMinima` y `edadNota`); el buceo es solo para mayores de 10. " +
+      "En los tours que se cobran por persona: niños de 4 a 7 años pagan el 50 % del precio de adulto; de 3 años o menos van GRATIS (ocupan lugar en la camioneta, pero no cuentan para el mínimo de personas); de 8 años en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. " +
+      "En las herramientas: los de 8 en adelante van en `adultos`, los de 4 a 7 en `ninosSmall` y los de 0 a 3 en `bebes`. " +
+      "Cada tour tiene su edad mínima en su ficha (`edadMinima` y `edadNota`): rafting, rappel, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz son desde 8 años, así que ahí no hay precio de niño. " +
       "En el RZR los niños van según el vehículo (cada unidad dice cuántos adultos y niños lleva). " +
       "Pregunta las edades junto con el número de personas, antes de proponer. " +
       "Una excepción a la edad mínima no la decides tú: la confirma el equipo.",
-    claves: ["niños", "niño", "hijo", "hija", "edad", "años", "bebé", "menor", "familia", "kids", "children", "child", "baby"],
+    claves: ["niños", "niño", "hijo", "hija", "edad", "años", "bebé", "bebe", "menor", "familia", "gratis", "descuento niños", "kids", "children", "child", "baby", "toddler", "infant"],
   },
   {
     tema: "minimos-y-viajero-solo",

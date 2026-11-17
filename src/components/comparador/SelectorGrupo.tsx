@@ -22,8 +22,9 @@ export function SelectorGrupo() {
 
   const filas: { clave: keyof Grupo; etiqueta: string; min: number }[] = [
     { clave: "adultos", etiqueta: ui.grupo.adultos, min: limites.minAdultos },
-    { clave: "ninosMid", etiqueta: ui.grupo.de6a10, min: 0 },
-    { clave: "ninosSmall", etiqueta: ui.grupo.menoresDe6, min: 0 },
+    // Regla del 17 nov 2026 (`ninos.ts`): de 4 a 7 al 50 %; de 8 en adelante
+    // adultos; los bebés de 0 a 3 no pagan. El tramo viejo de 6 a 10 ya no va.
+    { clave: "ninosSmall", etiqueta: ui.grupo.de4a7, min: 0 },
   ];
 
   const mover = (clave: keyof Grupo, delta: number) => cambiarGrupo({ ...grupo, [clave]: grupo[clave] + delta });

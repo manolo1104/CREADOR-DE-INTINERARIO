@@ -19,9 +19,9 @@ export type TipoComparacion = "recorridos" | "paquetes";
 /** Quién viaja. Los mismos tres tramos que el carrito y el checkout. */
 export interface Grupo {
   adultos:    number;
-  /** De 6 a 10 años: pagan el 70 %. */
+  /** Tramo viejo 6–10 (70 %): ya no se elige (17 nov 2026, `ninos.ts`); queda en 0. */
   ninosMid:   number;
-  /** Menores de 6: pagan el 50 %. */
+  /** De 4 a 7 años: pagan el 50 %. */
   ninosSmall: number;
 }
 
@@ -76,8 +76,9 @@ export function parseGrupo(
   const m = entero(sp.ninosMid);
   const s = entero(sp.ninosSmall);
   const g: Grupo = {
-    adultos:    Number.isNaN(a) ? GRUPO_INICIAL.adultos : Math.max(lim.minAdultos, a),
-    ninosMid:   Number.isNaN(m) ? 0 : Math.max(0, m),
+    adultos:    (Number.isNaN(a) ? GRUPO_INICIAL.adultos : Math.max(lim.minAdultos, a)) + (Number.isNaN(m) ? 0 : Math.max(0, m)),
+    // Un enlace viejo con `ninosMid` (6–10): con la regla nueva cuentan como adultos.
+    ninosMid:   0,
     ninosSmall: Number.isNaN(s) ? 0 : Math.max(0, s),
   };
   // Se recorta primero a los menores: el adulto es el que no puede faltar.
@@ -152,7 +153,8 @@ export type TotalTour =
 export function totalTourParaGrupo(t: TarifaTour, g: Grupo): TotalTour {
   if (t.precioUnidad === "vehiculo") return { ok: false, motivo: "vehiculo", desde: t.precio };
   if (t.soloAdultos && g.ninosMid + g.ninosSmall > 0) return { ok: false, motivo: "soloAdultos" };
-  if ((t.edadMinima ?? 0) >= 6 && g.ninosSmall > 0) {
+  // Los de 4 a 7 años no entran a un recorrido con edad mínima mayor a 4.
+  if ((t.edadMinima ?? 0) > 4 && g.ninosSmall > 0) {
     return { ok: false, motivo: "edadMinima", edad: t.edadMinima! };
   }
   const personas = personasDe(g);

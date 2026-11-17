@@ -42,7 +42,8 @@ export function pedidosDeCupo(
     .map((l) => ({
       slug:     String(l.tourSlug),
       fecha:    String(l.tourDate),
-      personas: Number(l.adults || 0) + Number(l.childrenMid ?? l.children ?? 0) + Number(l.childrenSmall || 0),
+      // Los bebés de 0 a 3 ocupan lugar: cuentan para el cupo.
+      personas: Number(l.adults || 0) + Number(l.childrenMid ?? l.children ?? 0) + Number(l.childrenSmall || 0) + Number((l as { infants?: number }).infants || 0),
     }));
 }
 
