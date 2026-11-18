@@ -1,7 +1,8 @@
 /**
- * SOLO LECTURA. Línea base ANTES del panel nuevo (17 nov 2026): las 4 semanas
- * lunes–domingo del 19 oct al 15 nov, con las mismas fórmulas del panel, más la
- * serie semanal desde el 21 sep para ver cuánto se mueve sola cada cifra.
+ * SOLO LECTURA. Línea base ANTES del panel nuevo (17 nov 2026): del 17 sep al
+ * 16 nov 2026 (el último día completo), la misma ventana que la de WhatsApp, con
+ * las mismas fórmulas del panel, más la serie semanal desde el 21 sep para ver
+ * cuánto se mueve sola cada cifra.
  *
  * Funciona contra la base de producción aunque todavía no tenga las tablas
  * nuevas del panel: pide solo columnas que ya existen (select explícito), no
@@ -26,7 +27,7 @@ import { formatear } from "@/lib/admin/indicadores/estado";
 import { KPI } from "@/lib/admin/indicadores/catalogo";
 import type { TourBooking } from "@prisma/client";
 
-const DESDE = "2026-10-19", HASTA = "2026-11-15";
+const DESDE = "2026-09-17", HASTA = "2026-11-16";
 const SEMANAS = Array.from({ length: 8 }, (_, i) => addDaysYMD("2026-09-21", i * 7)); // lunes 21 sep … 9 nov
 
 const SELECT = {
@@ -43,7 +44,7 @@ const entre = (ymd: string, a: string, b: string) => ymd >= a && ymd <= b;
 
 async function main() {
   const hoy = hoyMX();
-  console.log(`LÍNEA BASE · ${DESDE} a ${HASTA} (4 semanas lun–dom) · corrida el ${hoy} · solo lectura\n`);
+  console.log(`LÍNEA BASE · ${DESDE} a ${HASTA} · corrida el ${hoy} · solo lectura\n`);
 
   const vivas = (await prisma.tourBooking.findMany({ select: SELECT })).filter(b => cuenta(b.status));
   const todas = await prisma.tourBooking.findMany({ select: { createdAt: true, status: true } });
@@ -58,6 +59,11 @@ async function main() {
   linea("Reservas capturadas", String(ven.length));
   linea("Vendido", pesos(vendido));
   linea("Ticket promedio", ven.length ? pesos(vendido / ven.length) : "—");
+  for (const [mes, a, z] of [["17–30 sep", DESDE, "2026-09-30"], ["octubre", "2026-10-01", "2026-10-31"], ["1–16 nov", "2026-11-01", HASTA]] as const) {
+    const rs = ven.filter(b => entre(ymdMX(b.createdAt), a, z));
+    const v = rs.reduce((t, b) => t + b.totalAmount, 0);
+    linea(`  · ${mes}`, `${rs.length} reservas · ${pesos(v)} · ticket ${rs.length ? pesos(v / rs.length) : "—"}`);
+  }
   linea("Cobrado de esas reservas (al correr)", pesos(ven.reduce((t, b) => t + montoCobrado(b), 0)));
   linea("Personas por reserva", ven.length ? `${r1(pax.reduce((t, n) => t + n, 0) / ven.length)} · con 1–2 personas ${pct(pax.filter(n => n <= 2).length, ven.length)}` : "—");
   linea("Reservas para hoy o mañana", pct(ven.filter(b => primerDia(b) <= addDaysYMD(ymdMX(b.createdAt), 1)).length, ven.length));
@@ -90,8 +96,8 @@ async function main() {
   linea("Personas por salida (sin a medida)", String(op.paxPorSalida));
   linea("Salidas regulares bajo mínimo", `${op.regularesBajoMinimo} de ${op.regulares}`);
   const vencidas = vivas.filter(b => saldoPendiente(b) > 0 && ultimoDia(b) <= HASTA);
-  linea("Saldos vencidos (tour ≤ 15 nov, al correr)", `${pesos(vencidas.reduce((t, b) => t + saldoPendiente(b), 0))} en ${vencidas.length} reservas`);
-  const cortes = await prisma.corteSemanal.findMany({ where: { semana: { gte: DESDE, lte: "2026-11-09" } }, select: { semana: true, ventas: true, utilidad: true, estado: true } }).catch(() => []);
+  linea("Saldos vencidos (tour ≤ 16 nov, al correr)", `${pesos(vencidas.reduce((t, b) => t + saldoPendiente(b), 0))} en ${vencidas.length} reservas`);
+  const cortes = await prisma.corteSemanal.findMany({ where: { semana: { gte: "2026-09-14", lte: "2026-11-09" } }, select: { semana: true, ventas: true, utilidad: true, estado: true } }).catch(() => []);
   const cerrados = cortes.filter(c => c.estado !== "borrador");
   const vC = cerrados.reduce((t, c) => t + c.ventas, 0), uC = cerrados.reduce((t, c) => t + c.utilidad, 0);
   linea("Cortes en la ventana", cortes.map(c => `${c.semana} ${c.estado}`).join(" · ") || "ninguno");
@@ -120,7 +126,8 @@ async function main() {
 
   // ── 6. Web (GA4 + Search Console), las mismas fórmulas de «Web y canales» ──
   console.log("\n6. WEB (GA4 y Search Console)");
-  const p = periodoDe("28d", HASTA, hoy);
+  // Un periodo a la medida (17 sep–16 nov): el de 90 días con su inicio movido.
+  const p = { ...periodoDe("90d", HASTA, hoy), desde: DESDE, etiqueta: `${DESDE} a ${HASTA}` };
   const serie = SEMANAS.map(l => periodoDe("semana", l, hoy));
   try {
     const m = await medirDemanda(p, serie, hoy);
