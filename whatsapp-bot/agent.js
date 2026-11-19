@@ -110,10 +110,66 @@ const ESTADO_CALENDARIO = {
   "no-cabe":      { hayLugar: false, di: "no caben todos: quedan menos lugares que personas" },
   "cerrada":      { hayLugar: false, di: "no hay salida ese día" },
 };
-function calendarioParaModelo(nombre, crudo, locale = "es") {
+// 19 nov 2026, Manolo: para MAÑANA solo se puede UNIR a los tours que ya tienen
+// salida armada (viajeros ese día): «para el 20 están Expedición Tamul y Ruta
+// Surrealista como tours a los que se puede unir». Meco salía «libre» en el
+// calendario y el bot le dijo a una clienta que había lugar. Un día «libre»
+// mañana = sin salida → no se ofrece ni se cotiza. Los tours de mismo día (RZR,
+// Café, Gruta) se arman con poco aviso: esos sí.
+const CON_SALIDA = new Set(["con-reservas", "casi-lleno"]);
+function sumarUnDia(ymd) {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+function mananaMX() { return sumarUnDia(hoyMX()); }
+/** ¿En esa fecha el tour solo se ofrece si ya tiene salida armada? (mañana, salvo los de mismo día) */
+function soloSiHaySalida(slug, fecha) {
+  return Boolean(slug) && fecha === mananaMX() && !TOURS_MISMO_DIA.has(slug);
+}
+const nombreCorto = (t) => String((t && t.nombre) || "").split("—")[0].trim();
+
+const cacheConSalida = new Map(); // fecha -> { at, lista }
+/** Los tours con salida armada (viajeros) en esa fecha, o null si el sitio no contestó. */
+async function toursConSalida(fecha) {
+  const previo = cacheConSalida.get(fecha);
+  if (previo && Date.now() - previo.at < 60 * 1000) return previo.lista;
+  const lista = [];
+  for (const t of TOURS) {
+    // Los de poco aviso (RZR, Café, Gruta) van aparte: se arman aunque no haya grupo.
+    if (TOURS_MISMO_DIA.has(t.slug)) continue;
+    const res = await llamarSitio("disponibilidad", { slug: t.slug, desde: fecha, hasta: fecha });
+    if (!res.ok || !res.data || !res.data.dias) return null; // el sitio no contestó: no se afirma nada
+    const e = res.data.dias[fecha];
+    if (e && CON_SALIDA.has(e)) lista.push(t); // sin dato (tour sin calendario) = sin salida armada
+  }
+  cacheConSalida.set(fecha, { at: Date.now(), lista });
+  return lista;
+}
+
+/** Freno para MAÑANA: el tour no tiene salida armada → no se cotiza ni se ofrece. null = adelante. */
+async function frenoSinSalida(t, fecha) {
+  const f = fechaISO(fecha);
+  if (!t || !f || !soloSiHaySalida(t.slug, f)) return null;
+  const res = await llamarSitio("disponibilidad", { slug: t.slug, desde: f, hasta: f });
+  const e = res.ok && res.data && res.data.dias ? res.data.dias[f] : undefined;
+  // Con viajeros se puede unir; sin cupo, cerrada o no caben lo dice calcular_precio con el sitio.
+  if (e !== undefined && e !== "libre") return null;
+  const nombre = nombreCorto(t);
+  if (e === undefined) {
+    return `No pude revisar si ${nombre} tiene salida mañana. Para mañana solo se puede unir a tours que ya tienen viajeros: no le digas que hay lugar; escala (avisar, normal) para que el equipo lo confirme.`;
+  }
+  const lista = await toursConSalida(f);
+  const otros = (lista || []).filter((x) => x.slug !== t.slug).map(nombreCorto);
+  return `${nombre} no tiene salida armada para mañana: para mañana el cliente solo se puede UNIR a los tours que ya tienen viajeros${otros.length ? ` (${otros.join(", ")})` : ""}${TOURS_MISMO_DIA.size ? `, o a ${nombresMismoDia()}` : ""}. Dilo claro y ofrece esos; no lo cotices ni digas que hay lugar. Si quiere ${nombre} sí o sí mañana, escala (avisar, normal) para que el equipo vea si puede abrir salida.`;
+}
+
+function calendarioParaModelo(nombre, crudo, locale = "es", slug = null) {
   const loc = locale === "en" ? "en-US" : "es-MX";
   const dias = Object.keys(crudo).sort().map((fecha) => {
-    const e = ESTADO_CALENDARIO[crudo[fecha]] || { hayLugar: null, di: "sin dato: revísalo con calcular_precio" };
+    const e = soloSiHaySalida(slug, fecha) && crudo[fecha] === "libre"
+      ? { hayLugar: false, di: "mañana no tiene salida armada: solo se puede unir a los tours que ya tienen viajeros (tours_con_salida)" }
+      : ESTADO_CALENDARIO[crudo[fecha]] || { hayLugar: null, di: "sin dato: revísalo con calcular_precio" };
     const dia = new Date(`${fecha}T12:00:00Z`).toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
     return { fecha, dia, hayLugar: e.hayLugar, estado: e.di };
   });
@@ -1352,6 +1408,17 @@ const tools = [
     },
   },
   {
+    name: "tours_con_salida",
+    description: "Qué tours tienen YA salida armada (viajeros) en una fecha. 🔴 Para MAÑANA el cliente solo se puede UNIR a esos (más los que se arman con poco aviso: RZR, Travesía del Café, Gruta de Xilo). Úsala cuando pregunte qué hay para mañana u hoy, y ANTES de ofrecerle cualquier tour para mañana.",
+    input_schema: {
+      type: "object",
+      properties: {
+        fecha: { type: "string", description: "El día, YYYY-MM-DD." },
+      },
+      required: ["fecha"],
+    },
+  },
+  {
     name: "guardar_hotel",
     description: "Anota en su RESERVA el hotel donde pasamos por el cliente (lo ven el guía y el panel). SOLO después del pago, cuando te dice su hotel o lo cambia. Antes de pagar NO: ahí solo importa la zona (Xilitla, Ciudad Valles…).",
     input_schema: {
@@ -1619,7 +1686,7 @@ async function ejecutarHerramienta(name, input, phone) {
       // cotiza para hoy, salvo los tours del mismo día.
       const bajoMinimo = false;
       if (totalPersonas < 1) return { error: "Dime cuántas personas van." };
-      const freno = frenoDeTour(t, { fecha: input.tourDate, personas: totalPersonas });
+      const freno = frenoDeTour(t, { fecha: input.tourDate, personas: totalPersonas }) || await frenoSinSalida(t, input.tourDate);
       if (freno) return { error: freno };
       if (totalPersonas < t.groupMin) {
         return { error: `Este tour requiere mínimo ${t.groupMin} personas. Dilo de una vez y ofrece una alternativa; si piden una excepción al mínimo, escala (salud, avisar, normal).` };
@@ -1730,7 +1797,7 @@ async function ejecutarHerramienta(name, input, phone) {
       if (esPorVehiculo(t)) {
         return { error: "El RZR se cobra por vehículo: da el precio con cotizar_rzr y cotízalo con registrar_cotizacion (tipo 'rzr', con ruta, vehículo, unidades, fecha y hora)." };
       }
-      const frenoCot = frenoDeTour(t, { fecha: input.tourDate, personas: entero(input.adultos) + entero(input.ninosSmall) });
+      const frenoCot = frenoDeTour(t, { fecha: input.tourDate, personas: entero(input.adultos) + entero(input.ninosSmall) }) || await frenoSinSalida(t, input.tourDate);
       if (frenoCot) return { error: frenoCot };
       const nombre = textoLimpio(input.nombre, 120);
       const correo = textoLimpio(input.email, 160);
@@ -1780,7 +1847,7 @@ async function ejecutarHerramienta(name, input, phone) {
       // Mínimo y mismo día, recorrido por recorrido (17 nov 2026).
       for (const i of items) {
         const ti = findTour(i.slug);
-        const f = frenoDeTour(ti, { fecha: i.tourDate, personas: entero(i.adultos) + entero(i.ninosSmall) });
+        const f = frenoDeTour(ti, { fecha: i.tourDate, personas: entero(i.adultos) + entero(i.ninosSmall) }) || await frenoSinSalida(ti, i.tourDate);
         if (f) return { error: f };
       }
       // La hora solo cuenta en el RZR (por vehículo), y ahí tiene que estar en rango.
@@ -2080,7 +2147,23 @@ async function ejecutarHerramienta(name, input, phone) {
       if (!crudo || !Object.keys(crudo).length) {
         return { error: "No pude ver el calendario en este momento. Para UNA fecha usa calcular_precio (también revisa el cupo); no le digas que hay lugar sin revisarlo." };
       }
-      return calendarioParaModelo(t ? t.nombre : paq.nombre, crudo, idiomaDe(phone));
+      return calendarioParaModelo(t ? t.nombre : paq.nombre, crudo, idiomaDe(phone), t ? t.slug : null);
+    }
+
+    case "tours_con_salida": {
+      const f = fechaISO(input.fecha);
+      if (!f) return { error: "La fecha va en formato YYYY-MM-DD." };
+      const lista = await toursConSalida(f);
+      if (!lista) return { error: "No pude revisar las salidas en este momento: no prometas lugar; ofrece confirmarlo con el equipo." };
+      const loc = idiomaDe(phone) === "en" ? "en-US" : "es-MX";
+      const dia = new Date(`${f}T12:00:00Z`).toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+      const mismoDia = [...TOURS_MISMO_DIA].map((s) => findTour(s)).filter(Boolean).map(nombreCorto);
+      const instruccion = f === hoyMX()
+        ? `Para HOY solo se agendan ${nombresMismoDia()}: los demás ya salieron o no se arman el mismo día.`
+        : f === mananaMX()
+          ? "Para MAÑANA el cliente solo se puede unir a estos tours (ya tienen viajeros) y a los de mismo día. No ofrezcas otros; si insiste en otro, escala (avisar, normal)."
+          : "Estos ya tienen viajeros ese día. Los demás también se pueden reservar para esa fecha: revísalo con ver_calendario o calcular_precio.";
+      return { fecha: f, dia, conSalida: lista.map((t) => ({ slug: t.slug, nombre: nombreCorto(t) })), tambienSeArmanConPocoAviso: mismoDia, instruccion };
     }
 
     case "guardar_hotel": {
@@ -3066,6 +3149,7 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
 *4. DUDAS COMPLETAS.* Contesta con datos exactos (horario y duración de *obtener_tour*, forma de pago, recogida, hospedaje, qué incluye, comida, niños) y cierra con "¿Te armo la cotización?". Cuando pregunta por el pago o la recogida ya está decidiendo: contesta y pasa a la cotización. Respuestas que ya funcionaron:
   · «¿Pasan por nosotros?» → "Sí, pasamos por ustedes a su hospedaje en Xilitla o Ciudad Valles" (según el tour: algunos solo en Xilitla; el RZR es en nuestra base). Si llegan en autobús, el nocturno de CDMX llega a Xilitla hacia las 6:30 am.
   · «¿Qué fechas tienen?», un rango («entre el 26 y el 29», «finales de diciembre») o varias fechas → *ver_calendario* con ese rango ANTES de contestar, y di los días que sí tienen lugar con su día de la semana tal cual viene. Nunca digas que hay lugar sin haberlo revisado.
+  · 🔴 Para MAÑANA el cliente solo se puede UNIR a los tours que ya tienen salida armada (viajeros ese día) y a los que se arman con poco aviso (RZR, Travesía del Café, Gruta de Xilo): revísalo con *tours_con_salida* y ofrece SOLO esos. Un día «libre» mañana NO es lugar disponible: no lo ofrezcas ni lo cotices.
   · «¿Cuál es el itinerario?» → *itinerarioEnVinetas* de *obtener_tour*, tal cual; si pide detalle de un momento, sale de *itinerario*.
   · «¿Tienen lugar ese día?» → contéstalo en la primera línea. Si *calcular_precio* con esa fecha no marca cupo lleno ni fecha cerrada: "Sí hay salida ese día; el lugar se aparta con el anticipo". Si no hay, ofrece la fecha más cercana o el tour privado.
   · «¿Cuánto cuesta?» → el precio por persona y TODO lo que incluye en viñetas (*incluyeEnVinetas*), en el mismo mensaje.
