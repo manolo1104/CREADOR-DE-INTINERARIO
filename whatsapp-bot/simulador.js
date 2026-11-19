@@ -103,6 +103,9 @@ const path = require("path");
 const agente = require("./agent");
 const { processMessage, needsHuman, setApiClient, setToolObserver } = agente;
 const { crearGestorDeRafagas } = require("./buffer");
+const pausaHumano = require("./pausaHumano");
+// 18 nov 2026: lo que escribe el equipo a mano calla al bot 5 min (HUMAN_TAKEOVER_MS lo cambia).
+const PAUSA_HUMANO_MS = pausaHumano.msPausaHumano();
 const sessions = require("./sessions");
 const { clearSession, getSession, pushHistory } = sessions;
 const estado = require("./estado"); // sin iniciar(): solo en memoria
@@ -641,12 +644,76 @@ async function atenderRafagaSinEstado(chatId, texto, info = {}) {
       : "Dame un momento, te escribe alguien del equipo 🙏";
     emitir({ tipo: "bot", texto: disculpa, pie: `el modelo falló${costo.llamadasTurno ? ` · ${textoCostoTurno()}` : ""}`, platica: textoPlatica() });
     emitir({ tipo: "error", texto: e.message });
-    pausar(chatId, { ms: Number(process.env.HUMAN_TAKEOVER_MS) > 0 ? Number(process.env.HUMAN_TAKEOVER_MS) : 2 * 60 * 60 * 1000, motivo: "falla_bot", modo: "falla", acusarComprobantes: true });
+    pausar(chatId, { ms: Number(process.env.PAUSA_FALLA_MS) > 0 ? Number(process.env.PAUSA_FALLA_MS) : 2 * 60 * 60 * 1000, motivo: "falla_bot", modo: "falla", acusarComprobantes: true });
     await alDueno(`⚠️ *El bot no pudo responder*\n🔎 Motivo: ${textos.resumirError(e)}\n👤 ${NOMBRE_CLIENTE}`);
   }
   // 6) Si el modelo pasó el chat al equipo (escalar_a_humano), se aplica DESPUÉS de contestar.
   await aplicarEscalacion(chatId, { textoCliente: plan.textoUnido, respuestaBot: enviado || null });
 }
+
+// ── El equipo escribe a mano (como desde el celular del negocio) ──
+// Igual que pausaPorHumano + message_create de index.js: el bot se calla
+// PAUSA_HUMANO_MS desde ESTE mensaje, lo que escribió entra al historial y lo
+// que el cliente mande mientras tanto se guarda sin contestar.
+const pendientesEquipo = [];
+function escribeEquipo(texto) {
+  const t = String(texto || "").trim();
+  if (!t) return;
+  const ahora = Date.now();
+  descartarRafaga(CHAT);
+  const previa = estado.pausaVigente(CHAT);
+  if (previa && previa.hasta === null) estado.pausar(CHAT, { ...previa, humanoAt: ahora });
+  else estado.pausar(CHAT, { hasta: ahora + PAUSA_HUMANO_MS, motivo: previa ? previa.motivo : "humano", modo: "humano", desde: previa ? previa.desde : ahora, humanoAt: ahora });
+  getSession(CHAT).humanoAt = ahora;
+  // Si el bot está a media respuesta, entra al historial cuando termine (no rompe sus herramientas).
+  if (rafagas.ocupado(CHAT)) pendientesEquipo.push(t);
+  else pushHistory(CHAT, "assistant", t);
+  emitir({ tipo: "equipo", texto: t });
+  avisarPausa();
+  console.log(`🙋 El equipo escribió: ${t.substring(0, 80)} · bot en pausa ${Math.round(PAUSA_HUMANO_MS / 60000)} min`);
+}
+function volcarEquipo() {
+  while (pendientesEquipo.length) pushHistory(CHAT, "assistant", pendientesEquipo.shift());
+}
+
+/** Cada 5 s: si la pausa del equipo venció y el cliente quedó sin respuesta, el bot contesta (como retomarPausasVencidas de index.js). */
+async function retomarSiVencio() {
+  if (!rafagas.ocupado(CHAT)) volcarEquipo();
+  const p = estado.pausa(CHAT);
+  if (!pausaHumano.pausaHumanaVencida(p)) return;
+  const pend = pausaHumano.pendienteDelCliente(getSession(CHAT).history);
+  if (!pend) {
+    reanudar(CHAT);
+    emitir({ tipo: "aviso", texto: `▶️ Pasaron ${Math.round(PAUSA_HUMANO_MS / 60000)} min sin que el equipo escribiera. Lo último lo dijo el equipo: el bot no contesta nada y espera el siguiente mensaje del cliente (ya leyó toda la plática).` });
+    return;
+  }
+  await rafagas.ejecutarExclusivo(CHAT, async () => {
+    if (!estado.quitarPausa(CHAT)) return;
+    avisarPausa();
+    const ses = getSession(CHAT);
+    const pe = pausaHumano.pendienteDelCliente(ses.history);
+    if (!pe) return;
+    ses.history.pop();
+    emitir({ tipo: "aviso", texto: `▶️ Pasaron ${Math.round(PAUSA_HUMANO_MS / 60000)} min sin que el equipo escribiera y el cliente quedó sin respuesta: el bot retoma y contesta con toda la plática.` });
+    emitir({ tipo: "escribiendo", mensajes: 1, esperaMs: 0 });
+    const t0 = Date.now();
+    costo.turno = 0;
+    costo.llamadasTurno = 0;
+    try {
+      const respuesta = await processMessage(CHAT, pausaHumano.textoParaRetomar(pe, {
+        desdeHora: p.desde ? new Date(p.desde).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", timeZone: "America/Mexico_City" }) : "",
+        minutos: Math.round(PAUSA_HUMANO_MS / 60000),
+      }), { visuales: tomarVisuales() });
+      await mostrarAdjuntos(adjuntos.tomar(CHAT));
+      const pieCosto = costo.llamadasTurno ? textoCostoTurno() : "";
+      if (respuesta) emitir({ tipo: "bot", texto: respuesta, pie: `retomó tras la pausa del equipo · pensó ${Math.round((Date.now() - t0) / 1000)}s`, turnos: ses.history.length, costo: pieCosto, platica: textoPlatica() });
+    } catch (e) {
+      emitir({ tipo: "error", texto: e.message });
+    }
+    await aplicarEscalacion(CHAT, { textoCliente: pe, respuestaBot: null });
+  });
+}
+setInterval(() => { retomarSiVencio().catch((e) => emitir({ tipo: "error", texto: e.message })); }, 5000);
 
 function montarGestor() {
   rafagas = crearGestorDeRafagas({
@@ -1025,10 +1092,13 @@ const servidor = http.createServer(async (req, res) => {
       const { texto } = await leerCuerpo(req);
       if (texto && texto.trim()) {
         console.log(`👤 ${texto}`);
-        if (pausaActiva(CHAT)) {
+        const pausa = pausaActiva(CHAT);
+        if (pausa) {
           // Como en producción: no contesta, pero guarda lo que dijo.
           pushHistory(CHAT, "user", texto.trim());
-          emitir({ tipo: "aviso", texto: "⏸️ El chat está con una persona: el bot no contesta, pero lo guarda en el historial. Usa «Reanudar» para que vuelva." });
+          emitir({ tipo: "aviso", texto: pausa.modo === "humano" || pausa.humanoAt
+            ? `⏸️ El equipo está atendiendo: el bot no contesta, pero lo lee. Si en ${Math.round(PAUSA_HUMANO_MS / 60000)} min nadie del equipo escribe, el bot le contesta solo.`
+            : "⏸️ El chat está con una persona: el bot no contesta, pero lo guarda en el historial. Usa «Reanudar» para que vuelva." });
         } else {
           rafagas.recibir(CHAT, texto.trim());
         }
@@ -1045,6 +1115,19 @@ const servidor = http.createServer(async (req, res) => {
     if (url.pathname === "/confirma" && req.method === "POST") {
       const { texto } = await leerCuerpo(req);
       await confirmar(texto);
+      return json(res, estadoSimulador());
+    }
+
+    if (url.pathname === "/equipo" && req.method === "POST") {
+      const { texto } = await leerCuerpo(req);
+      escribeEquipo(texto);
+      return json(res, estadoSimulador());
+    }
+
+    if (url.pathname === "/finPausaEquipo" && req.method === "POST") {
+      // Para no esperar los 5 min: la pausa del equipo vence YA y el reloj de 5 s hace lo suyo.
+      const p = estado.pausa(CHAT);
+      if (p && (p.modo === "humano" || p.humanoAt) && p.hasta !== null) estado.pausar(CHAT, { ...p, hasta: Date.now() - 1 });
       return json(res, estadoSimulador());
     }
 

@@ -29,6 +29,8 @@
   @keyframes pop{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
   .mia{align-self:flex-end;background:var(--burbuja-mia);border-top-right-radius:2px}
   .bot{align-self:flex-start;background:var(--burbuja-bot);border-top-left-radius:2px}
+  .equipo{align-self:flex-start;background:#fff4d6;border-top-left-radius:2px;border-left:3px solid #e0a100}
+  .equipo .quien{display:block;font-size:11px;font-weight:600;color:#9a6b00;margin-bottom:2px}
   .meta{display:block;text-align:right;font-size:10.5px;color:var(--gris);margin-top:2px}
   .tick{color:var(--gris)} .tick.leido{color:var(--azul)}
   .sistema{align-self:center;background:#ffeecd;color:#5c4a1e;font-size:11.5px;padding:5px 11px;
@@ -138,6 +140,14 @@
   <h3>Pruebas de un botón</h3>
   <button id="btnRafaga"><b>Mandar una ráfaga</b><small>4 mensajes seguidos, uno cada 4 s</small></button>
   <button id="btnInterrumpir"><b>Escribir mientras contesta</b><small>Manda uno, y otro cuando ya está pensando</small></button>
+
+  <h3>El equipo escribe a mano</h3>
+  <p class="sub" style="margin-top:0">Como si Erick contestara desde el celular del negocio. El bot se calla 5 min desde ese mensaje (cada mensaje del equipo los vuelve a contar), pero sigue leyendo todo. Al pasar los 5 min, si lo último lo escribió el cliente, el bot le contesta solo.</p>
+  <div class="confirma">
+    <input id="equipoTexto" placeholder="Hola, soy Erick, te ayudo yo…" autocomplete="off">
+    <button id="btnEquipo">Enviar</button>
+  </div>
+  <button id="btnFinPausa"><b>⏩ Pasaron los 5 minutos</b><small>Para no esperar: termina la pausa del equipo ya</small></button>
 
   <h3>Adelantar el reloj</h3>
   <p class="sub" style="margin-top:0">Cada aviso de WhatsApp tiene su correo a la misma hora (3 h, 24 h, 72 h y «vence mañana»). Solo salen dentro de la vigencia: 24 h si el tour es en menos de 3 días, 72 h si es en menos de 15, 7 días si es más lejos.</p>
@@ -280,6 +290,16 @@ function pintarPausa(activa, texto) {
   $("#pausaTexto").textContent = texto || "";
   $("#pChat").textContent = activa ? "⏸️ pasado a una persona" : "el bot atiende";
 }
+function equipo(texto) {
+  const d = document.createElement("div");
+  d.className = "b equipo";
+  const q = document.createElement("span"); q.className = "quien"; q.textContent = "Erick (a mano, desde el celular)";
+  d.appendChild(q);
+  d.appendChild(document.createTextNode(texto));
+  const m = document.createElement("span"); m.className = "meta"; m.textContent = new Date().toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+  d.appendChild(m);
+  chat.appendChild(d); chat.scrollTop = chat.scrollHeight;
+}
 function sistema(texto) {
   const d = document.createElement("div");
   d.className = "sistema"; d.textContent = texto;
@@ -342,6 +362,7 @@ es.onmessage = (e) => {
   if (ev.tipo === "escribiendo") { mostrarEscribiendo(ev.mensajes); return; }
   if (ev.tipo === "herramienta") { herramienta(ev.nombre, ev.entrada, ev.salida); return; }
   if (ev.tipo === "aviso") { sistema(ev.texto); return; }
+  if (ev.tipo === "equipo") { quitarEspera(); quitarEscribiendo(); marcarLeidas(); equipo(ev.texto); return; }
   if (ev.tipo === "dueno") { dueno(ev.texto); return; }
   if (ev.tipo === "foto") { quitarEspera(); quitarEscribiendo(); marcarLeidas(); foto(ev.url, ev.caption); mostrarEscribiendoSiPensando(); return; }
   if (ev.tipo === "pdf") { quitarEspera(); quitarEscribiendo(); marcarLeidas(); documento(ev.url, ev.nombre, ev.kb, false); mostrarEscribiendoSiPensando(); return; }
@@ -469,6 +490,15 @@ async function reanudar() {
   pintarEstado(s);
 }
 $("#btnReanudar").onclick = reanudar;
+async function mandarEquipo() {
+  const t = $("#equipoTexto").value.trim();
+  if (!t) { $("#equipoTexto").focus(); return; }
+  $("#equipoTexto").value = "";
+  pintarEstado(await (await fetch("/equipo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ texto: t }) })).json());
+}
+$("#btnEquipo").onclick = mandarEquipo;
+$("#equipoTexto").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); mandarEquipo(); } });
+$("#btnFinPausa").onclick = async () => { pintarEstado(await (await fetch("/finPausaEquipo", { method: "POST" })).json()); };
 $("#btnReanudarFranja").onclick = reanudar;
 
 $("#btnLimpiar").onclick = async () => {

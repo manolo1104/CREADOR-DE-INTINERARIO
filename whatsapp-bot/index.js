@@ -26,6 +26,7 @@ const seguimiento = require("./seguimiento");
 const { etapaDe } = require("./etapas");
 const { crearEtiquetas } = require("./etiquetas");
 const horario = require("./horario");
+const pausaHumano = require("./pausaHumano");
 
 // ── Configuración ─────────────────────────────────────────────
 function msDeEntorno(nombre, porOmision) {
@@ -53,9 +54,13 @@ const ESPERA_COMPROBANTE_MS = (() => {
   return process.env.MESSAGE_DEBOUNCE_COMPROBANTE_MS !== undefined && Number.isFinite(n) && n >= 0 ? n : 3000;
 })();
 // Cuando alguien del equipo escribe a mano en un chat, el bot se calla este
-// rato, y cada mensaje suyo lo vuelve a empezar. Eran 5 min (aunque el aviso
-// decía 1 h): el bot volvía a contestar encima del equipo a media plática.
-const HUMAN_TAKEOVER_MS = msDeEntorno("HUMAN_TAKEOVER_MS", 2 * 60 * 60 * 1000);
+// rato, y cada mensaje suyo lo vuelve a empezar. 18 nov 2026, Manolo: 5 min
+// (antes 2 h). Al vencer, si el cliente quedó sin respuesta el bot le contesta
+// solo con todo el contexto (pausaHumano.js, `retomarPausasVencidas`).
+const HUMAN_TAKEOVER_MS = pausaHumano.msPausaHumano();
+// Una FALLA del bot (el modelo no contestó) sigue en 2 h: ahí el cliente ya
+// recibió «alguien del equipo te escribe» y el equipo necesita tiempo.
+const PAUSA_FALLA_MS = msDeEntorno("PAUSA_FALLA_MS", 2 * 60 * 60 * 1000);
 // Cuando el bot PASA un chat al equipo (pide llamada, para hoy…) y nadie
 // escribe, retoma a las 12 h. Queja, cancelación, cliente molesto y cambios
 // después de pagar NO se retoman solos: esperan /reanuda.
@@ -537,6 +542,42 @@ function pausaActiva(chatId) {
     return null;
   }
   return p;
+}
+
+// ── Retomar solo al vencer la pausa del equipo (18 nov 2026) ──
+let relojPausas = null;
+/**
+ * Cada 15 s: las pausas que puso una PERSONA del equipo y ya vencieron se
+ * quitan. Si lo último del chat es del cliente (nadie le contestó), el bot le
+ * contesta ya, con la plática completa; si no, solo deja la nota de siempre y
+ * espera al siguiente mensaje. Escalaciones, fallas y /pausa no entran aquí.
+ */
+async function retomarPausasVencidas(ahora = Date.now()) {
+  for (const [chatId, p] of Object.entries(estado.pausas())) {
+    if (!pausaHumano.pausaHumanaVencida(p, ahora)) continue;
+    const s = sesionExistente(chatId);
+    const pendiente = s ? pausaHumano.pendienteDelCliente(s.history) : null;
+    if (!pendiente) {
+      estado.quitarPausa(chatId);
+      notaDeRetomar(chatId, p);
+      continue;
+    }
+    // El mismo candado que las respuestas: si el chat está contestando o tiene
+    // mensajes esperando, se reintenta en la siguiente vuelta.
+    const corrio = await rafagas.ejecutarExclusivo(chatId, async () => {
+      if (!estado.quitarPausa(chatId)) return;
+      const ses = sesionExistente(chatId);
+      const pend = ses ? pausaHumano.pendienteDelCliente(ses.history) : null;
+      if (!pend) return;
+      ses.history.pop(); // el turno pendiente vuelve a entrar como el mensaje de este turno
+      console.log(`▶️  [${etiquetaChat(chatId)}] terminó la pausa del equipo: contesto lo pendiente (${pend.substring(0, 60)})`);
+      await responderConModelo(chatId, pausaHumano.textoParaRetomar(pend, {
+        desdeHora: p.desde ? horaMx(p.desde) : "",
+        minutos: Math.round(HUMAN_TAKEOVER_MS / 60000),
+      }), { textoCliente: pend });
+    });
+    if (!corrio) console.log(`   ⏳ ${etiquetaChat(chatId)}: la pausa venció pero el chat está ocupado; reintento en ${pausaHumano.REVISAR_PAUSAS_CADA_MS / 1000} s.`);
+  }
 }
 
 function notaDeRetomar(chatId, p) {
@@ -1339,7 +1380,7 @@ async function aplicarEscalacion(chatId, { textoCliente = "", respuestaBot = "" 
     } else if (motivo === "falla_bot") {
       // El modelo no contestó ni con dos empujones (agent.js): es una falla,
       // no un chat que se pasa. 2 h como cualquier falla, no las 12 h.
-      pausa = pausar(chatId, { ms: HUMAN_TAKEOVER_MS, motivo, modo: "falla", acusarComprobantes: true });
+      pausa = pausar(chatId, { ms: PAUSA_FALLA_MS, motivo, modo: "falla", acusarComprobantes: true });
     } else {
       pausa = pausar(chatId, { ms: PAUSA_ESCALACION_MS, motivo, modo: "escalacion", acusarComprobantes: true });
     }
@@ -1426,7 +1467,7 @@ async function enviarAvisoDeFallas() {
     "",
     lista.length === 1 ? `👤 ${lista[0].etiqueta}` : `Chats sin respuesta:\n${lista.map((x) => `• ${x.etiqueta}`).join("\n")}`,
     "",
-    `👉 Contéstales tú, por favor. Al cliente le dije que alguien del equipo le escribe, y el bot quedó en pausa ${duracionTexto(HUMAN_TAKEOVER_MS)} en ese chat.`,
+    `👉 Contéstales tú, por favor. Al cliente le dije que alguien del equipo le escribe, y el bot quedó en pausa ${duracionTexto(PAUSA_FALLA_MS)} en ese chat.`,
     "_(Este aviso sale máx. 1 vez cada 10 min; los chats que fallen mientras tanto van en el siguiente.)_",
   ];
   await avisarAlDueno(L.join("\n"));
@@ -1464,7 +1505,7 @@ async function fallaAlResponder(chatId, err, textoCliente) {
   } catch (e) {
     console.error(`❌ tampoco pude mandar la disculpa a ${chatId}:`, primeraLinea(e));
   }
-  pausar(chatId, { ms: HUMAN_TAKEOVER_MS, motivo: "falla_bot", modo: "falla", acusarComprobantes: true });
+  pausar(chatId, { ms: PAUSA_FALLA_MS, motivo: "falla_bot", modo: "falla", acusarComprobantes: true });
   await avisarFalla(chatId, err).catch((e) => console.error("❌ aviso de falla:", primeraLinea(e)));
   api.escalacion({
     waChatId: chatId,
@@ -1530,8 +1571,9 @@ client.on("message_create", async (msg) => {
     pausaPorHumano(ids);
     // Lo que escribió va al historial (como lado del negocio) para que el bot
     // no pierda el hilo al retomar, solo si ya platicaba con ese chat.
-    const s = sesionExistente(target);
-    if (s && s.history.length) anotarHistorial(target, "assistant", lineaDelEquipo(msg, body));
+    // 18 nov 2026: siempre, aunque el bot no hubiera platicado aún con ese
+    // chat; así, si el cliente sigue escribiendo, al retomar tiene todo.
+    anotarHistorial(target, "assistant", lineaDelEquipo(msg, body));
   } catch (e) {
     console.error("❌ message_create:", primeraLinea(e));
   }
@@ -2180,6 +2222,10 @@ client.on("qr", (qr) => {
 client.on("authenticated", () => console.log("🔐 Autenticado."));
 client.on("ready", () => {
   whatsappListo = true;
+  if (!relojPausas) {
+    relojPausas = setInterval(() => { retomarPausasVencidas().catch((e) => console.error("❌ retomar pausas:", primeraLinea(e))); }, pausaHumano.REVISAR_PAUSAS_CADA_MS);
+    console.log(`🙋 Pausa por mensaje del equipo: ${duracionTexto(HUMAN_TAKEOVER_MS)}; al vencer, el bot contesta lo que quedó pendiente.`);
+  }
   if (!relojSeguimiento && !SEGUIMIENTO_APAGADO) {
     relojSeguimiento = setInterval(() => { revisarSeguimientos().catch(() => {}); }, SEGUIMIENTO_CADA_MS);
     console.log(`🔔 Seguimiento activo: revisa cada ${Math.round(SEGUIMIENTO_CADA_MS / 60000)} min (3 h, 24 h y 72 h; de 9 am a 8 pm).`);
