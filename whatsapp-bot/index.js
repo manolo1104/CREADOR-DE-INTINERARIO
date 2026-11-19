@@ -1101,7 +1101,20 @@ async function atenderArchivo(msg, chatId, contacto, pausa, llegoAt = Date.now()
 }
 
 // ── Mensajes ENTRANTES (clientes y el dueño) ──────────────────
-client.on("message", async (msg) => {
+// Un mensaje se atiende UNA vez aunque llegue por dos lados: el evento de
+// WhatsApp y la revisión de pendientes al arrancar (atenderPendientesAlArrancar).
+const mensajesVistos = new Set();
+function mensajeYaVisto(msg) {
+  const id = msg && msg.id && (msg.id._serialized || msg.id.id);
+  if (!id) return false;
+  if (mensajesVistos.has(id)) return true;
+  if (mensajesVistos.size > 5000) mensajesVistos.clear();
+  mensajesVistos.add(id);
+  return false;
+}
+
+async function manejarEntrante(msg) {
+  if (mensajeYaVisto(msg)) return;
   // Cuándo llegó, ANTES de cualquier espera (el contacto, la descarga): con
   // esto la ráfaga queda en el orden en que el cliente mandó las cosas.
   const llegoAt = Date.now();
@@ -1255,7 +1268,55 @@ client.on("message", async (msg) => {
   } finally {
     if (posibleComprobante) comprobanteEnCamino(chatId, -1);
   }
-});
+}
+client.on("message", manejarEntrante);
+
+// ── Pendientes al arrancar (19 nov 2026) ──────────────────────
+// Lo que llegó mientras el bot estaba apagado, reiniciándose o en «solo
+// conectar» NO dispara el evento de WhatsApp: se quedaba sin respuesta. Al
+// quedar listo, revisa los chats cuyo ÚLTIMO mensaje es de un cliente (de las
+// últimas PENDIENTES_HORAS, 6 por omisión; 0 lo apaga) y mete lo que el
+// cliente escribió después de lo último que salió del negocio por el MISMO
+// camino que un mensaje nuevo: mismas reglas (solo números no guardados, la
+// lista de «nunca», comandos, pausas del equipo y ráfagas).
+const PENDIENTES_HORAS = (() => {
+  const n = Number(process.env.PENDIENTES_HORAS);
+  return process.env.PENDIENTES_HORAS !== undefined && process.env.PENDIENTES_HORAS !== "" && Number.isFinite(n) && n >= 0 ? n : 6;
+})();
+let pendientesRevisados = false;
+
+async function atenderPendientesAlArrancar() {
+  if (pendientesRevisados || !PENDIENTES_HORAS) return;
+  pendientesRevisados = true;
+  const desde = Date.now() / 1000 - PENDIENTES_HORAS * 3600;
+  let chats = [];
+  try {
+    chats = await client.getChats();
+  } catch (e) {
+    console.warn("⚠️ pendientes: no pude leer los chats:", primeraLinea(e));
+    return;
+  }
+  const candidatos = chats.filter((c) => {
+    const id = c && c.id && c.id._serialized;
+    if (!id || c.isGroup || id === "status@broadcast" || /@(g\.us|broadcast|newsletter)$/.test(id)) return false;
+    const ultimo = c.lastMessage;
+    return Boolean(ultimo && !ultimo.fromMe && Number(ultimo.timestamp) >= desde);
+  });
+  console.log(`📬 Pendientes al arrancar: ${candidatos.length} chat(s) cuyo último mensaje es de un cliente (últimas ${PENDIENTES_HORAS} h).`);
+  for (const c of candidatos) {
+    try {
+      const msgs = await c.fetchMessages({ limit: 15 });
+      // Solo lo que el cliente escribió DESPUÉS de lo último que salió del negocio.
+      let i = msgs.length - 1;
+      while (i >= 0 && !msgs[i].fromMe) i--;
+      const sinContestar = msgs.slice(i + 1).filter((m) => !m.fromMe && Number(m.timestamp) >= desde);
+      if (sinContestar.length) console.log(`   📬 ${etiquetaChat(c.id._serialized)}: ${sinContestar.length} mensaje(s) sin contestar.`);
+      for (const m of sinContestar) await manejarEntrante(m);
+    } catch (e) {
+      console.warn(`⚠️ pendientes de ${etiquetaChat(c.id._serialized)}:`, primeraLinea(e));
+    }
+  }
+}
 
 // ── Espera antes de responder ─────────────────────────────────
 // La mecánica (ventana deslizante, tope y candado) vive en buffer.js.
@@ -2453,12 +2514,29 @@ function escribirEstadoQr(contenido) {
   }
 }
 
+// 🔴 Vigilante (19 nov 2026): 2 de 4 reinicios se quedaron en «Autenticado» sin
+// llegar nunca a «listo» (Chrome quieto, sin error); a mano, el siguiente
+// intento entraba al instante. Si en LISTO_TOPE_MS no queda listo, el bot se
+// apaga con código 3 y quien lo arrancó (tools/qr-bot/supervisor-bot.sh) lo
+// vuelve a levantar. La memoria se guarda sola al salir (estado.js).
+const LISTO_TOPE_MS = msDeEntorno("LISTO_TOPE_MS", 3 * 60 * 1000);
+let vigilanteListo = null;
+
 client.on("authenticated", () => {
   console.log("🔐 Autenticado.");
   escribirEstadoQr("AUTENTICANDO");
+  if (!whatsappListo && !vigilanteListo) {
+    vigilanteListo = setTimeout(() => {
+      if (whatsappListo) return;
+      console.error(`❌ WhatsApp se autenticó pero no quedó listo en ${duracionTexto(LISTO_TOPE_MS)}: me reinicio.`);
+      escribirEstadoQr("REINICIANDO");
+      process.exit(3);
+    }, LISTO_TOPE_MS);
+  }
 });
 client.on("ready", () => {
   whatsappListo = true;
+  if (vigilanteListo) { clearTimeout(vigilanteListo); vigilanteListo = null; }
   escribirEstadoQr("CONECTADO");
   if (SOLO_CONECTAR) {
     console.log("\n✅ Bot de Tours Huasteca Potosina CONECTADO en modo «solo conectar»: no contesta ni manda nada.");
@@ -2475,7 +2553,9 @@ client.on("ready", () => {
     console.log(`🔔 Seguimiento activo: revisa cada ${Math.round(SEGUIMIENTO_CADA_MS / 60000)} min (3 h, 24 h y 72 h; de 9 am a 8 pm).`);
   }
   console.log("\n✅ Bot de Tours Huasteca Potosina conectado y listo.");
-  console.log("Comandos: /confirma <folio> <monto> · /noespago · /pausa · /reanuda · /olvida · /status · /help\n");
+  console.log("Comandos: /confirma <folio> <monto> · /noespago · /pausa · /reanuda · /olvida · /status · /prueba · /help\n");
+  // Lo que llegó mientras estaba apagado: a los 10 s, cuando WhatsApp ya asentó.
+  setTimeout(() => { atenderPendientesAlArrancar().catch((e) => console.error("❌ pendientes:", primeraLinea(e))); }, 10000);
 });
 client.on("auth_failure", (m) => {
   console.error("❌ Auth falló:", m, "\n   Borra .wwebjs_auth/ y reintenta.");
@@ -2485,6 +2565,9 @@ client.on("disconnected", (r) => {
   whatsappListo = false;
   console.log("⚠️ Desconectado:", r);
   escribirEstadoQr("DESCONECTADO");
+  // whatsapp-web.js no se reconecta solo: se apaga (código 4) y el supervisor lo
+  // vuelve a levantar con la sesión guardada (o con un QR nuevo si se desvinculó).
+  setTimeout(() => process.exit(4), 2000);
 });
 
 // ── Arranque ──────────────────────────────────────────────────
