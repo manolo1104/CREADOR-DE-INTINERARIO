@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T01:59:50.701Z",
+  "generatedAt": "2026-11-19T02:16:24.923Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -17,7 +17,7 @@
     "rating": 4.7,
     "resenas": 169,
     "confianza": {
-      "resenasGoogle": "https://www.google.com/maps?cid=4423374976196099224",
+      "resenasGoogle": "https://maps.app.goo.gl/wbbKD7ksdTUkmWhWA",
       "dejarResena": "https://g.page/r/CZg8hdQa_GI9EBM/review",
       "facebook": "https://www.facebook.com/huastecatours",
       "instagram": "https://www.instagram.com/huasteca_potosina_tours_/"
