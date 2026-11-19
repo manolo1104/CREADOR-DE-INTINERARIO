@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-17T22:10:52.491Z",
+  "generatedAt": "2026-11-19T01:12:55.103Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -433,7 +433,7 @@
       "alimentos": {
         "desayuno": false,
         "comida": true,
-        "detalle": "SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de El Taco Loco de los otros tours."
+        "detalle": "SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de los otros tours."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -538,7 +538,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
+        "Desayuno buffet camino a los destinos: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -562,7 +562,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -649,7 +649,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla, en unidad cómoda con aire acondicionado (desde Ciudad Valles, $400 más por reserva)",
-        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
+        "Desayuno buffet camino a los destinos: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR, especializado en historia y cultura",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -672,7 +672,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -885,7 +885,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
+        "Desayuno buffet camino a los destinos: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -909,7 +909,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -996,7 +996,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
+        "Desayuno buffet camino a los destinos: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -1019,7 +1019,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -1107,7 +1107,7 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
-        "Desayuno buffet camino a los destinos, en El Taco Loco: platillos típicos de la región y guisados",
+        "Desayuno buffet camino a los destinos: platillos típicos de la región y guisados",
         "Entradas a todas las atracciones",
         "Guía certificado NOM-09 SECTUR",
         "Equipo de seguridad (chalecos, cascos y lo necesario para cada actividad)",
@@ -1130,7 +1130,7 @@
       "alimentos": {
         "desayuno": true,
         "comida": false,
-        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
+        "detalle": "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida."
       },
       "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
       "incluyeSiempre": [
@@ -3963,7 +3963,7 @@
       "Fotografías y video del recorrido que toma tu guía"
     ],
     "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
-    "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (parada en El Taco Loco, camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de El Taco Loco de los otros tours. El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
+    "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (una parada camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de los otros tours. El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
     "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "hotelServicios": {
@@ -3978,7 +3978,7 @@
         "Terraza con vista a la sierra y a la selva"
       ],
       "spaPrivado": "4 de las 13 suites tienen piscina spa o tina de hidromasaje PRIVADA (no compartida). De las que ofrecemos en los paquetes, la Jungla es la que la trae.",
-      "desayuno": "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR y el rappel no incluyen ningún alimento.",
+      "desayuno": "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR y el rappel no incluyen ningún alimento.",
       "mascotas": "No se admiten mascotas.",
       "fumar": "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera.",
       "checkIn": "3:00 pm",
@@ -5593,7 +5593,7 @@
         "¿Incluye comida o cena?",
         "¿Cuántos desayunos incluye el paquete?"
       ],
-      "respuesta": "Los tours de día completo incluyen un desayuno buffet de comida típica huasteca (guisos a leña, tortillas hechas a mano, café de la región) en El Taco Loco, entre 9:00 y 9:30 am. La comida de la tarde y la cena no van incluidas (el rafting sí lleva una comida). En paquete es un desayuno por cada día de tour; el día de salida no hay."
+      "respuesta": "Los tours de día completo incluyen un desayuno buffet de comida típica huasteca (guisos a leña, tortillas hechas a mano, café de la región) en una parada camino a los destinos, entre 9:00 y 9:30 am. La comida de la tarde y la cena no van incluidas (el rafting sí lleva una comida). En paquete es un desayuno por cada día de tour; el día de salida no hay."
     },
     {
       "id": "parar-a-comer",

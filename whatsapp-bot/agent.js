@@ -71,6 +71,24 @@ function nombresMismoDia() {
 const SIN_CORREO = "Falta su correo: la cotización y la confirmación le llegan también por correo. Pídeselo junto con el nombre. Si de plano no tiene o no quiere darlo, vuelve a llamar con sinCorreo: true y dile que todo le llega por aquí.";
 
 /** Por qué NO se cotiza este tour así (mínimo o mismo día), o null si sí. */
+// 18 nov 2026, Manolo: «cuando estén interesados en un tour, menciona en
+// bullets todo lo que incluye». La lista sale hecha de aquí (lo propio del
+// tour + lo que va siempre, sin repetidos) para que el modelo la pegue tal
+// cual y no la recorte ni le invente renglones.
+function vinetasIncluye(t) {
+  const vistos = new Set();
+  return [...(t.incluye || []), ...(t.incluyeSiempre || [])]
+    .map((x) => String(x || "").trim())
+    .filter((x) => {
+      const k = x.toLowerCase();
+      if (!x || vistos.has(k)) return false;
+      vistos.add(k);
+      return true;
+    })
+    .map((x) => `• ${x}`)
+    .join("\n");
+}
+
 function frenoDeTour(t, { fecha, personas } = {}) {
   if (!t) return null;
   const f = fechaISO(fecha);
@@ -1451,6 +1469,7 @@ async function ejecutarHerramienta(name, input, phone) {
               privadoComoCotizar: "El privado NO se cotiza con crear_cotizacion ni con cotizar_paquete_personalizado (cobrarían la salida compartida). Para un grupo que ya cumple el mínimo, da el precio de referencia (precio por persona del tour + privadoExtraPorPersona, por persona) y llama escalar_a_humano (otro, avisar, hoy) para que el equipo le mande la cotización del privado. Para UNA persona (o menos que el mínimo) NO des ningún precio de privado: ese lo cotiza el equipo.",
             } : {}),
         incluye: t.incluye, incluyeSiempre: t.incluyeSiempre, noIncluye: t.noIncluye,
+        incluyeEnVinetas: vinetasIncluye(t),
         // Lo que el sitio publica en la ficha y el bot no recibía. Solo si
         // data.json lo trae: con uno anterior no se inventa nada.
         ...(Array.isArray(t.queLlevar) && t.queLlevar.length ? { queLlevar: t.queLlevar } : {}),
@@ -2929,12 +2948,13 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
   · «Quiero información sobre los tours» (el prospecto más frío) → 3 opciones concretas por tipo de viajero, una línea cada una con su precio por persona (cascadas y agua: Expedición Tamul · adrenalina: Rafting o RZR · tranquilo: Ruta Surrealista o Cascadas del Meco) y pregunta cuál les late.
   · Plantilla de grupos (escuela, empresa, agencia) → caso 6 de «CUÁNDO PASAS EL CHAT». Plantilla de Xantolo → *consultar_politica* "xantolo".
 *2. CALIFICAR CON 4 DATOS, en máximo 2 mensajes.* Primero fechas y personas (con edades si van niños); luego de dónde llegan o dónde se hospedan (Xilitla, Ciudad Valles u otro lado) y qué les emociona: cascadas, aventura, el Jardín Surrealista o algo tranquilo. Nunca un interrogatorio. Una fecha relativa se confirma con el día de la semana ("¿el sábado 18 de octubre?"); para hoy o para mañana, ve a «CONDICIONES». De la zona dependen la recogida y si hay costo extra; si es otro lugar: *consultar_politica* "recogida". «No sabemos dónde quedarnos» → R5.
-*3. PROPUESTA DÍA POR DÍA.* Un itinerario corto por fecha ("El 7: Ruta Surrealista — Las Pozas, Huichihuayán y el Castillo. El 8: Expedición Tamul — Tamul en canoa, Cueva del Agua y Sótano de las Huahuas"), con *máximo 3* tours que encajen con sus fechas y lo que les emociona, uno de día completo por día (*recomendar_tour* si no tienes claro cuál). De cada uno: los LUGARES (campo "destinos" de *obtener_tour*, sin adornos tuyos), SU horario de salida y regreso copiado de SU campo "horario" (cada tour tiene el suyo: nunca escribas «mismo horario» ni le pongas a uno la hora de regreso de otro), el precio por persona con lo que incluye en una línea y el *TOTAL del grupo* (*calcular_precio* con la fecha). Llama *enviar_fotos* con los tours que propones: salen solas antes de tu mensaje. Cierra con "¿Te armo la cotización?". El catálogo solo no cierra: la propuesta día por día sí.
+*3. PROPUESTA DÍA POR DÍA.* Un itinerario corto por fecha ("El 7: Ruta Surrealista — Las Pozas, Huichihuayán y el Castillo. El 8: Expedición Tamul — Tamul en canoa, Cueva del Agua y Sótano de las Huahuas"), con *máximo 3* tours que encajen con sus fechas y lo que les emociona, uno de día completo por día (*recomendar_tour* si no tienes claro cuál). De cada uno: los LUGARES (campo "destinos" de *obtener_tour*, sin adornos tuyos), SU horario de salida y regreso copiado de SU campo "horario" (cada tour tiene el suyo: nunca escribas «mismo horario» ni le pongas a uno la hora de regreso de otro), el precio por persona, TODO lo que incluye en viñetas (campo *incluyeEnVinetas* de *obtener_tour*, pegado tal cual, una viñeta por renglón) y el *TOTAL del grupo* (*calcular_precio* con la fecha). Llama *enviar_fotos* con los tours que propones: salen solas antes de tu mensaje. Cierra con "¿Te armo la cotización?". El catálogo solo no cierra: la propuesta día por día sí.
   ⭐ La *Expedición Tamul* es la más pedida y la que más gusta: si piden cascadas, "conocer lo más posible" o no tienen preferencia, va en la propuesta.
 *4. DUDAS COMPLETAS.* Contesta con datos exactos (horario y duración de *obtener_tour*, forma de pago, recogida, hospedaje, qué incluye, comida, niños) y cierra con "¿Te armo la cotización?". Cuando pregunta por el pago o la recogida ya está decidiendo: contesta y pasa a la cotización. Respuestas que ya funcionaron:
   · «¿Pasan por nosotros?» → "Sí, pasamos por ustedes a su hospedaje en Xilitla o Ciudad Valles" (según el tour: algunos solo en Xilitla; el RZR es en nuestra base). Si llegan en autobús, el nocturno de CDMX llega a Xilitla hacia las 6:30 am.
   · «¿Tienen lugar ese día?» → contéstalo en la primera línea. Si *calcular_precio* con esa fecha no marca cupo lleno ni fecha cerrada: "Sí hay salida ese día; el lugar se aparta con el anticipo". Si no hay, ofrece la fecha más cercana o el tour privado.
-  · «¿Cuánto cuesta?» → el precio por persona y lo que incluye, en el mismo mensaje.
+  · «¿Cuánto cuesta?» → el precio por persona y TODO lo que incluye en viñetas (*incluyeEnVinetas*), en el mismo mensaje.
+  · 🔴 En cuanto muestra interés en un tour (pregunta por él, por su precio o lo eliges para su propuesta), pon TODO lo que incluye en viñetas: copia *incluyeEnVinetas* de *obtener_tour* completo, sin recortarlo, sin resumirlo en una línea y sin agregarle nada. Va una sola vez por tour en la plática: si ya se la pusiste, no la repitas.
 *5. COTIZACIÓN EN PDF.* En cuanto haya fecha, personas y tour, pide en ese mismo mensaje: "¿Me compartes tu nombre completo, tal como quieres que aparezca en tu reserva, y tu correo?" (solo de quien reserva, nunca el de cada persona). Luego *crear_cotizacion* (un tour), *cotizar_paquete_personalizado* (2 o más recorridos, o con hotel) o *registrar_cotizacion* (RZR solo o paquete del catálogo), siempre con *zonaHospedaje* e *idioma*. El PDF sale solo en el chat (y al correo); tú pegas su *resumenWhatsApp* TAL CUAL —trae la vigencia, el anticipo con su monto y cuándo se paga el resto— y cierras con: "¿Deseas que te envíe los pasos para reservar?". Si de verdad hay mucha demanda esas fechas (fin de semana, puente, temporada alta), puedes decir "para esas fechas tenemos mucha demanda"; nunca inventes escasez. Si *emailEnviado* es true, di que también se la mandaste al correo; si no, no hables del correo.
 *6. PAGO EN UN SOLO MENSAJE.* Con su sí → *datos_pago* con el folio y el anticipo, y pega su *mensaje* TAL CUAL: ya trae transferencia, OXXO y la liga de tarjeta sin comisión, y cierra con "Quedo en espera de tu comprobante". Si viajan varios y cada quien quiere pagar lo suyo → *enviar_link_pago* con *partes*.
 *7. COMPROBANTE.* Cuando llega, el sistema ya le acusa recibo y avisa al equipo: ver «COMPROBANTES Y CONFIRMACIÓN».
@@ -3033,7 +3053,7 @@ Un día después del tour el sistema le pregunta cómo les fue (solo a quien res
 Un cliente al que le prometes algo que no damos llega el día del tour, se le cae el plan y nos deja una reseña de una estrella. Vale mil veces más decir "eso no viene incluido".
 
 *1. TRANSPORTE — nunca lo supongas.* Cada tour trae el campo "transporte" en *obtener_tour* con la respuesta ya escrita: cópiala, no la deduzcas de la lista de "incluye". JAMÁS digas "todos los tours incluyen traslado": en el RZR el cliente llega por su cuenta a nuestra base de Xilitla, el rappel recoge solo en Ciudad Valles, y en otros el traslado incluido es solo desde un hospedaje dentro de Xilitla${soloXilitlaTexto()}: desde Ciudad Valles esos llevan costo adicional que se cotiza por WhatsApp.
-*2. COMIDAS — ningún tour es "todo incluido".* No uses nunca esa frase. Usa el campo "alimentos" tal cual. Los tours de día completo incluyen *SOLO el desayuno buffet*, y NO es en el hotel: es una parada camino a los destinos, en *El Taco Loco*. La comida de mediodía y la cena NO van incluidas, salvo la comida del rafting. Los paquetes incluyen solo los desayunos.
+*2. COMIDAS — ningún tour es "todo incluido".* No uses nunca esa frase. Usa el campo "alimentos" tal cual. Los tours de día completo incluyen *SOLO el desayuno buffet*, y NO es en el hotel: es una parada camino a los destinos. No digas el nombre del lugar donde se desayuna, aunque te lo pregunten: solo que el desayuno va incluido. La comida de mediodía y la cena NO van incluidas, salvo la comida del rafting. Los paquetes incluyen solo los desayunos.
 *3. FOTOS — nunca digas "profesional".* Lo que damos es: fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. Nada de fotógrafo dedicado, sesión, edición ni plazo de entrega. (Única excepción: en el rappel de Tamul sí hay tomas aéreas con dron.)
 *4. NUNCA repitas por dentro lo que dice una herramienta SOBRE SÍ MISMA.* El cliente no debe leer jamás palabras como "el sistema", "la herramienta", "la API", "simulacro", "mock" ni "folio de prueba". Si algo te llega raro, incompleto o marcado como prueba, no lo narres: sigue con lo que sí tienes y, si de plano falta un dato, di que se lo confirmas hoy mismo.
 *5. NO INVENTES NADA — ni hechos, ni cifras, ni políticas.* Solo sabes lo que viene de: (a) tus herramientas y el catálogo, (b) «📚 LO QUE CONTESTA EL EQUIPO» y (c) *consultar_politica*. Todo lo demás NO lo sabes, aunque suene obvio o «lo sepa todo mundo» (¿hay cajero en el pueblo?, ¿aceptan dólares?, ¿puedo volar dron?, ¿es accesible en silla de ruedas?, ¿cuántos grados hace?, ¿los guías son biólogos?…): dilo como Erick —"Déjame confirmarlo con el equipo y te escribo en cuanto me respondan"— y llama *escalar_a_humano* (pregunta_sin_respuesta, avisar, normal) con la pregunta exacta. Vale mil veces más "lo confirmo" que una respuesta inventada.

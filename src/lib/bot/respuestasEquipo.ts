@@ -595,7 +595,7 @@ export const RESPUESTAS_EQUIPO: RespuestaEquipo[] = [
   {
     id: "incluye-alimentos", tema: "comida",
     preguntas: ["¿Incluye alimentos?", "¿Incluye comida o cena?", "¿Cuántos desayunos incluye el paquete?"],
-    respuesta: "Los tours de día completo incluyen un desayuno buffet de comida típica huasteca (guisos a leña, tortillas hechas a mano, café de la región) en El Taco Loco, entre 9:00 y 9:30 am. La comida de la tarde y la cena no van incluidas (el rafting sí lleva una comida). En paquete es un desayuno por cada día de tour; el día de salida no hay.",
+    respuesta: "Los tours de día completo incluyen un desayuno buffet de comida típica huasteca (guisos a leña, tortillas hechas a mano, café de la región) en una parada camino a los destinos, entre 9:00 y 9:30 am. La comida de la tarde y la cena no van incluidas (el rafting sí lleva una comida). En paquete es un desayuno por cada día de tour; el día de salida no hay.",
   },
   {
     id: "parar-a-comer", tema: "comida",

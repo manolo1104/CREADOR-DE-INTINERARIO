@@ -69,6 +69,10 @@ const NO_INCLUYE: Record<string, string[]> = {
 };
 
 // ── Hechos que el bot NO debe deducir ni suponer ─────────────────────────────
+// 18 nov 2026, Manolo: el bot dice que el desayuno va incluido, sin nombrar
+// el restaurante. La web sí lo nombra (tours.ts): aquí se quita al exportar.
+const sinLugarDelDesayuno = (x: string) => x.replace(/,?\s+(?:en|de)\s+El Taco Loco\b/gi, "");
+
 // Antes el bot leía "incluye"/"noIncluye" y sacaba conclusiones propias: llegó a
 // prometer recogida en el hotel para el rappel (no la hay) y comida para la Ruta
 // Acuática (tampoco). Ahora cada tour trae la respuesta ya escrita y literal.
@@ -108,12 +112,12 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   // 6 oct 2026, Manolo: el rafting incluye COMIDA. Decía "solo desayuno" y
   // contradecía al "incluye" del mismo tour ("Comida incluida — la eliges antes
   // o después de la actividad") y a su pregunta frecuente.
-  "rafting-rio-tampaon": { desayuno: false, comida: true, detalle: "SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de El Taco Loco de los otros tours." },
-  "expedicion-tamul": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
-  "ruta-surrealista-edward-james": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
-  "cascadas-del-meco": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
-  "paraiso-escalonado-minas-micos": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
-  "ruta-acuatica-puente-de-dios": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, en El Taco Loco, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "rafting-rio-tampaon": { desayuno: false, comida: true, detalle: "SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de los otros tours." },
+  "expedicion-tamul": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "ruta-surrealista-edward-james": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "cascadas-del-meco": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "paraiso-escalonado-minas-micos": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
+  "ruta-acuatica-puente-de-dios": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno buffet. NO es en el hotel: se hace una parada camino a los destinos, con platillos típicos de la región y guisados. La comida de mediodía NO está incluida." },
   // Medio día: no lleva desayuno. Sí incluye la cata de café de la finca, que
   // no es un alimento del paquete sino parte del recorrido.
   "travesia-del-cafe": { desayuno: false, comida: false, detalle: "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido." },
@@ -556,7 +560,7 @@ const tours = TOURS_DB.map((t) => ({
   destinos: t.destinos,
   // Solo lo propio: `incluyeSiempre` va aparte y el bot las dice en dos
   // frases. Con la lista cruda repetía "seguro de viaje" en las dos.
-  incluye: incluyePropioDeTour(t),
+  incluye: incluyePropioDeTour(t).map(sinLugarDelDesayuno),
   noIncluye: [...(NO_INCLUYE[t.slug] || []), ...(llevaSeguro(t) ? [] : [SEGURO_OPCIONAL])],
   // El seguro, ya escrito (17 nov 2026): solo los de aventura lo traen. Sin
   // este campo el bot llegó a decir «Tamul incluye seguro porque es aventura».
@@ -754,7 +758,7 @@ const info = {
   // para el rafting, que la incluye (Manolo, 6 oct 2026). La excepción sale de
   // `ALIMENTOS`, no se escribe a mano.
   alimentos: [
-    "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (parada en El Taco Loco, camino a los destinos); la comida de mediodía no está incluida.",
+    "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (una parada camino a los destinos); la comida de mediodía no está incluida.",
     ...TOURS_DB.filter((t) => ALIMENTOS[t.slug]?.comida).map((t) => `Excepción: ${t.nombreCorto}. ${ALIMENTOS[t.slug].detalle}`),
     "El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
   ].join(" "),
@@ -781,7 +785,7 @@ const info = {
     // ⚠️ El desayuno del hotel NO va incluido en la tarifa de la habitación.
     // El desayuno que sí incluyen los tours es una parada en El Taco Loco,
     // camino a los destinos — no es en el hotel y solo aplica los días de tour.
-    desayuno: "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada en El Taco Loco camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR y el rappel no incluyen ningún alimento.",
+    desayuno: "DILO SIEMPRE, sin que lo pregunten: el desayuno va incluido SOLO los días que hay tour de día completo, y es una parada camino a los destinos, NO en el hotel. Los días sin tour (el de llegada y el de salida) el desayuno NO está incluido: se paga aparte en el restaurante El Papán Huasteco del hotel, $100–$200 MXN por persona. El rafting no lleva ese desayuno: incluye una comida, antes o después del descenso. El RZR y el rappel no incluyen ningún alimento.",
     mascotas: "No se admiten mascotas.",
     fumar: "No se puede fumar dentro de las habitaciones; hay áreas designadas afuera.",
     checkIn: "3:00 pm",
@@ -930,7 +934,12 @@ const out = {
 };
 
 const dest = join(process.cwd(), "whatsapp-bot", "data.json");
-writeFileSync(dest, JSON.stringify(out, null, 2) + "\n", "utf8");
+const jsonBot = JSON.stringify(out, null, 2) + "\n";
+// 18 nov 2026, Manolo: «en el bot no menciones que el desayuno es en el Taco
+// Loco, solo que se incluye el desayuno». Si algún texto nuevo lo trae, que
+// truene aquí y no llegue al bot.
+if (/taco loco/i.test(jsonBot)) throw new Error("data.json del bot trae «El Taco Loco»: quítalo de su texto o pásalo por sinLugarDelDesayuno()");
+writeFileSync(dest, jsonBot, "utf8");
 
 console.log(
   `✅ data.json generado: ${tours.length} tours, ${paquetes.length} paquetes, ${destinos.length} destinos, ${POLITICAS_BOT.length} políticas, ${RESPUESTAS_EQUIPO.length} respuestas del equipo${out.xantolo ? ", Xantolo" : ""} → ${dest}`
