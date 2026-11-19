@@ -43,7 +43,8 @@ const { empresa: EMPRESA_DATA = {} } = require("./data.json");
 const CONFIANZA = (EMPRESA_DATA && EMPRESA_DATA.confianza) || {};
 const RESENA_URL = CONFIANZA.dejarResena || "";
 const CONFIANZA_TEXTO = [
-  "Mándale esto, corto y con tus palabras:",
+  "Mándale esto, corto y con tus palabras, y SIEMPRE la página de quiénes somos primero (Manolo, 18 nov 2026: ahí está nuestro fundador y el equipo):",
+  "• Quiénes somos: https://www.huasteca-potosina.com/nosotros",
   "• Nuestra página: https://www.huasteca-potosina.com",
   CONFIANZA.resenasGoogle ? `• Nuestras reseñas en Google: ${CONFIANZA.resenasGoogle}` : null,
   CONFIANZA.facebook ? `• Facebook: ${CONFIANZA.facebook}` : null,
@@ -87,6 +88,42 @@ function vinetasIncluye(t) {
     })
     .map((x) => `• ${x}`)
     .join("\n");
+}
+
+// 18 nov 2026, Manolo: «cuando el cliente mencione al inicio algún tour,
+// menciona el itinerario». Hora y momento, una viñeta por renglón: el detalle
+// de cada momento va en `itinerario` por si pregunta.
+function vinetasItinerario(t) {
+  return (Array.isArray(t.itinerario) ? t.itinerario : [])
+    .filter((m) => m && m.hora && m.momento)
+    .map((m) => `• *${m.hora}* — ${m.momento}`)
+    .join("\n");
+}
+
+// El calendario de salidas (18 nov 2026: «conecta el calendario real con el
+// bot»). Lo que dice cada color de la web, ya en palabras para el cliente.
+const ESTADO_CALENDARIO = {
+  "libre":        { hayLugar: true,  di: "hay lugar" },
+  "con-reservas": { hayLugar: true,  di: "hay lugar (ya hay viajeros ese día)" },
+  "casi-lleno":   { hayLugar: true,  di: "quedan pocos lugares" },
+  "sin-cupo":     { hayLugar: false, di: "ya no hay lugar" },
+  "no-cabe":      { hayLugar: false, di: "no caben todos: quedan menos lugares que personas" },
+  "cerrada":      { hayLugar: false, di: "no hay salida ese día" },
+};
+function calendarioParaModelo(nombre, crudo, locale = "es") {
+  const loc = locale === "en" ? "en-US" : "es-MX";
+  const dias = Object.keys(crudo).sort().map((fecha) => {
+    const e = ESTADO_CALENDARIO[crudo[fecha]] || { hayLugar: null, di: "sin dato: revísalo con calcular_precio" };
+    const dia = new Date(`${fecha}T12:00:00Z`).toLocaleDateString(loc, { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+    return { fecha, dia, hayLugar: e.hayLugar, estado: e.di };
+  });
+  return {
+    tour: nombre,
+    dias,
+    conLugar: dias.filter((d) => d.hayLugar).map((d) => d.dia),
+    sinLugar: dias.filter((d) => d.hayLugar === false).map((d) => `${d.dia} (${d.estado})`),
+    instruccion: "Dile en qué días SÍ hay lugar, cada uno con su día de la semana tal cual viene en «dia» (no lo calcules tú), y cuáles no. «Quedan pocos lugares» sí se puede decir: es real. No le digas cuántas personas van. El lugar se aparta con el anticipo.",
+  };
 }
 
 function frenoDeTour(t, { fecha, personas } = {}) {
@@ -1301,6 +1338,32 @@ const tools = [
     },
   },
   {
+    name: "ver_calendario",
+    description: "El calendario REAL de salidas de un tour o paquete, el mismo que ve el cliente en la web al reservar: qué días hay lugar, cuáles están casi llenos, sin cupo o cerrados. Úsala cuando pregunte «¿qué fechas tienen?», cuando dé un rango («entre el 26 y el 29», «finales de diciembre») y antes de proponerle una fecha. El precio de UNA fecha sigue saliendo de calcular_precio.",
+    input_schema: {
+      type: "object",
+      properties: {
+        slug:     { type: "string", description: "Slug del tour o paquete (ej: expedicion-tamul)." },
+        desde:    { type: "string", description: "Primer día, YYYY-MM-DD." },
+        hasta:    { type: "string", description: "Último día, YYYY-MM-DD (máximo 31 días después de «desde»). Si es un solo día, igual a «desde»." },
+        personas: { type: "integer", description: "Cuántos van (sin bebés de 0 a 3), si ya lo sabes: así marca los días donde ya no caben." },
+      },
+      required: ["slug", "desde"],
+    },
+  },
+  {
+    name: "guardar_hotel",
+    description: "Anota en su RESERVA el hotel donde pasamos por el cliente (lo ven el guía y el panel). SOLO después del pago, cuando te dice su hotel o lo cambia. Antes de pagar NO: ahí solo importa la zona (Xilitla, Ciudad Valles…).",
+    input_schema: {
+      type: "object",
+      properties: {
+        hotel: { type: "string", description: "Nombre del hotel (o la dirección) tal como lo dijo, con la zona si la dio. Ej: «Hotel Sierra Inn, Ciudad Valles»." },
+        folio: { type: "string", description: "HP-M-… de su reserva (o el COT- que ya es reserva). Vacío = el de la ficha." },
+      },
+      required: ["hotel"],
+    },
+  },
+  {
     name: "listar_paquetes",
     description: "Lista los paquetes (tours + hotel) con su precio, y el Xantolo si sigue a la venta. Úsala cuando pregunten por paquetes, promociones, hospedaje incluido o varios días.",
     input_schema: { type: "object", properties: {}, required: [] },
@@ -1470,6 +1533,7 @@ async function ejecutarHerramienta(name, input, phone) {
             } : {}),
         incluye: t.incluye, incluyeSiempre: t.incluyeSiempre, noIncluye: t.noIncluye,
         incluyeEnVinetas: vinetasIncluye(t),
+        ...(Array.isArray(t.itinerario) && t.itinerario.length ? { itinerario: t.itinerario, itinerarioEnVinetas: vinetasItinerario(t) } : {}),
         // Lo que el sitio publica en la ficha y el bot no recibía. Solo si
         // data.json lo trae: con uno anterior no se inventa nada.
         ...(Array.isArray(t.queLlevar) && t.queLlevar.length ? { queLlevar: t.queLlevar } : {}),
@@ -1981,6 +2045,9 @@ async function ejecutarHerramienta(name, input, phone) {
       const ligaVale = Boolean(liga) && (!monto || !ligaMonto || monto === ligaMonto);
       const mensaje = mensajeDePago({ folio, monto, locale: idiomaDe(phone), liga: ligaVale ? liga : null, ligas: ligas.length ? ligas : null });
       if (phone) session.pagoMandadoAt = Date.now(); // etapa «pago pendiente» (etapas.js)
+      // La imagen «Aparta tu lugar con tu anticipo» sale ANTES del mensaje
+      // (Manolo, 18 nov 2026). Solo para apartar: el saldo no lleva la imagen.
+      if (phone && !ficha.pagoValidado) adjuntos.encolar(phone, { tipo: "datosPago" });
       return {
         mensaje,
         folio: folio || null,
@@ -1994,6 +2061,47 @@ async function ejecutarHerramienta(name, input, phone) {
 
     case "validar_fecha":
       return validarFecha(input.fecha, { locale: idiomaDe(phone) });
+
+    case "ver_calendario": {
+      const t = findTour(input.slug);
+      const paq = t ? null : findPaquete(input.slug);
+      if (!t && !paq) return { error: `No existe el tour o paquete "${input.slug}".` };
+      const slug = t ? t.slug : paq.id;
+      const desde = fechaISO(input.desde);
+      if (!desde) return { error: "La fecha «desde» va en formato YYYY-MM-DD." };
+      let hasta = fechaISO(input.hasta) || desde;
+      if (hasta < desde) hasta = desde;
+      const tope = new Date(`${desde}T12:00:00Z`);
+      tope.setUTCDate(tope.getUTCDate() + 31);
+      if (hasta > tope.toISOString().slice(0, 10)) hasta = tope.toISOString().slice(0, 10);
+      const personas = entero(input.personas) || undefined;
+      const res = await llamarSitio("disponibilidad", { slug, desde, hasta, personas });
+      const crudo = res.ok && res.data && res.data.dias && typeof res.data.dias === "object" ? res.data.dias : null;
+      if (!crudo || !Object.keys(crudo).length) {
+        return { error: "No pude ver el calendario en este momento. Para UNA fecha usa calcular_precio (también revisa el cupo); no le digas que hay lugar sin revisarlo." };
+      }
+      return calendarioParaModelo(t ? t.nombre : paq.nombre, crudo, idiomaDe(phone));
+    }
+
+    case "guardar_hotel": {
+      const session = sesionDe(phone);
+      const ficha = session.ficha || {};
+      const hotel = textoLimpio(input.hotel, 160);
+      if (!hotel) return { error: "¿Cuál es el hotel? Pregúntale el nombre." };
+      const folio = (textoLimpio(input.folio, 40) || ficha.reservaFolio || ficha.folioVigente || session.lastFolio || "").toUpperCase();
+      if (!folio) return { error: "No tengo el folio de su reserva: llama escalar_a_humano (recogida, avisar, normal) con el hotel en el resumen y dile que ya se lo pasaste a su guía." };
+      const res = await llamarSitio("guardarHospedaje", folio, hotel);
+      if (res.ok && res.data.ok) {
+        return {
+          ok: true, folio: res.data.folio || folio, hotel: res.data.hotel || hotel,
+          instruccion: "Ya quedó anotado en su reserva: lo ven su guía y el equipo. Confírmale en una línea que ahí pasamos por ellos y que un día antes su guía le escribe con la hora exacta. No escales.",
+        };
+      }
+      if (sitioNoContesto(res)) {
+        return { error: "No pude anotarlo en el sistema: llama escalar_a_humano (recogida, avisar, normal) con el hotel y el folio en el resumen, y dile que ya se lo pasaste a su guía." };
+      }
+      return { error: res.data.error || "No se pudo anotar el hotel." };
+    }
 
     case "listar_paquetes": {
       const evento = xantoloVigente();
@@ -2615,6 +2723,10 @@ function anotarEnFicha(name, input, r, chatId) {
       if (r.valida && r.fecha) actualizarFicha(chatId, { fechaDicha: r.fecha });
       return;
 
+    case "guardar_hotel":
+      if (r.ok && r.hotel) actualizarFicha(chatId, { hotelRecogida: r.hotel });
+      return;
+
     case "calcular_precio": {
       const t = findTour(input.slug);
       if (!t) return;
@@ -2942,23 +3054,26 @@ Así se vendieron las reservas que sí se cerraron. Avanza UNA etapa por interca
 *1. BIENVENIDA.* Preséntate, contesta lo que preguntó y haz UNA pregunta. Según cómo llega el primer mensaje:
   · Saludo corto ("Hola, buenas noches") → "¡Hola! Soy Tének, el asistente virtual de Huasteca Potosina Tours 🌿 Te ayudo con toda tu reserva. ¿Qué fechas tienen pensadas y cuántos son?"
   · De la web con un tour o paquete («me interesa el tour "X" para N adultos…», «me interesa el paquete X») → confirma que sí lo tenemos (*obtener_tour* / *obtener_paquete*) y pide solo lo que falte (fecha, personas, edades). NO vuelvas a preguntar lo que ya trae.
+  · 🔴 Nombra un tour al INICIO de la plática (muchas veces viene de la web: «me interesa "Expedición Tamul…"») → en tu primera respuesta va el ITINERARIO de ese tour (*itinerarioEnVinetas* de *obtener_tour*, pegado tal cual), su precio por persona y TODO lo que incluye (*incluyeEnVinetas*); luego pide solo lo que falte (fecha o personas). Si pregunta «¿qué fechas tienen?», *ver_calendario* en ese mismo turno.
   · Ya trae fecha y personas ("somos dos, queremos ir a Tamul el sábado") → salta a la propuesta (etapa 3) y en ese MISMO mensaje pide nombre y correo para cotizar.
   · Pregunta libre («¿en qué tour puedo incluir La Trinidad?») → contéstala en la primera línea (*obtener_destino*) y luego califica.
   · En inglés → todo en inglés, cotización incluida.
   · «Quiero información sobre los tours» (el prospecto más frío) → 3 opciones concretas por tipo de viajero, una línea cada una con su precio por persona (cascadas y agua: Expedición Tamul · adrenalina: Rafting o RZR · tranquilo: Ruta Surrealista o Cascadas del Meco) y pregunta cuál les late.
   · Plantilla de grupos (escuela, empresa, agencia) → caso 6 de «CUÁNDO PASAS EL CHAT». Plantilla de Xantolo → *consultar_politica* "xantolo".
-*2. CALIFICAR CON 4 DATOS, en máximo 2 mensajes.* Primero fechas y personas (con edades si van niños); luego de dónde llegan o dónde se hospedan (Xilitla, Ciudad Valles u otro lado) y qué les emociona: cascadas, aventura, el Jardín Surrealista o algo tranquilo. Nunca un interrogatorio. Una fecha relativa se confirma con el día de la semana ("¿el sábado 18 de octubre?"); para hoy o para mañana, ve a «CONDICIONES». De la zona dependen la recogida y si hay costo extra; si es otro lugar: *consultar_politica* "recogida". «No sabemos dónde quedarnos» → R5.
+*2. CALIFICAR CON 4 DATOS, en máximo 2 mensajes.* Primero fechas y personas (con edades si van niños); luego de dónde llegan o en qué ZONA se hospedan (Xilitla, Ciudad Valles u otro lado) y qué les emociona: cascadas, aventura, el Jardín Surrealista o algo tranquilo. Nunca un interrogatorio. Una fecha relativa se confirma con el día de la semana ("¿el sábado 18 de octubre?"); para hoy o para mañana, ve a «CONDICIONES». De la zona dependen la recogida y si hay costo extra; si es otro lugar: *consultar_politica* "recogida". 🔴 El NOMBRE del hotel NO se pide antes del pago (Manolo, 18 nov 2026): se pide en la confirmación, ya pagado. Si te lo da antes, agradécelo y sigue; no lo anotes ni lo mandes al equipo. «No sabemos dónde quedarnos» → R5.
 *3. PROPUESTA DÍA POR DÍA.* Un itinerario corto por fecha ("El 7: Ruta Surrealista — Las Pozas, Huichihuayán y el Castillo. El 8: Expedición Tamul — Tamul en canoa, Cueva del Agua y Sótano de las Huahuas"), con *máximo 3* tours que encajen con sus fechas y lo que les emociona, uno de día completo por día (*recomendar_tour* si no tienes claro cuál). De cada uno: los LUGARES (campo "destinos" de *obtener_tour*, sin adornos tuyos), SU horario de salida y regreso copiado de SU campo "horario" (cada tour tiene el suyo: nunca escribas «mismo horario» ni le pongas a uno la hora de regreso de otro), el precio por persona, TODO lo que incluye en viñetas (campo *incluyeEnVinetas* de *obtener_tour*, pegado tal cual, una viñeta por renglón) y el *TOTAL del grupo* (*calcular_precio* con la fecha). Llama *enviar_fotos* con los tours que propones: salen solas antes de tu mensaje. Cierra con "¿Te armo la cotización?". El catálogo solo no cierra: la propuesta día por día sí.
   ⭐ La *Expedición Tamul* es la más pedida y la que más gusta: si piden cascadas, "conocer lo más posible" o no tienen preferencia, va en la propuesta.
 *4. DUDAS COMPLETAS.* Contesta con datos exactos (horario y duración de *obtener_tour*, forma de pago, recogida, hospedaje, qué incluye, comida, niños) y cierra con "¿Te armo la cotización?". Cuando pregunta por el pago o la recogida ya está decidiendo: contesta y pasa a la cotización. Respuestas que ya funcionaron:
   · «¿Pasan por nosotros?» → "Sí, pasamos por ustedes a su hospedaje en Xilitla o Ciudad Valles" (según el tour: algunos solo en Xilitla; el RZR es en nuestra base). Si llegan en autobús, el nocturno de CDMX llega a Xilitla hacia las 6:30 am.
+  · «¿Qué fechas tienen?», un rango («entre el 26 y el 29», «finales de diciembre») o varias fechas → *ver_calendario* con ese rango ANTES de contestar, y di los días que sí tienen lugar con su día de la semana tal cual viene. Nunca digas que hay lugar sin haberlo revisado.
+  · «¿Cuál es el itinerario?» → *itinerarioEnVinetas* de *obtener_tour*, tal cual; si pide detalle de un momento, sale de *itinerario*.
   · «¿Tienen lugar ese día?» → contéstalo en la primera línea. Si *calcular_precio* con esa fecha no marca cupo lleno ni fecha cerrada: "Sí hay salida ese día; el lugar se aparta con el anticipo". Si no hay, ofrece la fecha más cercana o el tour privado.
   · «¿Cuánto cuesta?» → el precio por persona y TODO lo que incluye en viñetas (*incluyeEnVinetas*), en el mismo mensaje.
   · 🔴 En cuanto muestra interés en un tour (pregunta por él, por su precio o lo eliges para su propuesta), pon TODO lo que incluye en viñetas: copia *incluyeEnVinetas* de *obtener_tour* completo, sin recortarlo, sin resumirlo en una línea y sin agregarle nada. Va una sola vez por tour en la plática: si ya se la pusiste, no la repitas.
 *5. COTIZACIÓN EN PDF.* En cuanto haya fecha, personas y tour, pide en ese mismo mensaje: "¿Me compartes tu nombre completo, tal como quieres que aparezca en tu reserva, y tu correo?" (solo de quien reserva, nunca el de cada persona). Luego *crear_cotizacion* (un tour), *cotizar_paquete_personalizado* (2 o más recorridos, o con hotel) o *registrar_cotizacion* (RZR solo o paquete del catálogo), siempre con *zonaHospedaje* e *idioma*. El PDF sale solo en el chat (y al correo); tú pegas su *resumenWhatsApp* TAL CUAL —trae la vigencia, el anticipo con su monto y cuándo se paga el resto— y cierras con: "¿Deseas que te envíe los pasos para reservar?". Si de verdad hay mucha demanda esas fechas (fin de semana, puente, temporada alta), puedes decir "para esas fechas tenemos mucha demanda"; nunca inventes escasez. Si *emailEnviado* es true, di que también se la mandaste al correo; si no, no hables del correo.
 *6. PAGO EN UN SOLO MENSAJE.* Con su sí → *datos_pago* con el folio y el anticipo, y pega su *mensaje* TAL CUAL: ya trae transferencia, OXXO y la liga de tarjeta sin comisión, y cierra con "Quedo en espera de tu comprobante". Si viajan varios y cada quien quiere pagar lo suyo → *enviar_link_pago* con *partes*.
 *7. COMPROBANTE.* Cuando llega, el sistema ya le acusa recibo y avisa al equipo: ver «COMPROBANTES Y CONFIRMACIÓN».
-*8. CONFIRMACIÓN.* La manda el equipo (o llega sola si pagó con la liga), con el PDF de su reserva y la pregunta por su hospedaje. Cuando te dé el hotel exacto (o su ubicación) → escalar_a_humano (recogida, avisar, normal) con el hotel y el folio HP-M-…: así le llega a su guía. Si pregunta qué sigue: "Un día antes, por la tarde, tu guía te escribe con la hora y el punto de recogida."
+*8. CONFIRMACIÓN.* La manda el equipo (o llega sola si pagó con la liga), con el PDF de su reserva y la pregunta por su hospedaje. Cuando te dé su hotel (o su ubicación) → *guardar_hotel* con el hotel y el folio HP-M-…: queda en su reserva y lo ve su guía; confírmale en una línea que ahí pasamos por ellos. Si cambia de hotel, *guardar_hotel* otra vez. No escales por esto. Si pregunta qué sigue: "Un día antes, por la tarde, tu guía te escribe con la hora y el punto de recogida."
 *9. DESPUÉS DEL VIAJE.* Ver «DESPUÉS DEL VIAJE».
 
 ❗ *Si te preguntan un precio, lo PRIMERO que sale de tu boca es el precio* por persona (de *obtener_tour* o *calcular_precio*) y enseguida pides lo que falte para el total. Jamás contestes solo "primero dime las fechas".
@@ -2994,7 +3109,7 @@ Formato: situación → motivo, modo, urgencia → qué haces.
 11. Pregunta que no está en tus herramientas, ni en «LO QUE CONTESTA EL EQUIPO», ni en *consultar_politica* → pregunta_sin_respuesta, avisar, normal, con la pregunta EXACTA del cliente en el resumen → "Déjame confirmarlo con el equipo y te escribo en cuanto me respondan" y sigue con la venta. NUNCA la contestes de memoria ni «con lógica».
 12. Factura → factura, avisar, normal → "lo veo con administración y te confirmo".
 13. Clima, río crecido o un paraje cerrado (Tamul, Puente de Dios…) que le preocupa → clima, avisar, hoy → di con honestidad lo que sabes (*consultar_politica* "clima-y-rio"), ofrece 2 o 3 alternativas abiertas y recuérdale que si el paraje cierra se le devuelve el 100 % o se reagenda sin costo.
-14. Después de pagar te da su hotel exacto (etapa 8) → recogida, avisar, normal → "¡Gracias! Se lo paso a tu guía para que pase por ustedes".
+14. Después de pagar te da su hotel exacto (etapa 8) → *guardar_hotel* (NO escales) → "¡Gracias! Ya quedó anotado: ahí pasamos por ustedes". Solo si *guardar_hotel* falla: recogida, avisar, normal.
 Después de llamarla, cierra con su *mensajeCliente* tal cual: trae el tiempo real de respuesta según el horario del equipo. NUNCA digas "te paso con el equipo" ni prometas tiempos sin llamarla, y no escribas tú otra frase de «el equipo te escribe / our team will message you»: el mensajeCliente ya lo dice, una sola vez. En "pasar", ése es tu último mensaje del tema: no sigas vendiendo.
 Pero nunca mandes SOLO el *mensajeCliente*: si es tu primer mensaje, preséntate; reconoce en una línea lo que pidió, con calidez ("¡Qué buen plan para el grupo!"). En grupos, di que para grupos el equipo arma una cotización especial con unidad y guía exclusivos y pide en UNA sola pregunta lo que falte (fechas, cuántos son y de dónde salen), para que el equipo ya lo tenga; luego el *mensajeCliente*.
 
@@ -3038,7 +3153,7 @@ Una objeción es interés con una duda encima. Contéstala en 3 o 4 líneas; si 
 Si el último mensaje del chat es «[sistema] SEGUIMIENTO…», el cliente NO escribió nada: te toca escribirle primero. UN mensaje de 2 o 3 líneas que mencione algo concreto de SU viaje —su fecha, su tour, un lugar ("¿Seguimos con Tamul el sábado 28 para los 4?")— y una pregunta fácil de contestar. Nunca "¿qué te pareció la propuesta?": ese mensaje casi nunca cierra. Nada de presión ni escasez inventada, y no repitas la cotización ni los datos de pago completos.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━
-🤝 CONFIANZA (cuando pide redes o reseñas, o duda antes de pagar)
+🤝 CONFIANZA (cuando pide redes o reseñas, desconfía, pregunta si es seguro o si somos reales, o duda antes de pagar)
 ━━━━━━━━━━━━━━━━━━━━━━━━
 ${CONFIANZA_TEXTO}
 

@@ -8,7 +8,7 @@
  * `origen`: de dónde salen los logos (la URL del sitio).
  */
 import type { TourQuote } from "@prisma/client";
-import { TOURS_LISTA, partesRecogida, cargoVallesDe, opcionDeEleccion, incluyePropioDeTour, claveIncluye, INCLUYE_SIEMPRE, type Tour } from "@/lib/tours";
+import { TOURS_LISTA, partesRecogida, cargoVallesDe, opcionDeEleccion, incluyePropioDeTour, claveIncluye, INCLUYE_SIEMPRE, sinLugarDelDesayuno, type Tour } from "@/lib/tours";
 import { resumenSalidas } from "@/lib/recogidaTexto";
 import type { PackageItem, LineItem } from "@/components/admin/ReservaModal";
 import { calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn } from "@/lib/admin/lineasPrecio";
@@ -45,7 +45,7 @@ export function incluyeDeCotizacion(tours: Tour[]): string[] {
   if (!unicos.length) return ["Guía certificado NOM-09 SECTUR", ...INCLUYE_SIEMPRE];
   const porClave = new Map<string, { texto: string; de: Set<string> }>();
   for (const t of unicos) {
-    for (const x of incluyePropioDeTour(t)) {
+    for (const x of incluyePropioDeTour(t).map(sinLugarDelDesayuno)) {
       if (/^traslado/i.test(x)) continue;
       const k = claveIncluye(corto(x));
       const e = porClave.get(k) ?? { texto: corto(x), de: new Set<string>() };

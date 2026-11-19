@@ -193,6 +193,15 @@ export function incluyeDeTour(t: Pick<Tour, "incluye">, locale: "es" | "en" = "e
  * manda como `incluye` e `incluyeSiempre`, y las dice en dos frases distintas—.
  * Sin esto, el bot le repetía al cliente "seguro de viaje" en las dos.
  */
+/**
+ * 18 nov 2026, Manolo: al cliente se le dice que el desayuno va incluido, sin
+ * nombrar el restaurante. La página del tour sí lo nombra; el bot, la
+ * cotización en PDF y los correos pasan su texto por aquí.
+ */
+export function sinLugarDelDesayuno(x: string): string {
+  return x.replace(/,?\s+(?:en|de|at)\s+El Taco Loco\b/gi, "");
+}
+
 export function incluyePropioDeTour(t: Pick<Tour, "incluye">): string[] {
   const siempre = new Set(INCLUYE_SIEMPRE.map(claveIncluye));
   return incluyeDeTour(t).filter((x) => !siempre.has(claveIncluye(x)));

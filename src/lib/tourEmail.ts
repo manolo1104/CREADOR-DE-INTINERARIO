@@ -1,4 +1,4 @@
-import { TOURS_DB, INCLUYE_SIEMPRE, INCLUYE_SIEMPRE_EN, incluyeDeTour, partesRecogida } from "./tours";
+import { TOURS_DB, INCLUYE_SIEMPRE, INCLUYE_SIEMPRE_EN, incluyeDeTour, partesRecogida, sinLugarDelDesayuno } from "./tours";
 import {
   horaCorreo, lineasCancelacion, pasamosPorEl, recogidaIncierta, salidasCorreo, todosRecogenEnAmbas, toursDeSlugs,
 } from "./recogidaCorreo";
@@ -32,7 +32,7 @@ function listaIncluidos(tourSlug: string, locale: Locale = "es"): string[] {
   const base = TOURS_DB.find((t) => t.slug === tourSlug);
   const tour = base ? localizeTour(base, locale) : undefined;
   return tour
-    ? incluyeDeTour(tour, locale)
+    ? incluyeDeTour(tour, locale).map(sinLugarDelDesayuno)
     : [...(locale === "en" ? INCLUYE_SIEMPRE_EN : INCLUYE_SIEMPRE)];
 }
 

@@ -8,6 +8,8 @@
 //
 //   { tipo: "pdf",  folio: "COT-1234", nombre: "Cotización COT-1234.pdf", caption? }
 //   { tipo: "foto", url: "https://…/hero.jpg", caption? }
+//   { tipo: "datosPago" }   la imagen «Aparta tu lugar con tu anticipo» (18 nov
+//                           2026); vive en la base del sitio, no en el repo
 //
 // Vive en memoria: si el bot se reinicia a media respuesta se pierde, y está
 // bien (el texto del turno tampoco salió).
@@ -20,8 +22,9 @@ const MAX_POR_TURNO = 6;
 function encolar(chatId, adjunto) {
   if (!chatId || !adjunto || !adjunto.tipo) return false;
   const lista = colas.get(chatId) || [];
-  const clave = adjunto.tipo === "pdf" ? `pdf:${adjunto.folio}` : `foto:${adjunto.url}`;
-  if (lista.some((a) => (a.tipo === "pdf" ? `pdf:${a.folio}` : `foto:${a.url}`) === clave)) return false;
+  const claveDe = (a) => (a.tipo === "pdf" ? `pdf:${a.folio}` : a.tipo === "foto" ? `foto:${a.url}` : a.tipo);
+  const clave = claveDe(adjunto);
+  if (lista.some((a) => claveDe(a) === clave)) return false;
   if (lista.length >= MAX_POR_TURNO) return false;
   lista.push(adjunto);
   colas.set(chatId, lista);

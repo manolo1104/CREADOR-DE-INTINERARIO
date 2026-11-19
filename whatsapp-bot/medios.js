@@ -55,6 +55,24 @@ function limpiarPie(caption) {
 }
 
 /**
+ * La nota que acompaña una foto o un PDF que el modelo SÍ ve (18 nov 2026,
+ * Manolo: «¿el bot es capaz de leer imágenes? que conteste con ese contexto»).
+ */
+function notaVisual(kind = "foto", locale = "es") {
+  const en = locale === "en";
+  const que = kind === "pdf" ? (en ? "a PDF" : "un PDF") : (en ? "a photo" : "una foto");
+  return `[El cliente mandó ${que}; la ves arriba. Contesta con lo que se ve y con el contexto de la plática: si es un lugar, una cascada o la captura de un tour o de una publicación, di qué es y en cuál de nuestros tours se visita (obtener_tour o obtener_destino si hace falta); si no reconoces el lugar, dilo y pregúntale. Si es un comprobante de pago, dile que ya lo recibimos y llama escalar_a_humano (otro, avisar, hoy) con lo que dice.]`;
+}
+
+/** Espera una promesa hasta `ms`; si tarda más, da null (nunca lanza). */
+function conTope(promesa, ms) {
+  return Promise.race([
+    Promise.resolve(promesa).catch(() => null),
+    new Promise((r) => setTimeout(() => r(null), ms)),
+  ]);
+}
+
+/**
  * ¿Qué hacer con un archivo entrante?
  *   'proof'       → comprobante: se procesa con createProofProcessor
  *   'text'        → se contesta como texto usando el pie de foto
@@ -1145,6 +1163,8 @@ function createProofProcessor({
 }
 
 module.exports = {
+  notaVisual,
+  conTope,
   textoLecturaComprobante,
   FISCAL_RE,
   PAYMENT_RE,

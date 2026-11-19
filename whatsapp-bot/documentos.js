@@ -54,12 +54,31 @@ function crearDocumentos({ client, api, enviar }) {
     return true;
   }
 
+  // La imagen de datos de pago (18 nov 2026). Se guarda 10 min en memoria:
+  // pesa ~300 KB y sale cada vez que alguien pide los datos.
+  let imagenPago = null; // { media, at }
+  async function enviarDatosPago(chatId) {
+    if (!imagenPago || Date.now() - imagenPago.at > 10 * 60 * 1000) {
+      const r = await api.imagenDatosPago();
+      if (!r.ok || !r.data || !r.data.data) {
+        if (r.status !== 404) console.error(`🖼️ imagen de datos de pago: ${(r.data && r.data.error) || r.status}`);
+        return false;
+      }
+      imagenPago = { media: new MessageMedia(r.data.mimetype || "image/png", r.data.data, r.data.nombre || "datos-de-pago.png"), at: Date.now() };
+    }
+    await enviar(chatId, imagenPago.media);
+    return true;
+  }
+
   /** Manda los adjuntos del turno en orden. Devuelve cuántos salieron. */
   async function enviarAdjuntos(chatId, adjuntos) {
     let salieron = 0;
     for (const a of adjuntos || []) {
       try {
-        const ok = a.tipo === "pdf" ? await enviarPdf(chatId, a) : a.tipo === "foto" ? await enviarFoto(chatId, a) : false;
+        const ok = a.tipo === "pdf" ? await enviarPdf(chatId, a)
+          : a.tipo === "foto" ? await enviarFoto(chatId, a)
+          : a.tipo === "datosPago" ? await enviarDatosPago(chatId)
+          : false;
         if (ok) salieron++;
         else console.error(`📎 no salió el adjunto ${a.tipo} ${a.folio || a.url}`);
       } catch (e) {

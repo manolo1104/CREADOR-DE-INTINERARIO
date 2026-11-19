@@ -253,6 +253,7 @@ function fichaVacia() {
   return {
     recorridos: [],
     zonaHospedaje: null,
+    hotelRecogida: null,
     hotel: null,
     nombre: null,
     correo: null,
@@ -485,7 +486,7 @@ function aplicarCambiosFicha(ficha, cambios = {}) {
   }
   if (c.fechaDicha !== undefined) f.fechasDichas = ponerFecha(f.fechasDichas, c.fechaDicha);
 
-  for (const [k, max] of [["zonaHospedaje", 80], ["nombre", 120], ["correo", 160]]) {
+  for (const [k, max] of [["zonaHospedaje", 80], ["hotelRecogida", 120], ["nombre", 120], ["correo", 160]]) {
     if (c[k] === null) f[k] = null;
     else if (c[k] !== undefined) {
       const v = texto(c[k], max);
@@ -585,7 +586,7 @@ function cotizacionPagada(chatId, folio) {
 
 function fichaEstaVacia(f) {
   return !f || (
-    !(f.recorridos && f.recorridos.length) && !f.zonaHospedaje && !f.hotel && !f.nombre && !f.correo &&
+    !(f.recorridos && f.recorridos.length) && !f.zonaHospedaje && !f.hotelRecogida && !f.hotel && !f.nombre && !f.correo &&
     !f.folioVigente && !f.reservaFolio && !f.comprobanteRecibido && !f.pagoValidado &&
     !(f.foliosReemplazados && f.foliosReemplazados.length) &&
     !(f.consultados && f.consultados.length) && !(f.fechasDichas && f.fechasDichas.length) &&
@@ -676,6 +677,8 @@ function fichaComoTexto(ficha, locale = "es") {
   }
   if (f.hotel) L.push(`• Hotel con nosotros (va en la cotización): ${hotelTexto(f.hotel)}`);
   if (f.zonaHospedaje) L.push(`• Se hospedan en: «${f.zonaHospedaje}»`);
+  // El hotel exacto se pide DESPUÉS del pago (Manolo, 18 nov 2026) y queda en la reserva.
+  if (f.hotelRecogida) L.push(`• Hotel donde pasamos por ellos: «${f.hotelRecogida}» (ya anotado en su reserva)`);
   if (f.nombre || f.correo) L.push(`• Cliente: ${[f.nombre ? `«${f.nombre}»` : null, f.correo].filter(Boolean).join(" · ")}`);
 
   const reemplazos = (f.foliosReemplazados || []).length ? ` (reemplazó a ${f.foliosReemplazados.join(", ")}, que ya no valen)` : "";

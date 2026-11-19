@@ -15,6 +15,7 @@ import { addOnsDeTour, cantidadAddOn } from "@/lib/admin/lineasPrecio";
 import { grupoDe, grupoLargo } from "@/lib/admin/reserva";
 import { extrasDe, calcExtraLine } from "@/lib/admin/extras";
 import { escapeHtml as esc } from "@/lib/escapeHtml";
+import { pickupConDato } from "@/lib/admin/hospedaje";
 
 const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
 
@@ -39,7 +40,9 @@ export function htmlConfirmacion(b: TourBooking, origen: string): string {
     // dificultad, cancelación) y el HTML propio se quedan como están.
     const metodoPago = esc(meta.metodoPago)  || "—";
     const folioPago  = esc(meta.folioPago)   || "—";
-    const pickupLugar = esc(meta.pickupLugar) || "Lobby de tu hotel en Xilitla";
+    // 18 nov 2026: el hotel se pide DESPUÉS del pago. Sin uno anotado ya no
+    // dice «Lobby de tu hotel en Xilitla» (le llegaba a quien dormía en Valles).
+    const pickupLugar = esc(pickupConDato(meta.pickupLugar)) || "Tu hotel · mándanos su nombre por WhatsApp";
     const folioB     = esc(b.confirmationNumber);
 
     const tourDates  = lines.map(l => l.tourDate).filter(Boolean).sort();

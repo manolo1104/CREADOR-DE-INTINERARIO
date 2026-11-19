@@ -724,13 +724,16 @@ function describirPausa(p, numero) {
 }
 
 // ── Comprobantes ──────────────────────────────────────────────
+// Lo que la IA ya leyó de una foto antes del acuse (18 nov 2026): el aviso
+// al dueño lo reusa y no se lee dos veces.
+const lecturasPrevias = new WeakMap();
 const comprobantes = medios.createProofProcessor({
   api,
   almacen: estado,
   dir: estado.COMPROBANTES_DIR,
   enviarAlDueno: (contenido, opciones) => avisarAlDueno(contenido, opciones),
   // Monto, banco y concepto leídos con IA para el aviso (no valida nada).
-  leerComprobante: (media) => leerComprobante(media),
+  leerComprobante: (media) => (lecturasPrevias.has(media) ? Promise.resolve(lecturasPrevias.get(media)) : leerComprobante(media)),
   log: console,
 });
 
@@ -903,6 +906,19 @@ async function atenderArchivo(msg, chatId, contacto, pausa, llegoAt = Date.now()
       history: ses && ses.history,
       textos: rafagas.elementosEnEspera(chatId).filter((e) => e && e.tipo === "texto").map((e) => e.texto),
     });
+    // 18 nov 2026 (Manolo: «¿el bot es capaz de leer imágenes?»): una FOTO
+    // sin señales de pago se lee ANTES del acuse. Si la IA dice que no es un
+    // comprobante (la cascada, la captura de un tour, un lugar), no sale
+    // «recibimos tu comprobante» ni el aviso al dueño: el modelo la ve y
+    // contesta con ese contexto. Si no se pudo leer, sigue como comprobante.
+    if (!conSenalesDePago && media && media.data && /^image\//.test(mimetype)) {
+      const lectura = await medios.conTope(leerComprobante(media), 15000);
+      if (lectura) lecturasPrevias.set(media, lectura);
+      if (lectura && lectura.esComprobante === false && guardarVisual(chatId, media)) {
+        console.log(`🖼️ Foto de ${etiquetaChat(chatId)}: no es un comprobante → la ve el modelo`);
+        return { listo: false, texto: [caption, medios.notaVisual("foto", medios.idiomaDeSesion(ses))].filter(Boolean).join("\n") };
+      }
+    }
     let r = { ackText: null, folio: null, duplicate: false };
     try {
       r = await comprobantes.process({
@@ -955,9 +971,7 @@ async function atenderArchivo(msg, chatId, contacto, pausa, llegoAt = Date.now()
   if (/^image\//.test(mimetype) || /pdf/.test(mimetype)) {
     if (!media) media = await bajarArchivo(msg, chatId);
     if (media && guardarVisual(chatId, media)) {
-      const loc = medios.idiomaDeSesion(ses);
-      const que = /pdf/.test(mimetype) ? (loc === "en" ? "a PDF" : "un PDF") : (loc === "en" ? "a photo" : "una foto");
-      nota = `[El cliente mandó ${que}; la ves arriba. Si es un comprobante de pago, dile que ya lo recibimos y llama escalar_a_humano (otro, avisar, hoy) con lo que dice.]`;
+      nota = medios.notaVisual(/pdf/.test(mimetype) ? "pdf" : "foto", medios.idiomaDeSesion(ses));
     }
   }
   return { listo: false, texto: [caption || rawCaption, nota].filter(Boolean).join("\n") };

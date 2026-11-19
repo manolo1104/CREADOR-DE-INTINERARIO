@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T01:12:55.103Z",
+  "generatedAt": "2026-11-19T01:59:50.701Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -316,6 +316,43 @@
       "salida": "Pasamos por ti a tu hospedaje en Ciudad Valles entre 8:00 y 9:00 AM. Si te hospedas en otra zona, el punto de encuentro te lo confirma el equipo.",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM (desde Ciudad Valles) y termina aprox. 1:00 PM (~5 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón."
+        },
+        {
+          "hora": "10:00 AM",
+          "momento": "Embarcadero del Tampaón",
+          "texto": "Llegas al río y conoces a los guías de alta montaña que van a bajar contigo. Aquí se queda lo que no baja a la pared."
+        },
+        {
+          "hora": "10:30 AM",
+          "momento": "Equipo y briefing",
+          "texto": "Arnés, casco y guantes, y la técnica de descenso practicada en seco antes de asomarte. No necesitas experiencia: el primer rappel es 100 % guiado."
+        },
+        {
+          "hora": "11:30 AM",
+          "momento": "El descenso",
+          "texto": "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. El dron graba desde el aire y las cámaras de acción desde el casco."
+        },
+        {
+          "hora": "12:00 PM",
+          "momento": "Frente a la cortina de agua",
+          "texto": "El tramo en el que la pared se tapiza de vegetación y el ruido del agua tapa todo lo demás."
+        },
+        {
+          "hora": "12:30 PM",
+          "momento": "El cañón desde abajo",
+          "texto": "Con los pies en el suelo, el río turquesa y la pared que acabas de bajar se ven de otra manera."
+        },
+        {
+          "hora": "1:00 PM",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo."
@@ -426,6 +463,48 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 3:00 PM (~7 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Embarcadero del Tampaón",
+          "texto": "Dejas tus cosas y conoces al guía certificado que va DENTRO de tu balsa todo el descenso, no en otra."
+        },
+        {
+          "hora": "10:00 AM",
+          "momento": "Briefing y remada de práctica",
+          "texto": "Casco, chaleco y remo. Las órdenes de remada se practican en agua tranquila antes de entrar a los rápidos. No necesitas saber nadar."
+        },
+        {
+          "hora": "10:45 AM",
+          "momento": "Primeros rápidos",
+          "texto": "Arrancan los 14 kilómetros de descenso. Los primeros rápidos son los que te enseñan a leer el río."
+        },
+        {
+          "hora": "12:00 PM",
+          "momento": "«La Tumba»",
+          "texto": "El rápido más técnico del recorrido. Es donde el guía deja de sugerir y empieza a mandar."
+        },
+        {
+          "hora": "1:00 PM",
+          "momento": "Tramo tranquilo: a nadar",
+          "texto": "El cañón se abre, el agua se calma y el guía deja que te tires de la balsa a nadar entre las paredes de roca."
+        },
+        {
+          "hora": "2:00 PM",
+          "momento": "La comida",
+          "texto": "Va incluida y tú eliges si la tomas antes o después del descenso. Si la dejaste para el final, es aquí."
+        },
+        {
+          "hora": "3:00 PM",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o Xilitla."
@@ -555,6 +634,53 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 12 y 13 horas; regresa aprox. 8:00–9:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hotel, cabaña o Airbnb en Xilitla o Ciudad Valles. No necesitas hospedarte con nosotros. La hora exacta te la manda tu guía por WhatsApp la noche anterior, entre 8 y 9 PM."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Desayuno",
+          "texto": "Buffet de platillos huastecos, camino al río. Va incluido."
+        },
+        {
+          "hora": "11:00 AM",
+          "momento": "Canoa a Tamul",
+          "texto": "Antes de subir se firma la carta responsiva. Luego entras al Cañón del Tampaón en canoa: cerca de una hora de remo, en silencio, y al fondo una cascada de 105 metros que se siente en el pecho antes de verla."
+        },
+        {
+          "hora": "12:30 PM",
+          "momento": "Fotos frente a la cascada",
+          "texto": "Bajas a las piedras del cañón, justo enfrente de la caída, y ahí se toma la foto que todos acaban enseñando al volver. Sin prisa: es el momento del día que más se repite en las cámaras."
+        },
+        {
+          "hora": "1:30 PM",
+          "momento": "Cueva del Agua",
+          "texto": "De regreso bajas de la canoa y subes al cenote de la Cueva del Agua: haces de luz, agua turquesa, y aquí sí te metes —se nada y se echan clavados—. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio. El momento favorito de casi todos."
+        },
+        {
+          "hora": "3:00 PM",
+          "momento": "Comida y camino",
+          "texto": "La comida del día, ya saliendo de Tamul. No va incluida, así que eliges tú dónde y cuánto gastar. Después, el traslado al Sótano de las Huahuas."
+        },
+        {
+          "hora": "5:30 PM",
+          "momento": "Sótano de las Huahuas",
+          "texto": "Unos 20 minutos de caminata hasta el borde de un abismo de 478 metros. Ahí esperas el atardecer."
+        },
+        {
+          "hora": "6:00 PM",
+          "momento": "El espectáculo",
+          "texto": "Miles de aves —loros y vencejos— regresan y se dejan caer en espiral hasta desaparecer. Es el final del día y lo que todos acaban grabando."
+        },
+        {
+          "hora": "8:00–9:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje, cansado y feliz."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -665,6 +791,43 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado cuesta $400 más por reserva (no por persona).",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 8 horas y media y 9 horas; regresa aprox. 4:30–5:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (desde Valles, $400 más por reserva), en unidad con aire acondicionado."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Desayuno",
+          "texto": "Buffet de platillos huastecos y guisados, camino a los destinos. Va incluido."
+        },
+        {
+          "hora": "11:00 AM",
+          "momento": "Las Pozas",
+          "texto": "El jardín surrealista de Edward James: escaleras que no llevan a ningún lado, columnas de concreto asomando entre la selva y cerca de hora y media para recorrerlo con guía."
+        },
+        {
+          "hora": "1:00 PM",
+          "momento": "Nacimiento de Huichihuayán",
+          "texto": "Agua turquesa saliendo de la roca, con los rayos de luz entrando entre la selva. Aquí sí te metes."
+        },
+        {
+          "hora": "2:15 PM",
+          "momento": "Cueva de las Quilas",
+          "texto": "Se entra a la cueva por un cañón estrecho donde la luz cae desde arriba. El cambio de temperatura se siente al cruzar la boca."
+        },
+        {
+          "hora": "3:30 PM",
+          "momento": "Castillo de la Salud",
+          "texto": "Torres de colores levantadas entre la selva huasteca, la última parada del día y la más fotogénica al atardecer."
+        },
+        {
+          "hora": "4:30–5:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje: en Xilitla, entre las 4:30 y las 5:00 PM; si vienes de Ciudad Valles, llegas hacia las 6:00–7:00 PM."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo desde el hospedaje en Xilitla. Desde Ciudad Valles también pasamos por el cliente, pero cuesta $400 MÁS POR RESERVA (no por persona). Es el ÚNICO recorrido que cobra el traslado desde Valles."
@@ -775,6 +938,38 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla a tiempo para su horario fijo (8:00 AM lun, mié, jue y vie · 7:00 AM sáb y dom · 5:00 PM de mié a lun). Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
       "horario": "Horarios FIJOS que pone el jardín: 8:00 AM lunes, miércoles, jueves y viernes; 7:00 AM sábado y domingo; y 5:00 PM de miércoles a lunes. Dura ~3 h. La hora exacta se confirma al apartar la fecha.",
+      "itinerario": [
+        {
+          "hora": "7:00–8:00 AM",
+          "momento": "Recogida en Xilitla",
+          "texto": "Pasamos por ti a tu hospedaje. La hora exacta la fija el jardín y te la confirmamos al apartar la fecha."
+        },
+        {
+          "hora": "7:30 AM",
+          "momento": "El jardín vacío",
+          "texto": "Entras una hora antes de que abra al público. Es la única parte del día en que Las Pozas no tiene a nadie más dentro."
+        },
+        {
+          "hora": "8:15 AM",
+          "momento": "Palacio de Bambú",
+          "texto": "Subes a los niveles superiores, que en la visita general están cerrados. Desde arriba se entiende la escala de lo que construyó Edward James."
+        },
+        {
+          "hora": "9:00 AM",
+          "momento": "Casa Estudio",
+          "texto": "El recinto donde se conserva un poema escrito de su puño y letra. No entra el público general."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Ruta de senderismo",
+          "texto": "El cierre por el sendero del jardín, ya con la luz alta entre los helechos."
+        },
+        {
+          "hora": "10:00 AM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje en Xilitla."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo, pero SOLO desde el hospedaje EN XILITLA. Desde Ciudad Valles NO va incluido: se cotiza aparte. Nunca prometas recogida incluida en Ciudad Valles para esta experiencia."
@@ -902,6 +1097,43 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 8:00 PM (~12 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Desayuno",
+          "texto": "Buffet de platillos huastecos y guisados, camino a los destinos. Va incluido."
+        },
+        {
+          "hora": "10:30 AM",
+          "momento": "Cascada del Meco",
+          "texto": "Llegas cuando el sol entra en ángulo sobre las pozas y el agua se pone turquesa. El recorrido en canoa frente a la cascada va incluido, y se nada con chaleco. Ahí hay puestos de comida y bebidas, y actividades opcionales con costo aparte: renta de paddleboard, tubing y kayak."
+        },
+        {
+          "hora": "1:00 PM",
+          "momento": "Mirador panorámico",
+          "texto": "Caminata corta y plana hasta el mirador: desde arriba se ven las cascadas escalonadas completas. Apta para adultos mayores."
+        },
+        {
+          "hora": "2:30 PM",
+          "momento": "Comida",
+          "texto": "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar."
+        },
+        {
+          "hora": "4:00 PM",
+          "momento": "Cascada El Salto",
+          "texto": "El cierre: una caída doble sobre pozas escalonadas. A esta hora suele salir el arcoíris en la niebla de la caída."
+        },
+        {
+          "hora": "8:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -1012,6 +1244,38 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 11 y 12 horas; regresa aprox. 7:00–8:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Desayuno",
+          "texto": "Buffet de platillos huastecos y guisados, camino a los destinos. Va incluido."
+        },
+        {
+          "hora": "11:00 AM",
+          "momento": "Cascadas de Minas Viejas",
+          "texto": "Una caída triple sobre pozas color jade, con puente de madera para cruzarlas. Hay chalecos para todos y el agua está entre 18 y 22 °C: refrescante, no helada."
+        },
+        {
+          "hora": "1:00 PM",
+          "momento": "Comida",
+          "texto": "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar."
+        },
+        {
+          "hora": "3:00 PM",
+          "momento": "Cascadas de Micos",
+          "texto": "Las pozas escalonadas de Micos, una detrás de otra. Es el tramo del día donde más se mete la gente al agua."
+        },
+        {
+          "hora": "7:00–8:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -1123,6 +1387,38 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 11 y 12 horas; regresa aprox. 7:00–8:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Desayuno",
+          "texto": "Buffet de platillos huastecos y guisados, camino a los destinos. Va incluido."
+        },
+        {
+          "hora": "11:00 AM",
+          "momento": "Puente de Dios",
+          "texto": "Se baja por escalones hasta el cañón. Dentro el chaleco es obligatorio y el agua está entre 18 y 22 °C. Cuenta con la bajada si te cuestan las escaleras."
+        },
+        {
+          "hora": "1:30 PM",
+          "momento": "Comida",
+          "texto": "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar."
+        },
+        {
+          "hora": "3:00 PM",
+          "momento": "Lo que elegiste al reservar",
+          "texto": "O la Hacienda Los Gómez con las Siete Cascadas, que están en el mismo lugar, o las Cascadas de Tamasopo con su tobogán natural de travertino. Se visita una de las dos, la que hayas escogido."
+        },
+        {
+          "hora": "7:00–8:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles."
@@ -1220,6 +1516,43 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale entre 8:00 y 9:00 AM y dura entre 3 horas y media y 4 horas; regresa aprox. 11:30 AM–12:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "8:00–9:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla. El camino a la finca se hace en RZR, así que sales del pueblo ya en el vehículo."
+        },
+        {
+          "hora": "8:30 AM",
+          "momento": "Subida a la finca",
+          "texto": "Caminos de terracería entre la selva húmeda hasta el cafetal bajo sombra. El trayecto ya es parte de la experiencia."
+        },
+        {
+          "hora": "9:00 AM",
+          "momento": "El cafetal",
+          "texto": "Caminas entre las matas con la familia cafetalera y aprendes a distinguir el grano maduro del que todavía no lo está."
+        },
+        {
+          "hora": "9:45 AM",
+          "momento": "El patio de secado",
+          "texto": "Donde el grano se extiende al sol y se remueve durante días. Aquí se ve por qué el café tarda tanto en llegar a la taza."
+        },
+        {
+          "hora": "10:30 AM",
+          "momento": "La tostaduría",
+          "texto": "El tambor girando y el olor llenándolo todo. Es el momento en que la finca huele a lo que te vas a tomar."
+        },
+        {
+          "hora": "11:00 AM",
+          "momento": "La cata",
+          "texto": "Frente a los platos con el grano verde, el tostado y el molido, aprendes a oler y a probar como lo hacen los catadores. Muchos se van con un paquete bajo el brazo."
+        },
+        {
+          "hora": "11:30 AM–12:00 PM",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje en Xilitla."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta."
@@ -1305,6 +1638,38 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, a las 7:40 PM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale a las 7:40 PM y termina aprox. 10:40 PM (~3 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "7:40 PM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla, en el propio RZR, y ahí mismo te entregamos tu casco y tu lámpara frontal. Es la recogida de la salida de las 8:00 PM; si eliges la de las 9:00, pasamos hacia las 8:40."
+        },
+        {
+          "hora": "8:00 PM",
+          "momento": "Caminata por la selva",
+          "texto": "Arranca la salida: de 15 a 20 minutos a pie, ya con la lámpara encendida, hasta la boca de la gruta."
+        },
+        {
+          "hora": "8:20 PM",
+          "momento": "Entras a la cueva",
+          "texto": "El guía explica por dónde se pisa y se entra. A partir de aquí lo único que existe es el círculo de luz de tu lámpara."
+        },
+        {
+          "hora": "9:00 PM",
+          "momento": "Las formaciones",
+          "texto": "Unos 900 metros entre estalactitas, estalagmitas y columnas donde las dos se encontraron después de millones de años de gota a gota."
+        },
+        {
+          "hora": "9:45 PM",
+          "momento": "Los jacuzzis y el silencio",
+          "texto": "El final del recorrido son pozas de agua cristalina formadas dentro de la gruta. Ahí se apagan las lámparas unos minutos para escuchar la cueva. Es el momento que la gente recuerda."
+        },
+        {
+          "hora": "10:30–11:00 PM",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje en Xilitla."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla, y la recogida se hace EN EL RZR. Es un recorrido NOCTURNO. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta."
@@ -1417,6 +1782,48 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 4:00 y 4:30 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale entre 4:00 y 4:30 AM y dura entre 8 y 9 horas; regresa aprox. 12:00–1:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "4:00–4:30 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla, de noche cerrada. Lleva chamarra: arriba el clima es otro."
+        },
+        {
+          "hora": "4:45 AM",
+          "momento": "Subida a La Trinidad",
+          "texto": "Camino de sierra hasta el bosque de niebla, a casi 2,000 metros. Se sube de noche y con las ventanas empañadas."
+        },
+        {
+          "hora": "5:30 AM",
+          "momento": "Arranca la caminata",
+          "texto": "Sendero entre pinos y encinos, con lámpara frontal y en subida constante: de 40 minutos a 1 hora, unos 4 a 5 km. No hace falta experiencia de montaña, pero sí condición."
+        },
+        {
+          "hora": "6:30 AM",
+          "momento": "La cima",
+          "texto": "Llegas al Cerro del Pilón todavía a oscuras. Los últimos metros son de roca y hay tiempo de acomodarse antes de que salga el sol."
+        },
+        {
+          "hora": "7:00 AM",
+          "momento": "El amanecer",
+          "texto": "Primero se pone azul, luego naranja, y cuando el sol rompe el horizonte el mar de nubes se enciende por abajo. Dura unos minutos y ahí se para todo."
+        },
+        {
+          "hora": "8:00 AM",
+          "momento": "La bajada, ya con luz",
+          "texto": "Es cuando por fin ves el bosque por el que subiste a ciegas: los madroños, los helechos y la niebla colgada entre los árboles."
+        },
+        {
+          "hora": "9:00 AM",
+          "momento": "Algo de comer en La Trinidad",
+          "texto": "Al bajar, gente de la comunidad ofrece comida y en La Trinidad hay un restaurante. No va incluido: se paga aparte, ahí mismo."
+        },
+        {
+          "hora": "12:00–1:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje. Te queda la tarde por delante."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Se sale DE MADRUGADA para llegar a la cima antes del amanecer. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta."
@@ -1527,6 +1934,43 @@
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 7:00 y 8:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
       "horario": "Sale entre 7:00 y 8:00 AM y dura entre 8 y 9 horas; regresa aprox. 3:00–4:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "7:00–8:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla. Lleva calzado de senderismo y chamarra o impermeable."
+        },
+        {
+          "hora": "8:30 AM",
+          "momento": "Subida a La Trinidad",
+          "texto": "Unos 14 km de camino de sierra hasta la comunidad náhuatl que vive en lo alto del bosque de niebla. Al llegar el clima ya es otro: fresco y húmedo."
+        },
+        {
+          "hora": "9:30 AM",
+          "momento": "Arranca la caminata",
+          "texto": "Con guía de la propia comunidad, que es la única manera de entrar. El sendero atraviesa bosque cerrado y llanos abiertos."
+        },
+        {
+          "hora": "11:00 AM",
+          "momento": "Los miradores",
+          "texto": "El camino pasa entre pinos, cedros y orquídeas, con varias paradas de mirador. Con suerte se cruzan coatíes o se oyen las pavas."
+        },
+        {
+          "hora": "11:45 AM",
+          "momento": "La Olla de la Luz",
+          "texto": "El bosque se abre de golpe: 233 metros de diámetro, 193 de caída y otro bosque creciendo en el fondo. El guía te enseña dónde pararte y dónde no."
+        },
+        {
+          "hora": "1:00 PM",
+          "momento": "Camino de regreso",
+          "texto": "Se deshace el sendero con la luz alta, que es cuando el bosque de niebla enseña lo verde que es."
+        },
+        {
+          "hora": "3:00–4:00 PM",
+          "momento": "Regreso",
+          "texto": "Te dejamos en tu hospedaje en Xilitla."
+        }
+      ],
       "transporte": {
         "incluido": true,
         "detalle": "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta."

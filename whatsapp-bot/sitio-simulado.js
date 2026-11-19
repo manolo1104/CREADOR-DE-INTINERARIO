@@ -842,6 +842,50 @@ function crearSitioSimulado({ hoy = () => hoyMX(), ahora = () => Date.now(), pre
       calls.hotel.push({ checkin, checkout, rooms });
       return respuesta(200, { available: true, unavailableRooms: habitacionesOcupadas.slice() });
     },
+
+    // El calendario de salidas (18 nov 2026). Con CALENDARIO_URL lee el de
+    // verdad (público, solo estados); si no, todos los días libres.
+    async disponibilidad(p = {}) {
+      (calls.calendario || (calls.calendario = [])).push(p);
+      if (process.env.CALENDARIO_URL) return require("./api-client").disponibilidad(p);
+      const dias = {};
+      const desde = String(p.desde || "").slice(0, 10);
+      const hasta = String(p.hasta || desde).slice(0, 10);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(desde) && /^\d{4}-\d{2}-\d{2}$/.test(hasta)) {
+        for (let d = new Date(`${desde}T12:00:00Z`); d <= new Date(`${hasta}T12:00:00Z`); d.setUTCDate(d.getUTCDate() + 1)) {
+          dias[d.toISOString().slice(0, 10)] = "libre";
+        }
+      }
+      return respuesta(200, { dias });
+    },
+
+    // El hotel para la recogida, DESPUÉS del pago (como /api/bot/booking/[folio]/hospedaje).
+    async guardarHospedaje(folio, hotel) {
+      (calls.hospedaje || (calls.hospedaje = [])).push({ folio, hotel });
+      const f = String(folio || "").trim().toUpperCase();
+      const h = String(hotel || "").trim();
+      if (!f || !h) return respuesta(400, { error: "Falta el folio o el nombre del hotel." });
+      const cot = cotizaciones.get(f);
+      if (cot && !cot.reservaFolio) return respuesta(409, { error: "Esta cotización todavía no es reserva (no hay pago validado). El hotel se pide DESPUÉS del pago: no lo anotes ahora; si te lo dio, agradécele y sigue con el pago." });
+      const res = reservas.get(cot ? cot.reservaFolio : f);
+      if (!res) return respuesta(404, { error: `No existe el folio ${f}.` });
+      res.hospedaje = h;
+      res.notasInternas = res.notasInternas || [];
+      res.notasInternas.push(`Hotel para la recogida: ${h}`);
+      return respuesta(200, { ok: true, folio: res.folio || res.reservaFolio || f, hotel: h, tourName: res.tourName, tourDate: res.tourDate });
+    },
+
+    // La imagen de datos de pago: SIMULADOR_IMAGEN_DATOS_PAGO (ruta local), o 404.
+    async imagenDatosPago() {
+      const ruta = process.env.SIMULADOR_IMAGEN_DATOS_PAGO;
+      try {
+        if (ruta) {
+          const buf = require("fs").readFileSync(ruta);
+          return respuesta(200, { mimetype: /\.jpe?g$/i.test(ruta) ? "image/jpeg" : "image/png", data: buf.toString("base64"), nombre: "datos-de-pago.png" });
+        }
+      } catch { /* sin imagen */ }
+      return respuesta(404, { error: "Sin imagen de datos de pago." });
+    },
   };
 
   /**

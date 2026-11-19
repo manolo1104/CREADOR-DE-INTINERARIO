@@ -11,6 +11,11 @@ const SITE_API_URL = (process.env.SITE_API_URL || "http://localhost:3000").repla
 const AGENT_API_TOKEN = process.env.AGENT_API_TOKEN || "";
 // Sitio del hotel Paraíso Encantado (para consultar disponibilidad de habitaciones, solo lectura).
 const HOTEL_API_URL = (process.env.HOTEL_API_URL || "https://www.paraisoencantado.com").replace(/\/$/, "");
+// El calendario de salidas (18 nov 2026): el MISMO que pinta la web al
+// reservar (/api/tours/disponibilidad, público, solo estados). Por omisión el
+// del sitio con el que habla el bot; CALENDARIO_URL lo cambia (una prueba local
+// puede leer el calendario real de producción sin tocar su base).
+const CALENDARIO_URL = (process.env.CALENDARIO_URL || SITE_API_URL).replace(/\/$/, "");
 
 // Cuánto se le espera al sitio. Sin tope, un sitio colgado dejaba el chat
 // trabado: el candado de la ráfaga no se suelta hasta que la llamada termina.
@@ -62,6 +67,29 @@ function get(path, opts = {}) {
 }
 
 // ── Operaciones ──────────────────────────────────────────────
+/**
+ * Los días de un recorrido en el calendario de salidas, con el mismo color que
+ * ve el cliente en la web: { dias: { "AAAA-MM-DD": "libre" | "con-reservas" |
+ * "casi-lleno" | "sin-cupo" | "no-cabe" | "cerrada" } }.
+ */
+async function disponibilidad({ slug, desde, hasta, personas } = {}) {
+  const q = new URLSearchParams({ slug: String(slug || "") });
+  if (desde) q.set("desde", desde);
+  if (hasta) q.set("hasta", hasta);
+  if (personas) q.set("personas", String(personas));
+  return pedir(`${CALENDARIO_URL}/api/tours/disponibilidad?${q}`, { timeoutMs: TIMEOUT_CONSULTA_MS });
+}
+
+/** El hotel donde pasamos por el cliente, DESPUÉS del pago → «Lugar de recogida» de la reserva. */
+async function guardarHospedaje(folio, hotel) {
+  return post(`/api/bot/booking/${encodeURIComponent(String(folio || "").toUpperCase())}/hospedaje`, { hotel }, { timeoutMs: TIMEOUT_CONSULTA_MS });
+}
+
+/** La imagen de datos de pago (vive en la base del sitio, no en el repo). { mimetype, data, nombre } o 404. */
+async function imagenDatosPago() {
+  return get("/api/bot/datos-pago-imagen");
+}
+
 // Cotización de UN tour → TourQuote COT- (la ve el equipo en Cotizaciones).
 async function crearCotizacion(payload) {
   return post("/api/bot/quote", payload);
@@ -181,6 +209,10 @@ module.exports = {
   documento,
   ligasPorPersona,
   checkHotelAvailability,
+  disponibilidad,
+  guardarHospedaje,
+  imagenDatosPago,
   SITE_API_URL,
+  CALENDARIO_URL,
   HOTEL_API_URL,
 };

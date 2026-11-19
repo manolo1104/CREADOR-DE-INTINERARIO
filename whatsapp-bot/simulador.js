@@ -362,10 +362,22 @@ function urlDeFoto(url) {
 }
 
 /** Lo que en WhatsApp sale antes del texto: fotos como fotos y el PDF como documento. */
+// La imagen de datos de pago, como la mandaría WhatsApp (18 nov 2026).
+let imagenDatosPago = null; // { buf, mimetype }
 async function mostrarAdjuntos(lista) {
   for (const a of lista || []) {
     if (a.tipo === "foto") {
       emitir({ tipo: "foto", url: urlDeFoto(a.url), caption: a.caption || "" });
+      continue;
+    }
+    if (a.tipo === "datosPago") {
+      const r = await api.imagenDatosPago().catch(() => ({ ok: false, status: 0, data: {} }));
+      if (r.ok && r.data && r.data.data) {
+        imagenDatosPago = { buf: Buffer.from(r.data.data, "base64"), mimetype: r.data.mimetype || "image/png" };
+        emitir({ tipo: "foto", url: `/datos-pago.png?v=${Date.now()}`, caption: "" });
+      } else {
+        emitir({ tipo: "aviso", texto: "🖼️ No hay imagen de datos de pago guardada: en WhatsApp saldría solo el texto." });
+      }
       continue;
     }
     if (a.tipo !== "pdf") continue;
@@ -783,6 +795,19 @@ async function mandarArchivo({ mimetype = "", data = "", filename = "", caption 
   const tipoMsg = /^image\//.test(mimetype) ? "image" : "document";
   const kind = medios.classifyIncomingMedia({ mimetype, caption, hasPendingQuote: debeAlgo, messageType: tipoMsg });
   if (kind === "proof") {
+    // Como index.js (18 nov 2026): una foto sin señales de pago se lee antes
+    // del acuse; si no es un comprobante, el modelo la ve y contesta.
+    const senales = medios.pareceComprobanteDePago({ mimetype, caption, history: s.history, textos: [] });
+    if (!senales && /^image\//.test(mimetype) && typeof agente.leerComprobante === "function") {
+      const lectura = await medios.conTope(agente.leerComprobante({ mimetype, data }), 15000);
+      if (lectura && lectura.esComprobante === false && guardarVisual({ mimetype, data })) {
+        emitir({ tipo: "aviso", texto: "🖼️ La IA leyó la foto y NO es un comprobante: el bot la ve y contesta con lo que muestra (sin acuse de pago ni aviso a Manolo)." });
+        const texto = [caption, medios.notaVisual("foto", medios.idiomaDeSesion(s))].filter(Boolean).join("\n");
+        if (pausaActiva(CHAT)) { pushHistory(CHAT, "user", texto); return {}; }
+        rafagas.recibir(CHAT, texto);
+        return {};
+      }
+    }
     emitir({ tipo: "aviso", texto: "🧾 El bot lo toma como comprobante de pago: acuse al cliente y aviso a Manolo con lo que leyó del archivo." });
     return mandarComprobante(caption, { mimetype, data, filename });
   }
@@ -796,9 +821,7 @@ async function mandarArchivo({ mimetype = "", data = "", filename = "", caption 
   // 'text': el pie se contesta como mensaje normal y el modelo VE la foto o el PDF.
   let nota = "";
   if ((/^image\//.test(mimetype) || /pdf/.test(mimetype)) && guardarVisual({ mimetype, data })) {
-    const loc = medios.idiomaDeSesion(s);
-    const que = /pdf/.test(mimetype) ? (loc === "en" ? "a PDF" : "un PDF") : (loc === "en" ? "a photo" : "una foto");
-    nota = `[El cliente mandó ${que}; la ves arriba. Si es un comprobante de pago, dile que ya lo recibimos y llama escalar_a_humano (otro, avisar, hoy) con lo que dice.]`;
+    nota = medios.notaVisual(/pdf/.test(mimetype) ? "pdf" : "foto", medios.idiomaDeSesion(s));
   }
   const texto = [caption, nota].filter(Boolean).join("\n");
   if (!texto) return {};
@@ -1050,6 +1073,11 @@ const servidor = http.createServer(async (req, res) => {
       return fs.createReadStream(ruta).pipe(res);
     }
 
+    if (url.pathname === "/datos-pago.png") {
+      if (!imagenDatosPago) { res.writeHead(404); return res.end(); }
+      res.writeHead(200, { "Content-Type": imagenDatosPago.mimetype, "Cache-Control": "no-store" });
+      return res.end(imagenDatosPago.buf);
+    }
     if (url.pathname.startsWith("/pdf/")) {
       const doc = pdfs.get(decodeURIComponent(url.pathname.slice(5)).toUpperCase());
       if (!doc) { res.writeHead(404); return res.end("Ese PDF ya no está (¿reiniciaste el simulador?)."); }

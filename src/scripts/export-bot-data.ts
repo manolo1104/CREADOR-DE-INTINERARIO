@@ -14,7 +14,7 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import { TOURS_DB, TOURS_LISTA, tourDurTexto, PRIVADO_EXTRA_POR_PERSONA, recogidaDeTour, ventanaSalida, regresoDeTour, fraseRecogida, fmtHora12, PROMO_TEMPORADA, PROMO_VENCE, promoVigente } from "../lib/tours";
 import { excepcionesSalida } from "../lib/recogidaTexto";
-import { INCLUYE_SIEMPRE, incluyePropioDeTour } from "../lib/tours";
+import { INCLUYE_SIEMPRE, incluyePropioDeTour, sinLugarDelDesayuno } from "../lib/tours";
 import { PAQUETES_DB, HABITACIONES, habitacionesDePaquete, LOGISTICA, precioPaqueteDeFecha, getPaquete, NOCHES_XANTOLO, eventoALaVenta, type Paquete } from "../lib/paquetes";
 import { NOCHE_XANTOLO, precioNinoNoche } from "../lib/nocheXantolo";
 import { TOUR_FAQS } from "../lib/tourFaqs";
@@ -69,10 +69,6 @@ const NO_INCLUYE: Record<string, string[]> = {
 };
 
 // ── Hechos que el bot NO debe deducir ni suponer ─────────────────────────────
-// 18 nov 2026, Manolo: el bot dice que el desayuno va incluido, sin nombrar
-// el restaurante. La web sí lo nombra (tours.ts): aquí se quita al exportar.
-const sinLugarDelDesayuno = (x: string) => x.replace(/,?\s+(?:en|de)\s+El Taco Loco\b/gi, "");
-
 // Antes el bot leía "incluye"/"noIncluye" y sacaba conclusiones propias: llegó a
 // prometer recogida en el hotel para el rappel (no la hay) y comida para la Ruta
 // Acuática (tampoco). Ahora cada tour trae la respuesta ya escrita y literal.
@@ -574,6 +570,12 @@ const tours = TOURS_DB.map((t) => ({
   salida: salidaDeTour(t),
   recogidaTipo: recogidaDeTour(t).tipo,
   horario: horarioTour(t),
+  // El itinerario por horas de la ficha del tour (18 nov 2026, Manolo: «cuando
+  // el cliente mencione un tour al inicio, menciona el itinerario»). Sin el
+  // nombre del restaurante del desayuno y sin fotos.
+  ...(Array.isArray(t.itinerario) && t.itinerario.length
+    ? { itinerario: t.itinerario.map((m) => ({ hora: m.hora, momento: m.momento, texto: sinLugarDelDesayuno(m.texto) })) }
+    : {}),
   // Hechos cerrados: el bot los repite tal cual, no los deduce.
   transporte: TRANSPORTE[t.slug] || { incluido: false, detalle: "Confírmalo con el equipo." },
   alimentos: ALIMENTOS[t.slug] || { desayuno: false, comida: false, detalle: "Confírmalo con el equipo." },
