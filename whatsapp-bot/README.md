@@ -152,7 +152,7 @@ Copia `.env.example` a `.env` (ahí está explicada cada una). Las importantes:
   manda por su cuenta lo deja para la siguiente vuelta. `all` = a todos (solo pruebas).
   Reglas en `guardados.js`, pruebas en `test-guardados.js`.
 - `BOT_SOLO_CONECTAR=1`: se vincula (QR) y se queda conectado sin contestar ni mandar nada;
-  solo `/status` y `/help`. `QR_OUT_FILE`: archivo con el QR en texto y luego el estado
+  solo `/status` y `/help`. `QR_OUT_FILE`: archivo con INICIANDO, el QR en texto y luego el estado
   (AUTENTICANDO / CONECTADO / FALLO / DESCONECTADO) para pintarlo en una página.
 - `HUMAN_TAKEOVER_MS` (5 min), `PAUSA_ESCALACION_MS` (12 h), `HORARIO_HUMANO` (08:00-21:00).
 - `ESTADO_PATH`, `COMPROBANTES_DIR`: solo si cambias el volumen.
