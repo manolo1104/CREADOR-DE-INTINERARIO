@@ -100,7 +100,7 @@ const FALLA_COOLDOWN_MS = 10 * 60 * 1000;       // «el bot no pudo responder»:
 const CONFIRMA_REPETIDA_MS = 10 * 60 * 1000;    // mismo /confirma (folio + monto) dos veces
 
 // Los comandos del bot (solo los ejecuta el dueño o el teléfono del negocio).
-const COMANDO_RE = /^\/(confirma|noespago|pausa|reanuda|olvida|status|help|ayuda)\b/i;
+const COMANDO_RE = /^\/(confirma|noespago|pausa|reanuda|olvida|status|help|ayuda|prueba)\b/i;
 
 // Mensajes con archivo que nunca son un comprobante (no cuentan como «en camino»).
 const TIPOS_SIN_COMPROBANTE = new Set(["ptt", "audio", "sticker", "vcard", "multi_vcard", "location"]);
@@ -559,7 +559,7 @@ function extraerComando(texto) {
   if (!t) return null;
   if (t.startsWith("/")) return t;
   for (const linea of t.split(/\n+/)) {
-    const m = /(?:^|[\s·:>«"'(*_])(\/(?:confirma|noespago|pausa|reanuda|olvida|status|help|ayuda)\b.*)$/i.exec(linea);
+    const m = /(?:^|[\s·:>«"'(*_])(\/(?:confirma|noespago|pausa|reanuda|olvida|status|help|ayuda|prueba)\b.*)$/i.exec(linea);
     if (m) return m[1].replace(/[»"')\]*_]+\s*$/, "").trim();
   }
   return null;
@@ -1122,7 +1122,7 @@ client.on("message", async (msg) => {
         : null;
       if (comando && guardados.comandoPermitidoSoloConectar(comando)) {
         if (chatId.endsWith("@lid")) ownerLid = chatId;
-        await handleOwnerCommand({ canal: "dueno", chatActual: null, confirmadoPor: "manolo", responder: (t) => enviar(chatId, t) }, comando);
+        await handleOwnerCommand({ canal: "dueno", chatActual: null, confirmadoPor: "manolo", destino: chatId, responder: (t) => enviar(chatId, t) }, comando);
       } else if (comando) {
         // Al dueño no se le deja sin respuesta: que sepa por qué no se hizo.
         await enviar(chatId, TEXTO_SOLO_CONECTAR).catch((e) => console.warn("⚠️ respuesta al dueño:", primeraLinea(e)));
@@ -1160,6 +1160,7 @@ client.on("message", async (msg) => {
           canal: "dueno",
           chatActual: null,
           confirmadoPor: "manolo",
+          destino: chatId,
           responder: (t) => enviar(chatId, t),
         }, comando);
         return;
@@ -1725,6 +1726,8 @@ client.on("message_create", async (msg) => {
         canal: "negocio",
         chatActual: esChatDeCliente ? target : null,
         confirmadoPor: "equipo",
+        // Lo que manda un comando (la /prueba) nunca va al chat de un cliente.
+        destino: esChatDeCliente ? (chatPropio() || OWNER_JID || null) : target,
         responder: responderAlNegocio(target, esChatDeCliente),
       }, body);
       return;
@@ -1802,6 +1805,7 @@ const TEXTO_AYUDA = [
   "*/reanuda <número>* — el bot vuelve a contestar (recuerda la conversación)",
   "*/olvida <número>* — borra lo que el bot recuerda de ese chat",
   "*/status* — estado del bot",
+  "*/prueba [folio]* — te manda una foto de un tour (y el PDF del folio) para comprobar que los adjuntos salen. Ej.: /prueba COT-ABC123",
   "",
   "Funcionan mandándoselos al bot desde tu WhatsApp o desde el teléfono del negocio. Escritos en el chat de un cliente, la respuesta llega al chat «Tú» del negocio (nunca al cliente). En grupos no funcionan.",
 ].join("\n");
@@ -1821,6 +1825,8 @@ async function handleOwnerCommand(ctx, body) {
     case "/help":
     case "/ayuda":
       return responder(TEXTO_AYUDA);
+    case "/prueba":
+      return probarAdjuntos(ctx, arg, responder);
     case "/confirma":
       return confirmarPago(ctx, arg, responder);
     case "/noespago":
@@ -1875,6 +1881,26 @@ function resolverChats(arg, chatActual, { soloConocidos = false } = {}) {
   for (const [id, s] of Object.entries(estado.sesiones())) if (coincide(id, s && s.telefono)) encontrados.add(id);
   if (!encontrados.size && !soloConocidos) encontrados.add(`${numeroEscrito(d)}@c.us`);
   return [...encontrados];
+}
+
+/**
+ * «/prueba [folio]»: manda una foto de un tour y, si se da un folio, su PDF
+ * al chat de quien lo pidió (tu chat con el bot, o «Tú» en el teléfono del
+ * negocio; nunca a un cliente). Para comprobar que los adjuntos salen: con
+ * whatsapp-web.js 1.34.7 WhatsApp los rechazaba todos (19 nov 2026).
+ */
+const FOTO_PRUEBA = "https://www.huasteca-potosina.com/imagenes/cascada-de-tamul/gallery-6.jpg";
+async function probarAdjuntos(ctx, arg, responder) {
+  const destino = ctx.destino;
+  if (!destino) return responder("No sé a qué chat mandar la prueba.");
+  const folio = /^(COT|HP)-[A-Z0-9-]{4,}$/i.test(arg) ? arg.toUpperCase() : null;
+  const lista = [{ tipo: "foto", url: FOTO_PRUEBA }];
+  if (folio) lista.push({ tipo: "pdf", folio, nombre: adjuntos.nombrePdf(folio, "es") });
+  await responder(`🧪 Prueba de adjuntos: te mando una foto${folio ? ` y el PDF de ${folio}` : " (agrega un folio para probar también el PDF: /prueba COT-…)"}.`);
+  const salieron = await documentos.enviarAdjuntos(destino, lista);
+  return responder(salieron === lista.length
+    ? `✅ Salieron los ${lista.length} adjuntos: WhatsApp los aceptó.`
+    : `❌ Salieron ${salieron} de ${lista.length} adjuntos. El detalle está en la bitácora del bot.`);
 }
 
 function textoStatus() {

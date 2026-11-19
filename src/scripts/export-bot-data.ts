@@ -809,7 +809,7 @@ const info = {
   cancelacion: empresa.cancelacion,
   // La política completa, la misma que publica /tours (`faqTours.ts`), frase
   // por frase. Antes el bot solo sabía "cancela gratis hasta 48 h antes" y no
-  // tenía qué decir de la lluvia, del 50 % ni de la garantía turquesa.
+  // tenía qué decir de la lluvia ni del 50 % (la «garantía turquesa» se quitó el 19 nov 2026).
   cancelacionCompleta: cancelacionCompleta(),
   // 🔴 Decía que el RZR y los paquetes "se confirman con el equipo" sin
   // anticipo; todo se aparta con el mismo porcentaje (Manolo, 29 sep).

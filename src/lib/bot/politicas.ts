@@ -224,7 +224,8 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     texto:
       "Si cancela el cliente: con 48 horas o más de anticipación se devuelve el 100 %, incluido el anticipo; entre 48 y 24 horas antes se retiene el 50 %; con menos de 24 horas no hay reembolso, pero puede reagendar una vez sin costo. " +
       "Si cancelamos nosotros (tormenta eléctrica, alerta meteorológica, río no seguro o paraje cerrado): el cliente elige reembolso del 100 % o reagendar sin costo; ahí no aplica la regla de las 48 horas. " +
-      "Garantía turquesa: si el día del tour el agua no está turquesa, aunque el recorrido opere, puede reagendar una vez gratis avisando por WhatsApp antes de la hora de salida. " +
+      // 19 nov 2026, Manolo: fuera la «garantía turquesa» («no hay garantía del color ya que no lo controlamos nosotros»).
+      "El color del agua NO se garantiza: depende del río y del clima. Si el tour opera, no hay reagendar ni reembolso porque el agua no esté turquesa; si preguntan cómo está ese día, lo confirma el equipo. " +
       "El reembolso se hace por transferencia a la cuenta que indique el cliente. " +
       "Algún recorrido tiene política propia (el campo `cancelacion` de su ficha manda). " +
       "Cambios o cancelaciones de una reserva YA pagada los atiende el equipo: explica la política sin prometer montos y pasa el chat.",

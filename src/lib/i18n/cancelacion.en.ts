@@ -76,11 +76,6 @@ export interface CancelacionContent {
   opciones: string[];
   decisionGuia: string;
 
-  garantiaTitulo: string;
-  garantiaPre: string;
-  garantiaStrong: string;
-  garantiaPost: string;
-
   excepciones: ExcepcionCancelacion[];
   excepcionLink: string;
 
@@ -207,13 +202,6 @@ function construir(locale: Locale): CancelacionContent {
       decisionGuia:
         "La decisión de salir o no la toma el guía responsable la mañana del tour, con la información del río y del clima en mano. Tu seguridad va antes que la venta: nunca sacamos un grupo con el río crecido.",
 
-      garantiaTitulo: "Garantía de caudal",
-      garantiaPre:
-        "Si el día de tu tour el agua no está en su tono turquesa —aunque el recorrido opere con normalidad—, ",
-      garantiaStrong: "reagendas gratis",
-      garantiaPost:
-        " una vez, para cualquier fecha dentro de los siguientes 12 meses. Solo avísanos por WhatsApp antes de la hora de salida.",
-
       excepciones,
       excepcionLink: "Ver la experiencia",
 
@@ -238,11 +226,11 @@ function construir(locale: Locale): CancelacionContent {
           a: `Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua. Si hay tormenta eléctrica, alerta meteorológica o el río no está en condiciones seguras, nosotros cancelamos y eliges entre reembolso del 100 % o reagendar sin costo. Nunca sacamos un grupo con el río crecido.${REMITE}`,
         },
         {
-          // La garantía de caudal (29 sep 2026): el banner del río (BandaRio) la
-          // promete en todo el sitio y enlaza aquí, así que esta respuesta es la
-          // letra de esa promesa. "Antes de la salida" evita el reclamo posterior.
+          // 19 nov 2026, Manolo: fuera la «garantía de caudal» (29 sep): el color
+          // no lo controlamos nosotros, así que no se garantiza. La pregunta se
+          // queda porque la gente la hace; la respuesta es la honesta.
           q: "¿Y si el agua no está turquesa?",
-          a: "En temporada de lluvias el río puede venir crecido y con sedimento aunque el tour opere con normalidad. Si el día de tu recorrido el agua no está en su tono turquesa, puedes reagendar una vez sin costo, para cualquier fecha dentro de los siguientes 12 meses; solo avísanos por WhatsApp antes de la hora de salida. Es nuestra garantía de caudal: preferimos que veas la Huasteca en su mejor momento.",
+          a: "El color del agua depende del río y del clima, no de nosotros, así que no lo podemos garantizar. En temporada de lluvias el río puede venir crecido y con sedimento aunque el tour opere con normalidad. Si quieres saber cómo está antes de tu salida, pregúntanos por WhatsApp. Si el río no está en condiciones seguras, nosotros cancelamos y eliges entre reembolso del 100 % o reagendar sin costo.",
         },
         {
           q: "¿Qué pasa si el paraje está cerrado?",
@@ -339,13 +327,6 @@ function construir(locale: Locale): CancelacionContent {
     decisionGuia:
       "The decision to go or not is made by the lead guide on the morning of the tour, with the river and weather information in hand. Your safety comes before the sale: we never take a group out when the river is running high.",
 
-    garantiaTitulo: "River guarantee",
-    garantiaPre:
-      "If the water isn't its turquoise color on the day of your tour (even if the tour runs normally), ",
-    garantiaStrong: "you reschedule for free",
-    garantiaPost:
-      " once, for any date within the following 12 months. Just let us know on WhatsApp before the departure time.",
-
     excepciones,
     excepcionLink: "See the experience",
 
@@ -369,7 +350,7 @@ function construir(locale: Locale): CancelacionContent {
       },
       {
         q: "What if the water isn't turquoise?",
-        a: "In the rainy season the river can run high and carry sediment even when the tour operates normally. If the water isn't its turquoise color on the day of your tour, you can reschedule once at no cost, for any date within the following 12 months; just let us know on WhatsApp before the departure time. It's our river guarantee: we'd rather you see the Huasteca at its best.",
+        a: "The water's color depends on the river and the weather, not on us, so we can't guarantee it. In the rainy season the river can run high and carry sediment even when the tour operates normally. If you'd like to know how it looks before your departure, ask us on WhatsApp. If the river isn't safe, we cancel and you choose between a 100% refund or rescheduling at no cost.",
       },
       {
         q: "What happens if the site is closed?",

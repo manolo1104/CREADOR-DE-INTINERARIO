@@ -142,14 +142,6 @@ export default function PoliticaCancelacionPage() {
           <p className="font-dm text-xs text-negro/50 leading-relaxed">{t.decisionGuia}</p>
         </div>
 
-        {/* La garantía de caudal, a la vista: es la promesa del banner del río. */}
-        <div className="border border-agua/40 bg-agua/5 p-6 mb-14">
-          <h3 className="font-cormorant font-light text-verde-profundo text-2xl mb-3">{t.garantiaTitulo}</h3>
-          <p className="font-dm text-sm text-negro/70 leading-relaxed">
-            {t.garantiaPre}<strong className="text-verde-profundo">{t.garantiaStrong}</strong>{t.garantiaPost}
-          </p>
-        </div>
-
         {/* La excepción, a la vista y no solo dentro de una respuesta: quien
             reserva el Edén tiene que leer ANTES de pagar que no hay reembolso. */}
         {t.excepciones.map((x) => (

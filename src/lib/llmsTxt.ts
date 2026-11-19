@@ -299,7 +299,7 @@ function reserva(locale: Locale): Bloque {
       cuerpo: `- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Website: ${SITE}/en
 - Booking: online with secure payment (Stripe) or over WhatsApp. A ${ANTICIPO_PCT}% deposit holds any booking (packages included); the balance is settled on the day of the tour.
-- Cancellation: free up to 48 hours before the tour (full refund). Turquoise-water guarantee: if the water isn't turquoise on the day of your tour, you can reschedule once for free (notify on WhatsApp before departure).${cancelacionPropia(locale)}
+- Cancellation: free up to 48 hours before the tour (full refund). If we cancel for safety (storm, weather alert, unsafe river or closed site), you choose a full refund or free rescheduling. The water's color isn't guaranteed: it depends on the river and the weather.${cancelacionPropia(locale)}
 - Departures and pickup: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)} The night before, between 8 and 9 PM, the guide sends the exact pickup time on WhatsApp.
 - Prices are in Mexican pesos (MXN) and per person${otras ? ` (except — ${otras})` : ""}.
   On per-person tours, kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.`,
@@ -310,7 +310,7 @@ function reserva(locale: Locale): Bloque {
     cuerpo: `- WhatsApp: +52 489 109 0388 (https://wa.me/524891090388)
 - Sitio web: ${SITE}
 - Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Cualquier reserva (paquetes incluidos) se aparta con el ${ANTICIPO_PCT} %; el saldo se liquida el día del tour.
-- Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo). Garantía de caudal: si el día del tour el agua no está turquesa, se puede reagendar una vez sin costo (avisando por WhatsApp antes de la salida).${cancelacionPropia(locale)}
+- Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo). Si cancelamos nosotros por seguridad (tormenta, alerta meteorológica, río no seguro o paraje cerrado), eliges reembolso completo o reagendar sin costo. El color del agua no se garantiza: depende del río y del clima.${cancelacionPropia(locale)}
 - Salidas y recogida: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)} La noche anterior, entre 8 y 9 PM, el guía manda por WhatsApp la hora exacta de recogida.
 - Precios en pesos mexicanos (MXN) y por persona${otras ? ` (salvo — ${otras})` : ""}. En los recorridos por persona, niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.`,
   };

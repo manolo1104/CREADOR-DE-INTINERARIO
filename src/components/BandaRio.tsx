@@ -9,9 +9,10 @@ import { trackTourEvent } from "@/lib/tourTracker";
  * La franja delgada de "estado del río", pegada arriba del navbar (vive DENTRO
  * de su contenedor fijo, así se esconde junto con él al bajar). Contesta la
  * duda que en temporada baja frena la reserva —"¿el agua está turquesa o
- * marrón?"— y la remata con la garantía de caudal: si no está turquesa,
- * reagendas gratis. La garantía también está escrita en la política de
- * cancelación, a donde enlaza esta franja.
+ * marrón?"— y la remata con lo que SÍ se promete: si el río no deja operar,
+ * reembolso o reagendar sin costo (política de cancelación, a donde enlaza).
+ * 19 nov 2026, Manolo: fuera la «garantía de caudal» («¿No está turquesa?
+ * Reagendas gratis»): el color del agua no lo controlamos, no se garantiza.
  *
  * El estado sale de /api/rio-estado (lo fija Manolo desde el panel; en "auto"
  * manda la temporada). Es un fetch de cliente para que la franja viva igual
@@ -63,8 +64,8 @@ export function BandaRio() {
     ? (turquesa ? "River today: turquoise water" : "River today: high flow after rain")
     : (turquesa ? "El río hoy: agua turquesa" : "El río hoy: caudal alto por lluvias");
   const garantia = en
-    ? "Not turquoise? Reschedule free"
-    : "¿No está turquesa? Reagendas gratis";
+    ? "If the river stops the tour: refund or reschedule"
+    : "Si el río no deja operar: reembolso o reagendas";
 
   return (
     <div className={`${turquesa ? "bg-verde-profundo" : "bg-negro"} border-b border-white/10`}>
