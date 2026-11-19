@@ -34,8 +34,8 @@ export function ListaEspera({
 
   const claro = tono === "claro";
   const campo = claro
-    ? "w-full bg-white border border-verde-profundo/20 text-verde-profundo placeholder:text-verde-profundo/40 px-3 py-3 text-base font-dm focus:outline-none focus:border-verde-selva"
-    : "w-full bg-negro/60 border border-white/15 text-crema placeholder:text-crema/35 px-3 py-3 text-base font-dm focus:outline-none focus:border-dorado";
+    ? "rounded-xl w-full bg-white border border-verde-profundo/20 text-verde-profundo placeholder:text-verde-profundo/40 px-3 py-3 text-base font-dm focus:outline-none focus:border-verde-selva"
+    : "rounded-xl w-full bg-negro/60 border border-white/15 text-crema placeholder:text-crema/35 px-3 py-3 text-base font-dm focus:outline-none focus:border-dorado";
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -86,7 +86,7 @@ export function ListaEspera({
       <button
         type="submit"
         disabled={estado === "enviando"}
-        className={`w-full min-h-[48px] px-6 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-60 ${claro ? "bg-verde-profundo text-crema hover:bg-verde-selva" : "border border-dorado text-dorado hover:bg-dorado hover:text-negro"}`}
+        className={`rounded-xl w-full min-h-[48px] px-6 text-[11px] tracking-[2px] uppercase font-dm transition-colors disabled:opacity-60 ${claro ? "bg-verde-profundo text-crema hover:bg-verde-selva" : "border border-dorado text-dorado hover:bg-dorado hover:text-negro"}`}
       >
         {estado === "enviando" ? t.guardando : t.avisame}
       </button>

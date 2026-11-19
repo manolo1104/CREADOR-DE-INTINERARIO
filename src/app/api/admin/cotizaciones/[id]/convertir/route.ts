@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sesionActual } from "@/lib/admin/sesion";
 import type { Actor } from "@/lib/admin/bitacora";
 import { montoCobrado } from "@/lib/admin/dinero";
-import { origenValido } from "@/lib/origenReserva";
+import { origenDeCaptura } from "@/lib/origenReserva";
 import { convertirCotizacionEnReserva, esErrorCotizacion } from "@/lib/cotizaciones/convertir";
 import { pasoTrasConvertir } from "@/lib/cotizaciones/reglasConversion";
 
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       actor,
       forzar:      body?.forzar === true,
       // El cuadro obliga a elegirlo; si una llamada no lo manda, «por confirmar».
-      origen:      origenValido(body?.origen, "por_confirmar"),
+      origen:      origenDeCaptura(body?.origen), // nunca «web»: la cerró el equipo (19 nov 2026)
       idiomaTour:  body?.idiomaTour === "en" ? "en" : body?.idiomaTour === "es" ? "es" : null,
       guia:        texto(body?.guia, 80) || null,
       pickupLugar: texto(body?.pickupLugar, 200),

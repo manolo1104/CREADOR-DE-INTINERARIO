@@ -53,7 +53,7 @@ export function BarraViaje({ desde, quedan, locale = "es" }: { desde: number | n
         <a
           href="#fechas"
           tabIndex={visible ? 0 : -1}
-          className="shrink-0 min-h-[48px] inline-flex items-center px-6 bg-dorado text-negro text-[11px] tracking-[2px] uppercase font-dm"
+          className="rounded-xl shrink-0 min-h-[48px] inline-flex items-center px-6 bg-dorado text-negro text-[11px] tracking-[2px] uppercase font-dm"
         >
           {desde ? t.apartarBarra : t.avisame}
         </a>

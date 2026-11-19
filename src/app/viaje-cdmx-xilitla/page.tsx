@@ -449,7 +449,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
             <p className="text-crema/80 font-dm text-[15px] leading-relaxed mb-5">{t.intro}</p>
 
             {proxima ? (
-              <div className="border border-white/15 bg-negro/60 backdrop-blur-sm p-4 mb-6">
+              <div className="rounded-xl border border-white/15 bg-negro/60 backdrop-blur-sm p-4 mb-6">
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
                   <p className="font-dm text-crema/60 text-xs uppercase tracking-[1.5px]">{t.proxima}</p>
                   <p className="font-dm text-crema/60 text-xs">{t.quedan(proxima.disponibles, proxima.capacidad)}</p>
@@ -467,13 +467,13 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
             )}
 
             <div className="flex flex-col sm:flex-row gap-3">
-              <a href="#fechas" data-cta-viaje className="inline-flex items-center justify-center min-h-[52px] px-8 bg-dorado text-negro hover:bg-crema text-[12px] tracking-[2px] uppercase font-dm transition-colors">
+              <a href="#fechas" data-cta-viaje className="rounded-xl inline-flex items-center justify-center min-h-[52px] px-8 bg-dorado text-negro hover:bg-crema text-[12px] tracking-[2px] uppercase font-dm transition-colors">
                 {proxima ? t.apartar : t.avisame}
               </a>
               <BotonWhatsApp
                 href={waLink(waTexto(proxima ? rango(proxima) : undefined))}
                 boton="hero"
-                className="inline-flex items-center justify-center min-h-[52px] px-8 border border-white/25 text-crema hover:bg-white/10 text-[12px] tracking-[2px] uppercase font-dm transition-colors"
+                className="rounded-xl inline-flex items-center justify-center min-h-[52px] px-8 border border-white/25 text-crema hover:bg-white/10 text-[12px] tracking-[2px] uppercase font-dm transition-colors"
               >
                 {t.preguntar}
               </BotonWhatsApp>
@@ -515,7 +515,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
                   inglés, traducidas con el original a un toque (salían en
                   español y sin `lang`, auditoría del 10 nov 2026). */}
               {resenasRealesPara(locale, 6).map((r) => (
-                <li key={`${r.autor}-${r.fecha}`} className="snap-start shrink-0 w-[82%] sm:w-[60%] md:w-auto flex flex-col border border-white/10 bg-negro/50 p-5">
+                <li key={`${r.autor}-${r.fecha}`} className="rounded-2xl snap-start shrink-0 w-[82%] sm:w-[60%] md:w-auto flex flex-col border border-white/10 bg-negro/50 p-5">
                   <p className="text-dorado text-sm mb-2" aria-label={en ? `${r.estrellas} out of 5 stars` : `${r.estrellas} de 5 estrellas`}>{"★".repeat(Math.max(1, Math.min(5, r.estrellas)))}</p>
                   <blockquote className={r.traducida ? "text-sm font-dm text-crema/80 leading-relaxed mb-3" : "text-sm font-dm text-crema/80 leading-relaxed mb-4"}>“{r.texto}”</blockquote>
                   <ResenaOriginal r={r} className="mb-4" />
@@ -546,11 +546,11 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
           {incluido.map((x) => {
             const Icono = ICONO[x.icono];
             return (
-              <li key={x.titulo} className="relative overflow-hidden border border-white/10 bg-negro/40 group">
+              <li key={x.titulo} className="rounded-2xl relative overflow-hidden border border-white/10 bg-negro/40 group">
                 <div className="relative aspect-[4/3] sm:aspect-[16/10]">
                   <Image src={x.foto} alt={x.alt} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 1024px) 50vw, 33vw" />
                   <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-transparent" />
-                  <span className="absolute top-2 left-2 sm:top-3 sm:left-3 inline-flex items-center gap-1 bg-verde-vivo text-negro text-[9px] sm:text-[10px] tracking-[1.5px] sm:tracking-[2px] uppercase font-dm px-2 py-0.5 sm:px-2.5 sm:py-1">
+                  <span className="rounded-full absolute top-2 left-2 sm:top-3 sm:left-3 inline-flex items-center gap-1 bg-verde-vivo text-negro text-[9px] sm:text-[10px] tracking-[1.5px] sm:tracking-[2px] uppercase font-dm px-2 py-0.5 sm:px-2.5 sm:py-1">
                     <Check className="w-3.5 h-3.5" aria-hidden="true" /> {t.badgeIncluido}
                   </span>
                 </div>
@@ -564,7 +564,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
             );
           })}
         </ul>
-        <div className="mt-8 grid md:grid-cols-3 gap-6 border border-white/10 bg-verde-profundo/25 p-5 sm:p-7">
+        <div className="rounded-2xl mt-8 grid md:grid-cols-3 gap-6 border border-white/10 bg-verde-profundo/25 p-5 sm:p-7">
           <div className="md:col-span-2">
             <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4 font-dm">{t.listaCompleta}</p>
             <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-2.5">
@@ -607,7 +607,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
             ]).map(({ c, foto, alt }) => {
               const precio = precioBase != null ? precioBase + (c === "privado" ? SUPLEMENTO_PRIVADO : 0) : null;
               return (
-                <article key={c} className="border border-white/10 bg-negro/50 overflow-hidden flex flex-col">
+                <article key={c} className="rounded-2xl border border-white/10 bg-negro/50 overflow-hidden flex flex-col">
                   <div className="relative aspect-[16/9]">
                     <Image src={foto} alt={alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 512px" loading="lazy" />
                   </div>
@@ -642,12 +642,12 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
         </div>
         <ol className="space-y-6">
           {itinerario.map((d) => (
-            <li key={d.dia} className="border border-white/10 bg-negro/40 overflow-hidden">
+            <li key={d.dia} className="rounded-2xl border border-white/10 bg-negro/40 overflow-hidden">
               <div className="relative aspect-[16/9] sm:aspect-[21/9]">
                 <Image src={d.foto} alt={d.alt} fill className="object-cover" sizes="(max-width: 896px) 100vw, 896px" />
                 <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/20 to-transparent" />
                 <div className="absolute bottom-0 left-0 p-5">
-                  <span className="inline-block bg-dorado text-negro text-[10px] tracking-[2px] uppercase font-dm px-2.5 py-1 mb-2">{t.dia} {d.dia} · {d.diaSemana}</span>
+                  <span className="rounded-full inline-block bg-dorado text-negro text-[10px] tracking-[2px] uppercase font-dm px-2.5 py-1 mb-2">{t.dia} {d.dia} · {d.diaSemana}</span>
                   <h3 className="font-cormorant text-crema text-3xl leading-tight">{d.titulo}</h3>
                 </div>
               </div>
@@ -693,7 +693,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
             {noche.map((x) => {
               const Icono = ICONO_SEGURIDAD[x.icono];
               return (
-                <li key={x.titulo} className="bg-negro p-5 sm:p-6">
+                <li key={x.titulo} className="rounded-2xl bg-negro p-5 sm:p-6">
                   <Icono className="w-6 h-6 text-dorado mb-3" aria-hidden="true" />
                   <h3 className="font-cormorant text-crema text-2xl leading-tight mb-1.5">{x.titulo}</h3>
                   <p className="text-sm font-dm text-crema/70 leading-relaxed">{x.texto}</p>
@@ -827,7 +827,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
           </div>
           <ol className="grid md:grid-cols-2 gap-4">
             {reglas.map((r, i) => (
-              <li key={r.titulo} className="border border-white/10 bg-negro/50 p-5 flex gap-4">
+              <li key={r.titulo} className="rounded-2xl border border-white/10 bg-negro/50 p-5 flex gap-4">
                 <span className="font-cormorant text-dorado text-3xl leading-none tabular-nums">{i + 1}</span>
                 <div>
                   <h3 className="font-dm text-crema text-[15px] mb-1">{r.titulo}</h3>
@@ -858,7 +858,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
           {RESENAS_VIAJE.length > 0 && (
             <ul className="grid md:grid-cols-3 gap-4 mt-10">
               {RESENAS_VIAJE.map((r) => (
-                <li key={`${r.autor}-${r.fecha}`} className="border border-white/10 bg-negro/40 p-5">
+                <li key={`${r.autor}-${r.fecha}`} className="rounded-2xl border border-white/10 bg-negro/40 p-5">
                   <p className="text-dorado text-sm mb-2" aria-label={`${r.estrellas} / 5`}>{"★".repeat(Math.max(1, Math.min(5, r.estrellas)))}</p>
                   <p lang={en ? "es" : undefined} className="text-sm font-dm text-crema/80 leading-relaxed mb-3">“{r.texto}”</p>
                   <p className="text-xs font-dm text-crema/50">{r.autor} · {r.fecha}{r.salida ? ` · ${r.salida}` : ""}</p>
@@ -891,7 +891,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
                 <li><span className="text-dorado mr-2">3.</span>Con {LIDER_PERSONAS} lugares pagados, te confirmamos tu lugar gratis.</li>
               </ol>
             </div>
-            <div className="border border-white/10 bg-negro/50 p-5 sm:p-6">
+            <div className="rounded-2xl border border-white/10 bg-negro/50 p-5 sm:p-6">
               <FormLider />
             </div>
           </div>
@@ -903,7 +903,7 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
         <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4 font-dm">{t.queLlevar}</p>
         <ul className="flex flex-wrap gap-2 mb-12">
           {queLlevar.map((x) => (
-            <li key={x} className="text-xs font-dm text-crema/70 border border-white/15 px-3 py-1.5">{x}</li>
+            <li key={x} className="rounded-full text-xs font-dm text-crema/70 border border-white/15 px-3 py-1.5">{x}</li>
           ))}
         </ul>
         <h2 className="font-cormorant font-light text-crema text-3xl mb-6">{t.faq}</h2>
@@ -928,13 +928,13 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
           <h2 className="font-cormorant font-light text-crema text-4xl mb-3">{t.cierre}</h2>
           <p className="text-sm font-dm text-crema/75 max-w-md mx-auto mb-6">{t.cierreTexto}</p>
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <a href="#fechas" className="inline-flex items-center justify-center min-h-[52px] px-8 bg-dorado text-negro hover:bg-crema text-[12px] tracking-[2px] uppercase font-dm transition-colors">
+            <a href="#fechas" className="rounded-xl inline-flex items-center justify-center min-h-[52px] px-8 bg-dorado text-negro hover:bg-crema text-[12px] tracking-[2px] uppercase font-dm transition-colors">
               {t.cierreBoton(proxima ? (en ? rangoCortoEn(proxima.fechaSalida, proxima.fechaRegreso) : rangoCorto(proxima.fechaSalida, proxima.fechaRegreso)) : null)}
             </a>
             <BotonWhatsApp
               href={waLink(waTexto())}
               boton="cierre"
-              className="inline-flex items-center justify-center min-h-[52px] px-8 border border-white/25 text-crema hover:bg-white/10 text-[12px] tracking-[2px] uppercase font-dm transition-colors"
+              className="rounded-xl inline-flex items-center justify-center min-h-[52px] px-8 border border-white/25 text-crema hover:bg-white/10 text-[12px] tracking-[2px] uppercase font-dm transition-colors"
             >
               WhatsApp
             </BotonWhatsApp>

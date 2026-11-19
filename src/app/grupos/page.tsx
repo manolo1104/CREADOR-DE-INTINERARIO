@@ -121,7 +121,7 @@ export default function GruposPage() {
           href={wa}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+          className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
         >
           {t.botonWhatsapp}
         </a>
@@ -133,7 +133,7 @@ export default function GruposPage() {
           <h2 className="font-cormorant font-light text-crema text-3xl mb-8">{t.comoFuncionaH2}</h2>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {t.comoFunciona.map((p) => (
-              <div key={p.n} className="border border-white/10 p-6 flex flex-col">
+              <div key={p.n} className="rounded-2xl border border-white/10 p-6 flex flex-col">
                 <p className="font-cormorant text-dorado text-3xl leading-none mb-3">{p.n}</p>
                 <h3 className="font-dm font-medium text-crema text-sm mb-2">{p.t}</h3>
                 <p className="font-dm text-xs text-crema/60 leading-relaxed">{p.d}</p>
@@ -149,15 +149,15 @@ export default function GruposPage() {
           <h2 className="font-cormorant font-light text-crema text-3xl mb-3">{t.incluyeH2}</h2>
           <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-8">{t.incluyeIntro}</p>
           <div className="grid md:grid-cols-3 gap-6">
-            <div className="border border-white/10 p-7">
+            <div className="rounded-2xl border border-white/10 p-7">
               <h3 className="font-cormorant font-light text-crema text-2xl mb-3">{t.recorridosTitulo}</h3>
               <p className="font-dm text-sm text-crema/65 leading-relaxed">{t.recorridosTexto}</p>
             </div>
-            <div className="border border-white/10 p-7">
+            <div className="rounded-2xl border border-white/10 p-7">
               <h3 className="font-cormorant font-light text-crema text-2xl mb-3">{t.hospedajeTitulo}</h3>
               <p className="font-dm text-sm text-crema/65 leading-relaxed">{t.hospedajeTexto}</p>
             </div>
-            <div className="border border-white/10 p-7">
+            <div className="rounded-2xl border border-white/10 p-7">
               <h3 className="font-cormorant font-light text-crema text-2xl mb-3">{t.transporteTitulo}</h3>
               <p className="font-dm text-sm text-crema/65 leading-relaxed">{t.transporteTexto}</p>
               {/* Para el grupo chico que sale de la CDMX ya existe un producto con fecha (16 oct 2026). */}
@@ -208,13 +208,13 @@ export default function GruposPage() {
             href={wa}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+            className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
           >
             {t.botonWhatsapp}
           </a>
           <Link
             href={t.ctaNosotros.href}
-            className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
+            className="rounded-xl inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
           >
             {t.ctaNosotros.label}
           </Link>

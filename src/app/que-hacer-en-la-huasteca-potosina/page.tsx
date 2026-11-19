@@ -133,7 +133,7 @@ export default function QueHacerPage() {
                     href={localePath(e.href, locale)}
                     aria-label={e.cta}
                     tabIndex={-1}
-                    className="group relative block aspect-[16/9] md:aspect-[4/3] md:w-[42%] md:shrink-0 overflow-hidden mb-5 md:mb-0 bg-verde-profundo/40"
+                    className="rounded-xl group relative block aspect-[16/9] md:aspect-[4/3] md:w-[42%] md:shrink-0 overflow-hidden mb-5 md:mb-0 bg-verde-profundo/40"
                   >
                     <Image
                       src={foto.src}
@@ -165,7 +165,7 @@ export default function QueHacerPage() {
 
       {/* ── CUÁNTOS DÍAS ── */}
       <section className="px-6 pb-20">
-        <div className="max-w-3xl mx-auto border border-verde-selva/30 bg-verde-profundo/30 p-8">
+        <div className="rounded-2xl max-w-3xl mx-auto border border-verde-selva/30 bg-verde-profundo/30 p-8">
           <h2 className="font-cormorant font-light text-crema text-3xl mb-4">{t.organizarTitulo}</h2>
           <p className="font-dm text-sm text-crema/70 leading-relaxed mb-6">
             {t.organizarTexto}
@@ -173,13 +173,13 @@ export default function QueHacerPage() {
           <div className="flex flex-wrap gap-4">
             <Link
               href={localePath("/paquetes", locale)}
-              className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-6 py-3.5 hover:bg-dorado hover:text-negro transition-all"
+              className="rounded-xl inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-6 py-3.5 hover:bg-dorado hover:text-negro transition-all"
             >
               {t.btnPaquetes}
             </Link>
             <Link
               href={localePath("/precios", locale)}
-              className="inline-flex items-center gap-2 border border-white/20 text-crema/80 font-dm font-bold text-xs tracking-[1.5px] uppercase px-6 py-3.5 hover:border-crema transition-all"
+              className="rounded-xl inline-flex items-center gap-2 border border-white/20 text-crema/80 font-dm font-bold text-xs tracking-[1.5px] uppercase px-6 py-3.5 hover:border-crema transition-all"
             >
               {t.btnPrecios}
             </Link>
@@ -217,7 +217,7 @@ export default function QueHacerPage() {
           href={waLink(t.waTexto)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+          className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
         >
           {t.waBoton}
         </a>

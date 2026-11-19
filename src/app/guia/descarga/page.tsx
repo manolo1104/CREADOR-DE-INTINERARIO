@@ -50,14 +50,14 @@ function DescargaContent() {
             </p>
             <button
               onClick={handleDescargar}
-              className="w-full bg-dorado text-negro py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors mb-4"
+              className="rounded-xl w-full bg-dorado text-negro py-5 text-[11px] tracking-[4px] uppercase font-dm font-medium hover:bg-lima transition-colors mb-4"
             >
               ↓ Descargar Guía Ahora
             </button>
             <p className="text-[11px] text-crema/25 mb-8">
               Guarda este enlace — puedes descargar de nuevo si lo necesitas.
             </p>
-            <div className="border border-dorado/25 bg-dorado/5 p-5 text-left mb-3">
+            <div className="rounded-2xl border border-dorado/25 bg-dorado/5 p-5 text-left mb-3">
               <p className="text-[10px] tracking-[3px] uppercase text-dorado/70 mb-2">Lleva el viaje resuelto</p>
               {/* Antes ofrecía el viaje grupal del 16–19 sep 2026, que ya pasó. */}
               <p className="text-sm text-crema/65 leading-relaxed mb-3">
@@ -71,7 +71,7 @@ function DescargaContent() {
                 Ver los paquetes →
               </Link>
             </div>
-            <div className="border border-white/8 p-5 text-left">
+            <div className="rounded-2xl border border-white/8 p-5 text-left">
               <p className="text-[10px] tracking-[3px] uppercase text-crema/30 mb-2">O arma el tuyo</p>
               <p className="text-sm text-crema/60 leading-relaxed mb-3">
                 Reserva cualquiera de nuestros recorridos guiados con transporte, desayuno y guía certificado.
@@ -98,7 +98,7 @@ function DescargaContent() {
             </p>
             <button
               onClick={() => window.location.reload()}
-              className="border border-verde-vivo text-verde-vivo px-10 py-4 text-[11px] tracking-[3px] uppercase hover:bg-verde-vivo hover:text-negro transition-colors mb-6"
+              className="rounded-xl border border-verde-vivo text-verde-vivo px-10 py-4 text-[11px] tracking-[3px] uppercase hover:bg-verde-vivo hover:text-negro transition-colors mb-6"
             >
               Recargar página
             </button>

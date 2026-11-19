@@ -55,7 +55,7 @@ function SortableActivity({ activity }: { activity: DayActivity }) {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`flex items-center gap-3 border p-3 bg-white/3 transition-all cursor-grab active:cursor-grabbing ${
+      className={`rounded-xl flex items-center gap-3 border p-3 bg-white/3 transition-all cursor-grab active:cursor-grabbing ${
         isDragging ? "opacity-50 border-verde-vivo/60 shadow-lg" : "border-white/8 hover:border-white/15"
       }`}
       {...attributes}
@@ -141,7 +141,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
       <div className="bg-gradient-to-br from-verde-profundo via-verde-bosque to-[#1a3a10] px-10 py-16 text-center border-b border-verde-selva/20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-radial from-verde-selva/15 to-transparent" />
         <div className="relative">
-          <div className="inline-block border border-verde-selva/30 bg-verde-selva/15 text-lima text-[10px] tracking-[4px] uppercase px-5 py-2 mb-6">
+          <div className="rounded-xl inline-block border border-verde-selva/30 bg-verde-selva/15 text-lima text-[10px] tracking-[4px] uppercase px-5 py-2 mb-6">
             ✦ Itinerario Personalizado ✦
           </div>
           <h1 className="font-cormorant font-light text-crema leading-tight mb-8"
@@ -195,7 +195,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
       <div className="flex gap-4 justify-center flex-wrap px-6 pb-16 border-t border-white/6 pt-8">
         <button
           onClick={onBack}
-          className="border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
+          className="rounded-xl border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
         >
           ← Crear otro
         </button>
@@ -203,7 +203,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
           onClick={() => {
             navigator.clipboard.writeText(itinerary).then(() => alert("Copiado al portapapeles")).catch(() => {});
           }}
-          className="inline-flex items-center gap-2 border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
+          className="rounded-xl inline-flex items-center gap-2 border border-white/15 text-crema/60 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all"
         >
           <Share2 className="w-3.5 h-3.5" aria-hidden="true" />
           Compartir
@@ -219,7 +219,7 @@ export function ItineraryCanvas({ itinerary, loading, state, onBack }: Props) {
               a.click();
               URL.revokeObjectURL(url);
             }}
-            className="inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[3px] uppercase font-medium hover:bg-lima transition-colors"
+            className="rounded-xl inline-flex items-center gap-2 bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[3px] uppercase font-medium hover:bg-lima transition-colors"
           >
             <Download className="w-3.5 h-3.5" aria-hidden="true" />
             Descargar

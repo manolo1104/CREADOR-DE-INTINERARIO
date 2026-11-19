@@ -196,7 +196,7 @@ export default async function NocheXantoloPage() {
               href={waLink(MENSAJE_WA)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema active:scale-[0.98]"
+              className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema active:scale-[0.98]"
             >
               Preguntar por WhatsApp
             </a>
@@ -226,7 +226,7 @@ export default async function NocheXantoloPage() {
                checkout del domingo antes de irse. La fecha va DENTRO del botón. */
             <div
               key={n.paquete.slug}
-              className={`relative border p-6 sm:p-8 ${n.aLaVenta && !n.agotada ? "transition-colors hover:border-crema/40" : ""}`}
+              className={`rounded-2xl relative border p-6 sm:p-8 ${n.aLaVenta && !n.agotada ? "transition-colors hover:border-crema/40" : ""}`}
               style={{ borderColor: `${XAN_FLOR}55`, backgroundColor: XAN_MORADO }}
             >
               <p className="font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: XAN_FLOR }}>{NOCHE_XANTOLO.horario}</p>
@@ -270,7 +270,7 @@ export default async function NocheXantoloPage() {
                     href={waLink(`Hola, me interesa la Noche de Xantolo del ${n.corta.toLowerCase()}. ¿Se libera algún lugar?`)}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-center border border-crema/30 px-6 py-3.5 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 hover:border-crema/70"
+                    className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-3.5 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 hover:border-crema/70"
                   >
                     Avísame si se libera
                   </a>
@@ -364,7 +364,7 @@ export default async function NocheXantoloPage() {
           puede resolver: hospedaje por WhatsApp, o llegar por tu cuenta y vernos
           en el centro (que es lo que ahora permite el checkout). */}
       <section className="px-5 sm:px-8">
-        <div className="mx-auto grid max-w-6xl gap-6 border px-6 py-10 sm:px-12 md:grid-cols-[1fr_auto] md:items-center" style={{ borderColor: `${XAN_FLOR}55` }}>
+        <div className="rounded-xl mx-auto grid max-w-6xl gap-6 border px-6 py-10 sm:px-12 md:grid-cols-[1fr_auto] md:items-center" style={{ borderColor: `${XAN_FLOR}55` }}>
           <div>
             <h2 className="font-cormorant text-[30px] font-light leading-tight text-crema sm:text-[36px] [text-wrap:balance]">
               ¿Todavía no tienes dónde dormir?
@@ -378,7 +378,7 @@ export default async function NocheXantoloPage() {
             href={waLink("Hola, quiero ir a la Noche de Xantolo pero todavía no tengo hospedaje en Xilitla. ¿Me ayudan?")}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema"
+            className="rounded-xl inline-flex items-center justify-center gap-2 border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema"
           >
             Pregúntanos por hospedaje <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </a>
@@ -441,7 +441,7 @@ function NochePasada() {
           <Link href="/tours" className="inline-flex items-center justify-center px-6 py-4 font-dm text-[11px] font-medium uppercase tracking-[2px]" style={{ backgroundColor: XAN_FLOR, color: XAN_TINTA_BOTON }}>
             Ver los recorridos
           </Link>
-          <Link href="/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia" className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90">
+          <Link href="/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia" className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90">
             La guía del Xantolo
           </Link>
         </div>

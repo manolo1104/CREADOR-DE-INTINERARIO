@@ -64,7 +64,7 @@ function BotonWhatsApp({ texto }: { texto: string }) {
       href={waLink(WA_MESSAGES.xantolo)}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center justify-center gap-2 bg-[#25D366] px-5 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[1.5px] text-white transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
+      className="rounded-xl inline-flex items-center justify-center gap-2 bg-[#25D366] px-5 py-3.5 font-dm text-[11px] font-medium uppercase tracking-[1.5px] text-white transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
     >
       {WA_SVG}
       {texto}
@@ -131,7 +131,7 @@ export async function XantoloPlanDeViaje() {
           <BotonWhatsApp texto="Armar mi viaje de Xantolo" />
           <Link
             href="/paquetes"
-            className="inline-flex items-center justify-center gap-2 border border-crema/25 px-5 py-3.5 font-dm text-[11px] uppercase tracking-[1.5px] text-crema/80 transition-colors hover:border-crema/60 hover:text-crema"
+            className="rounded-xl inline-flex items-center justify-center gap-2 border border-crema/25 px-5 py-3.5 font-dm text-[11px] uppercase tracking-[1.5px] text-crema/80 transition-colors hover:border-crema/60 hover:text-crema"
           >
             Paquetes con hotel <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>

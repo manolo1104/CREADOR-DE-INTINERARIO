@@ -42,13 +42,13 @@ export function ContenidoNoEncontrada() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href={lp("/tours")}
-            className="bg-dorado text-negro px-7 py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors"
+            className="rounded-xl bg-dorado text-negro px-7 py-4 text-[12px] tracking-[3px] uppercase font-dm font-medium hover:bg-lima transition-colors"
           >
             {en ? "Browse all tours" : "Ver todos los tours"}
           </Link>
           <Link
             href={lp("/")}
-            className="border border-crema/20 text-crema/70 px-7 py-4 text-[12px] tracking-[3px] uppercase font-dm hover:border-crema/40 hover:text-crema transition-all"
+            className="rounded-xl border border-crema/20 text-crema/70 px-7 py-4 text-[12px] tracking-[3px] uppercase font-dm hover:border-crema/40 hover:text-crema transition-all"
           >
             {en ? "Go to homepage" : "Ir al inicio"}
           </Link>

@@ -28,7 +28,13 @@ export const PROSE_ARTICULO = `prose prose-lg max-w-none
     [&_.cta-final_.cta-headline]:text-crema
     [&_.cta-subtext]:font-dm [&_.cta-subtext]:text-negro/60 [&_.cta-subtext]:text-[15px] [&_.cta-subtext]:leading-relaxed [&_.cta-subtext]:mb-5
     [&_.cta-final_.cta-subtext]:text-crema/70
-    [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:justify-center [&_.cta-button]:gap-2 [&_.cta-button]:min-h-[48px] [&_.cta-button]:rounded-full [&_.cta-button]:px-7 [&_.cta-button]:py-2.5 [&_.cta-button]:font-dm [&_.cta-button]:text-[15px] [&_.cta-button]:font-medium [&_.cta-button]:no-underline [&_.cta-button]:mx-1.5 [&_.cta-button]:mt-2
+    [&_.cta-headline]:mt-0
+    [&_.cta-subtext-1]:font-dm [&_.cta-subtext-1]:text-negro/60 [&_.cta-subtext-1]:text-[15px] [&_.cta-subtext-1]:leading-relaxed [&_.cta-subtext-1]:mt-0 [&_.cta-subtext-1]:mb-1
+    [&_.cta-subtext-2]:font-dm [&_.cta-subtext-2]:text-negro/60 [&_.cta-subtext-2]:text-[15px] [&_.cta-subtext-2]:leading-relaxed [&_.cta-subtext-2]:mt-0 [&_.cta-subtext-2]:mb-0
+    [&_.cta-final_.cta-subtext-1]:text-crema/80 [&_.cta-final_.cta-subtext-2]:text-crema/80
+    [&_.cta-buttons]:mt-6 [&_.cta-buttons]:flex [&_.cta-buttons]:flex-col [&_.cta-buttons]:items-stretch [&_.cta-buttons]:gap-3 sm:[&_.cta-buttons]:flex-row sm:[&_.cta-buttons]:flex-wrap sm:[&_.cta-buttons]:justify-center
+    [&_.cta-buttons_.cta-button]:m-0
+    [&_.cta-button]:inline-flex [&_.cta-button]:items-center [&_.cta-button]:justify-center [&_.cta-button]:gap-2 [&_.cta-button]:min-h-[48px] [&_.cta-button]:rounded-xl [&_.cta-button]:px-7 [&_.cta-button]:py-2.5 [&_.cta-button]:font-dm [&_.cta-button]:text-[15px] [&_.cta-button]:font-medium [&_.cta-button]:no-underline [&_.cta-button]:mx-1.5 [&_.cta-button]:mt-2
     [&_.cta-button--primary]:bg-dorado [&_.cta-button--primary]:text-negro [&_.cta-button--primary]:hover:bg-lima
     [&_.cta-button--secondary]:bg-transparent [&_.cta-button--secondary]:text-verde-profundo [&_.cta-button--secondary]:border [&_.cta-button--secondary]:border-negro/20 [&_.cta-button--secondary]:hover:border-verde-selva
     [&_.cta-final_.cta-button--secondary]:text-crema [&_.cta-final_.cta-button--secondary]:border-crema/40

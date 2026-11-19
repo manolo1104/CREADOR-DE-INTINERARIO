@@ -330,7 +330,7 @@ function SeguimientosUrgentes({ tareas, hoy, responsables, onError }: { tareas: 
       {grupos.length === 0 ? (
         <p className="panel-card p-4 text-[13px] font-dm text-[var(--panel-tinta-media)]">Nada pendiente en los próximos 7 días. Agenda el siguiente paso desde la ficha de cada lead.</p>
       ) : (
-        <div className="grid gap-3 lg:grid-cols-3">
+        <div className="grid items-start gap-3 md:grid-cols-2 xl:grid-cols-3">
           {grupos.map(g => (
             <div key={g.titulo} className="panel-card overflow-hidden">
               <p className={`px-4 pt-3 text-[11px] font-dm font-semibold uppercase tracking-[0.12em] ${g.rojo ? "text-[var(--panel-problema)]" : "text-[var(--panel-tinta-suave)]"}`}>{g.titulo} · {g.ts.length}</p>

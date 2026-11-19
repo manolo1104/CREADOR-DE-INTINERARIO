@@ -302,7 +302,7 @@ export function MapaRegion({ locale }: { locale: Locale }) {
                 <li key={d.slug}>
                   <Link
                     href={lp(`/destinos/${d.slug}`)}
-                    className="inline-flex min-h-[40px] items-center rounded-full border border-negro/15 bg-white px-4 font-dm text-[13px] text-negro/70 transition-colors hover:border-verde-selva hover:text-verde-selva"
+                    className="inline-flex min-h-[40px] items-center rounded-xl border border-negro/15 bg-white px-4 font-dm text-[13px] text-negro/70 transition-colors hover:border-verde-selva hover:text-verde-selva"
                   >
                     {d.nombre}
                   </Link>

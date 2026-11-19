@@ -83,7 +83,7 @@ export default function GuiaPage() {
             {/* Preview badges */}
             <div className="flex flex-wrap gap-2.5 justify-center md:justify-start">
               {["Itinerario de 5 días", "Cómo llegar sin tour", "Horarios de luz", "Checklist empaque", "Comida y cultura"].map((tag) => (
-                <span key={tag} className="text-[10px] tracking-[2px] uppercase border border-verde-vivo/30 text-verde-vivo px-3 py-1">
+                <span key={tag} className="rounded-full text-[10px] tracking-[2px] uppercase border border-verde-vivo/30 text-verde-vivo px-3 py-1">
                   {tag}
                 </span>
               ))}
@@ -128,7 +128,7 @@ export default function GuiaPage() {
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {INCLUIDO.map((item) => (
-            <div key={item.text} className="flex gap-4 p-5 border border-white/6 bg-white/2 hover:border-verde-vivo/20 transition-colors">
+            <div key={item.text} className="rounded-2xl flex gap-4 p-5 border border-white/6 bg-white/2 hover:border-verde-vivo/20 transition-colors">
               <item.Icon className="w-5 h-5 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
               <p className="text-sm text-crema/70 leading-relaxed">{item.text}</p>
             </div>

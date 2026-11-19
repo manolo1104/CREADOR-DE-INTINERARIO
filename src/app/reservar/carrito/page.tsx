@@ -93,7 +93,7 @@ function CarritoTours() {
           <p className="font-dm text-negro/55 text-sm mb-8">
             {t.vacioTexto}
           </p>
-          <Link href={lp("/reservar")} className="inline-block bg-verde-selva text-crema px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors">
+          <Link href={lp("/reservar")} className="rounded-xl inline-block bg-verde-selva text-crema px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors">
             {t.verRecorridos}
           </Link>
         </div>
@@ -273,7 +273,7 @@ function CarritoTours() {
           {/* Logística: la duda que más frena en el momento de pagar. Sale de
               los recorridos de ESTE carrito (`lineasSalida`): una frase si
               todos se recogen igual, una por recorrido si no. */}
-          <div className="mt-6 border border-verde-selva/25 bg-verde-selva/5 p-5 space-y-3">
+          <div className="rounded-2xl mt-6 border border-verde-selva/25 bg-verde-selva/5 p-5 space-y-3">
             <div className="flex items-start gap-2.5 font-dm text-[13px] text-negro/70">
               <MapPin className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
               {lineasSalida.length > 1 ? (
@@ -321,7 +321,7 @@ function CarritoTours() {
         </div>
 
         {/* ── Resumen y pago ── */}
-        <aside className="min-w-0 border border-negro/10 bg-white p-6 lg:sticky lg:top-24">
+        <aside className="rounded-2xl min-w-0 border border-negro/10 bg-white p-6 lg:sticky lg:top-24">
           {/* El mismo aviso del apartado, para escritorio: esta columna no se
               mueve y es donde se mira al pagar. Calla: el de arriba ya habla. */}
           <ApartadoAviso a={c.apartado} locale={locale} className="hidden lg:block mb-4" anunciar={false} onCambiarFecha={c.irAlSinLugar} />
@@ -339,17 +339,17 @@ function CarritoTours() {
                 ref={nombreRef}
                 value={name} onChange={(e) => setName(e.target.value)}
                 placeholder={t.nombreCompleto}
-                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
+                className="rounded-xl w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               <input
                 value={email} onChange={(e) => setEmail(e.target.value)}
                 type="email" placeholder={t.correoElectronico}
-                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
+                className="rounded-xl w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               <input
                 value={phone} onChange={(e) => setPhone(e.target.value)}
                 type="tel" placeholder={t.whatsappOpcional}
-                className="w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
+                className="rounded-xl w-full border border-negro/15 bg-white px-3 py-3 font-dm text-sm text-negro placeholder:text-negro/40 focus:border-verde-selva outline-none"
               />
               {error && <p className="text-sm font-dm text-terracota">{error}</p>}
 
@@ -358,7 +358,7 @@ function CarritoTours() {
                 solo dentro del renglón —que puede estar fuera de pantalla— no
                 sirve. Dice qué falta y lleva ahí. */}
               {fallos.length > 0 && (
-                <div className="border border-terracota/40 bg-terracota/5 p-3">
+                <div className="rounded-xl border border-terracota/40 bg-terracota/5 p-3">
                   <p className="flex items-start gap-1.5 font-dm text-[12px] text-terracota">
                     <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-px" aria-hidden="true" />
                     <span>
@@ -380,7 +380,7 @@ function CarritoTours() {
               <button
                 onClick={irAlPago}
                 disabled={cargando}
-                className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40"
+                className="rounded-xl w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40"
               >
                 {cargando ? t.unMomento : t.continuarAlPago}
               </button>
@@ -406,13 +406,13 @@ function CarritoTours() {
                         onChange={(e) => { setCorreoGuardar(e.target.value); setErrorGuardar(""); }}
                         type="email"
                         placeholder={t.tuCorreoPlaceholder}
-                        className="flex-1 min-w-0 border border-negro/15 bg-white px-3 py-2.5 font-dm text-[13px] text-negro placeholder:text-negro/35 focus:border-verde-selva outline-none"
+                        className="rounded-xl flex-1 min-w-0 border border-negro/15 bg-white px-3 py-2.5 font-dm text-[13px] text-negro placeholder:text-negro/35 focus:border-verde-selva outline-none"
                       />
                       <button
                         type="button"
                         onClick={guardarCotizacion}
                         disabled={guardando}
-                        className="flex-shrink-0 border border-verde-selva text-verde-selva px-4 text-[11px] tracking-[1.5px] uppercase font-dm hover:bg-verde-selva/8 transition-colors disabled:opacity-40"
+                        className="rounded-xl flex-shrink-0 border border-verde-selva text-verde-selva px-4 text-[11px] tracking-[1.5px] uppercase font-dm hover:bg-verde-selva/8 transition-colors disabled:opacity-40"
                       >
                         {guardando ? "…" : t.enviar}
                       </button>
@@ -445,7 +445,7 @@ function CarritoTours() {
           real de Google y las credenciales. Los testimonios de `TOUR_REVIEWS`
           no van aquí: están escritos a mano, y en el checkout una reseña que
           no es de verdad resta confianza justo cuando se decide. */}
-              <section className="mt-8 border border-negro/10 bg-white p-5">
+              <section className="rounded-2xl mt-8 border border-negro/10 bg-white p-5">
                 <a
                   href={GOOGLE_MAPS_REVIEWS_URL}
                   target="_blank" rel="noopener noreferrer"
@@ -519,7 +519,7 @@ function CarritoTours() {
               setTimeout(() => nombreRef.current?.focus({ preventScroll: true }), 450);
             }}
             disabled={cargando}
-            className="ml-auto flex-shrink-0 bg-verde-selva text-crema px-5 py-3.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40"
+            className="rounded-xl ml-auto flex-shrink-0 bg-verde-selva text-crema px-5 py-3.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-40"
           >
             {cargando ? t.unMomento : t.continuar}
           </button>

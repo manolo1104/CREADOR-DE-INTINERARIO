@@ -141,7 +141,7 @@ export function ProximasTemporadas({ en }: { en: boolean }) {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={en ? `Book ${t.nombre.en} on WhatsApp` : `Apartar ${t.nombre.es} por WhatsApp`}
-                    className="inline-flex min-h-[40px] items-center justify-center rounded-full px-4 font-dm text-[13px] font-medium transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
+                    className="inline-flex min-h-[40px] items-center justify-center rounded-xl px-4 font-dm text-[13px] font-medium transition-[filter,transform] duration-200 hover:brightness-110 active:scale-[0.98]"
                     style={{ background: tema.boton, color: tema.botonTinta }}
                   >
                     {en ? "Book on WhatsApp" : "Apartar por WhatsApp"}

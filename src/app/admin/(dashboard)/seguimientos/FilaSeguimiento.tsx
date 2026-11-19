@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Check, Pencil, Phone } from "lucide-react";
 import type { TareaFila } from "@/lib/admin/crmDatos";
 import { estadoFecha, etiquetaEtapa } from "@/lib/admin/crm";
+import { tituloLegible } from "@/lib/admin/textoSeguimiento";
 import { COLOR_FECHA, botonPrimario, botonSecundario, fechaCortaM, inputCls } from "../leads/comun";
 
 export type AccionSeguimiento = "hecha" | "reabrir" | "posponer";
@@ -44,24 +45,28 @@ export function FilaSeguimiento({ t, hoy, onCambiar, onEditar, responsables, con
     if (!ficha || (e.target as HTMLElement).closest("button, a, input, select")) return;
     router.push(ficha);
   };
+  // 19 nov 2026 (captura de Manolo): ✓, texto y botones iban en UNA línea y en
+  // una columna angosta el texto quedaba de una palabra por renglón. Ahora el
+  // texto usa todo el ancho y los botones van debajo, en cualquier pantalla.
   return (
-    <li onClick={abrir} className={`flex flex-wrap items-center gap-3 px-4 py-3 ${ficha ? "cursor-pointer hover:bg-[var(--panel-fondo-velo)]" : ""}`}>
+    <li onClick={abrir} className={`flex items-start gap-3 px-4 py-3 ${ficha ? "cursor-pointer hover:bg-[var(--panel-fondo-velo)]" : ""}`}>
       <button type="button" aria-label="Marcar hecho" title="Marcar hecho" onClick={() => void hacer("hecha")} disabled={ocupada}
-        className="panel-foco flex h-9 w-9 disabled:opacity-50 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-suave)] hover:border-[var(--panel-bien)] hover:text-[var(--panel-bien)]"><Check className="h-4 w-4" aria-hidden="true" /></button>
+        className="panel-foco mt-0.5 flex h-9 w-9 disabled:opacity-50 shrink-0 items-center justify-center rounded-full border border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-suave)] hover:border-[var(--panel-bien)] hover:text-[var(--panel-bien)]"><Check className="h-4 w-4" aria-hidden="true" /></button>
       <div className="min-w-0 flex-1">
-        <p className="text-[14px] font-dm font-medium text-[var(--panel-tinta)]">{t.titulo}{t.origen === "regla" && <span title="Lo creó una regla automática" className="ml-2 inline-block rounded-full bg-[var(--panel-fondo-velo)] px-2 py-0.5 align-middle text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--panel-tinta-media)]">Automático</span>}</p>
-        <p className="flex flex-wrap gap-x-3 text-[12px] font-dm text-[var(--panel-tinta-media)]">
+        <p className="break-words text-[14px] font-dm font-medium leading-snug text-[var(--panel-tinta)]">{tituloLegible(t.titulo)}</p>
+        <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] font-dm text-[var(--panel-tinta-media)]">
+          {t.origen === "regla" && <span title="Lo creó una regla automática" className="rounded-full bg-[var(--panel-fondo-velo)] px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-[0.08em] text-[var(--panel-tinta-media)]">Automático</span>}
           <span className={`${COLOR_FECHA[ef]}`}>{ef === "vencido" ? "Venció " : ef === "hoy" ? "Hoy" : ""}{ef === "hoy" ? "" : fechaCortaM(t.vence)}{t.hora ? ` ${t.hora}` : ""}</span>
           {conResponsable && <span>{t.responsable}</span>}
           {t.cliente && ficha && <Link href={ficha} className="panel-foco font-medium text-[var(--panel-acento)] hover:underline">{t.cliente}{t.etapa ? ` · ${etiquetaEtapa(t.etapa)}` : ""}</Link>}
           {t.telefono && <a href={`https://wa.me/${t.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="panel-foco inline-flex items-center gap-1 text-[#1f7a4d] hover:underline"><Phone className="h-3 w-3" aria-hidden="true" />WhatsApp</a>}
         </p>
-      </div>
-      <div className="flex gap-1.5">
-        {onEditar && <button type="button" onClick={() => setEditando(true)} aria-label="Editar seguimiento" title="Editar"
-          className="panel-foco inline-flex min-h-[36px] items-center gap-1 rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]"><Pencil className="h-3.5 w-3.5" aria-hidden="true" />Editar</button>}
-        <button type="button" onClick={() => void hacer("posponer", 1)} disabled={ocupada} className="panel-foco disabled:opacity-50 min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+1 día</button>
-        <button type="button" onClick={() => void hacer("posponer", 3)} disabled={ocupada} className="panel-foco disabled:opacity-50 min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+3 días</button>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {onEditar && <button type="button" onClick={() => setEditando(true)} aria-label="Editar seguimiento" title="Editar"
+            className="panel-foco inline-flex min-h-[36px] items-center gap-1 rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]"><Pencil className="h-3.5 w-3.5" aria-hidden="true" />Editar</button>}
+          <button type="button" onClick={() => void hacer("posponer", 1)} disabled={ocupada} className="panel-foco disabled:opacity-50 min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+1 día</button>
+          <button type="button" onClick={() => void hacer("posponer", 3)} disabled={ocupada} className="panel-foco disabled:opacity-50 min-h-[36px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-2.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">+3 días</button>
+        </div>
       </div>
     </li>
   );

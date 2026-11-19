@@ -218,7 +218,7 @@ export function ReservasRecientes({ evitar }: {
 
   return (
     <div
-      className="fixed bottom-20 left-4 z-50 flex max-w-[285px] items-start gap-2.5
+      className="fixed bottom-20 left-4 z-50 flex max-w-[285px] items-start gap-2.5 rounded-xl
                  border border-white/12 border-l-2 border-l-verde-vivo bg-negro/95
                  px-3 py-2.5 shadow-xl shadow-black/40 animate-slide-up sm:max-w-xs"
       role="status"

@@ -218,7 +218,7 @@ export function SocialProofToast({ tourId, tourName }: Props) {
 
   return (
     <div
-      className="fixed bottom-20 left-4 z-50 max-w-[285px] sm:max-w-xs
+      className="fixed bottom-20 left-4 z-50 max-w-[285px] overflow-hidden rounded-xl sm:max-w-xs
                  bg-negro/95 border border-white/12 shadow-xl shadow-black/40
                  animate-slide-up"
       role="status"

@@ -227,7 +227,7 @@ export default async function PaqueteXantoloPage() {
               href={waLink(agotado ? MENSAJE_WA_AGOTADO : MENSAJE_WA)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema active:scale-[0.98]"
+              className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema active:scale-[0.98]"
             >
               {agotado ? "Avísame si se libera" : "Preguntar por WhatsApp"}
             </a>
@@ -421,7 +421,7 @@ export default async function PaqueteXantoloPage() {
               href={waLink(agotado ? MENSAJE_WA_AGOTADO : MENSAJE_WA)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema active:scale-[0.98]"
+              className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90 transition-colors hover:border-crema/70 hover:text-crema active:scale-[0.98]"
             >
               {agotado ? "Avísame si se libera" : "Preguntar por WhatsApp"}
             </a>
@@ -520,7 +520,7 @@ function EventoRetirado() {
             href={waLink("Hola, vi el paquete de Xantolo con hotel. ¿Queda algún cuarto?")}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90"
+            className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90"
           >
             Preguntar por un cuarto
           </a>
@@ -541,7 +541,7 @@ function EventoPasado() {
           <Link href="/paquetes" className="inline-flex items-center justify-center px-6 py-4 font-dm text-[11px] font-medium uppercase tracking-[2px]" style={{ backgroundColor: FLOR, color: TINTA_BOTON }}>
             Ver los paquetes
           </Link>
-          <Link href="/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia" className="inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90">
+          <Link href="/blog/xantolo-en-la-huasteca-potosina-la-fiesta-de-muertos-guia" className="rounded-xl inline-flex items-center justify-center border border-crema/30 px-6 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema/90">
             La guía del Xantolo
           </Link>
         </div>

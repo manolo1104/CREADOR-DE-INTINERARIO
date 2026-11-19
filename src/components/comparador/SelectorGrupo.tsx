@@ -44,7 +44,7 @@ export function SelectorGrupo() {
           aria-expanded={abierto}
           aria-controls="comparador-grupo"
           onClick={() => setAbierto((v) => !v)}
-          className="min-h-[44px] px-4 font-dm text-[11px] tracking-[2px] uppercase text-dorado border border-dorado/40 hover:bg-dorado/10 transition-colors"
+          className="rounded-xl min-h-[44px] px-4 font-dm text-[11px] tracking-[2px] uppercase text-dorado border border-dorado/40 hover:bg-dorado/10 transition-colors"
         >
           {abierto ? ui.grupo.listo : ui.grupo.cambiar}
         </button>

@@ -108,12 +108,12 @@ export function BandaRio() {
             value={correo}
             onChange={(e) => setCorreo(e.target.value)}
             placeholder={en ? "you@email.com" : "tu@correo.com"}
-            className="w-52 border border-crema/30 bg-transparent px-2.5 py-1 font-dm text-[11px] text-crema placeholder:text-crema/40 focus:border-dorado focus:outline-none"
+            className="rounded-full w-52 border border-crema/30 bg-transparent px-3 py-1 font-dm text-[11px] text-crema placeholder:text-crema/40 focus:border-dorado focus:outline-none"
           />
           <button
             type="submit"
             disabled={aviso === "enviando"}
-            className="border border-dorado/60 px-3 py-1 font-dm text-[11px] tracking-wide text-dorado transition-colors hover:bg-dorado/10 disabled:opacity-60"
+            className="rounded-full border border-dorado/60 px-3 py-1 font-dm text-[11px] tracking-wide text-dorado transition-colors hover:bg-dorado/10 disabled:opacity-60"
           >
             {aviso === "enviando" ? (en ? "Sending…" : "Enviando…") : (en ? "Notify me" : "Avisarme")}
           </button>

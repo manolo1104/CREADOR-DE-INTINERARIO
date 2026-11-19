@@ -58,7 +58,7 @@ export function DestinoGallery({ images, nombre }: Props) {
           <button
             key={img.src}
             onClick={() => setLightbox(i)}
-            className={`reveal-up group relative overflow-hidden bg-verde-profundo/40 cursor-zoom-in ${i === 0 ? "col-span-2 row-span-2" : ""}`}
+            className={`rounded-xl reveal-up group relative overflow-hidden bg-verde-profundo/40 cursor-zoom-in ${i === 0 ? "col-span-2 row-span-2" : ""}`}
             aria-label={dg.ampliarFoto(i + 1, nombre)}
           >
             {/* Skeleton mientras carga */}
@@ -75,7 +75,7 @@ export function DestinoGallery({ images, nombre }: Props) {
             <div className="absolute inset-0 z-20 bg-gradient-to-t from-negro/35 via-transparent to-transparent opacity-70 group-hover:opacity-100 transition-opacity duration-300" />
             {/* Cue de ampliar en hover (solo la primera, para no saturar) */}
             {i === 0 && (
-              <span className="absolute bottom-3 right-3 z-30 flex items-center gap-1.5 bg-negro/55 backdrop-blur-sm text-crema/90 text-[10px] tracking-[1.5px] uppercase font-dm px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <span className="rounded-full absolute bottom-3 right-3 z-30 flex items-center gap-1.5 bg-negro/55 backdrop-blur-sm text-crema/90 text-[10px] tracking-[1.5px] uppercase font-dm px-2.5 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <Expand className="w-3 h-3" strokeWidth={1.8} /> {dg.verGaleria}
               </span>
             )}

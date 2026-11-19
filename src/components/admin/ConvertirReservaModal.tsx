@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, Check, Banknote, Clock, Loader2 } from "lucide-react";
-import { ORIGENES_ELEGIBLES, ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
+import { ORIGENES_CAPTURA, ORIGEN_ETIQUETA, type OrigenReserva } from "@/lib/origenReserva";
 import { playClick, playError } from "@/lib/admin/sfx";
 
 /**
@@ -125,7 +125,8 @@ export default function ConvertirReservaModal({ q, canalSugerido, idiomaSugerido
           <fieldset>
             <legend className={etiqueta}>1. ¿Por dónde entró? <span className="normal-case tracking-normal text-orange-700">· obligatorio</span></legend>
             <div className="grid grid-cols-2 gap-2">
-              {ORIGENES_ELEGIBLES.map(o => (
+              {/* Sin «Web»: una cotización convertida la cerró el equipo, no fue una compra en el sitio (19 nov 2026). */}
+              {ORIGENES_CAPTURA.map(o => (
                 <button key={o} type="button" aria-pressed={d.origen === o} onClick={() => { playClick(); setD(x => ({ ...x, origen: o })); }} className={chip(d.origen === o)}>
                   {ORIGEN_ETIQUETA[o].split(" (")[0]}
                   {canalSugerido === o && <span className={`block text-[10px] ${d.origen === o ? "text-white/70" : "text-[#1B4332]/45"}`}>lo dice su lead</span>}

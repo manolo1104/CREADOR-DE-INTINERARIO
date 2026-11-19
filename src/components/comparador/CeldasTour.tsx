@@ -113,7 +113,7 @@ export function CtaReservarTour({ indice, href }: { indice: number; href: string
               cantidad: r.ok ? personasDe(grupo) : 1, source: "comparador",
             });
           }}
-          className="inline-flex items-center justify-center w-full min-h-[44px] bg-dorado hover:bg-lima text-negro px-4 font-dm text-[11px] tracking-[2px] uppercase font-medium transition-colors"
+          className="rounded-xl inline-flex items-center justify-center w-full min-h-[44px] bg-dorado hover:bg-lima text-negro px-4 font-dm text-[11px] tracking-[2px] uppercase font-medium transition-colors"
         >
           {ui.cta.reservar}
         </Link>
@@ -122,7 +122,7 @@ export function CtaReservarTour({ indice, href }: { indice: number; href: string
         href={href}
         event="COMPARAR_FICHA"
         data={{ tour: t.slug }}
-        className="inline-flex items-center justify-center w-full min-h-[44px] border border-white/15 hover:border-dorado/50 text-crema/80 hover:text-crema px-4 font-dm text-[11px] tracking-[2px] uppercase transition-colors"
+        className="rounded-xl inline-flex items-center justify-center w-full min-h-[44px] border border-white/15 hover:border-dorado/50 text-crema/80 hover:text-crema px-4 font-dm text-[11px] tracking-[2px] uppercase transition-colors"
       >
         {ui.cta.verFicha}
       </TrackedLink>

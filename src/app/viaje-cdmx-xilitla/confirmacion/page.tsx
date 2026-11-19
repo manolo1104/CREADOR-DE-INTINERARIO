@@ -57,7 +57,7 @@ export default async function Confirmacion({ searchParams }: { searchParams: { p
   const v = await estado(String(searchParams.payment_intent ?? ""));
   return (
     <main id="main-content" className="min-h-screen bg-negro px-4 pt-32 pb-20">
-      <div className="max-w-lg mx-auto bg-crema text-verde-profundo p-6 sm:p-8">
+      <div className="rounded-2xl max-w-lg mx-auto bg-crema text-verde-profundo p-6 sm:p-8">
         {v.tipo === "pagado" && (
           <>
             <p className="text-[10px] tracking-[3px] uppercase font-dm text-verde-selva mb-2">Listo</p>

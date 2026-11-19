@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { origenValido } from "@/lib/origenReserva";
+import { tipoFolio } from "@/lib/admin/folio";
 import {
   registrarEnBitacora, camposCambiados, ETIQUETAS_RESERVA, pesos,
 } from "@/lib/admin/bitacora";
@@ -69,6 +70,10 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
     }
     // Foto de cómo estaba ANTES, para poder contar qué cambió en la bitácora.
     const antes = await prisma.tourBooking.findUnique({ where: { id: params.id } });
+    // «Web» = compró en el sitio (folio HP del checkout). Una reserva hecha en
+    // el panel no se vuelve «web» al editarla: una pestaña abierta antes del
+    // 18 nov no conoce «por confirmar» y lo mandaba como «web» (19 nov 2026).
+    if (antes && data.origen === "web" && antes.origen !== "web" && tipoFolio(antes.confirmationNumber) !== "web") delete data.origen;
     // Quien no ve costos no los cambia: cada extra conserva el que tenía (lote 8, 10 nov 2026).
     const veCostosQuien = await sesionVeCostos(sesion);
     if (data.extraItems !== undefined && !veCostosQuien) {

@@ -220,7 +220,7 @@ export function PopupViaje() {
                   ? "We sent you the dates, spots left, prices and what's included. If you don't see it, look in promotions or spam."
                   : "Te mandamos las fechas, los lugares, el precio y lo que incluye. Si no lo ves, busca en promociones o en correo no deseado."}
               </p>
-              <Link href={`${paginaViaje}#fechas`} onClick={irAlViaje("listo")} className="inline-flex min-h-[48px] w-full items-center justify-center gap-2 bg-dorado px-6 font-dm text-[11px] uppercase tracking-[2px] text-negro transition-colors hover:bg-crema">
+              <Link href={`${paginaViaje}#fechas`} onClick={irAlViaje("listo")} className="rounded-xl inline-flex min-h-[48px] w-full items-center justify-center gap-2 bg-dorado px-6 font-dm text-[11px] uppercase tracking-[2px] text-negro transition-colors hover:bg-crema">
                 {en ? "See dates and book" : "Ver fechas y apartar"}
                 <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
@@ -242,7 +242,7 @@ export function PopupViaje() {
               {abiertas.length > 0 && (
                 <ul className="mb-4 flex flex-wrap gap-2">
                   {abiertas.map((s) => (
-                    <li key={s.fechaSalida} className="border border-white/15 px-2.5 py-1.5 font-dm text-[11px] text-crema/85">
+                    <li key={s.fechaSalida} className="rounded-full border border-white/15 px-2.5 py-1.5 font-dm text-[11px] text-crema/85">
                       <strong className="font-medium text-crema">{en ? rangoCortoEn(s.fechaSalida, s.fechaRegreso) : rangoCorto(s.fechaSalida, s.fechaRegreso)}</strong>
                       <span className="text-crema/55"> · {en ? `${s.disponibles} left` : `quedan ${s.disponibles}`}</span>
                     </li>
@@ -268,12 +268,12 @@ export function PopupViaje() {
                   value={correo}
                   onChange={(e) => setCorreo(e.target.value)}
                   placeholder={en ? "you@email.com" : "tu@correo.com"}
-                  className="min-h-[48px] w-full flex-1 border border-white/20 bg-white/5 px-3 font-dm text-base text-crema placeholder:text-crema/35 focus:border-dorado focus:outline-none sm:text-sm"
+                  className="rounded-xl min-h-[48px] w-full flex-1 border border-white/20 bg-white/5 px-3 font-dm text-base text-crema placeholder:text-crema/35 focus:border-dorado focus:outline-none sm:text-sm"
                 />
                 <button
                   type="submit"
                   disabled={estado === "enviando"}
-                  className="min-h-[48px] shrink-0 bg-dorado px-5 font-dm text-[11px] uppercase tracking-[1.8px] text-negro transition-colors hover:bg-crema disabled:opacity-60"
+                  className="rounded-xl min-h-[48px] shrink-0 bg-dorado px-5 font-dm text-[11px] uppercase tracking-[1.8px] text-negro transition-colors hover:bg-crema disabled:opacity-60"
                 >
                   {estado === "enviando" ? (en ? "Sending…" : "Enviando…") : en ? "Send me the details" : "Mándame la info"}
                 </button>

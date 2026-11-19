@@ -17,6 +17,9 @@ import { resenasTexto } from "@/lib/resenas";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { PROSE_ARTICULO } from "@/components/blog/estilosArticulo";
 import { slugEnDe, urlBlogEn } from "@/lib/blogEn";
+import { autoenlaza } from "@/lib/blogAutoenlaces";
+import { AvisoTemporadaBlog, PreguntaWhatsappBlog, CierreWhatsappBlog } from "@/components/blog/CtaWhatsappBlog";
+import { lugarEnFrase } from "@/lib/blogCtaWhatsapp";
 
 // ISR (13 nov 2026): cada artículo se arma en su primera visita y se guarda una
 // hora. Nada se consulta al construir (la lista vacía), y lo nuevo que publique
@@ -187,58 +190,8 @@ const PROMESAS_FALSAS: [RegExp, string][] = [
   ],
 ];
 
-/**
- * 🔴 Enlaces internos hacia las páginas que compiten en Google. Los artículos
- * se llevan casi todo el tráfico del sitio y casi ninguno enlazaba al inicio,
- * que es la página que pelea «huasteca potosina». Se enlaza la PRIMERA mención
- * en un párrafo, fuera de otro enlace, y solo si el artículo no enlaza ya ahí.
- * El orden importa: cada regla ve los enlaces que pusieron las anteriores.
- */
-const GUIA_TAMUL = "cascada-de-tamul-la-guia-definitiva-para-visitarla";
-const AUTOENLACES: { patron: RegExp; href: string }[] = [
-  // «Tours Huasteca Potosina» es la marca, no la región: esa no se enlaza.
-  { patron: /(?<!Tours )\bHuasteca Potosina\b/i, href: "/" },
-  { patron: /\bCascada de Tamul\b/i, href: urlBlog(GUIA_TAMUL) },
-  { patron: /\btours? guiados?\b/i, href: "/tours" },
-];
-
-const escapaRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-function yaEnlazaA(html: string, href: string): boolean {
-  const ruta = href === "/" ? "/?" : escapaRegex(href);
-  return new RegExp(`href="(?:${escapaRegex(SITE)})?${ruta}(?:[?#][^"]*)?"`, "i").test(html);
-}
-
-function enlazaPrimeraMencion(html: string, patron: RegExp, href: string): string {
-  const trozos = html.split(/(<[^>]+>)/);
-  let enParrafo = 0;
-  let enEnlace = 0;
-  for (let i = 0; i < trozos.length; i++) {
-    const t = trozos[i];
-    if (t.startsWith("<")) {
-      if (/^<p[\s>]/i.test(t)) enParrafo++;
-      else if (/^<\/p>/i.test(t)) enParrafo = Math.max(0, enParrafo - 1);
-      else if (/^<a[\s>]/i.test(t)) enEnlace++;
-      else if (/^<\/a>/i.test(t)) enEnlace = Math.max(0, enEnlace - 1);
-      continue;
-    }
-    if (!enParrafo || enEnlace) continue;
-    const m = patron.exec(t);
-    if (!m) continue;
-    trozos[i] = `${t.slice(0, m.index)}<a href="${href}">${m[0]}</a>${t.slice(m.index + m[0].length)}`;
-    return trozos.join("");
-  }
-  return html;
-}
-
-function autoenlaza(html: string, slugPropio: string): string {
-  const propio = urlBlog(slugPropio);
-  return AUTOENLACES.reduce(
-    (h, { patron, href }) =>
-      href === propio || yaEnlazaA(h, href) ? h : enlazaPrimeraMencion(h, patron, href),
-    html,
-  );
-}
+// Enlaces internos automáticos (al inicio, a la página dueña de cada lugar y
+// al catálogo): `src/lib/blogAutoenlaces.ts`.
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -348,6 +301,12 @@ function seccionDe(post: { slug: string; tags: string[] }): string {
   const d = destinoDeBlog(post.slug);
   const nombre = d && !d.comparativa ? DESTINOS_DB.find((x) => x.slug === d.destino)?.nombre : undefined;
   return nombre ?? tagsEspecificos(post.tags)[0] ?? "Guías de viaje";
+}
+
+/** La ficha del lugar del que trata el artículo (no en las comparativas «X vs Y»). */
+function lugarDe(slug: string) {
+  const d = destinoDeBlog(slug);
+  return d && !d.comparativa ? DESTINOS_DB.find((x) => x.slug === d.destino) : undefined;
 }
 
 /**
@@ -605,8 +564,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
   const relevantTour = toursFijados[0] ?? inferTour(post.tags, post.focusKeyword);
   const tarjetaViaje = tarjetaViajeEnBlog(post.slug, post.content);
   const promoPost  = isPromocional(post.tags, post.title);
+  // El recorrido que nombran los mensajes de WhatsApp: el del artículo, salvo en
+  // los de marca (hotel, restaurante), donde el de respaldo sería un tour al azar.
+  const tourDeCta  = promoPost ? undefined : relevantTour;
   const ofertas    = ofertasDeBlog(post.slug);
   const seccion    = seccionDe(post);
+  const lugar      = lugarDe(post.slug);
   const modificado = fechaModificado(post.updatedAt, post.slug);
   // "Actualizado el…" solo si de verdad cambió después de publicarse: el
   // mismo día no aporta nada y confunde.
@@ -658,6 +621,19 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
     keywords:       [post.focusKeyword, ...post.secondaryKeywords].join(", "),
     articleSection: seccion,
     mainEntityOfPage: { "@type": "WebPage", "@id": urlCanonica },
+    isPartOf: { "@type": "Blog", name: "Blog de Tours Huasteca Potosina", url: `${SITE}/blog` },
+    // 19 nov 2026: de QUÉ lugar trata, con su ficha y sus coordenadas. Le dice
+    // a Google que el artículo y la ficha hablan de la misma cosa (y cuál es la
+    // ficha), en vez de dejar que lo adivine por las palabras.
+    about: lugar
+      ? {
+          "@type": "TouristAttraction",
+          name: lugar.nombre,
+          url: `${SITE}/destinos/${lugar.slug}`,
+          geo: { "@type": "GeoCoordinates", latitude: lugar.lat, longitude: lugar.lng },
+          containedInPlace: { "@type": "Place", name: `${lugar.zona}, San Luis Potosí, México` },
+        }
+      : undefined,
   });
 
   // ── Schema: BreadcrumbList + FAQPage ────────────────────────────────────
@@ -747,7 +723,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
      esquinas: superficies `rounded-2xl`, botones y píldoras redondos). */
   const CAJA = "rounded-2xl border border-negro/10 bg-white";
   const BOTON_DORADO =
-    "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-full bg-dorado px-7 font-dm text-[15px] font-medium text-negro " +
+    "inline-flex min-h-[48px] items-center justify-center gap-2 rounded-xl bg-dorado px-7 font-dm text-[15px] font-medium text-negro " +
     "transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]";
   const ENLACE = "font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota";
   const temas = tagsEspecificos(post.tags).slice(0, 5);
@@ -819,7 +795,19 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
             {post.coverImageUrl && (
               <div className="mt-8 aspect-[16/9] overflow-hidden rounded-2xl bg-negro/5 sm:mt-10">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={post.coverImageUrl} alt={post.coverImageAlt || post.title} className="h-full w-full object-cover" loading="eager" />
+                {/* La portada es el LCP del artículo: se pide primero. El `width`/`height`
+                    solo da la proporción (16:9, la de la caja); el tamaño lo pone el CSS.
+                    */}
+                <img
+                  src={post.coverImageUrl}
+                  alt={post.coverImageAlt || post.title}
+                  width={1600}
+                  height={900}
+                  className="h-full w-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                />
               </div>
             )}
           </header>
@@ -842,6 +830,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   </ol>
                 </nav>
               )}
+
+              {/* WhatsApp por temporada (19 nov 2026): la temporada alta que viene,
+                  cuánto falta y la demanda REAL del recorrido en esas fechas. */}
+              <AvisoTemporadaBlog titulo={post.title} tour={tourDeCta} />
 
               {/* Xantolo: la página más visitada del sitio. La salida a la venta
                   va ARRIBA porque la mitad de los lectores en celular no pasa
@@ -866,6 +858,10 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                   artículo: es donde el lector ya decidió que quiere ir. */}
               <GuiaDelLugar blogSlug={post.slug} />
               {tarjetaViaje === "medio" && <TarjetaViajeCdmx origen={`blog-${post.slug}`} className="my-10" />}
+
+              {/* WhatsApp para quien tiene dudas: justo después de la ficha del
+                  lugar, donde el lector ya decidió que quiere ir. */}
+              <PreguntaWhatsappBlog titulo={post.title} lugar={lugar ? lugarEnFrase(lugar.nombre) : "la Huasteca Potosina"} />
 
               {/* Newsletter inline (a mitad del artículo) */}
               <BlogNewsletterInline />
@@ -975,6 +971,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
                     Ver recorridos y reservar
                   </Link>
                 )}
+                <CierreWhatsappBlog titulo={post.title} tour={tourDeCta} />
               </div>
             </article>
 
@@ -987,7 +984,7 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               <div className={`p-5 ${CAJA}`}>
                 <p className="font-cormorant text-xl leading-snug text-verde-profundo">¿Cuántos días tienes?</p>
                 <p className="mt-1.5 mb-4 font-dm text-[13px] leading-relaxed text-negro/60">En 2 minutos te decimos qué tour te queda según tu grupo y lo que te emociona. Gratis.</p>
-                <Link href="/recomendar" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva">
+                <Link href="/recomendar" className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva">
                   Recomendar mi tour
                 </Link>
               </div>
@@ -1101,13 +1098,13 @@ function TarjetaTour({
       <div className="flex flex-col gap-2.5">
         <Link
           href={`/reservar/carrito?agregar=${tour.slug}`}
-          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-dorado px-5 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 hover:bg-lima active:scale-[0.98]"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-dorado px-5 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 hover:bg-lima active:scale-[0.98]"
         >
           Reservar
         </Link>
         <Link
           href={`/tours/${tour.slug}`}
-          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva"
         >
           Ver tour completo
         </Link>

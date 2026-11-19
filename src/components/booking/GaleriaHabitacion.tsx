@@ -137,7 +137,7 @@ export function GaleriaHabitacion({
             <button
               key={f.src} type="button" onClick={() => setI(k)}
               aria-label={t.verFoto(k + 1)}
-              className={`relative w-14 h-11 flex-shrink-0 overflow-hidden border-2 transition-colors ${
+              className={`rounded-lg relative w-14 h-11 flex-shrink-0 overflow-hidden border-2 transition-colors ${
                 k === i ? "border-dorado" : "border-transparent opacity-50 hover:opacity-100"
               }`}
             >

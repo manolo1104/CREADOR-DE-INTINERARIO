@@ -720,7 +720,7 @@ export default function PreciosPage() {
               <Link
                 key={p.slug}
                 href={lp(`/paquetes/${p.slug}`)}
-                className="border border-white/10 p-6 hover:border-dorado/50 transition-colors group"
+                className="rounded-xl border border-white/10 p-6 hover:border-dorado/50 transition-colors group"
               >
                 <p className="text-[10px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{p.duracion}</p>
                 <h3 className="font-cormorant text-crema text-2xl mb-3 group-hover:text-dorado transition-colors">
@@ -758,7 +758,7 @@ export default function PreciosPage() {
       {/* ── QUÉ INCLUYE ── */}
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-6">
-          <div className="border border-verde-selva/30 bg-verde-profundo/30 p-7">
+          <div className="rounded-2xl border border-verde-selva/30 bg-verde-profundo/30 p-7">
             <h2 className="font-cormorant font-light text-crema text-2xl mb-4">{t.incluyeTitulo}</h2>
             <ul className="space-y-2 font-dm text-sm text-crema/75">
               {t.incluyeItems.map((item) => (
@@ -766,7 +766,7 @@ export default function PreciosPage() {
               ))}
             </ul>
           </div>
-          <div className="border border-white/10 p-7">
+          <div className="rounded-2xl border border-white/10 p-7">
             <h2 className="font-cormorant font-light text-crema text-2xl mb-4">{t.noIncluyeTitulo}</h2>
             <ul className="space-y-2 font-dm text-sm text-crema/60">
               {t.noIncluyeItems.map((item) => (
@@ -807,13 +807,13 @@ export default function PreciosPage() {
             href={waLink(t.waMsg)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+            className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
           >
             {t.ctaWa}
           </a>
           <Link
             href={lp("/tours")}
-            className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
+            className="rounded-xl inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
           >
             {t.ctaTours}
           </Link>

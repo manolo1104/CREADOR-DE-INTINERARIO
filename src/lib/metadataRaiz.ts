@@ -58,6 +58,16 @@ export function metadataRaiz(locale: Locale): Metadata {
     // entero y sale sin og:image ni twitter:image; se arregla poniendo
     // `images` en el openGraph de esa página (/contacto, /terminos…).
     twitter: { card: "summary_large_image" },
+    // 19 nov 2026: el sitio no tenía NINGUNA etiqueta robots, así que Google
+    // aplicaba la vista previa de imagen por defecto (pequeña). Con
+    // `max-image-preview:large` puede enseñar la foto grande en resultados,
+    // Discover e Imágenes, que es donde una cascada se vende sola. Las páginas
+    // que declaran su propio `robots` (las de noindex) lo reemplazan entero.
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+    },
   };
 }
 

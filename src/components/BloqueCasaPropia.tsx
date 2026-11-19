@@ -65,7 +65,7 @@ export function BloqueCasaPropia({ tour, locale }: { tour: TourBloque; locale: L
     return (
       <aside
         aria-label={en ? "This tour in a package with hotel" : "Este recorrido en paquete con hotel"}
-        className="flex items-start gap-4 border border-white/10 bg-verde-profundo/30 p-5"
+        className="rounded-2xl flex items-start gap-4 border border-white/10 bg-verde-profundo/30 p-5"
       >
         <BedDouble className="mt-0.5 h-5 w-5 flex-shrink-0 text-dorado" aria-hidden="true" />
         <div className="min-w-0">
@@ -120,7 +120,7 @@ export function BloqueCasaPropia({ tour, locale }: { tour: TourBloque; locale: L
   return (
     <section
       aria-labelledby="casa-propia"
-      className="overflow-hidden border border-white/10 bg-verde-profundo/30 sm:grid sm:grid-cols-5"
+      className="rounded-2xl overflow-hidden border border-white/10 bg-verde-profundo/30 sm:grid sm:grid-cols-5"
     >
       {/* La alberca y los jardines: la foto enseña lo que la lista promete. En
           `sm` deja el 16:9 y se estira al alto del texto. */}
@@ -160,7 +160,7 @@ export function BloqueCasaPropia({ tour, locale }: { tour: TourBloque; locale: L
         <Link
           href={hrefPaquetes}
           prefetch={false}
-          className="mt-5 inline-flex items-center gap-2 border border-dorado/50 px-5 py-3 font-dm text-[10px] uppercase tracking-[2px] text-dorado transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-dorado [@media(hover:hover)]:hover:bg-dorado/10 active:scale-[0.97]"
+          className="rounded-xl mt-5 inline-flex items-center gap-2 border border-dorado/50 px-5 py-3 font-dm text-[10px] uppercase tracking-[2px] text-dorado transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-dorado [@media(hover:hover)]:hover:bg-dorado/10 active:scale-[0.97]"
         >
           {en ? "See packages with hotel" : "Ver paquetes con hotel"}
           <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />

@@ -115,7 +115,7 @@ export default function PoliticaCancelacionPage() {
           {t.escala.map(({ titulo, sub, detalle }, i) => {
             const { Icon, color } = ESTILO_ESCALA[i];
             return (
-              <div key={titulo} className={`border p-5 ${color}`}>
+              <div key={titulo} className={`rounded-2xl border p-5 ${color}`}>
                 <Icon className="w-5 h-5 mb-3" aria-hidden="true" />
                 <p className="font-dm text-sm font-medium text-negro/80 mb-1">{titulo}</p>
                 <p className="font-cormorant text-lg text-verde-profundo leading-tight mb-2">{sub}</p>
@@ -126,7 +126,7 @@ export default function PoliticaCancelacionPage() {
         </div>
 
         <h2 className="font-cormorant font-light text-verde-profundo text-3xl mb-4">{t.h2SiCancelamos}</h2>
-        <div className="border border-verde-selva/30 bg-verde-selva/5 p-6 mb-14">
+        <div className="rounded-2xl border border-verde-selva/30 bg-verde-selva/5 p-6 mb-14">
           <CloudRain className="w-5 h-5 text-verde-selva mb-4" aria-hidden="true" />
           <p className="font-dm text-sm text-negro/70 leading-relaxed mb-4">
             {t.siCancelamosPre}<strong className="text-verde-profundo">{t.siCancelamosStrong}</strong>{t.siCancelamosPost}
@@ -145,7 +145,7 @@ export default function PoliticaCancelacionPage() {
         {/* La excepción, a la vista y no solo dentro de una respuesta: quien
             reserva el Edén tiene que leer ANTES de pagar que no hay reembolso. */}
         {t.excepciones.map((x) => (
-          <div key={x.slug} className="border border-terracota/40 bg-terracota/8 p-6 mb-14">
+          <div key={x.slug} className="rounded-2xl border border-terracota/40 bg-terracota/8 p-6 mb-14">
             <XCircle className="w-5 h-5 text-terracota mb-3" aria-hidden="true" />
             <h2 className="font-cormorant font-light text-verde-profundo text-2xl mb-3">{x.titulo}</h2>
             <p className="font-dm text-sm text-negro/70 leading-relaxed mb-3">{x.texto}</p>
@@ -165,7 +165,7 @@ export default function PoliticaCancelacionPage() {
           ))}
         </div>
 
-        <div className="border border-negro/10 bg-white p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 justify-between">
+        <div className="rounded-2xl border border-negro/10 bg-white p-6 flex flex-col sm:flex-row items-start sm:items-center gap-5 justify-between">
           <div>
             <p className="font-cormorant text-xl text-verde-profundo mb-1">{t.ayudaTitulo}</p>
             <p className="font-dm text-xs text-negro/55">{t.ayudaTexto}</p>
@@ -174,7 +174,7 @@ export default function PoliticaCancelacionPage() {
             href={waLink(t.ayudaWhatsapp)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-shrink-0 inline-flex items-center gap-2 bg-verde-selva text-crema px-6 py-3 text-[10px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors"
+            className="rounded-xl flex-shrink-0 inline-flex items-center gap-2 bg-verde-selva text-crema px-6 py-3 text-[10px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors"
           >
             <MessageCircle className="w-4 h-4" aria-hidden="true" />
             {t.ayudaBoton}

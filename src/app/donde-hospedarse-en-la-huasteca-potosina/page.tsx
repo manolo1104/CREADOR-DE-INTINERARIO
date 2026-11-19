@@ -533,7 +533,7 @@ export default function DondeHospedarsePage() {
               href={waLink(t.waMensaje)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-crema/40 px-8 font-dm text-[15px] font-medium text-crema transition-colors hover:bg-crema/10"
+              className="inline-flex min-h-[52px] items-center justify-center rounded-xl border border-crema/40 px-8 font-dm text-[15px] font-medium text-crema transition-colors hover:bg-crema/10"
             >
               {t.ctaWhatsApp}
             </a>

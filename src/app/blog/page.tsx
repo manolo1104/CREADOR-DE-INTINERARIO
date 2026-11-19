@@ -132,7 +132,7 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
             <Link
               href="/reservar"
               prefetch={false}
-              className="inline-flex min-h-[52px] shrink-0 items-center justify-center rounded-full bg-dorado px-8 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
+              className="inline-flex min-h-[52px] shrink-0 items-center justify-center rounded-xl bg-dorado px-8 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
             >
               Ver recorridos y reservar
             </Link>
@@ -177,7 +177,7 @@ export default async function BlogPage({ searchParams }: { searchParams?: { q?: 
                 <Link
                   href="/reservar"
                   prefetch={false}
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-full bg-dorado px-8 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-xl bg-dorado px-8 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
                 >
                   Ver recorridos y reservar
                 </Link>

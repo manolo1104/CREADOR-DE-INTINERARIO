@@ -13,7 +13,7 @@ export function GuideProfile() {
   const en = headers().get("x-locale") === "en";
   return (
     <section className="max-w-6xl mx-auto px-6 py-10">
-      <div className="border border-verde-vivo/20 bg-verde-profundo/30 p-6 md:p-8">
+      <div className="rounded-2xl border border-verde-vivo/20 bg-verde-profundo/30 p-6 md:p-8">
         <div className="flex flex-col sm:flex-row gap-6 items-start sm:items-center">
 
           {/* Avatar */}
@@ -30,7 +30,7 @@ export function GuideProfile() {
               <h3 className="font-cormorant text-crema text-lg">
                 {en ? "Huasteca Potosina Team" : "Equipo Huasteca Potosina"}
               </h3>
-              <span className="text-[9px] bg-verde-selva/60 border border-verde-vivo/30 text-verde-vivo px-2 py-0.5 font-dm tracking-[1px] uppercase">
+              <span className="rounded-full text-[9px] bg-verde-selva/60 border border-verde-vivo/30 text-verde-vivo px-2 py-0.5 font-dm tracking-[1px] uppercase">
                 {en ? "✓ NOM-09 SECTUR certified guide" : "✓ Guía certificado NOM-09 SECTUR"}
               </span>
             </div>
@@ -55,7 +55,7 @@ export function GuideProfile() {
             href={waLink(en ? "Hi, I'd like to talk to the Huasteca Potosina team about a tour." : WA_MESSAGES.tourGeneral)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-shrink-0 flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] tracking-[1.5px] uppercase font-dm px-5 py-3 transition-colors whitespace-nowrap"
+            className="rounded-xl flex-shrink-0 flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white text-[11px] tracking-[1.5px] uppercase font-dm px-5 py-3 transition-colors whitespace-nowrap"
           >
             {WA_SVG}
             {en ? "Talk to the team" : "Hablar con el equipo"}

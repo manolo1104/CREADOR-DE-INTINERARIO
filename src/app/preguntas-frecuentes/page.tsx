@@ -115,7 +115,7 @@ export default function PreguntasFrecuentesPage() {
           <TarjetaViajeCdmx origen={`preguntas-frecuentes${locale === "en" ? "-en" : ""}`} locale={locale === "en" ? "en" : "es"} className="mt-16" />
 
           {/* CTA + links internos estratégicos */}
-          <div className="mt-16 border border-verde-vivo/20 bg-verde-selva/10 p-8 text-center">
+          <div className="rounded-2xl mt-16 border border-verde-vivo/20 bg-verde-selva/10 p-8 text-center">
             <h2 className="font-cormorant text-crema text-2xl mb-3">{t.ctaTitulo}</h2>
             <p className="text-crema/55 font-dm text-sm mb-6 max-w-md mx-auto">
               {t.ctaTexto}

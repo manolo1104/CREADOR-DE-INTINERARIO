@@ -110,7 +110,7 @@ export function DestinoProductCard({ destino: d, variant = "default" }: Props) {
       </Link>
 
       {/* ── ZONA INFO ──────────────────────────────────────────────── */}
-      <div className="flex flex-col flex-1 p-4 bg-negro/80">
+      <div className="rounded-xl flex flex-col flex-1 p-4 bg-negro/80">
 
         {/* Metadatos — fila 1 */}
         <div className="flex items-center gap-x-4 gap-y-1 flex-wrap mb-3">

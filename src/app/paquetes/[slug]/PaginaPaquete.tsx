@@ -359,7 +359,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             <ArrowLeft className="w-3 h-3" /> {t.todosLosPaquetes}
           </Link>
           {p.badge && (
-            <span className="inline-block bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 mb-4">{p.badge}</span>
+            <span className="rounded-full inline-block bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 mb-4">{p.badge}</span>
           )}
           <h1 className="font-cormorant font-light text-crema mb-2 [text-shadow:0_2px_14px_rgba(0,0,0,0.65)]" style={{ fontSize: "clamp(34px,6vw,60px)" }}>{p.nombre}</h1>
           <p className="text-crema/85 font-dm text-sm mb-5 [text-shadow:0_1px_8px_rgba(0,0,0,0.8)]">{p.subtitulo}</p>
@@ -390,11 +390,11 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           <div className="flex flex-wrap items-center gap-3">
             {/* Reservar en línea, por el checkout de los tours (13 nov 2026). */}
             <Link href={`${lp("/reservar/carrito")}?paquete=${p.slug}`}
-              className="inline-flex items-center gap-2.5 bg-dorado hover:bg-terracota hover:text-crema text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+              className="rounded-xl inline-flex items-center gap-2.5 bg-dorado hover:bg-terracota hover:text-crema text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
               {locale === "en" ? "Book · pick date and room" : "Reservar · elige fecha y habitación"}
             </Link>
             <a href={waLink(waMsg)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors">
+              className="rounded-xl inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors">
               {t.reservarWhatsapp}
             </a>
           </div>
@@ -471,7 +471,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               <div key={d.dia} className="grid md:grid-cols-[auto_1fr] gap-5 md:gap-8 border-b border-white/8 pb-10 last:border-0">
                 {/* Marca de día */}
                 <div className="flex md:flex-col items-center md:items-start gap-3 md:gap-1">
-                  <div className="flex items-center justify-center w-14 h-14 border border-verde-selva/40 bg-verde-profundo/30">
+                  <div className="flex items-center justify-center w-14 h-14 rounded-xl border border-verde-selva/40 bg-verde-profundo/30">
                     <span className="font-cormorant text-dorado text-2xl leading-none">{d.dia}</span>
                   </div>
                   <span className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">
@@ -652,7 +652,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               const Icon = LOGISTICA_ICONS[m.icon] ?? MapPin;
               const destacado = m.id === "nosotros";
               return (
-                <div key={m.id} className={`border p-5 ${destacado ? "border-dorado/40 bg-dorado/8" : "border-white/10 bg-negro/40"}`}>
+                <div key={m.id} className={`rounded-2xl border p-5 ${destacado ? "border-dorado/40 bg-dorado/8" : "border-white/10 bg-negro/40"}`}>
                   <h3 className={`font-cormorant text-xl mb-3 flex items-center gap-2 ${destacado ? "text-dorado" : "text-crema"}`}>
                     <Icon className={`w-5 h-5 ${destacado ? "text-dorado" : "text-verde-vivo"}`} /> {m.titulo}
                   </h3>
@@ -668,7 +668,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             })}
           </div>
 
-          <div className="mt-6 border-l-2 border-agua/50 bg-agua/8 p-4">
+          <div className="rounded-r-xl mt-6 border-l-2 border-agua/50 bg-agua/8 p-4">
             <p className="text-[10px] tracking-[2px] uppercase text-agua mb-1.5 flex items-center gap-1.5"><Clock className="w-3 h-3" /> {t.yaEnLaZona}</p>
             <p className="text-sm text-crema/70 font-dm leading-relaxed">{LOGISTICA.intra}</p>
           </div>
@@ -681,12 +681,12 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           formulario se queda solo y centrado en vez de ocupar media pantalla. */}
       <section className="max-w-5xl mx-auto px-6 py-16">
         <div className="max-w-xl mx-auto">
-          <div className="border border-white/10 bg-negro/50 p-6">
+          <div className="rounded-2xl border border-white/10 bg-negro/50 p-6">
             <h2 className="font-cormorant text-crema text-2xl mb-1">{t.reservaTu(p.nombre)}</h2>
             <p className="text-crema/50 font-dm text-xs mb-5">{t.sinPagoAnticipado}</p>
             {/* Primero reservar en línea (13 nov 2026); la consulta por WhatsApp, debajo. */}
             <Link href={`${lp("/reservar/carrito")}?paquete=${p.slug}`}
-              className="flex items-center justify-center w-full mb-4 bg-dorado hover:bg-terracota hover:text-crema text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+              className="rounded-xl flex items-center justify-center w-full mb-4 bg-dorado hover:bg-terracota hover:text-crema text-negro py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
               {locale === "en" ? "Book online · pick date and room" : "Reservar en línea · fecha y habitación"}
             </Link>
             <p className="mb-4 text-center font-dm text-[11px] text-crema/40">{locale === "en" ? "or ask us first on WhatsApp" : "o pregúntanos antes por WhatsApp"}</p>
@@ -707,7 +707,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           {locale === "en" ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {resenasEn.map((r) => (
-                <div key={r.autor} className="flex flex-col border border-white/8 bg-negro/50 p-5">
+                <div key={r.autor} className="rounded-2xl flex flex-col border border-white/8 bg-negro/50 p-5">
                   <div className="flex gap-0.5 mb-3" aria-label={`${r.estrellas} out of 5 stars`}>
                     {[...Array(r.estrellas)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />)}
                   </div>
@@ -727,7 +727,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {resenas.map((r) => (
-              <div key={r.nombre} className="border border-white/8 bg-negro/50 p-5">
+              <div key={r.nombre} className="rounded-2xl border border-white/8 bg-negro/50 p-5">
                 <div className="flex gap-0.5 mb-3">{[...Array(r.estrellas)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" />)}</div>
                 <p className="font-dm text-xs text-crema/70 leading-relaxed italic mb-4">&ldquo;{r.texto}&rdquo;</p>
                 <div className="flex items-center gap-3">
@@ -768,11 +768,11 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
         <h2 className="font-cormorant text-crema text-2xl mb-3">{t.ctaH2a}<em className="text-dorado">{p.nombre.replace(/^Paquete |\s*Package$/g, "")}</em>{t.ctaH2b}</h2>
         <p className="text-crema/50 font-dm text-sm mb-7 max-w-md mx-auto">{t.ctaTexto}</p>
         <Link href={`${lp("/reservar/carrito")}?paquete=${p.slug}`}
-          className="inline-flex items-center gap-2.5 mr-3 mb-3 bg-dorado hover:bg-terracota hover:text-crema text-negro px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
+          className="rounded-xl inline-flex items-center gap-2.5 mr-3 mb-3 bg-dorado hover:bg-terracota hover:text-crema text-negro px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors">
           {locale === "en" ? "Book online" : "Reservar en línea"}
         </Link>
         <a href={waLink(waMsg)} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors">
+          className="rounded-xl inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors">
           {t.reservarWhatsapp}
         </a>
         <div className="mt-6">

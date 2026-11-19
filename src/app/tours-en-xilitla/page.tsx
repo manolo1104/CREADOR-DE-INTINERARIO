@@ -137,7 +137,7 @@ export default function ToursEnXilitlaPage() {
           href={waLink(t.waDisponibilidad)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+          className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
         >
           {t.ctaDisponibilidad}
         </a>
@@ -160,7 +160,7 @@ export default function ToursEnXilitlaPage() {
               <Link
                 key={p.slug}
                 href={localePath(`/paquetes/${p.slug}`, locale)}
-                className="border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
+                className="rounded-xl border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{p.duracion}</p>
                 <h3 className="font-cormorant text-crema text-xl leading-snug mb-1 group-hover:text-dorado transition-colors">
@@ -212,7 +212,7 @@ export default function ToursEnXilitlaPage() {
                 <Link
                   key={x.slug}
                   href={localePath(`/tours/${x.slug}`, locale)}
-                  className="border border-white/10 p-5 hover:border-dorado/50 transition-colors group flex flex-col"
+                  className="rounded-xl border border-white/10 p-5 hover:border-dorado/50 transition-colors group flex flex-col"
                 >
                   <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
                     {x.tipo} · {tourDurTexto(x, " h")}
@@ -257,7 +257,7 @@ export default function ToursEnXilitlaPage() {
               <Link
                 key={d.slug}
                 href={localePath(`/destinos/${d.slug}`, locale)}
-                className="border border-white/10 p-5 hover:border-dorado/50 transition-colors group"
+                className="rounded-xl border border-white/10 p-5 hover:border-dorado/50 transition-colors group"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">{d.tipo}</p>
                 <h3 className="font-cormorant text-crema text-lg leading-snug group-hover:text-dorado transition-colors">
@@ -310,7 +310,7 @@ export default function ToursEnXilitlaPage() {
               <Link
                 key={a.href}
                 href={a.href}
-                className="border border-white/10 p-5 hover:border-dorado/50 transition-colors group"
+                className="rounded-xl border border-white/10 p-5 hover:border-dorado/50 transition-colors group"
               >
                 <h3 className="font-cormorant text-crema text-lg leading-snug mb-2 group-hover:text-dorado transition-colors">
                   {a.t}
@@ -348,13 +348,13 @@ export default function ToursEnXilitlaPage() {
             href={waLink(t.waReservar)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+            className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
           >
             {t.ctaWhatsapp}
           </a>
           <Link
             href={localePath("/paquetes", locale)}
-            className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
+            className="rounded-xl inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
           >
             {t.ctaPaquetes}
           </Link>

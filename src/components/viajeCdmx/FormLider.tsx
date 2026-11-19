@@ -13,7 +13,7 @@ export function FormLider() {
   const [error, setError] = useState("");
   const [liga, setLiga] = useState("");
   const [copiado, setCopiado] = useState(false);
-  const campo = "w-full bg-negro/60 border border-white/15 text-crema placeholder:text-crema/35 px-3 py-3 text-base font-dm focus:outline-none focus:border-dorado";
+  const campo = "rounded-xl w-full bg-negro/60 border border-white/15 text-crema placeholder:text-crema/35 px-3 py-3 text-base font-dm focus:outline-none focus:border-dorado";
 
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
@@ -71,7 +71,7 @@ export function FormLider() {
       </label>
       <textarea className={`${campo} min-h-[88px]`} placeholder="¿Alguna fecha en mente o algo que debamos saber? (opcional)" value={d.notas} onChange={(e) => setD({ ...d, notas: e.target.value })} maxLength={500} />
       {error && <p className="text-sm font-dm text-terracota" role="alert">{error}</p>}
-      <button type="submit" disabled={estado === "enviando"} className="w-full min-h-[52px] bg-dorado text-negro hover:bg-crema disabled:opacity-60 text-[12px] tracking-[2px] uppercase font-dm transition-colors">
+      <button type="submit" disabled={estado === "enviando"} className="rounded-xl w-full min-h-[52px] bg-dorado text-negro hover:bg-crema disabled:opacity-60 text-[12px] tracking-[2px] uppercase font-dm transition-colors">
         {estado === "enviando" ? "Enviando…" : "Quiero armar mi grupo"}
       </button>
     </form>

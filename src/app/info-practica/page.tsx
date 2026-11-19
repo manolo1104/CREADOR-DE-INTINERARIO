@@ -976,7 +976,7 @@ export default function InfoPracticaPage() {
                 <Link
                   href={lp("/destinos")}
                   prefetch={false}
-                  className="inline-flex min-h-[52px] items-center justify-center rounded-full border border-crema/40 px-8 font-dm text-[15px] font-medium text-crema transition-colors hover:bg-crema/10"
+                  className="inline-flex min-h-[52px] items-center justify-center rounded-xl border border-crema/40 px-8 font-dm text-[15px] font-medium text-crema transition-colors hover:bg-crema/10"
                 >
                   {t.ctaDestinos}
                 </Link>

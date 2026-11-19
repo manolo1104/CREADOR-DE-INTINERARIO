@@ -156,7 +156,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
     <div id={ANCLA_RECORRIDOS} className="scroll-mt-24">
       {/* ── Controles ── */}
       <div className="mb-8">
-        <label className="relative mb-5 flex max-w-md items-center gap-2.5 rounded-full border border-negro/15 bg-white px-5 py-3 transition-colors focus-within:border-verde-selva">
+        <label className="relative mb-5 flex max-w-md items-center gap-2.5 rounded-xl border border-negro/15 bg-white px-5 py-3 transition-colors focus-within:border-verde-selva">
           <Search className="h-4 w-4 shrink-0 text-negro/35" aria-hidden="true" />
           <input
             type="search"
@@ -193,7 +193,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
                   type="button"
                   aria-pressed={activo}
                   onClick={() => elegirChip(c.id)}
-                  className={`inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-full border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
+                  className={`inline-flex min-h-[44px] items-center gap-2 whitespace-nowrap rounded-xl border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
                     activo
                       ? "border-verde-selva bg-verde-selva text-crema"
                       : "border-negro/15 bg-white text-negro/60 hover:border-verde-vivo/60 hover:bg-verde-selva/5 hover:text-verde-selva"
@@ -308,7 +308,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
               <button
                 type="button"
                 onClick={() => setIntencion((i) => (i ? { ...i, personas: 0 } : null))}
-                className="min-h-[44px] rounded-full bg-verde-selva px-6 font-dm text-sm font-medium text-crema transition-colors hover:bg-verde-vivo"
+                className="min-h-[44px] rounded-xl bg-verde-selva px-6 font-dm text-sm font-medium text-crema transition-colors hover:bg-verde-vivo"
               >
                 {ui.verlosIgual(sinContarGrupo.length)}
               </button>
@@ -316,7 +316,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
             <button
               type="button"
               onClick={limpiar}
-              className="min-h-[44px] rounded-full border border-verde-selva px-6 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10"
+              className="min-h-[44px] rounded-xl border border-verde-selva px-6 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10"
             >
               {ui.limpiar}
             </button>
@@ -326,7 +326,7 @@ export function ToursGridFiltrable({ tours, hrefCatalogo }: Props) {
               rel="noopener noreferrer"
               data-wa-manual="1"
               onClick={() => trackTourEvent("WHATSAPP_CLICK", { context: "rejilla_inicio", boton: "sin_resultados" })}
-              className="inline-flex min-h-[44px] items-center rounded-full border border-[#25D366] px-6 font-dm text-sm font-medium text-[#128C4A] transition-colors hover:bg-[#25D366]/10"
+              className="inline-flex min-h-[44px] items-center rounded-xl border border-[#25D366] px-6 font-dm text-sm font-medium text-[#128C4A] transition-colors hover:bg-[#25D366]/10"
             >
               WhatsApp
             </a>

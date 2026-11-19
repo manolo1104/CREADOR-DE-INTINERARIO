@@ -23,7 +23,7 @@ function gruposLibres(opciones: OpcionColumna[], ocupados: string[]) {
  * `text-base` en el select: con menos de 16 px el iPhone hace zoom al tocarlo.
  */
 const ESTILO_BOTON =
-  "relative min-h-[44px] flex items-center justify-between gap-2 border border-white/15 hover:border-dorado/50 focus-within:border-dorado px-3 font-dm text-[11px] tracking-[1.5px] uppercase text-crema/75 transition-colors cursor-pointer";
+  "rounded-xl relative min-h-[44px] flex items-center justify-between gap-2 border border-white/15 hover:border-dorado/50 focus-within:border-dorado px-3 font-dm text-[11px] tracking-[1.5px] uppercase text-crema/75 transition-colors cursor-pointer";
 
 /** Cambiar o quitar UNA columna. */
 export function ControlColumna({ indice, opciones }: { indice: number; opciones: OpcionColumna[] }) {
@@ -77,7 +77,7 @@ export function ControlColumna({ indice, opciones }: { indice: number; opciones:
           type="button"
           onClick={() => navegar(slugs.filter((_, i) => i !== indice), { columna: indice, de: actual })}
           aria-label={ui.columnas.quitar(nombre)}
-          className="w-11 min-h-[44px] inline-flex items-center justify-center border border-white/15 text-crema/60 hover:text-crema hover:border-white/40 transition-colors"
+          className="rounded-xl w-11 min-h-[44px] inline-flex items-center justify-center border border-white/15 text-crema/60 hover:text-crema hover:border-white/40 transition-colors"
         >
           <X className="w-4 h-4" aria-hidden="true" />
         </button>

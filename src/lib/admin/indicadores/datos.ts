@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD, ymdMX } from "@/lib/dates";
 import { tipoFolio } from "@/lib/admin/folio";
+import { SIN_IMPORTADOS } from "@/lib/admin/crm";
 import { diasDeTourDe } from "@/lib/admin/salidas";
 import { estadoConexion } from "@/lib/admin/bandejaDatos";
 import { haceCuanto } from "@/lib/admin/bandeja";
@@ -58,7 +59,7 @@ export async function estadoFuentes(hoy: string): Promise<EstadoFuente[]> {
     prisma.corteSemanal.findMany({ where: { estado: "cerrado" }, orderBy: { semana: "desc" }, take: 1, select: { semana: true } }).catch(() => []),
     historialGoogle().catch(() => []),
     prisma.encuestaReserva.findFirst({ where: { satisfaccionEn: { not: null } }, orderBy: { satisfaccionEn: "desc" }, select: { satisfaccionEn: true } }).catch(() => null),
-    prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunesPasado), lte: finMX(addDaysYMD(lunesPasado, 6)) } } }).catch(() => 0),
+    prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunesPasado), lte: finMX(addDaysYMD(lunesPasado, 6)) }, ...SIN_IMPORTADOS } }).catch(() => 0),
     prisma.revisionSemanal.findUnique({ where: { semana: lunesPasado } }).catch(() => null),
     prisma.config.findUnique({ where: { key: CLAVE_ULTIMO_WEBHOOK_STRIPE } }).catch(() => null),
   ]);

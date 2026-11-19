@@ -88,7 +88,7 @@ export function CuentaRegresivaTemporada({
     return (
       <>
         <div className="reveal-up mb-6">
-          <span className="inline-block border border-dorado/50 bg-dorado/10 px-4 py-2 font-dm text-[10px] uppercase tracking-[3px] text-dorado">
+          <span className="rounded-full inline-block border border-dorado/50 bg-dorado/10 px-4 py-2 font-dm text-[10px] uppercase tracking-[3px] text-dorado">
             {en ? "Season is open" : "Ya arrancó"}
           </span>
         </div>

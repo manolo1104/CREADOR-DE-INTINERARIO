@@ -128,10 +128,10 @@ export function RzrBookingForm({
 
   const ETIQUETA = "text-[9px] tracking-[2px] uppercase text-crema/35 font-dm";
   const SELECT = "w-full border border-crema/20 bg-negro/80 px-3 py-2.5 font-dm text-[12px] text-crema/85 focus:border-verde-vivo focus:outline-none";
-  const BOTON_RESERVAR = "flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors";
+  const BOTON_RESERVAR = "rounded-xl flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors";
 
   return (
-    <div id={ID_MODULO_RESERVA} className="border border-white/10 bg-negro/60 p-5 space-y-4">
+    <div id={ID_MODULO_RESERVA} className="rounded-2xl border border-white/10 bg-negro/60 p-5 space-y-4">
       <div>
         <p className={`${ETIQUETA} mb-1.5`}>{tf.cuandoVas}</p>
         <TourCalendar
@@ -198,7 +198,7 @@ export function RzrBookingForm({
               aria-label={t.mas(tf.cuantosVehiculos, nombre)}
               onClick={() => setUnidades((n) => Math.min(10, n + 1))}
               disabled={unidades >= 10}
-              className="w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+              className="rounded-full w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
             >+</button>
           </span>
         </div>

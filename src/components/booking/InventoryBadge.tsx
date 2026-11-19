@@ -22,7 +22,7 @@ export function InventoryBadge({ tourId, tourName, groupMax }: Props) {
   }, [tourId]);
 
   return (
-    <div className="flex items-center gap-2 px-3 py-2 text-[11px] font-dm font-medium bg-amber-500/12 border border-amber-500/25 text-amber-400">
+    <div className="rounded-xl flex items-center gap-2 px-3 py-2 text-[11px] font-dm font-medium bg-amber-500/12 border border-amber-500/25 text-amber-400">
       <span className="w-2 h-2 rounded-full flex-shrink-0 bg-amber-400" aria-hidden="true" />
       {en
         ? `Small group · max. ${groupMax} people per departure`

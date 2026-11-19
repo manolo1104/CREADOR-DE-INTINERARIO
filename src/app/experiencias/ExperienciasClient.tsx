@@ -106,7 +106,7 @@ export default function ExperienciasClient() {
             key={f.value}
             type="button"
             onClick={() => setFiltro(f.value)}
-            className={`px-5 py-2 text-[10px] tracking-[2px] uppercase font-dm border transition-all duration-200 ${
+            className={`rounded-xl px-5 py-2 text-[10px] tracking-[2px] uppercase font-dm border transition-all duration-200 ${
               filtro === f.value
                 ? "bg-verde-selva text-crema border-verde-selva"
                 : "border-white/20 text-crema/55 hover:border-verde-vivo/50 hover:text-crema"
@@ -135,7 +135,7 @@ export default function ExperienciasClient() {
           return (
             <div
               key={d.slug}
-              className="group relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-200 overflow-hidden flex flex-col"
+              className="rounded-2xl group relative border border-white/8 bg-negro/40 hover:border-verde-vivo/40 transition-all duration-200 overflow-hidden flex flex-col"
             >
               {/* Stretched link — cubre toda la tarjeta */}
               <Link
@@ -170,7 +170,7 @@ export default function ExperienciasClient() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={t.reservarAria(d.nombre)}
-                  className="relative z-10 absolute bottom-3 right-3 flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1da851] text-white text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  className="rounded-full relative z-10 absolute bottom-3 right-3 flex items-center gap-1.5 bg-[#25D366] hover:bg-[#1da851] text-white text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <MessageCircle className="w-3 h-3 flex-shrink-0" aria-hidden="true" />

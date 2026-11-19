@@ -299,14 +299,14 @@ export function Pagina({ locale }: { locale: Locale }) {
             ? <>The {tours.length} tours cost from {money(precioMinPersona)} MXN per person{otraUnidad ? ` (${otraUnidad})` : ""} and last between {durMin} and {durMax} hours. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">pickup times and meeting points</a>. Free cancellation up to 48 hours before with a 100% refund{cancelPropia.length ? ` (except ${cancelPropia.join(", ")}, which has its own policy)` : ""}; you hold your spot with a {ANTICIPO_PCT}% deposit and settle the rest on the day of the tour.</>
             : <>Los {tours.length} recorridos cuestan desde {money(precioMinPersona)} MXN por persona{otraUnidad ? ` (${otraUnidad})` : ""} y duran entre {durMin} y {durMax} horas. {desglose} — <a href="#salidas" className="underline underline-offset-2 hover:text-crema transition-colors">horarios y puntos de salida</a>. Cancelas gratis hasta 48 horas antes con reembolso del 100 %{cancelPropia.length ? ` (salvo ${cancelPropia.join(", ")}, con su propia política)` : ""}; apartas con el {ANTICIPO_PCT} % y liquidas el resto el día del tour.</>}
         </p>
-        <div className="inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
+        <div className="rounded-xl inline-flex items-center gap-2 bg-verde-selva/20 border border-verde-vivo/30 px-5 py-2 mb-6 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo">
           <Calendar className="w-3.5 h-3.5 flex-shrink-0" aria-hidden="true" />
           {/* Con la salvedad del Edén, que va con el horario del jardín. */}
           {salidaDiaria(locale, true)} — {en ? "book 24h in advance" : "reserva con 24 h de anticipación"}
         </div>
 
         <div className="flex items-center justify-center gap-3 mb-8">
-          <a href="https://share.google/YS3dbxN4wrnHZ8lO9" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/15 px-5 py-2 transition-all group">
+          <a href="https://share.google/YS3dbxN4wrnHZ8lO9" target="_blank" rel="noopener noreferrer" className="rounded-xl flex items-center gap-2 bg-white/8 hover:bg-white/12 border border-white/15 px-5 py-2 transition-all group">
             <span className="flex gap-0.5">
               {[...Array(5)].map((_, i) => (<Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />))}
             </span>
@@ -326,10 +326,10 @@ export function Pagina({ locale }: { locale: Locale }) {
           siendo la buena para quien tiene dudas antes de pagar.
         */}
         <div className="flex flex-col sm:flex-row items-center gap-3">
-          <Link href={lp("/reservar")} className="inline-flex items-center justify-center gap-2.5 bg-dorado hover:bg-lima text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 min-h-[44px]">
+          <Link href={lp("/reservar")} className="rounded-xl inline-flex items-center justify-center gap-2.5 bg-dorado hover:bg-lima text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 min-h-[44px]">
             {en ? "Book online" : "Reservar en línea"}
           </Link>
-          <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all duration-200 min-h-[44px]">
+          <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="rounded-xl inline-flex items-center justify-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all duration-200 min-h-[44px]">
             {WA_SVG}
             {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
           </a>
@@ -364,7 +364,7 @@ export function Pagina({ locale }: { locale: Locale }) {
                     />
                   )}
                   {i === 0 && (
-                    <p className="absolute top-3 left-3 bg-dorado text-negro font-dm text-[10px] tracking-[1.5px] uppercase px-2.5 py-1">
+                    <p className="rounded-full absolute top-3 left-3 bg-dorado text-negro font-dm text-[10px] tracking-[1.5px] uppercase px-2.5 py-1">
                       {en ? "Most booked" : "El más reservado"}
                     </p>
                   )}
@@ -372,7 +372,7 @@ export function Pagina({ locale }: { locale: Locale }) {
                       precio en texto suelto no se leía (queja de Manolo, 29
                       sep). Blur + borde 1px + brillo interior, con respaldo
                       sólido para quien apaga la transparencia. */}
-                  <div className="absolute inset-x-3 bottom-3 border border-white/15 bg-negro/45 backdrop-blur-md p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] supports-[not(backdrop-filter:blur(0))]:bg-negro/80">
+                  <div className="rounded-xl absolute inset-x-3 bottom-3 border border-white/15 bg-negro/45 backdrop-blur-md p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] supports-[not(backdrop-filter:blur(0))]:bg-negro/80">
                     <p className="font-cormorant text-crema text-2xl leading-tight">{t.nombreCorto}</p>
                     <p className="mt-1.5 font-dm text-xs text-crema/85">
                       {precioTachado(t) && (
@@ -389,7 +389,7 @@ export function Pagina({ locale }: { locale: Locale }) {
         {/* Dos formas de salir de la duda: ponerlos lado a lado (comparador,
             con los tres de arriba ya puestos) o contestar 7 preguntas
             (recomendador, solo en español). */}
-        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 border border-white/10 bg-white/[0.03] px-6 py-5">
+        <div className="rounded-xl mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 border border-white/10 bg-white/[0.03] px-6 py-5">
           <p className="font-dm text-sm text-crema/75 text-center sm:text-left">
             {en
               ? "Not sure which one? Put the favorites side by side: price, length and what each one includes."
@@ -399,14 +399,14 @@ export function Pagina({ locale }: { locale: Locale }) {
             <Link
               href={urlComparar("recorridos", TOURS_RANKING.slice(0, 3), { locale, origen: "favoritos" })}
               prefetch={false}
-              className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+              className="rounded-xl inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
             >
               {comparadorUI(locale).entradas.favoritos}
             </Link>
             {!en && (
               <Link
                 href="/recomendar"
-                className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+                className="rounded-xl inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
               >
                 Descubrir mi tour →
               </Link>
@@ -594,7 +594,7 @@ export function Pagina({ locale }: { locale: Locale }) {
                     {precioTachado(tour) && (
                       <>
                         <span className="text-[11px] text-crema/30 font-dm line-through">{money(precioTachado(tour)!)}{en ? " MXN" : ""}</span>
-                        <span className="border border-dorado/40 bg-dorado/10 text-dorado text-[9px] font-dm tracking-wide px-1.5 py-0.5">
+                        <span className="rounded-full border border-dorado/40 bg-dorado/10 text-dorado text-[9px] font-dm tracking-wide px-1.5 py-0.5">
                           {en ? `save $${promoDe(tour)!.monto} MXN` : `−$${promoDe(tour)!.monto}`}
                         </span>
                       </>
@@ -688,7 +688,7 @@ export function Pagina({ locale }: { locale: Locale }) {
           {/* La regla de salida y sus excepciones, armadas del catálogo
               (`excepcionesSalida`). El hero enlaza aquí en vez de cargar el
               párrafo entero: es lo que el paso 03 promete sin detallar. */}
-          <div id="salidas" className="reveal-up scroll-mt-32 mt-14 max-w-3xl mx-auto border border-white/10 bg-negro/30 px-6 py-5">
+          <div id="salidas" className="rounded-xl reveal-up scroll-mt-32 mt-14 max-w-3xl mx-auto border border-white/10 bg-negro/30 px-6 py-5">
             <h3 className="text-[10px] tracking-[3px] uppercase text-verde-vivo font-dm mb-2">
               {en ? "Where and when we pick you up" : "Dónde y a qué hora pasamos por ti"}
             </h3>
@@ -698,10 +698,10 @@ export function Pagina({ locale }: { locale: Locale }) {
             {/* El cierre de la página también arranca con reservar en línea:
                 antes solo ofrecía WhatsApp, así que quien bajaba hasta el final
                 —el más decidido— salía del canal automático. */}
-            <Link href={lp("/reservar")} className="inline-flex items-center justify-center gap-2.5 bg-dorado hover:bg-lima text-negro px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 min-h-[44px]">
+            <Link href={lp("/reservar")} className="rounded-xl inline-flex items-center justify-center gap-2.5 bg-dorado hover:bg-lima text-negro px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 min-h-[44px]">
               {en ? "Book a tour" : "Reservar tour"}
             </Link>
-            <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
+            <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="rounded-xl inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
               {WA_SVG}
               {en ? "Book on WhatsApp" : "Reservar por WhatsApp"}
             </a>
@@ -718,7 +718,7 @@ export function Pagina({ locale }: { locale: Locale }) {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {TESTIMONIOS.map((t, i) => (
-            <div key={t.nombre} className="reveal-up border border-white/8 bg-negro/30 p-6 flex flex-col" style={{ animationDelay: `${i * 80}ms` }}>
+            <div key={t.nombre} className="rounded-2xl reveal-up border border-white/8 bg-negro/30 p-6 flex flex-col" style={{ animationDelay: `${i * 80}ms` }}>
               <div className="flex gap-0.5 mb-3">
                 {[...Array(5)].map((_, i) => (<Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />))}
               </div>
@@ -735,9 +735,9 @@ export function Pagina({ locale }: { locale: Locale }) {
 
       {/* ── ATENCIÓN A GRUPOS ── */}
       <section className="max-w-5xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 border border-white/10 overflow-hidden">
+        <div className="rounded-2xl grid grid-cols-1 lg:grid-cols-2 gap-0 border border-white/10 overflow-hidden">
           <div className="p-8 md:p-10 border-b lg:border-b-0 lg:border-r border-white/10">
-            <span className="reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">{en ? `Groups · ${GRUPO_MIN}–${GRUPO_MAX} people` : `Grupos · ${GRUPO_MIN}–${GRUPO_MAX} personas`}</span>
+            <span className="rounded-full reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-verde-vivo border border-verde-selva/40 px-3 py-1 font-dm mb-5">{en ? `Groups · ${GRUPO_MIN}–${GRUPO_MAX} people` : `Grupos · ${GRUPO_MIN}–${GRUPO_MAX} personas`}</span>
             <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>{en ? "Shared group tours" : "Tours en grupo compartido"}</h2>
             <p className="text-crema/60 font-dm text-sm leading-relaxed mb-6">
               {en
@@ -752,11 +752,11 @@ export function Pagina({ locale }: { locale: Locale }) {
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-verde-vivo mt-0.5 flex-shrink-0">✓</span>{item}</li>
               ))}
             </ul>
-            <a href="#tours-grid" className="inline-block border border-verde-selva/50 text-verde-vivo px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 transition-colors">{en ? "View all tours →" : "Ver todos los tours →"}</a>
+            <a href="#tours-grid" className="rounded-xl inline-block border border-verde-selva/50 text-verde-vivo px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-selva/15 transition-colors">{en ? "View all tours →" : "Ver todos los tours →"}</a>
           </div>
 
-          <div className="p-8 md:p-10 bg-dorado/8">
-            <span className="reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-dorado border border-dorado/40 px-3 py-1 font-dm mb-5">{en ? "Private Tour · Exclusive" : "Tour Privado · Exclusivo"}</span>
+          <div className="rounded-2xl p-8 md:p-10 bg-dorado/8">
+            <span className="rounded-full reveal-fade inline-block text-[9px] tracking-[3px] uppercase text-dorado border border-dorado/40 px-3 py-1 font-dm mb-5">{en ? "Private Tour · Exclusive" : "Tour Privado · Exclusivo"}</span>
             <h2 className="reveal-up font-cormorant font-light text-crema mb-4" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
               {en ? <>Your group, your pace,<br/><em className="text-dorado">your experience</em></> : <>Tu grupo, tu ritmo,<br/><em className="text-dorado">tu experiencia</em></>}
             </h2>
@@ -773,7 +773,7 @@ export function Pagina({ locale }: { locale: Locale }) {
                 <li key={item} className="flex items-start gap-2 text-xs font-dm text-crema/65"><span className="text-dorado mt-0.5 flex-shrink-0">✦</span>{item}</li>
               ))}
             </ul>
-            <a href={waLink(en ? "Hi, I'd like information about private tours for my group." : "Hola, quiero información sobre tours privados para mi grupo.")} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-dorado hover:bg-terracota text-negro hover:text-crema px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium">
+            <a href={waLink(en ? "Hi, I'd like information about private tours for my group." : "Hola, quiero información sobre tours privados para mi grupo.")} target="_blank" rel="noopener noreferrer" className="rounded-xl inline-flex items-center gap-2 bg-dorado hover:bg-terracota text-negro hover:text-crema px-6 py-2.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium">
               {WA_SVG}
               {en ? "Get a private tour quote" : "Cotizar tour privado"}
             </a>
@@ -825,7 +825,7 @@ export function Pagina({ locale }: { locale: Locale }) {
               ? "Our team replies in under an hour. We'll help you choose the ideal tour for your dates, group and preferences."
               : "Nuestro equipo responde en menos de una hora. Te ayudamos a elegir el tour ideal según tus días, grupo y preferencias."}
           </p>
-          <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
+          <a href={waLink(waGeneral)} target="_blank" rel="noopener noreferrer" className="rounded-xl inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200 min-h-[44px]">
             {WA_SVG}
             +52 489 109 0388
           </a>

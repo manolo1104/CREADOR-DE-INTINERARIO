@@ -198,7 +198,7 @@ export default function NosotrosPage() {
                   href="https://www.linkedin.com/in/manolo-covarrubias-121921236/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 border border-negro/15 hover:border-verde-selva/60 hover:text-verde-selva text-negro/50 px-4 py-2 text-[10px] tracking-[1.5px] uppercase font-dm transition-all"
+                  className="rounded-xl flex items-center gap-2 border border-negro/15 hover:border-verde-selva/60 hover:text-verde-selva text-negro/50 px-4 py-2 text-[10px] tracking-[1.5px] uppercase font-dm transition-all"
                 >
                   <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/>
@@ -209,7 +209,7 @@ export default function NosotrosPage() {
                   href="https://www.instagram.com/manolocovaa/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-2 border border-negro/15 hover:border-verde-selva/60 hover:text-verde-selva text-negro/50 px-4 py-2 text-[10px] tracking-[1.5px] uppercase font-dm transition-all"
+                  className="rounded-xl flex items-center gap-2 border border-negro/15 hover:border-verde-selva/60 hover:text-verde-selva text-negro/50 px-4 py-2 text-[10px] tracking-[1.5px] uppercase font-dm transition-all"
                 >
                   <svg className="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
@@ -231,7 +231,7 @@ export default function NosotrosPage() {
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-8">
                 {t.fundadorBadges.map((label) => (
-                  <span key={label} className="border border-negro/15 bg-crema/60 px-3 py-1.5 text-[10px] font-dm text-negro/60 tracking-wide">
+                  <span key={label} className="rounded-full border border-negro/15 bg-crema/60 px-3 py-1.5 text-[10px] font-dm text-negro/60 tracking-wide">
                     {label}
                   </span>
                 ))}
@@ -250,7 +250,7 @@ export default function NosotrosPage() {
               </div>
 
               {/* Cita */}
-              <div className="border-l-2 border-dorado/50 pl-5 bg-dorado/5 py-4 pr-4">
+              <div className="rounded-r-xl border-l-2 border-dorado/50 pl-5 bg-dorado/5 py-4 pr-4">
                 <Quote className="w-4 h-4 text-dorado/60 mb-2" aria-hidden="true" />
                 <p className="text-negro/70 font-dm text-sm leading-relaxed italic mb-2">
                   &ldquo;{t.fundadorCita}&rdquo;
@@ -280,7 +280,7 @@ export default function NosotrosPage() {
                 {t.historiaP2}
               </p>
               {/* Anécdota emotiva — momento fundacional */}
-              <div className="border-l-2 border-dorado/40 pl-5 bg-dorado/5 py-4 pr-4 mt-2">
+              <div className="rounded-r-xl border-l-2 border-dorado/40 pl-5 bg-dorado/5 py-4 pr-4 mt-2">
                 <p className="text-negro/70 font-dm text-sm leading-relaxed italic mb-3">
                   &ldquo;{t.historiaCita}&rdquo;
                 </p>
@@ -318,10 +318,10 @@ export default function NosotrosPage() {
             </ul>
             {/* Sin precarga, como el pie: cada precarga es un render completo en el servidor. */}
             <div className="flex flex-col sm:flex-row gap-3">
-              <Link href={lp("/paquetes")} prefetch={false} className="inline-flex items-center justify-center bg-verde-selva text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-[background-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-vivo active:scale-[0.97]">
+              <Link href={lp("/paquetes")} prefetch={false} className="rounded-xl inline-flex items-center justify-center bg-verde-selva text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-[background-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:bg-verde-vivo active:scale-[0.97]">
                 {t.casa.ctaPaquetes}
               </Link>
-              <Link href={`${lp("/info-practica")}#papan-huasteco`} prefetch={false} className="inline-flex items-center justify-center border border-negro/20 text-negro/70 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-[border-color,color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-verde-selva/40 [@media(hover:hover)]:hover:text-verde-selva active:scale-[0.97]">
+              <Link href={`${lp("/info-practica")}#papan-huasteco`} prefetch={false} className="rounded-xl inline-flex items-center justify-center border border-negro/20 text-negro/70 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-[border-color,color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-verde-selva/40 [@media(hover:hover)]:hover:text-verde-selva active:scale-[0.97]">
                 {t.casa.ctaPapan}
               </Link>
             </div>
@@ -352,7 +352,7 @@ export default function NosotrosPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {valores(t).map((v) => (
-              <div key={v.titulo} className="border border-negro/8 bg-crema/60 overflow-hidden hover:border-verde-selva/30 transition-colors group">
+              <div key={v.titulo} className="rounded-2xl border border-negro/8 bg-crema/60 overflow-hidden hover:border-verde-selva/30 transition-colors group">
                 <div className="relative aspect-[16/9] overflow-hidden">
                   <Image src={v.foto} alt={v.fotoAlt} fill className="object-cover group-hover:scale-105 transition-transform duration-500" style={v.pos ? { objectPosition: v.pos } : undefined} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
                   <div className="absolute inset-0 bg-negro/30" />
@@ -386,18 +386,18 @@ export default function NosotrosPage() {
               { num: "2.4 ha",  label: t.impactoDatos[2], Icon: Leaf },
               { num: "90%",     label: t.impactoDatos[3], Icon: Heart },
             ].map((d) => (
-              <div key={d.label} className="border border-white/10 bg-negro/20 p-6 text-center">
+              <div key={d.label} className="rounded-2xl border border-white/10 bg-negro/20 p-6 text-center">
                 <d.Icon className="w-6 h-6 text-verde-vivo mx-auto mb-3" aria-hidden="true" />
                 <p className="font-cormorant text-dorado font-light leading-none mb-2" style={{ fontSize: "clamp(28px,3.5vw,38px)" }}>{d.num}</p>
                 <p className="text-crema/50 font-dm text-[11px] leading-snug">{d.label}</p>
               </div>
             ))}
           </div>
-          <div className="border border-dorado/20 bg-dorado/8 p-6 max-w-2xl mx-auto text-center">
+          <div className="rounded-2xl border border-dorado/20 bg-dorado/8 p-6 max-w-2xl mx-auto text-center">
             <p className="text-dorado font-dm text-sm font-medium mb-2">{t.impactoDestacado}</p>
             <p className="text-crema/55 font-dm text-xs leading-relaxed">{t.impactoTexto}</p>
             {locale === "es" && (
-              <Link href="/sustentabilidad-y-conservacion" className="inline-block mt-4 text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-5 py-2 transition-all">
+              <Link href="/sustentabilidad-y-conservacion" className="rounded-xl inline-block mt-4 text-[10px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-5 py-2 transition-all">
                 {t.impactoCta}
               </Link>
             )}
@@ -417,7 +417,7 @@ export default function NosotrosPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {RESENAS_GUIAS.map((r) => (
-              <figure key={r.autor} className="flex flex-col bg-white border border-negro/8 p-6">
+              <figure key={r.autor} className="rounded-2xl flex flex-col bg-white border border-negro/8 p-6">
                 <div className="flex gap-0.5 mb-3" role="img" aria-label={t.estrellasAria(r.estrellas)}>
                   {[...Array(r.estrellas)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-dorado text-dorado" aria-hidden="true" />)}
                 </div>
@@ -449,7 +449,7 @@ export default function NosotrosPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {certificaciones(t).map((c) => (
-              <div key={c.titulo} className="border border-dorado/15 bg-white p-5 flex gap-4 items-start">
+              <div key={c.titulo} className="rounded-2xl border border-dorado/15 bg-white p-5 flex gap-4 items-start">
                 <c.Icon className="w-6 h-6 text-dorado/70 flex-shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
                   <h3 className="font-cormorant text-verde-profundo text-base mb-1 leading-tight">{c.titulo}</h3>
@@ -513,10 +513,10 @@ export default function NosotrosPage() {
             {t.ctaTexto}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href={WA} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200">
+            <a href={WA} target="_blank" rel="noopener noreferrer" className="rounded-xl inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200">
               {WA_SVG} {t.hablarConEquipo}
             </a>
-            <Link href={lp("/tours")} className="inline-flex items-center justify-center border border-negro/20 hover:border-verde-selva/40 text-negro/60 hover:text-verde-selva px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all duration-200">
+            <Link href={lp("/tours")} className="rounded-xl inline-flex items-center justify-center border border-negro/20 hover:border-verde-selva/40 text-negro/60 hover:text-verde-selva px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all duration-200">
               {t.ctaTours}
             </Link>
           </div>
@@ -531,11 +531,11 @@ export default function NosotrosPage() {
           <h2 className="reveal-up font-cormorant font-light text-crema text-center mb-12" style={{ fontSize: "clamp(28px,4vw,46px)" }}>{t.reservaConNosotros}</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {TOURS_DB.map((base) => localizeTour(base, locale)).map((tour) => (
-              <article key={tour.slug} className="group flex flex-col border border-white/10 hover:border-verde-vivo/50 bg-negro/60 transition-colors duration-300 overflow-hidden">
+              <article key={tour.slug} className="rounded-2xl group flex flex-col border border-white/10 hover:border-verde-vivo/50 bg-negro/60 transition-colors duration-300 overflow-hidden">
                 <div className="relative aspect-[4/3] overflow-hidden">
                   {tour.imagen_hero && <Image src={tour.imagen_hero} alt={tour.nombre} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 20vw" />}
                   <div className="absolute inset-0 bg-gradient-to-t from-negro/80 to-transparent" />
-                  <span className="absolute top-2 left-2 bg-verde-vivo text-negro text-[8px] font-dm font-bold tracking-[1px] uppercase px-2 py-0.5">{tour.tipo}</span>
+                  <span className="rounded-full absolute top-2 left-2 bg-verde-vivo text-negro text-[8px] font-dm font-bold tracking-[1px] uppercase px-2 py-0.5">{tour.tipo}</span>
                 </div>
                 <div className="flex flex-col flex-1 p-4">
                   <h3 className="font-cormorant text-crema text-sm leading-snug mb-2 line-clamp-2">{tour.nombre}</h3>
@@ -550,12 +550,12 @@ export default function NosotrosPage() {
                       // El carrito ya sabe armar los tours por vehículo (elige ruta y unidad
                       // dentro), así que el RZR deja de ser una excepción que salía del motor.
                       href={lp(`/reservar/carrito?agregar=${tour.slug}`)}
-                      className="block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">{t.ctaReservar}</Link>
+                      className="rounded-xl block text-center bg-verde-selva hover:bg-verde-vivo text-crema text-[9px] tracking-[2px] uppercase font-dm py-2.5 transition-colors">{t.ctaReservar}</Link>
                     <a
                       href={waLink(tour.precioUnidad === "vehiculo"
                         ? `Hola, me interesa el tour "${tour.nombre}". ¿Me ayudas a elegir ruta y vehículo?`
                         : WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2))}
-                      target="_blank" rel="noopener noreferrer" className="block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all">{t.ctaWhatsapp}</a>
+                      target="_blank" rel="noopener noreferrer" className="rounded-xl block text-center border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] text-[9px] tracking-[2px] uppercase font-dm py-2 transition-all">{t.ctaWhatsapp}</a>
                   </div>
                 </div>
               </article>

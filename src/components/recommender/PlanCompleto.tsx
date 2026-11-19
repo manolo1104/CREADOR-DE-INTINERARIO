@@ -38,7 +38,7 @@ export function PlanCompleto({ origen, dias, grupo, principal, secundario, paque
   return (
     <div className="mb-8 space-y-3">
       {/* Cómo llegar */}
-      <div className="bg-white border border-negro/8 p-5">
+      <div className="rounded-2xl bg-white border border-negro/8 p-5">
         <p className="flex items-center gap-2 font-cormorant text-verde-profundo text-xl mb-2">
           <MapPin className="w-4 h-4 text-verde-selva" aria-hidden="true" />Cómo llegar desde {origen || "tu ciudad"}
         </p>
@@ -58,7 +58,7 @@ export function PlanCompleto({ origen, dias, grupo, principal, secundario, paque
 
       {/* Viaje grupal desde CDMX */}
       {salida && (
-        <Link href="/viaje-cdmx-xilitla" className="block bg-verde-profundo text-crema p-5 hover:bg-verde-selva transition-colors">
+        <Link href="/viaje-cdmx-xilitla" className="rounded-xl block bg-verde-profundo text-crema p-5 hover:bg-verde-selva transition-colors">
           <p className="text-[10px] tracking-[2px] uppercase text-lima/80 mb-1">Viaje grupal desde CDMX</p>
           <p className="font-cormorant text-xl leading-tight">Sale el {fecha(salida.fechaSalida)}: transporte, hotel y recorridos incluidos</p>
           <p className="mt-1 font-dm text-[12px] text-crema/70">{mxn(salida.precioVigente)} MXN por persona · quedan {salida.disponibles} lugares →</p>
@@ -67,7 +67,7 @@ export function PlanCompleto({ origen, dias, grupo, principal, secundario, paque
 
       {/* Total estimado */}
       {estimado.lineas.length > 0 && (
-        <div className="bg-white border border-negro/8 p-5">
+        <div className="rounded-2xl bg-white border border-negro/8 p-5">
           <p className="flex items-center gap-2 font-cormorant text-verde-profundo text-xl mb-2">
             <Calculator className="w-4 h-4 text-verde-selva" aria-hidden="true" />Total estimado del viaje
           </p>

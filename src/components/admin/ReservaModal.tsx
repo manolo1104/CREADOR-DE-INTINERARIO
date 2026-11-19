@@ -12,7 +12,7 @@ import { grupoParaGuardar } from "@/lib/admin/reserva";
 import { ajusteDeTotal, textoAjuste, totalConAjuste } from "@/lib/admin/precioPactado";
 import { esConceptoSinTour, importeDeConcepto } from "@/lib/admin/reservaEdicion";
 import { addDaysYMD, diffDiasYMD, hoyMX } from "@/lib/dates";
-import { ORIGENES_ELEGIBLES, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
+import { ORIGENES_CAPTURA, ORIGEN_ETIQUETA, origenValido, type OrigenReserva } from "@/lib/origenReserva";
 import {
   HABITACIONES_PANEL, HABITACION_POR_DEFECTO, habitacionPanel, tarifaPanel, maxHuespedesPanel,
 } from "@/lib/admin/habitacionesPanel";
@@ -1308,11 +1308,12 @@ export function ReservaModal({ title, form, setForm, onSave, onClose, saving, pr
                   className={`${inputCls} ${form.origen ? "" : "border-terracota/60"}`}
                   aria-invalid={!form.origen}>
                   <option value="">— Elige por dónde entró (obligatorio) —</option>
-                  {ORIGENES_ELEGIBLES.map(o => (
+                  {/* Sin «Web»: una reserva capturada a mano no es una compra en el sitio (19 nov 2026). */}
+                  {ORIGENES_CAPTURA.map(o => (
                     <option key={o} value={o}>{ORIGEN_ETIQUETA[o]}</option>
                   ))}
-                  {/* Una reserva vieja con un canal que ya no se ofrece lo conserva. */}
-                  {form.origen && !(ORIGENES_ELEGIBLES as readonly string[]).includes(form.origen) && (
+                  {/* Una reserva con un canal que aquí no se ofrece (la web, o uno viejo) lo conserva. */}
+                  {form.origen && !(ORIGENES_CAPTURA as readonly string[]).includes(form.origen) && (
                     <option value={form.origen}>{ORIGEN_ETIQUETA[form.origen]}</option>
                   )}
                 </select>

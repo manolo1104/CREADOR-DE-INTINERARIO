@@ -281,12 +281,7 @@ export const ERRATAS_GRUPO_C: ErratasPorArticulo = {
   ],
 
   "la-huasteca-potosina-en-noviembre-puentes-clima-y-cascadas": [
-    {
-      campo: "coverImageAlt",
-      from: "huasteca potosina en noviembre Cascada Minas Viejas, joya escondida de la Huasteca Potosina Huasteca Potosina 2026",
-      to: "Cascadas de Minas Viejas en noviembre, joya escondida de la Huasteca Potosina",
-      porque: "Texto roto de plantilla en el alt de la portada («Huasteca Potosina Huasteca Potosina 2026»).",
-    },
+    // La portada y su alt los pone ahora `blogSeo.ts` (fotos del 19 nov 2026).
     {
       from: "<strong>noviembre concentra hasta un 35 % más de visitantes</strong> durante los fines de semana largos en comparación con semanas ordinarias del mismo mes",
       to: "<strong>los fines de semana largos de noviembre llegan muchos más visitantes</strong> que en las semanas ordinarias del mes",

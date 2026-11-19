@@ -35,7 +35,7 @@ export function TarjetaViajeCdmx({
   return (
     <aside
       aria-label={en ? "Huasteca Potosina trip from Mexico City" : "Viaje a la Huasteca Potosina desde CDMX"}
-      className={`not-prose relative overflow-hidden border border-dorado/30 bg-negro/60 flex flex-col sm:flex-row ${className}`}
+      className={`rounded-2xl not-prose relative overflow-hidden border border-dorado/30 bg-negro/60 flex flex-col sm:flex-row ${className}`}
     >
       <div className="relative h-36 sm:h-auto sm:w-44 shrink-0">
         <Image
@@ -60,7 +60,7 @@ export function TarjetaViajeCdmx({
           href={en ? VIAJE_RUTA_EN : VIAJE_RUTA}
           event="VIAJE_BANNER_CLICK"
           data={{ origen, boton: "tarjeta" }}
-          className="group mt-4 inline-flex items-center gap-2 min-h-[44px] px-5 bg-dorado text-negro hover:bg-crema text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+          className="rounded-xl group mt-4 inline-flex items-center gap-2 min-h-[44px] px-5 bg-dorado text-negro hover:bg-crema text-[11px] tracking-[2px] uppercase font-dm transition-colors"
         >
           {en ? "Huasteca trip from Mexico City" : "Viaje a la Huasteca desde CDMX"}
           <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />

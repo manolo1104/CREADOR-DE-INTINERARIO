@@ -2,10 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPostEn, listPostsEn, urlBlogEn, type PostEn } from "@/lib/blogEn";
-import { urlBlog } from "@/lib/blogDestinoMap";
+import { urlBlog, destinoDeBlog } from "@/lib/blogDestinoMap";
+import { DESTINOS_DB } from "@/lib/destinos";
 import { PROSE_ARTICULO } from "@/components/blog/estilosArticulo";
 import { TOURS_DB, etiquetaUnidad, tourDurTexto, type Tour } from "@/lib/tours";
-import { localizeTour } from "@/lib/i18n/localize";
+import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
+import { AvisoTemporadaBlog, PreguntaWhatsappBlog, CierreWhatsappBlog } from "@/components/blog/CtaWhatsappBlog";
+import { lugarEnFraseEn } from "@/lib/blogCtaWhatsapp";
 import { horaEnLista } from "@/lib/recogidaTexto";
 import { SITE } from "@/lib/i18n/config";
 import { ORG_REF, buildBreadcrumbNode } from "@/lib/jsonld";
@@ -111,6 +114,8 @@ export default function BlogPostEnPage({ params }: { params: { slug: string } })
   const otros = relacionados(post);
   const actualizado = new Date(post.dateModified).getTime() - new Date(post.datePublished).getTime() > 86_400_000;
   const palabras = post.contentHtml.replace(/<[^>]+>/g, " ").split(/\s+/).filter(Boolean).length;
+  const d = destinoDeBlog(post.slugEs);
+  const lugar = d && !d.comparativa ? DESTINOS_DB.find((x) => x.slug === d.destino) : undefined;
 
   const schema = {
     "@context": "https://schema.org",
@@ -133,6 +138,17 @@ export default function BlogPostEnPage({ params }: { params: { slug: string } })
         image: post.coverImageUrl ? { "@type": "ImageObject", url: post.coverImageUrl, description: post.coverImageAlt } : undefined,
         url,
         mainEntityOfPage: { "@type": "WebPage", "@id": url },
+        isPartOf: { "@type": "Blog", name: "Huasteca Potosina Tours blog", url: `${SITE}/en/blog` },
+        // El lugar del que trata, con su ficha en inglés (mismo criterio que /blog/[slug]).
+        about: lugar
+          ? {
+              "@type": "TouristAttraction",
+              name: lugar.nombre,
+              url: `${SITE}/en/destinos/${lugar.slug}`,
+              geo: { "@type": "GeoCoordinates", latitude: lugar.lat, longitude: lugar.lng },
+              containedInPlace: { "@type": "Place", name: `${lugar.zona}, San Luis Potosí, Mexico` },
+            }
+          : undefined,
         articleSection: post.seccion,
         keywords: post.keywords.join(", "),
         // La versión original: la traducción no se presenta como otra obra.
@@ -183,7 +199,16 @@ export default function BlogPostEnPage({ params }: { params: { slug: string } })
             {post.coverImageUrl && (
               <div className="mt-8 overflow-hidden rounded-2xl bg-negro/5">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={post.coverImageUrl} alt={post.coverImageAlt} className="aspect-[16/9] w-full object-cover" />
+                <img
+                  src={post.coverImageUrl}
+                  alt={post.coverImageAlt}
+                  width={1600}
+                  height={900}
+                  className="aspect-[16/9] w-full object-cover"
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                />
               </div>
             )}
           </header>
@@ -202,8 +227,15 @@ export default function BlogPostEnPage({ params }: { params: { slug: string } })
                   </ol>
                 </nav>
               )}
+              {/* WhatsApp por temporada, con la demanda REAL del recorrido (19 nov 2026). */}
+              <AvisoTemporadaBlog titulo={post.title} tour={tours[0]} idioma="en" />
               {tours[0] && <TarjetaTourEn tour={tours[0]} className="mb-10 lg:hidden" />}
               <div className={PROSE_ARTICULO} dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
+              <PreguntaWhatsappBlog
+                titulo={post.title}
+                lugar={lugar ? lugarEnFraseEn(localizeDestino(lugar, "en").nombre) : "the Huasteca Potosina"}
+                idioma="en"
+              />
             </article>
 
             <aside className="hidden lg:block">
@@ -252,13 +284,14 @@ export default function BlogPostEnPage({ params }: { params: { slug: string } })
               Small-group tours with certified guides. Prices in Mexican pesos (MXN), paid online or on WhatsApp.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link href="/en/tours" className="inline-flex min-h-[48px] items-center justify-center rounded-full bg-dorado px-7 font-dm text-[15px] font-medium text-negro hover:bg-lima">
+              <Link href="/en/tours" className="inline-flex min-h-[48px] items-center justify-center rounded-xl bg-dorado px-7 font-dm text-[15px] font-medium text-negro hover:bg-lima">
                 Browse tours
               </Link>
-              <Link href="/en/reservar" className="inline-flex min-h-[48px] items-center justify-center rounded-full border border-crema/40 px-7 font-dm text-[15px] font-medium text-crema hover:border-crema">
+              <Link href="/en/reservar" className="inline-flex min-h-[48px] items-center justify-center rounded-xl border border-crema/40 px-7 font-dm text-[15px] font-medium text-crema hover:border-crema">
                 Check dates
               </Link>
             </div>
+            <CierreWhatsappBlog titulo={post.title} tour={tours[0]} idioma="en" />
           </section>
         </div>
       </main>
@@ -293,13 +326,13 @@ function TarjetaTourEn({ tour, className = "" }: { tour: Tour; className?: strin
       <div className="flex flex-col gap-2.5">
         <Link
           href={`/en/reservar/carrito?agregar=${tour.slug}`}
-          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-full bg-dorado px-5 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 hover:bg-lima active:scale-[0.98]"
+          className="inline-flex min-h-[48px] w-full items-center justify-center rounded-xl bg-dorado px-5 font-dm text-[15px] font-medium text-negro transition-[background-color,transform] duration-200 hover:bg-lima active:scale-[0.98]"
         >
           Book
         </Link>
         <Link
           href={`/en/tours/${tour.slug}`}
-          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-full border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva"
+          className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-negro/20 px-5 font-dm text-sm font-medium text-verde-profundo transition-colors hover:border-verde-selva hover:text-verde-selva"
         >
           See full tour
         </Link>

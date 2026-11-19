@@ -128,7 +128,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
           <h2 className="font-cormorant font-light text-crema text-2xl mb-6">Cómo llegar</h2>
           <div className="space-y-4">
             {c.llegadas.map((l) => (
-              <div key={l.modo} className="border border-white/10 bg-verde-profundo/25 p-5">
+              <div key={l.modo} className="rounded-2xl border border-white/10 bg-verde-profundo/25 p-5">
                 <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-2">{l.modo}</p>
                 <p className="text-crema/70 font-dm text-sm leading-relaxed">{l.detalle}</p>
               </div>
@@ -143,7 +143,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
             leer: el último tramo son casi dos horas de sierra con curvas y
             neblina, y hasta ahora la única salida era manejarlas uno mismo. */}
           {traslado && (
-            <div className="mt-6 border border-dorado/25 bg-verde-profundo/40 p-5">
+            <div className="rounded-2xl mt-6 border border-dorado/25 bg-verde-profundo/40 p-5">
               <p className="text-[9px] tracking-[2px] uppercase font-dm text-dorado/70 mb-3">
                 O te llevamos nosotros
               </p>
@@ -155,7 +155,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
 
       {/* ── DÓNDE QUEDARTE ── */}
       <section className="px-6 pb-14">
-        <div className="max-w-3xl mx-auto border border-lima/20 bg-verde-profundo/40 p-6">
+        <div className="rounded-2xl max-w-3xl mx-auto border border-lima/20 bg-verde-profundo/40 p-6">
           <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-2">
             Viniendo de {c.nombre}, te conviene
           </p>
@@ -175,7 +175,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
         <div className="max-w-3xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-2xl mb-6">Qué reservar</h2>
 
-          <div className="border border-white/10 bg-negro/40 p-6 mb-6">
+          <div className="rounded-2xl border border-white/10 bg-negro/40 p-6 mb-6">
             <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-2">El paquete que te queda</p>
             <div className="flex items-baseline justify-between gap-4 mb-3">
               <Link href={`/paquetes/${paquete.slug}`} className="font-cormorant text-crema text-xl font-light hover:text-lima transition-colors">
@@ -218,7 +218,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
           </ul>
           <Link
             href="/tours"
-            className="inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
+            className="rounded-xl inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
           >
             Ver los {TOURS_DB.length} tours
           </Link>
@@ -247,7 +247,7 @@ export default function DesdeCiudadPage({ params }: { params: { ciudad: string }
               href={waLink(`Hola, vengo desde ${c.nombre} y quiero información para el viaje a la Huasteca.`)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+              className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
             >
               Planéalo con nosotros por WhatsApp
             </a>

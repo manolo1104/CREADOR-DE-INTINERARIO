@@ -64,7 +64,7 @@ type Piel = (typeof PIEL)["sitio"];
 const HAY_PUBLICIDAD = !!(process.env.NEXT_PUBLIC_META_PIXEL_ID || process.env.NEXT_PUBLIC_GOOGLE_ADS_ID);
 
 const BOTON =
-  "h-11 rounded-full px-5 font-dm text-[11px] uppercase tracking-[1.5px] whitespace-nowrap " +
+  "h-11 rounded-xl px-5 font-dm text-[11px] uppercase tracking-[1.5px] whitespace-nowrap " +
   "transition-[background-color,border-color,color,transform] duration-200 ease-smooth-out active:scale-[0.97] " +
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2";
 

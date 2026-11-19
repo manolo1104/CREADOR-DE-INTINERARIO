@@ -114,7 +114,7 @@ export function ClimaWidget() {
             type="button"
             onClick={() => setMes(i === mes ? null : i)}
             aria-pressed={mes === i}
-            className={`inline-flex min-h-[40px] items-center rounded-full border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
+            className={`inline-flex min-h-[40px] items-center rounded-xl border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
               mes === i
                 ? "border-verde-profundo bg-verde-profundo text-crema"
                 : "border-negro/15 bg-white text-negro/70 hover:border-verde-selva hover:text-verde-profundo"

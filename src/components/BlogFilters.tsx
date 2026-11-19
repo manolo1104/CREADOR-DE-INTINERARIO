@@ -101,7 +101,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
     <div>
       {/* Buscador + categorías */}
       <div className="mb-10 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <label className="relative flex w-full items-center gap-2.5 rounded-full border border-negro/15 bg-white px-5 py-3 transition-colors focus-within:border-verde-selva lg:max-w-sm">
+        <label className="relative flex w-full items-center gap-2.5 rounded-xl border border-negro/15 bg-white px-5 py-3 transition-colors focus-within:border-verde-selva lg:max-w-sm">
           <Search className="h-4 w-4 shrink-0 text-negro/40" aria-hidden="true" />
           <input
             type="search"
@@ -135,7 +135,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
                   type="button"
                   onClick={() => setActiveCategory(cat.value)}
                   aria-pressed={activo}
-                  className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-full border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
+                  className={`inline-flex min-h-[44px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 font-dm text-[13px] font-medium transition-colors duration-200 ${
                     activo
                       ? "border-verde-profundo bg-verde-profundo text-crema"
                       : "border-negro/15 bg-white text-negro/70 hover:border-verde-selva hover:text-verde-profundo"
@@ -208,7 +208,7 @@ export function BlogFilters({ posts, featuredPost, initialQuery = "" }: Props) {
           <button
             type="button"
             onClick={() => { setQuery(""); setActiveCategory("all"); }}
-            className="mt-5 inline-flex min-h-[44px] items-center rounded-full border border-verde-selva px-5 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10"
+            className="mt-5 inline-flex min-h-[44px] items-center rounded-xl border border-verde-selva px-5 font-dm text-sm font-medium text-verde-selva transition-colors hover:bg-verde-selva/10"
           >
             Ver todos los artículos
           </button>

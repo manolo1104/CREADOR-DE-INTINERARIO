@@ -114,7 +114,7 @@ export function IndiceInfoPractica({
                 href={s.href}
                 data-id={id}
                 aria-current={esActiva ? "true" : undefined}
-                className={`inline-flex min-h-[40px] items-center whitespace-nowrap rounded-full border px-4 font-dm text-[13px] font-medium transition-[color,background-color,border-color,transform] duration-200 ease-out active:scale-[0.97] ${
+                className={`inline-flex min-h-[40px] items-center whitespace-nowrap rounded-xl border px-4 font-dm text-[13px] font-medium transition-[color,background-color,border-color,transform] duration-200 ease-out active:scale-[0.97] ${
                   esActiva
                     ? "border-verde-profundo bg-verde-profundo text-crema"
                     : "border-negro/15 bg-white text-negro/70 [@media(hover:hover)]:hover:border-verde-selva [@media(hover:hover)]:hover:text-verde-profundo"

@@ -158,7 +158,7 @@ export function BandaTemporada({ en, hrefTours }: { en: boolean; hrefTours: stri
             <div className="reveal-up reveal-d3">
               <Link
                 href={hrefTours}
-                className="group inline-flex items-center gap-3 bg-dorado px-9 py-4 font-dm text-[11px] font-medium uppercase tracking-[3px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
+                className="rounded-xl group inline-flex items-center gap-3 bg-dorado px-9 py-4 font-dm text-[11px] font-medium uppercase tracking-[3px] text-negro transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]"
               >
                 {en ? "See the tours" : "Ver los recorridos"}
                 {/* La flecha se adelanta un pelo al pasar el cursor. Solo con

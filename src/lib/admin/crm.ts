@@ -22,6 +22,13 @@ export type Etapa = (typeof ETAPAS)[number]["clave"];
  */
 export const CREADO_POR_IMPORTACION = "Importación inicial";
 
+/**
+ * Filtro de Prisma para CONTAR leads por fecha de alta sin los importados.
+ * El OR es a propósito: un `{ not: … }` a secas, en SQL, también deja fuera
+ * los leads sin `creadoPor` (null), que son casi todos (19 nov 2026).
+ */
+export const SIN_IMPORTADOS = { OR: [{ creadoPor: null }, { creadoPor: { not: CREADO_POR_IMPORTACION } }] };
+
 /** Las columnas del pipeline. Operado y Perdido van en vistas aparte. */
 export const ETAPAS_PIPELINE: Etapa[] = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
 

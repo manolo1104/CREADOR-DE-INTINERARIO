@@ -44,7 +44,7 @@ export function TarjetaFecha({
 
   return (
     <article
-      className={`relative flex flex-col border p-5 transition-colors ${
+      className={`rounded-2xl relative flex flex-col border p-5 transition-colors ${
         elegida ? "border-dorado bg-dorado/10" : "border-white/10 bg-negro/40 hover:border-white/25"
       }`}
     >

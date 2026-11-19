@@ -441,7 +441,7 @@ function CalendarInner({
 
   // Las flechas: 44 px en el teléfono, que es donde se pagina con el pulgar.
   const botonMes =
-    "w-11 h-11 sm:w-9 sm:h-9 flex-shrink-0 flex items-center justify-center rounded-full border border-[rgb(var(--cal-fg)/0.1)] text-[rgb(var(--cal-fg)/0.6)] " +
+    "w-11 h-11 sm:w-9 sm:h-9 flex-shrink-0 flex items-center justify-center rounded-xl border border-[rgb(var(--cal-fg)/0.1)] text-[rgb(var(--cal-fg)/0.6)] " +
     "transition-[transform,background-color,color,border-color] duration-150 ease-out active:scale-[0.94] " +
     "[@media(hover:hover)]:hover:bg-[rgb(var(--cal-acento)/0.12)] [@media(hover:hover)]:hover:text-[rgb(var(--cal-acento))] [@media(hover:hover)]:hover:border-[rgb(var(--cal-acento)/0.35)] " +
     "disabled:opacity-25 disabled:cursor-not-allowed disabled:active:scale-100";
@@ -975,7 +975,7 @@ export function TourCalendar({
               <button
                 type="button"
                 onClick={() => { onChange(""); setAbierto(false); }}
-                className="mt-5 w-full min-h-[44px] border border-[rgb(var(--cal-fg)/0.2)] py-2.5 font-dm text-[12px] text-[rgb(var(--cal-fg)/0.6)] hover:border-[rgb(var(--cal-aviso))] hover:text-[rgb(var(--cal-aviso))] transition-colors"
+                className="rounded-xl mt-5 w-full min-h-[44px] border border-[rgb(var(--cal-fg)/0.2)] py-2.5 font-dm text-[12px] text-[rgb(var(--cal-fg)/0.6)] hover:border-[rgb(var(--cal-aviso))] hover:text-[rgb(var(--cal-aviso))] transition-colors"
               >
                 {t.quitarLaFecha}
               </button>
@@ -1015,7 +1015,7 @@ export function TourCalendar({
         {/* En la ficha (oscura) el calendario es del mismo material que el
             módulo de reserva: antes iba en una tarjeta crema y se veía como un
             recuadro de otro color (Manolo, 13 nov 2026). */}
-        <div className={tema === "oscuro" ? "cal-oscuro bg-white/[0.035] px-2.5 pt-2.5 pb-3 sm:px-3" : ""}>{inner}</div>
+        <div className={tema === "oscuro" ? "cal-oscuro rounded-xl bg-white/[0.035] px-2.5 pt-2.5 pb-3 sm:px-3" : ""}>{inner}</div>
         {value && lineaHora && (
           <p className={`mt-2 flex items-start gap-1.5 font-dm text-[11px] leading-snug ${
             tema === "oscuro" ? "text-crema/60" : "text-negro/50"

@@ -76,7 +76,7 @@ export function BotonCompartir({
       type="button"
       onClick={compartir}
       disabled={estado === "trabajando"}
-      className={`flex items-center justify-center gap-2 font-dm text-[11px] tracking-[1.5px] uppercase transition-colors disabled:opacity-50 ${className}`}
+      className={`rounded-xl flex items-center justify-center gap-2 font-dm text-[11px] tracking-[1.5px] uppercase transition-colors disabled:opacity-50 ${className}`}
     >
       {estado === "copiado" ? <Check className="w-3.5 h-3.5" aria-hidden="true" />
         : estado === "error" ? <Copy className="w-3.5 h-3.5" aria-hidden="true" />

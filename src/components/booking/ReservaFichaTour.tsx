@@ -247,14 +247,14 @@ export function ReservaFichaTour({
             aria-label={t.mas(etiqueta, nombre)}
             onClick={() => set(valor + 1)}
             disabled={!hayHueco}
-            className="w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+            className="rounded-full w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
           >+</button>
         </span>
       </div>
     );
   }
 
-  const BOTON_RESERVAR = "flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors";
+  const BOTON_RESERVAR = "rounded-xl flex items-center justify-center gap-2 w-full mt-3 bg-verde-selva hover:bg-verde-vivo text-crema py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors";
   const href = lp(
     `/reservar/carrito?agregar=${slug}` +
     (fecha ? `&fecha=${fecha}` : "") +
@@ -266,7 +266,7 @@ export function ReservaFichaTour({
     // En un teléfono la columna lateral se apila DESPUÉS de todo el contenido,
     // así que sin ese salto el módulo quedaba a veinte mil píxeles del hero:
     // existía, pero no para las tres de cada cuatro visitas que son móviles.
-    <div id={ID_MODULO_RESERVA} className="border border-white/10 bg-negro/60 p-5 space-y-4">
+    <div id={ID_MODULO_RESERVA} className="rounded-2xl border border-white/10 bg-negro/60 p-5 space-y-4">
       <div>
         <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-1.5">{tf.cuandoVas}</p>
         <TourCalendar

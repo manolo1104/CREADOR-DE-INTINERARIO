@@ -55,7 +55,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
       <div className="bg-gradient-to-br from-verde-profundo via-verde-bosque to-[#1a3a10] px-10 py-16 text-center border-b border-verde-selva/20 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-radial from-verde-selva/10 to-transparent" />
         <div className="relative">
-          <div className="inline-block border border-verde-selva/30 bg-verde-selva/15 text-lima text-[10px] tracking-[4px] uppercase px-5 py-2 mb-6">
+          <div className="rounded-xl inline-block border border-verde-selva/30 bg-verde-selva/15 text-lima text-[10px] tracking-[4px] uppercase px-5 py-2 mb-6">
             ✦ Tu Itinerario Está Casi Listo ✦
           </div>
           <h1
@@ -80,11 +80,11 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
 
           <div className="space-y-4">
             {preview.dias.map((dia) => (
-              <div key={dia.dia} className="border border-white/8 bg-white/2 p-6">
+              <div key={dia.dia} className="rounded-2xl border border-white/8 bg-white/2 p-6">
 
                 <div className="flex items-start justify-between gap-4 mb-4">
                   <h3 className="font-cormorant text-crema text-xl">{dia.titulo}</h3>
-                  <span className="text-[10px] tracking-[2px] uppercase text-dorado border border-dorado/30 px-2 py-1 flex-shrink-0">
+                  <span className="rounded-full text-[10px] tracking-[2px] uppercase text-dorado border border-dorado/30 px-2 py-1 flex-shrink-0">
                     ~${dia.costoEstimadoMXN.toLocaleString()} MXN
                   </span>
                 </div>
@@ -109,7 +109,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
                     {Array.from(new Set(dia.actividades)).map((a) => (
                       <span
                         key={a}
-                        className="text-[9px] tracking-[1px] uppercase border border-verde-selva/30 text-verde-vivo bg-verde-selva/8 px-2.5 py-1"
+                        className="rounded-full text-[9px] tracking-[1px] uppercase border border-verde-selva/30 text-verde-vivo bg-verde-selva/8 px-2.5 py-1"
                       >
                         {a}
                       </span>
@@ -146,7 +146,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
 
           {/* Budget summary */}
           <div
-            className={`mt-4 border p-4 flex items-center justify-between flex-wrap gap-4 ${
+            className={`rounded-xl mt-4 border p-4 flex items-center justify-between flex-wrap gap-4 ${
               preview.dentroDePresupuesto
                 ? "border-verde-selva/30 bg-verde-selva/6"
                 : "border-terracota/30 bg-terracota/6"
@@ -178,7 +178,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
           </p>
 
           {/* Desktop */}
-          <div className="hidden sm:block overflow-hidden border border-white/8">
+          <div className="rounded-2xl hidden sm:block overflow-hidden border border-white/8">
             <table className="w-full border-collapse">
               <thead>
                 <tr className="border-b border-white/8">
@@ -212,7 +212,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
 
           {/* Mobile */}
           <div className="sm:hidden space-y-3">
-            <div className="border border-white/8 bg-white/2 p-5">
+            <div className="rounded-2xl border border-white/8 bg-white/2 p-5">
               <p className="text-[10px] tracking-[3px] uppercase text-crema/40 mb-4">Vista previa</p>
               {TABLE_ROWS.filter((r) => r.free).map((r) => (
                 <div key={r.label} className="flex items-center gap-2.5 py-1.5">
@@ -221,7 +221,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
                 </div>
               ))}
             </div>
-            <div className="border border-agua/40 bg-agua/6 p-5">
+            <div className="rounded-2xl border border-agua/40 bg-agua/6 p-5">
               <p className="text-[10px] tracking-[3px] uppercase text-agua mb-4">Completo ✦</p>
               {TABLE_ROWS.map((r) => (
                 <div key={r.label} className="flex items-center gap-2.5 py-1.5">
@@ -234,7 +234,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
         </div>
 
         {/* ── D: CTA — solo email ── */}
-        <div className="border border-agua/30 bg-agua/6 p-8 text-center mb-8">
+        <div className="rounded-2xl border border-agua/30 bg-agua/6 p-8 text-center mb-8">
           <h2 className="font-cormorant text-crema mb-2" style={{ fontSize: "clamp(24px,3vw,36px)" }}>
             Genera tu itinerario <em className="text-agua">completo gratis</em>
           </h2>
@@ -249,7 +249,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
               value={email}
               onChange={(e) => { setEmail(e.target.value); setError(""); }}
               onKeyDown={(e) => e.key === "Enter" && handleGenerar()}
-              className="gloss-surface-light w-full border border-crema/20 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/25"
+              className="rounded-xl gloss-surface-light w-full border border-crema/20 text-crema px-4 py-3 text-sm outline-none focus:border-agua placeholder:text-crema/25"
             />
 
             {error && (
@@ -259,7 +259,7 @@ export function FreemiumGate({ preview, onContinueFree, onGenerateFree }: Props)
             <button
               onClick={handleGenerar}
               disabled={loading}
-              className="w-full bg-agua text-negro py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+              className="rounded-xl w-full bg-agua text-negro py-4 text-sm tracking-[3px] uppercase font-dm font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
             >
               {loading ? "Generando..." : "Generar mi itinerario →"}
             </button>

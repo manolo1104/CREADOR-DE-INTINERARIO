@@ -80,7 +80,7 @@ function Exito({
         </p>
 
         {/* Datos del tour */}
-        <div className="border border-white/10 bg-white/4 p-6 text-left space-y-3 mb-8">
+        <div className="rounded-2xl border border-white/10 bg-white/4 p-6 text-left space-y-3 mb-8">
           {meta.tour && (
             <Row label="Tour" value={meta.tour} />
           )}
@@ -111,14 +111,14 @@ function Exito({
             href={waLink(waMsg)}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+            className="rounded-xl flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
           >
             <WaSvg />
             Coordinar con el guía
           </a>
           <Link
             href="/tours"
-            className="border border-white/20 hover:border-crema/40 text-crema/60 hover:text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+            className="rounded-xl border border-white/20 hover:border-crema/40 text-crema/60 hover:text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
           >
             Ver más tours
           </Link>
@@ -159,7 +159,7 @@ function Cancelado() {
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Link
             href="/tours"
-            className="bg-verde-selva hover:bg-verde-vivo text-crema px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+            className="rounded-xl bg-verde-selva hover:bg-verde-vivo text-crema px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
           >
             Volver a los tours
           </Link>
@@ -167,7 +167,7 @@ function Cancelado() {
             href={waLink("Hola, intenté hacer una reserva pero no completé el pago. ¿Me pueden ayudar?")}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 border border-white/20 hover:border-verde-vivo/50 text-crema/60 hover:text-crema px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+            className="rounded-xl flex items-center justify-center gap-2 border border-white/20 hover:border-verde-vivo/50 text-crema/60 hover:text-crema px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-all"
           >
             <WaSvg />
             Hablar con el equipo

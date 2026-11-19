@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { cerrarCarritosDe, toursDeReserva } from "@/lib/cerrarCarrito";
-import { origenValido } from "@/lib/origenReserva";
+import { origenDeCaptura } from "@/lib/origenReserva";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { sesionActual } from "@/lib/admin/sesion";
 import { sellarEnLineItems, resumenEvento } from "@/lib/admin/descuento";
@@ -122,7 +122,7 @@ export async function POST(req: NextRequest) {
       // Una reserva capturada a mano casi nunca entró por la web: el
       // formulario obliga a elegirlo; si una llamada vieja no lo manda, queda
       // «por confirmar» y NO «web» (línea base 3 nov 2026: Web 90 de 97).
-      origen:                origenValido(body.origen, "por_confirmar"),
+      origen:                origenDeCaptura(body.origen), // nunca «web»: esto es una captura a mano (19 nov 2026)
       // El lead del que viene (al convertir una cotización): se mide la conversión real.
       oportunidadId:         (await leadExistente(body.oportunidadId)) ?? (await leadDeCotizacion(body.cotizacionId)),
       // La cotización que se convirtió (KPI «Cotización → reserva», 4 nov 2026).

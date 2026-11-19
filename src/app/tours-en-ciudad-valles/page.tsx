@@ -99,7 +99,7 @@ export default function ToursCiudadVallesPage() {
           href={waLink(t.waDisponibilidad)}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+          className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
         >
           {t.ctaDisponibilidad}
         </a>
@@ -116,7 +116,7 @@ export default function ToursCiudadVallesPage() {
               <Link
                 key={x.slug}
                 href={localePath(`/tours/${x.slug}`, locale)}
-                className="border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
+                className="rounded-xl border border-white/10 p-6 hover:border-dorado/50 transition-colors group flex flex-col"
               >
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2">
                   {x.tipo} · {tourDurTexto(x, " h")}
@@ -159,7 +159,7 @@ export default function ToursCiudadVallesPage() {
       <section className="px-6 pb-20">
         <div className="max-w-5xl mx-auto grid md:grid-cols-3 gap-6">
           {t.llegar.map((b) => (
-            <div key={b.titulo} className="border border-white/10 p-7">
+            <div key={b.titulo} className="rounded-2xl border border-white/10 p-7">
               <h3 className="font-cormorant font-light text-crema text-2xl mb-3">{b.titulo}</h3>
               <p className="font-dm text-sm text-crema/65 leading-relaxed">{b.texto}</p>
             </div>
@@ -206,13 +206,13 @@ export default function ToursCiudadVallesPage() {
             href={waLink(t.waReservar)}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+            className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
           >
             {t.ctaWhatsapp}
           </a>
           <Link
             href={localePath("/precios", locale)}
-            className="inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
+            className="rounded-xl inline-flex items-center gap-2 border border-dorado/60 text-dorado font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-dorado hover:text-negro transition-all"
           >
             {t.ctaPrecios}
           </Link>

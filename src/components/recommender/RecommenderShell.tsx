@@ -152,7 +152,7 @@ function SocialProofBar() {
 
 function ReviewCard({ review }: { review: { name: string; city: string; text: string } }) {
   return (
-    <div className="bg-crema border border-negro/6 p-4">
+    <div className="rounded-xl bg-crema border border-negro/6 p-4">
       <div className="flex gap-0.5 mb-2">
         {[...Array(5)].map((_, i) => (
           <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />
@@ -190,7 +190,7 @@ function TourResultCard({
   const fichaHref = `/tours/${tour.slug}`;
 
   return (
-    <div className={`bg-white border ${isPrimary ? "border-verde-selva shadow-lg shadow-verde-selva/10" : "border-negro/10"} overflow-hidden`}>
+    <div className={`rounded-2xl bg-white border ${isPrimary ? "border-verde-selva shadow-lg shadow-verde-selva/10" : "border-negro/10"} overflow-hidden`}>
       {/* Imagen y nombre clicables a la ficha: antes no había NINGUNA liga a
           /tours/[slug] y el botón del secundario decía «Ver tour» pero metía
           el tour al carrito. */}
@@ -201,7 +201,7 @@ function TourResultCard({
           className="w-full h-full object-cover"
         />
         {isPrimary && (
-          <div className="absolute top-3 left-3 bg-verde-selva text-white text-[9px] tracking-[2px] uppercase font-dm px-3 py-1.5 font-medium">
+          <div className="rounded-full absolute top-3 left-3 bg-verde-selva text-white text-[9px] tracking-[2px] uppercase font-dm px-3 py-1.5 font-medium">
             ✦ Tu match perfecto
           </div>
         )}
@@ -248,7 +248,7 @@ function TourResultCard({
         </div>
 
         {/* Personalized reason */}
-        <div className="bg-verde-selva/5 border-l-2 border-verde-selva px-4 py-3 mb-4">
+        <div className="rounded-r-xl bg-verde-selva/5 border-l-2 border-verde-selva px-4 py-3 mb-4">
           <p className="font-dm text-sm text-negro/75 leading-relaxed">{reason}</p>
         </div>
 
@@ -277,7 +277,7 @@ function TourResultCard({
           </div>
           <Link
             href={isPrimary ? bookHref : fichaHref}
-            className={`flex-shrink-0 flex items-center gap-2 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-all ${
+            className={`rounded-xl flex-shrink-0 flex items-center gap-2 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-all ${
               isPrimary
                 ? "bg-verde-selva hover:bg-verde-vivo text-white"
                 : "border border-verde-selva/50 hover:bg-verde-selva/8 text-verde-selva"
@@ -298,7 +298,7 @@ function TourResultCard({
             rel="noopener noreferrer"
             data-wa-manual="1"
             onClick={() => trackTourEvent("WHATSAPP_CLICK", { context: "recomendador_resultado", tour: tour.slug })}
-            className="mt-3 flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:bg-[#25D366]/8 text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+            className="rounded-xl mt-3 flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:bg-[#25D366]/8 text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
           >
             <MessageCircle className="w-3.5 h-3.5" />
             Preguntar por WhatsApp
@@ -333,11 +333,11 @@ function PaqueteResultCard({
   origen:  string;
 }) {
   return (
-    <div className="bg-white border border-dorado shadow-lg shadow-dorado/10 overflow-hidden">
+    <div className="rounded-2xl bg-white border border-dorado shadow-lg shadow-dorado/10 overflow-hidden">
       {/* Image */}
       <div className="relative h-52 sm:h-64 overflow-hidden bg-negro/5">
         <img src={paquete.imagen} alt={paquete.nombre} className="w-full h-full object-cover" />
-        <div className="absolute top-3 left-3 bg-dorado text-negro text-[9px] tracking-[2px] uppercase font-dm px-3 py-1.5 font-bold">
+        <div className="rounded-full absolute top-3 left-3 bg-dorado text-negro text-[9px] tracking-[2px] uppercase font-dm px-3 py-1.5 font-bold">
           ✦ Tu plan completo para {dias}
         </div>
       </div>
@@ -366,7 +366,7 @@ function PaqueteResultCard({
         </div>
 
         {/* Personalized reason */}
-        <div className="bg-dorado/8 border-l-2 border-dorado px-4 py-3 mb-4">
+        <div className="rounded-r-xl bg-dorado/8 border-l-2 border-dorado px-4 py-3 mb-4">
           <p className="font-dm text-sm text-negro/75 leading-relaxed">{reason}</p>
         </div>
 
@@ -390,7 +390,7 @@ function PaqueteResultCard({
           </div>
           <Link
             href={`/paquetes/${paquete.slug}`}
-            className="flex-shrink-0 flex items-center gap-2 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium bg-dorado hover:bg-verde-selva text-negro hover:text-white transition-all"
+            className="rounded-xl flex-shrink-0 flex items-center gap-2 px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium bg-dorado hover:bg-verde-selva text-negro hover:text-white transition-all"
           >
             Ver día por día
             <ArrowRight className="w-3.5 h-3.5" />
@@ -405,7 +405,7 @@ function PaqueteResultCard({
           rel="noopener noreferrer"
           data-wa-manual="1"
           onClick={() => trackTourEvent("WHATSAPP_CLICK", { context: "recomendador_paquete", tour: paquete.slug })}
-          className="mt-3 flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:bg-[#25D366]/8 text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+          className="rounded-xl mt-3 flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:bg-[#25D366]/8 text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
         >
           <MessageCircle className="w-3.5 h-3.5" />
           Cotizar este plan por WhatsApp
@@ -661,7 +661,7 @@ export function RecommenderShell() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <button
               onClick={() => void submit(email)}
-              className="bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors"
+              className="rounded-xl bg-dorado text-negro px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors"
             >
               Intentar de nuevo
             </button>
@@ -669,7 +669,7 @@ export function RecommenderShell() {
               href={`https://wa.me/524891090388?text=${encodeURIComponent("Hola, estaba usando el recomendador de tours y no cargó. ¿Me ayudan a elegir?")}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="border border-[#25D366]/50 text-[#25D366] px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-[#25D366]/10 transition-colors"
+              className="rounded-xl border border-[#25D366]/50 text-[#25D366] px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm hover:bg-[#25D366]/10 transition-colors"
             >
               Elegir por WhatsApp
             </a>
@@ -697,7 +697,7 @@ export function RecommenderShell() {
                 rota con cualquier opción del wizard. */}
             <ul className="flex flex-wrap justify-center gap-1.5 max-w-sm mx-auto" aria-label="Tu perfil">
               {[state.grupo, `Desde ${state.origen}`, state.dias].filter(Boolean).map((chip) => (
-                <li key={chip} className="border border-verde-selva/30 bg-verde-selva/5 text-verde-selva font-dm text-[11px] px-2.5 py-1">
+                <li key={chip} className="rounded-full border border-verde-selva/30 bg-verde-selva/5 text-verde-selva font-dm text-[11px] px-2.5 py-1">
                   {chip}
                 </li>
               ))}
@@ -781,7 +781,7 @@ export function RecommenderShell() {
               { label: "Pago seguro",       sub: "Stripe + cifrado" },
               { label: "Guía certificado", sub: "NOM-09 oficial" },
             ].map((g) => (
-              <div key={g.label} className="bg-white border border-negro/8 p-3 text-center">
+              <div key={g.label} className="rounded-xl bg-white border border-negro/8 p-3 text-center">
                 <p className="font-dm text-[11px] font-medium text-negro/70 mb-0.5">{g.label}</p>
                 <p className="font-dm text-[9px] text-negro/35">{g.sub}</p>
               </div>
@@ -792,7 +792,7 @@ export function RecommenderShell() {
               Aquí el correo es un favor, no un peaje: la persona ya tiene su
               plan. Antes se pedía ANTES de enseñar nada y era la única salida
               del cuestionario. */}
-          <div className="bg-white border border-negro/8 p-5">
+          <div className="rounded-2xl bg-white border border-negro/8 p-5">
             {enviado ? (
               <p className="font-dm text-sm text-negro/70 flex items-start gap-2.5">
                 <Check className="w-4 h-4 text-verde-selva flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -818,12 +818,12 @@ export function RecommenderShell() {
                     placeholder="tucorreo@ejemplo.com"
                     aria-invalid={!!emailError}
                     aria-describedby={emailError ? "correo-plan-error" : undefined}
-                    className="flex-1 min-w-0 border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+                    className="rounded-xl flex-1 min-w-0 border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
                   />
                   <button
                     onClick={submitCorreo}
                     disabled={!email.trim() || enviando}
-                    className="bg-verde-selva text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-negro transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="rounded-xl bg-verde-selva text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-negro transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {enviando ? "Enviando…" : "Mandármelo"}
                   </button>
@@ -896,7 +896,7 @@ export function RecommenderShell() {
               {CIUDADES_POPULARES.filter((c) => c !== "Otra ciudad").map((ciudad) => (
                 <button key={ciudad} aria-pressed={state.origen === ciudad}
                   onClick={() => { marcarInicio(); setOrigenInput(""); setShowInput(false); elegir({ origen: ciudad }, "dias"); }}
-                  className={`border py-3 px-3 text-xs font-dm transition-all text-center ${state.origen === ciudad ? "border-verde-vivo bg-verde-vivo/15 text-crema font-medium" : "border-crema/20 text-crema/60 hover:border-verde-selva/50 hover:text-crema"}`}>
+                  className={`rounded-xl border py-3 px-3 text-xs font-dm transition-all text-center ${state.origen === ciudad ? "border-verde-vivo bg-verde-vivo/15 text-crema font-medium" : "border-crema/20 text-crema/60 hover:border-verde-selva/50 hover:text-crema"}`}>
                   {ciudad}
                 </button>
               ))}
@@ -910,8 +910,8 @@ export function RecommenderShell() {
                 <input id="ciudad-origen" autoFocus type="text" maxLength={60} placeholder="Escribe tu ciudad…" value={origenInput}
                   onChange={(e) => { marcarInicio(); setOrigenInput(e.target.value); setState((s) => ({ ...s, origen: e.target.value.trim() })); }}
                   onKeyDown={(e) => { if (e.key === "Enter" && origenInput.trim()) setStep("dias"); }}
-                  className="flex-1 border border-crema/20 bg-transparent text-crema placeholder:text-crema/25 px-4 py-3 text-[16px] font-dm outline-none focus:border-verde-vivo" />
-                <button onClick={() => setStep("dias")} disabled={!origenInput.trim()} className="bg-verde-selva text-crema px-5 text-[11px] tracking-[2px] uppercase font-dm disabled:opacity-40">
+                  className="rounded-xl flex-1 border border-crema/20 bg-transparent text-crema placeholder:text-crema/25 px-4 py-3 text-[16px] font-dm outline-none focus:border-verde-vivo" />
+                <button onClick={() => setStep("dias")} disabled={!origenInput.trim()} className="rounded-xl bg-verde-selva text-crema px-5 text-[11px] tracking-[2px] uppercase font-dm disabled:opacity-40">
                   Seguir <ChevronRight className="inline w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
@@ -930,7 +930,7 @@ export function RecommenderShell() {
             <div className="space-y-3 mb-8">
               {DIAS_OPCIONES.map(({ key, sub }) => (
                 <button key={key} aria-pressed={state.dias === key} onClick={() => elegir({ dias: key }, "grupo")}
-                  className={`w-full flex items-center gap-4 border px-6 py-4 text-left transition-all ${state.dias === key ? "border-verde-vivo bg-verde-vivo/10" : "border-crema/20 hover:border-verde-selva/40"}`}>
+                  className={`rounded-xl w-full flex items-center gap-4 border px-6 py-4 text-left transition-all ${state.dias === key ? "border-verde-vivo bg-verde-vivo/10" : "border-crema/20 hover:border-verde-selva/40"}`}>
                   <CalendarDays className="w-5 h-5 text-verde-selva flex-shrink-0" />
                   <div>
                     <div className="text-sm font-dm text-crema font-medium">{key}</div>
@@ -954,7 +954,7 @@ export function RecommenderShell() {
             <div className="grid grid-cols-2 gap-3 mb-8">
               {GRUPOS.map(({ key, Icon, desc }) => (
                 <button key={key} aria-pressed={state.grupo === key} onClick={() => elegir({ grupo: key }, "estilo")}
-                  className={`border p-6 text-center transition-all ${state.grupo === key ? "border-dorado bg-dorado/10" : "border-crema/20 hover:border-dorado/40"}`}>
+                  className={`rounded-xl border p-6 text-center transition-all ${state.grupo === key ? "border-dorado bg-dorado/10" : "border-crema/20 hover:border-dorado/40"}`}>
                   <Icon className="w-7 h-7 text-verde-selva mx-auto mb-2" />
                   <div className="text-sm font-dm text-crema mb-1">{key}</div>
                   <div className="text-[10px] text-crema/35 leading-tight">{desc}</div>
@@ -978,7 +978,7 @@ export function RecommenderShell() {
                 const on = state.intereses.join() === intereses.join() && state.actividad === actividad;
                 return (
                   <button key={key} aria-pressed={on} onClick={() => elegir({ intereses: [...intereses], actividad }, "lugar")}
-                    className={`w-full flex items-center gap-4 border px-5 py-4 text-left transition-all ${on ? "border-verde-vivo bg-verde-vivo/10" : "border-crema/20 hover:border-verde-selva/40"}`}>
+                    className={`rounded-xl w-full flex items-center gap-4 border px-5 py-4 text-left transition-all ${on ? "border-verde-vivo bg-verde-vivo/10" : "border-crema/20 hover:border-verde-selva/40"}`}>
                     <Icon className="w-5 h-5 text-verde-selva flex-shrink-0" />
                     <div>
                       <div className="text-sm font-dm text-crema">{label}</div>
@@ -1001,13 +1001,13 @@ export function RecommenderShell() {
             </h2>
             <p className="font-dm text-crema/40 text-sm mb-6">Tócalo y armamos tu plan alrededor de él</p>
             <button onClick={() => { setState((s) => ({ ...s, destino: "Sin preferencia — sorpréndeme" })); void submit("", { destino: "Sin preferencia — sorpréndeme" }); }}
-              className="w-full mb-4 bg-dorado text-negro py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors">
+              className="rounded-xl w-full mb-4 bg-dorado text-negro py-4 text-[12px] tracking-[2px] uppercase font-dm font-medium hover:bg-lima transition-colors">
               ✦ No conozco la región, sorpréndeme
             </button>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-8">
               {LUGARES.map((l) => (
                 <button key={l.label} onClick={() => { setState((s) => ({ ...s, destino: l.label })); void submit("", { destino: l.label }); }}
-                  className="group relative aspect-[4/3] overflow-hidden border border-crema/15 text-left">
+                  className="rounded-2xl group relative aspect-[4/3] overflow-hidden border border-crema/15 text-left">
                   <Image src={l.img} alt={l.corto} fill sizes="(min-width: 640px) 180px, 45vw" className="object-cover transition-transform duration-300 group-hover:scale-105" />
                   <span className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/20 to-transparent" aria-hidden="true" />
                   <span className="absolute bottom-2 left-2.5 right-2 font-dm text-[12px] leading-tight text-crema">{l.corto}</span>
@@ -1026,7 +1026,7 @@ export function RecommenderShell() {
 /** «← Atrás», el mismo en todos los pasos. */
 function BotonAtras({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} className="border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">
+    <button onClick={onClick} className="rounded-xl border border-white/15 text-crema/50 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:border-white/30 hover:text-crema transition-all">
       ← Atrás
     </button>
   );

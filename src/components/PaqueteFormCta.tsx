@@ -44,7 +44,7 @@ export function PaqueteFormCta({ packageName, price, destacado, compacto }: Prop
   const [sent,     setSent]     = useState(false);
 
   const inputCls =
-    "w-full rounded-lg border border-negro/20 bg-white/70 text-negro placeholder:text-negro/45 " +
+    "w-full rounded-xl border border-negro/20 bg-white/70 text-negro placeholder:text-negro/45 " +
     "px-3 py-2.5 text-xs font-dm outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/25 transition-colors";
 
   const botonCls =

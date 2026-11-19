@@ -8,6 +8,7 @@ import { montoCobrado, saldoPendiente } from "./dinero";
 import { mensajesParaKpi } from "./bandejaDatos";
 import { primerMensajeEn5 } from "./bandeja";
 import { bajoMinimoRentable, diasDeTourDe } from "./salidas";
+import { SIN_IMPORTADOS } from "./crm";
 import { NO_CUENTAN } from "@/lib/cupoTour";
 import { salidasEntre, type SalidaOperativa } from "./salidasDia";
 import { avanceChecklist } from "./checklistSalida";
@@ -67,7 +68,7 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   const comercial = await cargarComercial([pSemana], hoy).then(d => calcularComercial(d, pSemana, [pSemana])).catch(e => { console.error("scorecard (comercial):", (e as Error)?.message); return null; });
   const valorDe = (k: string): ValorKpi => comercial?.valores.find(v => v.clave === k) ?? { clave: k, valor: null, calidad: "sin-dato" };
   const leadsCrm = comercial ? comercial.detalle.leadsCrm
-    : await prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) } } }).catch(() => 0);
+    : await prisma.oportunidad.count({ where: { createdAt: { gte: inicioMX(lunes), lte: finMX(domingo) }, ...SIN_IMPORTADOS } }).catch(() => 0);
   const manana = addDaysYMD(hoy, 1);
   const [sinResponder, salidasManana] = await Promise.all([
     // Chats cuyo último mensaje es del cliente y lleva más de 10 min sin respuesta (plan: «alerta a los 10 min»).

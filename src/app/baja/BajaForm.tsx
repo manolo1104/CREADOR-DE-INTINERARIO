@@ -58,7 +58,7 @@ export function BajaForm({ token, email }: { token: string; email: string }) {
       <button
         onClick={darDeBaja}
         disabled={estado === "enviando"}
-        className="w-full bg-dorado hover:bg-lima text-negro px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors disabled:opacity-50"
+        className="rounded-xl w-full bg-dorado hover:bg-lima text-negro px-8 py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors disabled:opacity-50"
       >
         {estado === "enviando" ? "Un momento…" : "Sí, darme de baja"}
       </button>

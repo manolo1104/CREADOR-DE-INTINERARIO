@@ -133,7 +133,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
             {c.llegadas.map((l) => (
               <div
                 key={l.modo}
-                className={`border p-5 ${
+                className={`rounded-2xl border p-5 ${
                   l.mejor
                     ? "border-lima/35 bg-verde-profundo/45"
                     : "border-white/10 bg-verde-profundo/25"
@@ -153,7 +153,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
               la respuesta a la duda que el lector acaba de tener: quién maneja
               las últimas dos horas. */}
           {traslado && (
-            <div className="mt-6 border border-dorado/25 bg-verde-profundo/40 p-5">
+            <div className="rounded-2xl mt-6 border border-dorado/25 bg-verde-profundo/40 p-5">
               <p className="text-[9px] tracking-[2px] uppercase font-dm text-dorado/70 mb-3">
                 Or we drive you
               </p>
@@ -165,7 +165,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
 
       {/* ── DÓNDE QUEDARTE ── */}
       <section className="px-6 pb-14">
-        <div className="max-w-3xl mx-auto border border-lima/20 bg-verde-profundo/40 p-6">
+        <div className="rounded-2xl max-w-3xl mx-auto border border-lima/20 bg-verde-profundo/40 p-6">
           <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-2">
             Coming from {c.nombre}, base yourself in
           </p>
@@ -185,7 +185,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
         <div className="max-w-3xl mx-auto">
           <h2 className="font-cormorant font-light text-crema text-2xl mb-6">What to book</h2>
 
-          <div className="border border-white/10 bg-negro/40 p-6 mb-6">
+          <div className="rounded-2xl border border-white/10 bg-negro/40 p-6 mb-6">
             <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-2">The package that fits</p>
             <div className="flex items-baseline justify-between gap-4 mb-3">
               <Link href={`/en/paquetes/${paquete.slug}`} className="font-cormorant text-crema text-xl font-light hover:text-lima transition-colors">
@@ -230,7 +230,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
           </ul>
           <Link
             href="/en/tours"
-            className="inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
+            className="rounded-xl inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
           >
             See all {TOURS_DB.length} tours
           </Link>
@@ -259,7 +259,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/en/reservar"
-              className="inline-flex items-center gap-2 bg-verde-selva text-crema font-dm text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-verde-vivo transition-colors"
+              className="rounded-xl inline-flex items-center gap-2 bg-verde-selva text-crema font-dm text-xs tracking-[1.5px] uppercase px-8 py-4 hover:bg-verde-vivo transition-colors"
             >
               Book your trip
             </Link>
@@ -269,7 +269,7 @@ export default function FromCityPage({ params }: { params: { city: string } }) {
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+              className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
             >
               Plan it with us on WhatsApp
             </a>

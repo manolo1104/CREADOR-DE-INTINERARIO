@@ -157,7 +157,7 @@ export default function ExperienciasPage() {
             </div>
             <Link
               href={localePath("/reservar", locale)}
-              className="flex-shrink-0 bg-dorado text-negro text-[10px] tracking-[2px] uppercase font-dm px-6 py-3 hover:bg-lima transition-colors whitespace-nowrap font-medium"
+              className="rounded-xl flex-shrink-0 bg-dorado text-negro text-[10px] tracking-[2px] uppercase font-dm px-6 py-3 hover:bg-lima transition-colors whitespace-nowrap font-medium"
             >
               {t.bannerCta}
             </Link>
@@ -203,7 +203,7 @@ export default function ExperienciasPage() {
       <section className="relative py-16 px-6 text-center bg-verde-profundo/20 border-t border-white/6 overflow-hidden">
         <FloatingLeaves count={12} />
         <div className="relative z-10">
-        <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
+        <span className="rounded-full reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-selva/40 px-4 py-1.5 mb-6 font-dm">
           {t.ctaBadge}
         </span>
         <h2
@@ -217,7 +217,7 @@ export default function ExperienciasPage() {
         </p>
         <Link
           href={localePath("/tours", locale)}
-          className="inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors"
+          className="rounded-xl inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm font-medium hover:bg-verde-vivo transition-colors"
         >
           {t.ctaBoton}
         </Link>
@@ -242,7 +242,7 @@ export default function ExperienciasPage() {
             {t.faqs.map(({ q, a }) => (
               <details
                 key={q}
-                className="group border border-white/10 overflow-hidden open:border-verde-selva/30"
+                className="rounded-2xl group border border-white/10 overflow-hidden open:border-verde-selva/30"
               >
                 <summary className="cursor-pointer px-5 py-4 text-crema font-dm text-sm font-medium list-none select-none hover:bg-white/5 transition-colors flex items-center justify-between gap-4">
                   <span>{q}</span>
@@ -263,7 +263,7 @@ export default function ExperienciasPage() {
         <section className="relative py-20 px-6 bg-verde-profundo border-t border-white/8 overflow-hidden">
           <FloatingLeaves count={18} />
           <div className="relative z-10 max-w-2xl mx-auto text-center">
-            <span className="reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
+            <span className="rounded-full reveal-fade inline-block text-[9px] tracking-[4px] uppercase text-verde-vivo border border-verde-vivo/40 px-4 py-1.5 mb-6 font-dm">
               {t.guiaBadge}
             </span>
             <h2

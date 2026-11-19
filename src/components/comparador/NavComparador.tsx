@@ -27,7 +27,7 @@ export function NavComparador({ atajos }: { atajos: Atajo[] }) {
               key={p}
               href={urlComparar(p, [], { grupo, locale })}
               aria-current={activa ? "page" : undefined}
-              className={`min-h-[44px] inline-flex items-center px-6 font-dm text-[11px] tracking-[2px] uppercase transition-colors ${
+              className={`rounded-xl min-h-[44px] inline-flex items-center px-6 font-dm text-[11px] tracking-[2px] uppercase transition-colors ${
                 activa ? "bg-dorado text-negro" : "text-crema/70 hover:text-crema hover:bg-white/5"
               }`}
             >
@@ -48,7 +48,7 @@ export function NavComparador({ atajos }: { atajos: Atajo[] }) {
                 href={urlComparar("recorridos", a.slugs, { grupo, locale, origen: "atajo" })}
                 scroll={false}
                 aria-current={activo ? "true" : undefined}
-                className={`min-h-[44px] inline-flex items-center rounded-full border px-4 font-dm text-xs transition-colors ${
+                className={`min-h-[44px] inline-flex items-center rounded-xl border px-4 font-dm text-xs transition-colors ${
                   activo ? "border-dorado text-dorado" : "border-white/15 text-crema/75 hover:border-dorado/60 hover:text-crema"
                 }`}
               >

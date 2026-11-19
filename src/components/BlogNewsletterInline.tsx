@@ -99,12 +99,12 @@ export function BlogNewsletterInline({
           onChange={(e) => { setEmail(e.target.value); if (status === "error") setStatus("idle"); }}
           placeholder="tu@email.com"
           aria-label="Tu correo para recibir el itinerario"
-          className="min-h-[48px] min-w-0 flex-1 rounded-full border border-negro/20 bg-crema/60 px-4 font-dm text-base text-negro placeholder:text-negro/40 outline-none transition-colors focus:border-verde-selva"
+          className="min-h-[48px] min-w-0 flex-1 rounded-xl border border-negro/20 bg-crema/60 px-4 font-dm text-base text-negro placeholder:text-negro/40 outline-none transition-colors focus:border-verde-selva"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="inline-flex min-h-[48px] flex-shrink-0 items-center gap-1.5 rounded-full bg-verde-selva px-5 font-dm text-sm font-medium text-crema transition-colors hover:bg-verde-vivo disabled:opacity-50"
+          className="inline-flex min-h-[48px] flex-shrink-0 items-center gap-1.5 rounded-xl bg-verde-selva px-5 font-dm text-sm font-medium text-crema transition-colors hover:bg-verde-vivo disabled:opacity-50"
         >
           {status === "loading" ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Enviármelo"}
         </button>

@@ -51,7 +51,7 @@ export function MejorEpocaWidget({ temporada, destinoNombre, tourHref }: Props) 
     : null;
 
   return (
-    <div className="border border-verde-vivo/20 bg-verde-selva/8 p-5">
+    <div className="rounded-2xl border border-verde-vivo/20 bg-verde-selva/8 p-5">
       <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-4 flex items-center gap-1.5">
         🌤️ Mejor época para visitar
       </p>
@@ -94,7 +94,7 @@ export function MejorEpocaWidget({ temporada, destinoNombre, tourHref }: Props) 
 
       {/* CTA contextual */}
       {isCurrentOptimal ? (
-        <div className="bg-verde-vivo/10 border border-verde-vivo/30 px-3 py-2 flex items-center justify-between gap-3">
+        <div className="rounded-xl bg-verde-vivo/10 border border-verde-vivo/30 px-3 py-2 flex items-center justify-between gap-3">
           {/* Decía «es temporada alta — condiciones ideales ahora mismo»:
               «temporada alta» es cuando más gente hay (marzo-mayo, según
               temporada.ts), no lo mismo que la mejor época de ESTE lugar, y
@@ -103,7 +103,7 @@ export function MejorEpocaWidget({ temporada, destinoNombre, tourHref }: Props) 
             ✦ {currentMonthName}: dentro de su mejor época
           </p>
           {tourHref && (
-            <Link href={tourHref} className="text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo border border-verde-vivo/50 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all flex-shrink-0">
+            <Link href={tourHref} className="rounded-full text-[9px] tracking-[2px] uppercase font-dm text-verde-vivo border border-verde-vivo/50 hover:bg-verde-vivo/10 px-3 py-1.5 transition-all flex-shrink-0">
               Ver tour →
             </Link>
           )}

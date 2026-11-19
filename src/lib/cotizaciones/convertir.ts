@@ -23,7 +23,7 @@ import { getPaquete } from "@/lib/paquetes";
 import { fraseRecogidaCorreo, horaCorreo, pasamosPorEl, salidasCorreo } from "@/lib/recogidaCorreo";
 import { localizeTour } from "@/lib/i18n/localize";
 import { queLlevarDe } from "@/lib/tourRequisitos";
-import { origenValido } from "@/lib/origenReserva";
+import { origenDeCaptura } from "@/lib/origenReserva";
 import { cerrarCarritosDe, toursDeReserva } from "@/lib/cerrarCarrito";
 import { ANTICIPO_PCT } from "@/lib/carrito";
 import { grupoDe, metaDe } from "@/lib/admin/reserva";
@@ -567,7 +567,9 @@ export async function convertirCotizacionEnReserva(
         customerEmail:  correoCliente,
         customerPhone:  telCliente,
         notes:          [avisoCupo, q.notes].filter(Boolean).join("\n") || null,
-        origen:         origenValido(opciones.origen ?? "whatsapp"),
+        // Nunca «web» (19 nov 2026): la liga pagada copiaba el canal del lead, y
+        // «web» en un lead es «llegó por el sitio», no «compró en el sitio».
+        origen:         origenDeCaptura(opciones.origen ?? "whatsapp"),
         // Lo que la cotización no trae y el panel pide al convertir.
         idiomaTour,
         guia:           texto(opciones.guia, 80) || null,

@@ -22,7 +22,7 @@ export function CierreComparador() {
   const mensaje = ui.cierre.mensajeWa(nombres, ui.grupo.resumen(grupo));
 
   return (
-    <section className="mt-14 border border-dorado/25 bg-dorado/[0.05] p-6 md:p-8 md:flex md:items-center md:justify-between md:gap-8">
+    <section className="rounded-2xl mt-14 border border-dorado/25 bg-dorado/[0.05] p-6 md:p-8 md:flex md:items-center md:justify-between md:gap-8">
       <div>
         <h2 className="font-cormorant font-light text-crema text-2xl md:text-3xl">{ui.cierre.titulo}</h2>
         <p className="font-dm text-sm text-crema/70 leading-relaxed mt-2 max-w-xl">{ui.cierre.texto}</p>
@@ -35,7 +35,7 @@ export function CierreComparador() {
           rel="noopener noreferrer"
           data-wa-manual="1"
           onClick={() => trackTourEvent("WHATSAPP_CLICK", { context: "comparador", tours: slugs.join(","), personas: personasDe(grupo) })}
-          className="inline-flex items-center justify-center min-h-[44px] bg-[#25D366] hover:bg-[#1fbf5b] text-negro px-6 font-dm text-[11px] tracking-[2px] uppercase font-medium transition-colors"
+          className="rounded-xl inline-flex items-center justify-center min-h-[44px] bg-[#25D366] hover:bg-[#1fbf5b] text-negro px-6 font-dm text-[11px] tracking-[2px] uppercase font-medium transition-colors"
         >
           {ui.cierre.whatsapp}
         </a>

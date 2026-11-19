@@ -74,7 +74,7 @@ export default function SustentabilidadPage() {
       <section className="relative bg-verde-profundo px-6 pt-36 pb-28 text-center overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(90,158,42,0.3),transparent_70%)] pointer-events-none" />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <span className="inline-flex items-center gap-2 text-[10px] tracking-[4px] uppercase text-lima border border-lima/30 px-4 py-1.5 mb-6 font-dm">
+          <span className="rounded-full inline-flex items-center gap-2 text-[10px] tracking-[4px] uppercase text-lima border border-lima/30 px-4 py-1.5 mb-6 font-dm">
             <Leaf className="w-3 h-3" /> {t.heroBadge}
           </span>
           <h1 className="font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(36px,6vw,70px)" }}>
@@ -109,7 +109,7 @@ export default function SustentabilidadPage() {
             {t.compromisos.map((c, i) => {
               const Icon = ICONOS_COMPROMISOS[i];
               return (
-                <div key={c.titulo} className="border border-verde-selva/15 bg-crema/60 p-6 hover:border-verde-selva/40 transition-colors">
+                <div key={c.titulo} className="rounded-2xl border border-verde-selva/15 bg-crema/60 p-6 hover:border-verde-selva/40 transition-colors">
                   <Icon className="w-7 h-7 text-verde-selva mb-4" aria-hidden="true" />
                   <h3 className="font-cormorant text-verde-profundo text-lg mb-2 leading-tight">{c.titulo}</h3>
                   <p className="text-negro/55 font-dm text-sm leading-relaxed">{c.texto}</p>
@@ -150,7 +150,7 @@ export default function SustentabilidadPage() {
           <p className="text-crema/60 font-dm text-sm leading-relaxed mb-8">{t.fondoTexto}</p>
           <Link
             href={t.fondoCtaHref}
-            className="inline-block bg-lima text-negro px-10 py-4 text-sm tracking-[2px] uppercase font-dm font-medium hover:bg-verde-vivo hover:text-crema transition-colors duration-300"
+            className="rounded-xl inline-block bg-lima text-negro px-10 py-4 text-sm tracking-[2px] uppercase font-dm font-medium hover:bg-verde-vivo hover:text-crema transition-colors duration-300"
           >
             {t.fondoCta}
           </Link>
@@ -163,7 +163,7 @@ export default function SustentabilidadPage() {
         <a
           href={waLink(t.ctaWhatsapp)}
           target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+          className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white px-8 py-3.5 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
         >
           {t.ctaBoton}
         </a>

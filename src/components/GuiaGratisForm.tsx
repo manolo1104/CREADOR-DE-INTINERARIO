@@ -48,7 +48,7 @@ export function GuiaGratisForm({ origen = "inicio" }: { origen?: string } = {}) 
 
   if (estado === "listo") {
     return (
-      <div className="border border-verde-vivo/40 bg-verde-vivo/10 p-5">
+      <div className="rounded-2xl border border-verde-vivo/40 bg-verde-vivo/10 p-5">
         <p className="flex items-center gap-2 font-dm text-sm text-crema mb-1">
           <Check className="w-4 h-4 text-verde-vivo" aria-hidden="true" />
           Listo, tu descarga empezó.
@@ -73,12 +73,12 @@ export function GuiaGratisForm({ origen = "inicio" }: { origen?: string } = {}) 
           onChange={(e) => { setEmail(e.target.value); if (estado === "error") setEstado("idle"); }}
           placeholder="tu@correo.com"
           aria-label="Tu correo electrónico"
-          className="flex-1 border border-crema/25 bg-negro/40 px-4 py-3.5 font-dm text-sm text-crema placeholder:text-crema/30 focus:border-verde-vivo outline-none transition-colors"
+          className="rounded-xl flex-1 border border-crema/25 bg-negro/40 px-4 py-3.5 font-dm text-sm text-crema placeholder:text-crema/30 focus:border-verde-vivo outline-none transition-colors"
         />
         <button
           type="submit"
           disabled={estado === "enviando"}
-          className="flex items-center justify-center gap-2 bg-dorado hover:bg-lima text-negro px-7 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors disabled:opacity-50"
+          className="rounded-xl flex items-center justify-center gap-2 bg-dorado hover:bg-lima text-negro px-7 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors disabled:opacity-50"
         >
           <Download className="w-4 h-4" aria-hidden="true" />
           {estado === "enviando" ? "Un momento…" : "Descargar gratis"}

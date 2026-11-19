@@ -89,13 +89,13 @@ export async function BannerViaje({ origen }: { origen: "inicio" | "paquetes" })
 
           <ul className="mt-5 flex flex-wrap gap-2">
             {INCLUYE_CORTO.map(({ Icon, t }) => (
-              <li key={t} className="inline-flex items-center gap-1.5 border border-white/15 bg-white/5 px-2.5 py-1.5 font-dm text-[11px] text-crema/85">
+              <li key={t} className="rounded-full inline-flex items-center gap-1.5 border border-white/15 bg-white/5 px-2.5 py-1.5 font-dm text-[11px] text-crema/85">
                 <Icon className="w-3.5 h-3.5 text-dorado shrink-0" aria-hidden="true" />{t}
               </li>
             ))}
           </ul>
 
-          <div className="mt-6 border border-dorado/35 bg-negro/70 backdrop-blur-sm p-4 sm:p-5">
+          <div className="rounded-xl mt-6 border border-dorado/35 bg-negro/70 backdrop-blur-sm p-4 sm:p-5">
             {proxima ? (
               <>
                 <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
@@ -126,7 +126,7 @@ export async function BannerViaje({ origen }: { origen: "inicio" | "paquetes" })
                 href={`${VIAJE_RUTA}#fechas`}
                 event="VIAJE_BANNER_CLICK"
                 data={{ origen, boton: "fechas", salida: proxima?.fechaSalida ?? null }}
-                className="group inline-flex flex-1 items-center justify-center gap-2 min-h-[48px] px-6 bg-dorado text-negro hover:bg-crema text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+                className="rounded-xl group inline-flex flex-1 items-center justify-center gap-2 min-h-[48px] px-6 bg-dorado text-negro hover:bg-crema text-[11px] tracking-[2px] uppercase font-dm transition-colors"
               >
                 {proxima ? "Ver fechas y apartar" : sinFecha ? "Avísame" : "Ver el viaje"}
                 <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
@@ -135,7 +135,7 @@ export async function BannerViaje({ origen }: { origen: "inicio" | "paquetes" })
                 href={`${VIAJE_RUTA}#incluye`}
                 event="VIAJE_BANNER_CLICK"
                 data={{ origen, boton: "incluye" }}
-                className="inline-flex items-center justify-center min-h-[48px] px-6 border border-white/25 text-crema hover:bg-white/10 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+                className="rounded-xl inline-flex items-center justify-center min-h-[48px] px-6 border border-white/25 text-crema hover:bg-white/10 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
               >
                 Qué incluye
               </TrackedLink>

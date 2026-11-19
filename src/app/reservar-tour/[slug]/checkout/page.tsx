@@ -249,7 +249,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
 
   if (procesando) {
     return (
-      <div className="bg-white border border-negro/8 p-8 text-center">
+      <div className="rounded-2xl bg-white border border-negro/8 p-8 text-center">
         <Clock className="w-8 h-8 text-verde-selva mx-auto mb-4" />
         <h2 className="font-cormorant text-verde-profundo text-2xl mb-2">Tu pago está en proceso</h2>
         <p className="font-dm text-sm text-negro/60 leading-relaxed max-w-md mx-auto">
@@ -274,7 +274,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
     <form onSubmit={handleSubmit} className="space-y-6">
 
       {/* Datos del contacto */}
-      <section className="bg-white border border-negro/8 p-6">
+      <section className="rounded-2xl bg-white border border-negro/8 p-6">
         <h2 className="font-cormorant text-verde-profundo text-xl mb-5">Datos de contacto</h2>
         <div className="space-y-4">
           <div>
@@ -283,7 +283,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
             </label>
             <input type="text" value={name} onChange={(e) => setName(e.target.value)}
               placeholder="Juan García" required
-              className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+              className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
           </div>
           <div>
@@ -292,7 +292,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
             </label>
             <input type="email" value={email} onChange={(e) => setEmail(e.target.value)}
               placeholder="juan@correo.com" required
-              className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+              className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
             <p className="mt-1.5 text-xs text-negro/40 font-dm">La confirmación se envía a este correo</p>
           </div>
@@ -302,7 +302,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
             </label>
             <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
               placeholder="+52 489 123 4567"
-              className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+              className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
           </div>
 
@@ -313,7 +313,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
             </label>
             <input type="text" value={pickup} onChange={(e) => setPickup(e.target.value)}
               placeholder={campoHosp.ejemplo}
-              className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
+              className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors"
             />
             <p className="mt-1.5 text-[10px] text-negro/40 font-dm">
               {fraseRecogida(tourCat ?? {}, false)} {campoHosp.siVacio}
@@ -331,7 +331,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Alergias, restricciones alimentarias, necesidades especiales..."
                 rows={3}
-                className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors resize-none"
+                className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors resize-none"
               />
             </div>
           ) : (
@@ -344,7 +344,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
       </section>
 
       {/* Pago */}
-      <section className="bg-white border border-negro/8 p-6">
+      <section className="rounded-2xl bg-white border border-negro/8 p-6">
         <div className="flex items-center gap-2 mb-5">
           <Lock className="w-4 h-4 text-verde-selva" />
           <h2 className="font-cormorant text-verde-profundo text-xl">Información de pago</h2>
@@ -352,7 +352,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
         {/* Apple Pay / Google Pay aparecen aquí automáticamente si están habilitados en
             el panel de Stripe y el dominio está verificado (Settings → Payment methods). */}
         {cobro.saldo > 0 && (
-          <div className="mb-5 bg-verde-selva/8 border border-verde-selva/25 px-4 py-3">
+          <div className="rounded-xl mb-5 bg-verde-selva/8 border border-verde-selva/25 px-4 py-3">
             <p className="font-dm text-sm text-verde-profundo">
               Estás apartando tu lugar con el <strong>{cobro.pct} %</strong>.
             </p>
@@ -367,7 +367,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
       </section>
 
       {error && (
-        <div className="bg-terracota/10 border border-terracota/30 px-4 py-3">
+        <div className="rounded-xl bg-terracota/10 border border-terracota/30 px-4 py-3">
           <p className="text-terracota font-dm text-sm" role="alert">{error}</p>
         </div>
       )}
@@ -388,7 +388,7 @@ function CheckoutForm({ booking, clientSecret, paymentIntentId, cobro }: {
       <button
         type="submit"
         disabled={loading || !stripe}
-        className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+        className="rounded-xl w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {loading ? (
           <>
@@ -564,12 +564,12 @@ export default function CheckoutTourPage() {
         {/* ── FORMULARIO ── */}
         <div>
           {loadingPI ? (
-            <div className="bg-white border border-negro/8 p-8 text-center">
+            <div className="rounded-2xl bg-white border border-negro/8 p-8 text-center">
               <div className="inline-block w-6 h-6 border-2 border-verde-selva/20 border-t-verde-selva rounded-full animate-spin mb-4" />
               <p className="font-dm text-sm text-negro/50">Preparando pago seguro...</p>
             </div>
           ) : piError ? (
-            <div className="bg-white border border-terracota/20 p-6">
+            <div className="rounded-2xl bg-white border border-terracota/20 p-6">
               <p className="text-terracota font-dm text-sm mb-4">{piError}</p>
               <button onClick={() => window.location.reload()}
                 className="text-xs tracking-[1px] uppercase font-dm text-verde-selva border-b border-verde-selva/30">
@@ -616,7 +616,7 @@ export default function CheckoutTourPage() {
           />
 
           {/* Garantías — versión compacta */}
-          <div className="bg-white border border-negro/8 p-5">
+          <div className="rounded-2xl bg-white border border-negro/8 p-5">
             <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-3">Reserva con confianza</p>
             <ul className="space-y-2">
               {[

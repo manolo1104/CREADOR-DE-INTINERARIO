@@ -65,7 +65,23 @@ export interface BlogSeoOverride {
   metaTitle?: string;
   /** Meta completa, ≤155 caracteres y terminada en frase. */
   metaDescription?: string;
+  /**
+   * Portada que sustituye a la de la fila (19 nov 2026). Ruta ABSOLUTA del
+   * sitio (`https://www.huasteca-potosina.com/imagenes/…`), igual que las de
+   * la base: el JSON-LD y el og:image la publican tal cual. Va con su
+   * `coverImageAlt`: una portada nueva con el alt de la vieja describe otra foto.
+   */
+  coverImageUrl?: string;
   coverImageAlt?: string;
+  /**
+   * Fotos DENTRO del cuerpo, buscadas por su ruta (`de`, p. ej.
+   * "/imagenes/cascada-de-tamul/gallery-1.jpg") y no por el HTML literal: el
+   * pie de foto lo puede haber cambiado la fe de erratas, y así no hace falta
+   * copiar la `<figure>` entera de la base. Sin `a` se queda la misma foto
+   * (solo cambian `alt`/`pie`); con `quitar`, la figura se QUITA (una foto de
+   * otro lugar es peor que ninguna). Se aplica después de las erratas.
+   */
+  imagenes?: { de: string; a?: string; alt?: string; pie?: string; quitar?: true }[];
   /**
    * Resumen completo que sustituye al `excerpt` de la fila. Sale en las
    * tarjetas de "artículos relacionados" y, si el artículo no tiene meta, en
@@ -542,6 +558,9 @@ const alDia = (antes: string, hoy: string = HOY) => ({
 // tiempos desde Ciudad Valles): por eso no hay esa fila.
 
 const HOY_F3 = "2026-11-10";
+
+/** Base de las portadas que fija este archivo: absolutas, como las de la base. */
+const SITIO_IMAGENES = "https://www.huasteca-potosina.com/imagenes";
 
 /** Una fila de «Datos rápidos»: sin dato no hay fila. */
 type FilaDato = [string, string | null];
@@ -3170,6 +3189,74 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
     ],
     actualizado: HOY_POZAS,
   },
+
+  // ── Fotos de los 7 artículos más nuevos (19 nov 2026) ──────────────────────
+  // Manolo: «vamos a cambiar las imágenes de los últimos artículos». Revisadas
+  // contra el sitio en vivo: el robot repitió TRES portadas (Trampolín = la de
+  // Siete Cascadas, Tamohí = la de Mantetzulel, noviembre = la de Minas Viejas)
+  // y metió fotos de OTRO lugar en el cuerpo (Mantetzulel con Tamul, Taninul
+  // con Huichihuayán). Todas las fotos nuevas ya están servidas en
+  // `public/imagenes`: no hay que esperar despliegue de archivos. Se
+  // descartaron dos: la portada de la ficha del Trampolín lleva la firma de un
+  // fotógrafo y `cascadas-minas-viejas/gallery-new-8` es el Sky Bike de Micos.
+  // Voladores de Tamaletón se queda como está: sus dos fotos son del lugar.
+  "el-trampolin-de-tamasopo-guia-precio-y-como-llegar": {
+    coverImageUrl: `${SITIO_IMAGENES}/cascada-el-trampolin-tamasopo/gallery-1.jpg`,
+    coverImageAlt: "El río Agua Buena en El Trampolín, Tamasopo: pozas de agua turquesa entre sabinos cubiertos de heno",
+    imagenes: [
+      {
+        de: "/imagenes/cascada-el-trampolin-tamasopo/gallery-2.jpg",
+        alt: "Agua turquesa del río Agua Buena entre sabinos, en El Trampolín de Tamasopo, San Luis Potosí",
+      },
+    ],
+  },
+  "cascada-el-salto-y-el-aguacate-guia": {
+    // La portada era El Aguacate y el título empieza por El Salto: cada foto a su sitio.
+    coverImageUrl: `${SITIO_IMAGENES}/cascada-el-salto/hero.jpg`,
+    coverImageAlt: "La Cascada El Salto cae sobre pozas de agua turquesa al atardecer, en El Naranjo, San Luis Potosí",
+    imagenes: [
+      {
+        de: "/imagenes/cascada-el-salto/gallery-1.jpg",
+        a: "/imagenes/cascada-el-aguacate/hero.jpg",
+        alt: "Poza de agua verde al pie de la Cascada El Aguacate, entre paredes de roca, en Tamasopo, San Luis Potosí",
+        pie: "La Cascada El Aguacate, la otra mitad de esta guía: una caída angosta entre paredes de roca que llena una poza verde.",
+      },
+    ],
+  },
+  "la-huasteca-potosina-en-noviembre-puentes-clima-y-cascadas": {
+    coverImageUrl: `${SITIO_IMAGENES}/cascada-de-tamul/gallery-4.jpg`,
+    coverImageAlt: "La cascada de Tamul al fondo del cañón del río Tampaón, en Aquismón, San Luis Potosí",
+    imagenes: [
+      {
+        de: "/imagenes/cascada-el-meco/gallery-1.jpg",
+        alt: "Un visitante con traje de neopreno frente a la Cascada El Meco y su poza turquesa, en El Naranjo, San Luis Potosí",
+        pie: "La Cascada El Meco, en El Naranjo: una de las cascadas que conviene sumar al puente de noviembre.",
+      },
+    ],
+  },
+  "zona-arqueologica-de-tamohi-el-consuelo-guia": {
+    coverImageUrl: `${SITIO_IMAGENES}/zona-arqueologica-tamohi-el-consuelo/hero.jpg`,
+    coverImageAlt: "Plataforma de cantos rodados en la zona arqueológica Tamohí (El Consuelo), en Tamuín, San Luis Potosí",
+    // Era la única foto del lugar y ahora es la portada: repetida en el cuerpo no aporta.
+    imagenes: [{ de: "/imagenes/zona-arqueologica-tamohi-el-consuelo/hero.jpg", quitar: true }],
+  },
+  "cuevas-de-mantetzulel-guia-completa": {
+    coverImageAlt: "Un haz de luz entra por la bóveda de una de las Cuevas de Mantetzulel, en Aquismón, San Luis Potosí",
+    imagenes: [
+      {
+        de: "/imagenes/cascada-de-tamul/gallery-1.jpg",
+        a: "/imagenes/cuevas-de-mantetzulel/gallery-1.jpg",
+        alt: "La boca de una de las Cuevas de Mantetzulel vista desde dentro, en Aquismón, San Luis Potosí",
+      },
+    ],
+  },
+  "balneario-taninul-aguas-termales-guia": {
+    coverImageAlt: "La alberca de aguas termales del Balneario Taninul entre palapas y selva, en Ciudad Valles, San Luis Potosí",
+    // La foto del cuerpo era el Nacimiento de Huichihuayán. No hay otra de
+    // Taninul en el sitio (la de la galería es la misma portada): se quita
+    // hasta que Manolo mande una.
+    imagenes: [{ de: "/imagenes/nacimiento-huichihuayan/gallery-1.jpg", quitar: true }],
+  },
 };
 return BLOG_SEO;
 }
@@ -3269,6 +3356,7 @@ export function aplicaBlogSeo<
     title?: string | null;
     metaTitle?: string | null;
     metaDescription?: string | null;
+    coverImageUrl?: string | null;
     coverImageAlt?: string | null;
     schemaMarkup?: string | null;
     excerpt?: string | null;
@@ -3283,6 +3371,8 @@ export function aplicaBlogSeo<
   if (o.title !== undefined && typeof next.title === "string") next.title = o.title;
   if (o.metaTitle !== undefined) next.metaTitle = o.metaTitle;
   if (o.metaDescription !== undefined) next.metaDescription = o.metaDescription;
+  // Igual que el título: solo si la fila trae portada (las parciales sin ella no la ganan).
+  if (o.coverImageUrl !== undefined && "coverImageUrl" in next) next.coverImageUrl = o.coverImageUrl;
   if (o.coverImageAlt !== undefined) next.coverImageAlt = o.coverImageAlt;
   if (o.excerpt !== undefined) next.excerpt = o.excerpt;
   if (o.omitirSchemaGuardado) next.schemaMarkup = null;
@@ -3302,5 +3392,57 @@ export function aplicaBlogSeo<
     if (o.faqs?.length) c = insertaFaqs(c, o.faqs);
     next.content = c;
   }
-  return aplicaErratas(next);
+  const corregido = aplicaErratas(next);
+  if (o.imagenes?.length && typeof corregido.content === "string") {
+    corregido.content = cambiaImagenes(corregido.content, o.imagenes, normalizaSlugBlog(post.slug));
+  }
+  return corregido;
+}
+
+// ── Fotos del cuerpo ──────────────────────────────────────────────────────────
+
+const SITIO = "https://www.huasteca-potosina.com";
+const escapaRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapaAtributo = (s: string) => s.replace(/&/g, "&amp;").replace(/"/g, "&quot;");
+
+/**
+ * Cambia o quita las fotos del cuerpo según `BlogSeoOverride.imagenes`. Busca
+ * la `<figure>` que contiene la imagen (sin cruzar otro `</figure>`) y, si no
+ * hay figura, el `<img>` suelto.
+ */
+export function cambiaImagenes(
+  html: string,
+  ops: NonNullable<BlogSeoOverride["imagenes"]>,
+  slug = "",
+): string {
+  let c = html;
+  for (const op of ops) {
+    const ruta = escapaRegex(op.de);
+    const figura = new RegExp(
+      `<figure\\b[^>]*>(?:(?!</figure>)[\\s\\S])*?<img\\b[^>]*\\bsrc="[^"]*${ruta}"(?:(?!</figure>)[\\s\\S])*?</figure>`,
+      "i",
+    );
+    const imgSola = new RegExp(`<img\\b[^>]*\\bsrc="[^"]*${ruta}"[^>]*>`, "i");
+    const bloque = figura.exec(c)?.[0] ?? imgSola.exec(c)?.[0];
+    if (!bloque) {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(`[blogSeo] "${slug}": no hay foto con ${op.de}`);
+      }
+      continue;
+    }
+    if (op.quitar) {
+      c = c.replace(bloque, "");
+      continue;
+    }
+    const nuevo = bloque
+      .replace(new RegExp(`(<img\\b[^>]*\\bsrc=")[^"]*${ruta}(")`, "i"), (t, a: string, b: string) =>
+        op.a === undefined ? t : `${a}${SITIO}${op.a}${b}`)
+      .replace(/(<img\b[^>]*\balt=")[^"]*(")/i, (_t, a: string, b: string) =>
+        op.alt === undefined ? _t : `${a}${escapaAtributo(op.alt)}${b}`)
+      .replace(/<figcaption\b([^>]*)>[\s\S]*?<\/figcaption>/i, (t, attrs: string) =>
+        op.pie === undefined ? t : `<figcaption${attrs}>${op.pie}</figcaption>`);
+    // Con función: un pie con «$1,550 MXN» se leería como patrón de reemplazo.
+    c = c.replace(bloque, () => nuevo);
+  }
+  return c;
 }

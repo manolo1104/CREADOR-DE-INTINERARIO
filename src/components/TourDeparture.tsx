@@ -165,7 +165,7 @@ export function TourDeparture({ tourId, locale }: { tourId?: string; locale?: "e
           <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Meeting point" : "Punto de encuentro"}
         </h2>
 
-        <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
+        <div className="rounded-2xl border border-white/10 bg-negro/40 p-5 space-y-5">
           <p className="text-crema/65 font-dm text-sm leading-relaxed">
             {en ? MEDIA_LUNA.intro.en : MEDIA_LUNA.intro.es}
           </p>
@@ -234,7 +234,7 @@ export function TourDeparture({ tourId, locale }: { tourId?: string; locale?: "e
           <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Meeting point" : "Punto de encuentro"}
         </h2>
 
-        <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
+        <div className="rounded-2xl border border-white/10 bg-negro/40 p-5 space-y-5">
           <p className="text-crema/65 font-dm text-sm leading-relaxed">
             {en ? (
               <>This tour runs entirely around{" "}
@@ -304,7 +304,7 @@ export function TourDeparture({ tourId, locale }: { tourId?: string; locale?: "e
           {en ? "Pickup & meeting point" : "Recogida y punto de encuentro"}
         </h2>
 
-        <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
+        <div className="rounded-2xl border border-white/10 bg-negro/40 p-5 space-y-5">
           <p className="text-crema/65 font-dm text-sm leading-relaxed">
             {en ? (
               <>We <strong className="text-crema font-medium">pick you up at your lodging in{" "}
@@ -397,7 +397,7 @@ export function TourDeparture({ tourId, locale }: { tourId?: string; locale?: "e
         <MapPin className="w-6 h-6 text-verde-selva flex-shrink-0" aria-hidden="true" /> {en ? "Pickup & transport" : "Recogida y transporte"}
       </h2>
 
-      <div className="border border-white/10 bg-negro/40 p-5 space-y-5">
+      <div className="rounded-2xl border border-white/10 bg-negro/40 p-5 space-y-5">
         {/* Texto intro */}
         <p className="text-crema/65 font-dm text-sm leading-relaxed">
           {ciudadUnica ? (

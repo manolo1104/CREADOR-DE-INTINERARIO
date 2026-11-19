@@ -59,7 +59,7 @@ export function BloqueXantolo({ origen }: { origen: "inicio" | "paquetes" }) {
                     { Icon: Music, t: "Huapango y comparsas" },
                     { Icon: Flower2, t: "Cempasúchil" },
                   ].map(({ Icon, t }) => (
-                    <li key={t} className="inline-flex items-center gap-1.5 border px-2.5 py-1 font-dm text-[11px] text-crema/80" style={{ borderColor: `${XAN_FLOR}55` }}>
+                    <li key={t} className="rounded-full inline-flex items-center gap-1.5 border px-2.5 py-1 font-dm text-[11px] text-crema/80" style={{ borderColor: `${XAN_FLOR}55` }}>
                       <Icon className="w-3.5 h-3.5" style={{ color: XAN_FLOR }} aria-hidden="true" />{t}
                     </li>
                   ))}

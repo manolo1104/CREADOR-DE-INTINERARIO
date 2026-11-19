@@ -120,7 +120,7 @@ export default function ContactoPage() {
           {canales.map(({ Icon, titulo, detalle, nota, href, cta, externo, destacado }) => (
             <div
               key={titulo}
-              className={`border p-6 flex flex-col ${
+              className={`rounded-2xl border p-6 flex flex-col ${
                 destacado ? "border-verde-selva/40 bg-verde-selva/5" : "border-negro/10 bg-white"
               }`}
             >
@@ -131,7 +131,7 @@ export default function ContactoPage() {
               <a
                 href={href}
                 {...(externo ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                className={`text-center text-[10px] tracking-[2px] uppercase font-dm py-3 transition-colors ${
+                className={`rounded-xl text-center text-[10px] tracking-[2px] uppercase font-dm py-3 transition-colors ${
                   destacado
                     ? "bg-verde-selva text-crema hover:bg-verde-vivo"
                     : "border border-negro/20 text-negro/70 hover:border-negro/50 hover:text-negro"
@@ -144,7 +144,7 @@ export default function ContactoPage() {
         </div>
 
         {CONTACTO.horario && (
-          <div className="border border-negro/10 bg-white p-6 mb-16 flex items-start gap-4">
+          <div className="rounded-2xl border border-negro/10 bg-white p-6 mb-16 flex items-start gap-4">
             <Clock className="w-5 h-5 text-negro/40 flex-shrink-0 mt-0.5" aria-hidden="true" />
             <div>
               <h2 className="font-dm text-[10px] tracking-[2px] uppercase text-negro/45 mb-1">{t.horarioTitulo}</h2>
@@ -161,7 +161,7 @@ export default function ContactoPage() {
               <Link
                 key={href}
                 href={href}
-                className="border border-negro/10 bg-white p-6 hover:border-verde-selva/50 transition-colors group"
+                className="rounded-xl border border-negro/10 bg-white p-6 hover:border-verde-selva/50 transition-colors group"
               >
                 <Icon className="w-5 h-5 text-negro/40 group-hover:text-verde-selva transition-colors mb-4" aria-hidden="true" />
                 <h3 className="font-cormorant text-xl text-verde-profundo mb-2">{titulo}</h3>

@@ -151,7 +151,7 @@ export default function ConfirmacionTourPage() {
         </div>
 
         {/* ── NÚMERO DE CONFIRMACIÓN ── */}
-        <div className="bg-white border border-negro/8 p-6 mb-6 text-center">
+        <div className="rounded-2xl bg-white border border-negro/8 p-6 mb-6 text-center">
           <p className="text-[10px] tracking-[3px] uppercase text-negro/40 font-dm mb-2">{t.numeroConfirmacion}</p>
           {/* Sin folio del servidor no se inventa uno: el pago entró y el
               folio llega por correo cuando se registra la reserva. */}
@@ -162,7 +162,7 @@ export default function ConfirmacionTourPage() {
               </p>
               <button
                 onClick={copyConfirmation}
-                className="inline-flex items-center gap-2 text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors border border-verde-selva/30 hover:border-verde-vivo px-4 py-2"
+                className="rounded-xl inline-flex items-center gap-2 text-xs font-dm text-verde-selva hover:text-verde-vivo transition-colors border border-verde-selva/30 hover:border-verde-vivo px-4 py-2"
               >
                 <Copy className="w-3.5 h-3.5" />
                 {copied ? t.copiado : t.copiar}
@@ -177,7 +177,7 @@ export default function ConfirmacionTourPage() {
         </div>
 
         {/* ── RESUMEN COMPLETO ── */}
-        <div className="bg-white border border-negro/8 p-6 mb-6">
+        <div className="rounded-2xl bg-white border border-negro/8 p-6 mb-6">
           <h2 className="font-cormorant text-verde-profundo text-xl mb-5">{t.resumenTitulo}</h2>
           <div className="space-y-4">
             {varios ? (
@@ -242,7 +242,7 @@ export default function ConfirmacionTourPage() {
               </div>
             </div>
             {isDeposit && (
-              <div className="bg-verde-selva/8 border border-verde-selva/20 px-4 py-3">
+              <div className="rounded-xl bg-verde-selva/8 border border-verde-selva/20 px-4 py-3">
                 <p className="text-xs text-verde-selva font-dm font-medium">
                   {t.anticipoPagado(Math.round((chargeAmt / data.total) * 100), formatMXN(remaining))}
                 </p>
@@ -252,7 +252,7 @@ export default function ConfirmacionTourPage() {
         </div>
 
         {/* ── PRÓXIMOS PASOS ── */}
-        <div className="bg-verde-profundo text-crema p-6 mb-6">
+        <div className="rounded-2xl bg-verde-profundo text-crema p-6 mb-6">
           <h2 className="font-cormorant text-crema text-xl mb-6">{t.queSigue}</h2>
           <ol className="space-y-5">
             {t.pasos.map((step) => (
@@ -275,7 +275,7 @@ export default function ConfirmacionTourPage() {
             href={`https://wa.me/524891090388?text=${waMessage}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white w-full py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+            className="rounded-xl flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-white w-full py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
           >
             <MessageCircle className="w-4 h-4" />
             {t.confirmarWhatsapp}
@@ -283,7 +283,7 @@ export default function ConfirmacionTourPage() {
 
           <button
             onClick={handleShare}
-            className="flex items-center justify-center gap-2 w-full border border-negro/20 hover:border-verde-selva/50 hover:bg-verde-selva/5 text-negro/70 hover:text-verde-selva py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all"
+            className="rounded-xl flex items-center justify-center gap-2 w-full border border-negro/20 hover:border-verde-selva/50 hover:bg-verde-selva/5 text-negro/70 hover:text-verde-selva py-4 text-[11px] tracking-[2px] uppercase font-dm transition-all"
           >
             <Share2 className="w-4 h-4" />
             {shareOk ? t.enlaceCopiado : t.compartirReserva}
@@ -292,14 +292,14 @@ export default function ConfirmacionTourPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={downloadIcs}
-              className="flex items-center justify-center gap-2 border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+              className="rounded-xl flex items-center justify-center gap-2 border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
             >
               <CalendarPlus className="w-3.5 h-3.5" />
               {t.agregarCalendario}
             </button>
             <Link
               href={lp("/tours")}
-              className="flex items-center justify-center border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-all"
+              className="rounded-xl flex items-center justify-center border border-negro/15 hover:border-verde-selva/40 text-negro/55 hover:text-verde-selva py-3.5 text-[10px] tracking-[2px] uppercase font-dm transition-all"
             >
               {t.verMasTours}
             </Link>

@@ -369,7 +369,7 @@ export function BuscadorHero({ grupos, minPersonas, maxPersonas }: Props) {
         <Link
           href={destino}
           onClick={alBuscar}
-          className="flex min-h-[64px] items-center justify-center gap-2 bg-dorado px-7 font-dm text-[15px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-terracota hover:text-crema sm:min-h-0 sm:min-w-[170px]"
+          className="rounded-xl flex min-h-[64px] items-center justify-center gap-2 bg-dorado px-7 font-dm text-[15px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-terracota hover:text-crema sm:min-h-0 sm:min-w-[170px]"
         >
           {esTour ? (fecha ? ui.irAReservar : ui.irAlTour) : ui.verTours}
           <span aria-hidden="true">→</span>
@@ -387,7 +387,7 @@ function Opcion({ activa, etiqueta, onClick }: { activa: boolean; etiqueta: stri
       role="option"
       aria-selected={activa}
       onClick={onClick}
-      className={`flex w-full min-h-[40px] items-center gap-2 px-4 py-2 text-left font-dm text-sm transition-colors ${
+      className={`rounded-xl flex w-full min-h-[40px] items-center gap-2 px-4 py-2 text-left font-dm text-sm transition-colors ${
         activa ? "bg-dorado/15 text-dorado" : "text-crema/85 hover:bg-white/10 hover:text-crema"
       }`}
     >

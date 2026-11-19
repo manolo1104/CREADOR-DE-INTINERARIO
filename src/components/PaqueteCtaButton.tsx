@@ -38,7 +38,7 @@ export function PaqueteCtaButton({ href, packageName, price, destacado }: Props)
       rel="noopener noreferrer"
       onClick={handleClick}
       data-wa-manual="1"
-      className={`flex items-center justify-center gap-2.5 w-full py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 ${
+      className={`rounded-xl flex items-center justify-center gap-2.5 w-full py-4 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors duration-200 ${
         destacado
           ? "bg-dorado hover:bg-terracota text-negro hover:text-crema"
           : "bg-[#25D366] hover:bg-[#20ba59] text-white"

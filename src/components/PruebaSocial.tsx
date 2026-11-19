@@ -88,7 +88,7 @@ export function PruebaSocial({ locale, fotos }: { locale: Locale; fotos: FotoVia
             href={GOOGLE_PERFIL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex min-h-[48px] shrink-0 items-center gap-2 self-start rounded-full border border-verde-selva/40 px-6 font-dm text-sm font-medium text-verde-selva transition-[background-color,border-color] duration-200 hover:border-verde-selva hover:bg-verde-selva/10 sm:self-auto"
+            className="inline-flex min-h-[48px] shrink-0 items-center gap-2 self-start rounded-xl border border-verde-selva/40 px-6 font-dm text-sm font-medium text-verde-selva transition-[background-color,border-color] duration-200 hover:border-verde-selva hover:bg-verde-selva/10 sm:self-auto"
           >
             <Star className="h-4 w-4 fill-dorado text-dorado" aria-hidden="true" />
             {t("Leer las reseñas en Google", "Read the reviews on Google")}

@@ -247,7 +247,7 @@ export default function PressPage() {
             ))}
           </div>
 
-          <div className="bg-white border border-negro/10 p-6 md:p-8">
+          <div className="rounded-2xl bg-white border border-negro/10 p-6 md:p-8">
             <h3 className="font-dm text-[11px] tracking-[2.5px] uppercase text-verde-selva mb-4">Terms, in plain language</h3>
             <ul className="flex flex-col gap-3 font-dm text-sm text-negro/65 leading-relaxed">
               <li><strong className="text-negro/85">Free for editorial use.</strong> Print or online, in any outlet.</li>
@@ -274,13 +274,13 @@ export default function PressPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
             <a
               href={`mailto:${CONTACTO.email}?subject=Press%20enquiry`}
-              className="inline-block bg-dorado text-negro px-10 py-4 text-sm tracking-[2.5px] uppercase font-dm font-medium hover:bg-lima transition-colors"
+              className="rounded-xl inline-block bg-dorado text-negro px-10 py-4 text-sm tracking-[2.5px] uppercase font-dm font-medium hover:bg-lima transition-colors"
             >
               Email the press desk
             </a>
             <Link
               href="/en/nosotros"
-              className="inline-block border border-crema/25 text-crema/70 px-9 py-4 text-[11px] tracking-[2px] uppercase font-dm hover:border-crema/50 hover:text-crema transition-all"
+              className="rounded-xl inline-block border border-crema/25 text-crema/70 px-9 py-4 text-[11px] tracking-[2px] uppercase font-dm hover:border-crema/50 hover:text-crema transition-all"
             >
               About the company
             </Link>

@@ -50,7 +50,7 @@ export default function DestinosClient() {
             <button
               key={f.key}
               onClick={() => setGrupoActivo(f.key)}
-              className={`flex-shrink-0 px-5 py-2 text-[10px] tracking-[2px] uppercase font-dm transition-all duration-200 border ${
+              className={`rounded-xl flex-shrink-0 px-5 py-2 text-[10px] tracking-[2px] uppercase font-dm transition-all duration-200 border ${
                 grupoActivo === f.key
                   ? "bg-verde-selva border-verde-selva text-crema"
                   : "border-white/15 text-crema/50 hover:border-verde-vivo/50 hover:text-crema"
@@ -103,14 +103,14 @@ export default function DestinosClient() {
           <a
             href="https://wa.me/524891090388?text=Hi%2C%20I%27d%20like%20help%20planning%20a%20trip%20to%20the%20Huasteca%20Potosina."
             target="_blank" rel="noopener noreferrer"
-            className="inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
+            className="rounded-xl inline-block bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-verde-vivo transition-colors"
           >
             Plan with us on WhatsApp →
           </a>
         ) : (
           <Link
             href="/reservar"
-            className="inline-block bg-dorado text-negro px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium"
+            className="rounded-xl inline-block bg-dorado text-negro px-12 py-4 text-[11px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium"
           >
             Ver recorridos y reservar →
           </Link>

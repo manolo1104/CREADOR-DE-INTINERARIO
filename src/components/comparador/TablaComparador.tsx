@@ -111,7 +111,7 @@ function Renglon({ fila, c, ui }: { fila: Fila; c: Comparacion; ui: ComparadorUI
         <div>
           {/* "Incluido en todos" ya lo dice en su etiqueta: sin la marca repetida. */}
           {fila.id !== "comun" && (
-            <span className="inline-block font-dm text-[10px] tracking-[1.5px] uppercase text-verde-vivo border border-verde-vivo/35 px-2 py-0.5 mb-2">
+            <span className="rounded-full inline-block font-dm text-[10px] tracking-[1.5px] uppercase text-verde-vivo border border-verde-vivo/35 px-2 py-0.5 mb-2">
               {ui.valores.enTodos}
             </span>
           )}
@@ -146,7 +146,7 @@ export function TablaComparador({ c }: { c: Comparacion }) {
           <div className={`grid gap-x-4 gap-y-3 md:gap-x-6 ${COLUMNAS[n]}`}>
             {c.columnas.map((col, i) => (
               <div key={col.slug} className={VISIBLE[i]}>
-                <Link href={col.href} className="group block relative aspect-[4/3] overflow-hidden bg-white/5" tabIndex={-1} aria-hidden="true">
+                <Link href={col.href} className="rounded-xl group block relative aspect-[4/3] overflow-hidden bg-white/5" tabIndex={-1} aria-hidden="true">
                   <Image
                     src={col.imagen}
                     alt=""

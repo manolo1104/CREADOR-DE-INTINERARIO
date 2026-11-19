@@ -87,7 +87,7 @@ export function BotonAgregarTour({
     <button
       type="button"
       onClick={alPulsar}
-      className={`px-3 flex items-center gap-1.5 border text-[10px] tracking-[1.5px] uppercase font-dm transition-colors ${
+      className={`rounded-xl px-3 flex items-center gap-1.5 border text-[10px] tracking-[1.5px] uppercase font-dm transition-colors ${
         estado === "fuera"
           ? "border-white/15 hover:border-dorado/60 text-crema/60 hover:text-dorado"
           : "border-verde-vivo text-verde-vivo bg-verde-vivo/10 hover:bg-verde-vivo/20"

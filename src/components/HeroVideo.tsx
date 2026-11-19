@@ -2,24 +2,29 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// Video de fondo del inicio. Hay DOS cortes del mismo recorrido (Tamul →
-// canoa → salto en la base del Tamul → cascadas desde el aire → Sky Bike de
-// Micos → lancha → Las Pozas → Xilitla): uno horizontal para pantallas
-// apaisadas y uno vertical para el teléfono. Recortar el horizontal en un
-// teléfono dejaba ver menos de la mitad del cuadro. El proyecto que los genera
-// vive fuera del repo, en ~/Desktop/HUASTECA-VIDEO-HERO (Remotion).
+// Video de fondo del inicio. v5 (19 nov 2026, elegido por Manolo): 14 tomas
+// generadas con IA (Higgsfield) en 38.8 s — Tamul, cascadas turquesa desde el
+// aire, El Meco, Minas Viejas, rappel, Puente de Dios, rafting, Las Pozas, la
+// boca de las Huahuas, atardecer, niebla y amanecer — sin texto ni nombres. El
+// material es vertical: el celular lo ve completo y la computadora en tres
+// columnas del MISMO video, cada una en otra escena (estirarlo a 16:9 se veía
+// borroso). Comprimido como el v4 (2 pasadas a 500 kbps, BT.709, escritorio a
+// 1280×720, `scripts/web2.py`): ~2.45 MB cada uno, el mismo peso por segundo.
+// El proyecto que los genera vive fuera del repo, en
+// ~/Desktop/2-TOURS-HUASTECA/HUASTECA-VIDEO-HERO (Remotion: HeroVideo1 y
+// HeroVideo1Escritorio).
 //
 // El sufijo -vN va en el nombre porque /video se sirve con caché inmutable de
 // un año (next.config.mjs): si cambia el video, se sube con el número
 // siguiente y se cambia aquí. Sobrescribir el mismo nombre dejaría a quien ya
 // visitó el sitio viendo el viejo.
 const VIDEO = {
-  horizontal: "/video/hero-escritorio-v4.mp4",
-  vertical: "/video/hero-celular-v4.mp4",
+  horizontal: "/video/hero-escritorio-v5.mp4",
+  vertical: "/video/hero-celular-v5.mp4",
 };
 const POSTER = {
-  horizontal: "/video/hero-escritorio-v4.webp",
-  vertical: "/video/hero-celular-v4.webp",
+  horizontal: "/video/hero-escritorio-v5.webp",
+  vertical: "/video/hero-celular-v5.webp",
 };
 const APAISADA = "(orientation: landscape)";
 // Lo contrario exacto de APAISADA: un cuadrado cuenta como vertical, igual que

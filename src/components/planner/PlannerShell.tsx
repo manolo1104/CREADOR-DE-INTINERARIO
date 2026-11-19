@@ -291,7 +291,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
             </div>
             <button
               onClick={() => setCurrentStep("presupuesto")}
-              className="bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors"
+              className="rounded-xl bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors"
             >
               Continuar →
             </button>
@@ -314,7 +314,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={b.key}
                   onClick={() => setState((s) => ({ ...s, presupuesto: b.key }))}
-                  className={`gloss-selector-light border p-6 text-left transition-all ${
+                  className={`rounded-xl gloss-selector-light border p-6 text-left transition-all ${
                     state.presupuesto === b.key
                       ? "border-verde-vivo bg-gradient-to-br from-crema/18 via-crema/10 to-arena/8"
                       : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-verde-selva/45"
@@ -328,8 +328,8 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
               ))}
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setCurrentStep("dias")} className="border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button onClick={() => setCurrentStep("destinos")} className="bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
+              <button onClick={() => setCurrentStep("dias")} className="rounded-xl border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setCurrentStep("destinos")} className="rounded-xl bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
             </div>
           </div>
         )}
@@ -346,7 +346,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={d.id}
                   onClick={() => toggleDestino(d.id)}
-                  className={`gloss-selector-light flex items-center gap-3 border p-4 text-left transition-all ${
+                  className={`rounded-xl gloss-selector-light flex items-center gap-3 border p-4 text-left transition-all ${
                     state.destinos.includes(d.id)
                       ? "border-verde-vivo bg-gradient-to-br from-crema/18 via-crema/10 to-arena/8"
                       : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-verde-selva/40"
@@ -368,8 +368,8 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
               ))}
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setCurrentStep("presupuesto")} className="border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button onClick={() => setCurrentStep("intereses")} className="bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
+              <button onClick={() => setCurrentStep("presupuesto")} className="rounded-xl border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setCurrentStep("intereses")} className="rounded-xl bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
             </div>
           </div>
         )}
@@ -397,8 +397,8 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
               ))}
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setCurrentStep("destinos")} className="border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button onClick={() => setCurrentStep("perfil")} className="bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
+              <button onClick={() => setCurrentStep("destinos")} className="rounded-xl border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setCurrentStep("perfil")} className="rounded-xl bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
             </div>
           </div>
         )}
@@ -415,7 +415,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                 <button
                   key={v.nombre}
                   onClick={() => setState((s) => ({ ...s, viajero: v.nombre }))}
-                  className={`gloss-selector-light border p-6 text-center transition-all ${
+                  className={`rounded-xl gloss-selector-light border p-6 text-center transition-all ${
                     state.viajero === v.nombre
                       ? "border-dorado bg-gradient-to-br from-crema/20 via-arena/10 to-dorado/10"
                       : "border-crema/20 bg-gradient-to-br from-crema/12 via-crema/6 to-arena/5 hover:border-dorado/45"
@@ -446,8 +446,8 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
               </div>
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setCurrentStep("intereses")} className="border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
-              <button onClick={() => setCurrentStep("extras")} className="bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
+              <button onClick={() => setCurrentStep("intereses")} className="rounded-xl border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setCurrentStep("extras")} className="rounded-xl bg-verde-selva text-crema px-12 py-4 text-[11px] tracking-[4px] uppercase hover:bg-verde-vivo transition-colors">Continuar →</button>
             </div>
           </div>
         )}
@@ -469,7 +469,7 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                   onChange={(e) => setState((s) => ({ ...s, restricciones: e.target.value }))}
                   rows={3}
                   placeholder="Ej: soy vegetariano, miedo a las alturas, viajo con bebé..."
-                  className="gloss-surface-light w-full border border-crema/20 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/25"
+                  className="rounded-xl gloss-surface-light w-full border border-crema/20 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/25"
                 />
               </div>
               <div>
@@ -481,15 +481,15 @@ Finaliza con: resumen presupuesto total, qué llevar, errores a evitar, consejo 
                   onChange={(e) => setState((s) => ({ ...s, sueno: e.target.value }))}
                   rows={3}
                   placeholder="Ej: nadar en cascada turquesa, ver amanecer en las montañas..."
-                  className="gloss-surface-light w-full border border-crema/20 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/25"
+                  className="rounded-xl gloss-surface-light w-full border border-crema/20 text-crema p-4 text-sm resize-y outline-none focus:border-verde-vivo placeholder:text-crema/25"
                 />
               </div>
             </div>
             <div className="flex gap-4">
-              <button onClick={() => setCurrentStep("perfil")} className="border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
+              <button onClick={() => setCurrentStep("perfil")} className="rounded-xl border border-white/15 text-crema/50 px-8 py-3.5 text-[11px] tracking-[3px] uppercase hover:border-white/30 hover:text-crema transition-all">← Atrás</button>
               <button
                 onClick={generate}
-                className="bg-dorado text-negro px-14 py-4 text-[12px] tracking-[4px] uppercase font-medium hover:bg-lima transition-colors"
+                className="rounded-xl bg-dorado text-negro px-14 py-4 text-[12px] tracking-[4px] uppercase font-medium hover:bg-lima transition-colors"
               >
                 ✦ Generar mi Itinerario
               </button>

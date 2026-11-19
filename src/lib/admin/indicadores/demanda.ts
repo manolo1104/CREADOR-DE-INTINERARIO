@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { addDaysYMD, ymdMX } from "@/lib/dates";
 import { tipoFolio } from "@/lib/admin/folio";
 import { esDelPanel } from "@/lib/admin/clicsWhatsapp";
+import { CREADO_POR_IMPORTACION } from "@/lib/admin/crm";
 import { ETIQUETA_CANAL, type CanalGA4 } from "@/lib/admin/analisisComun";
 import { detalleGA4, serieGA4, type DetalleGA4, type ResultadoGA4, type TotalesGA4 } from "./ga4";
 import { busquedaGoogle, type Busqueda } from "./searchConsole";
@@ -176,7 +177,7 @@ export async function medirDemanda(p: Periodo, periodos: Periodo[], hoy: string)
       where: { createdAt: { gte: inicioMX(span.desde), lte: finMX(span.hasta) }, status: { notIn: NO_CUENTAN } },
       select: { confirmationNumber: true, createdAt: true },
     }),
-    prisma.oportunidad.findMany({ where: { createdAt: { gte: inicioMX(span.desde), lte: finMX(span.hasta) } }, select: { createdAt: true, canal: true, origenWeb: true } }).catch(() => []),
+    prisma.oportunidad.findMany({ where: { createdAt: { gte: inicioMX(span.desde), lte: finMX(span.hasta) } }, select: { createdAt: true, canal: true, origenWeb: true, creadoPor: true } }).catch(() => []),
     prisma.trackEvent.findMany({ where: { event: "WHATSAPP_CLICK", createdAt: { gte: inicioMX(p.desde), lte: finMX(p.hasta) } }, select: { path: true, data: true }, take: 20000 }),
     prisma.trackEvent.findMany({ where: { event: { in: ["BUSCADOR_HERO", "VER_DISPONIBILIDAD"] }, createdAt: { gte: inicioMX(p.desde), lte: finMX(p.hasta) } }, select: { createdAt: true, data: true }, take: 20000 }),
     prisma.trackEvent.count({ where: { event: { in: ["APARTADO_SIN_LUGAR", "VIAJE_CDMX_SIN_LUGAR"] }, createdAt: { gte: inicioMX(p.desde), lte: finMX(p.hasta) } } }),
@@ -184,12 +185,16 @@ export async function medirDemanda(p: Periodo, periodos: Periodo[], hoy: string)
     dias > 0 ? busquedaGoogle(addDaysYMD(p.desde, -dias), addDaysYMD(p.desde, -1)) : Promise.resolve(null),
   ]);
   const clicsSitio = clics.filter(e => !esDelPanel(e.path || String((e.data as Record<string, unknown> | null)?.pagina ?? "")));
+  // Los leads que sembró la importación (sembrar-crm.ts) nacen el día que se
+  // corre con su canal copiado de la reserva: no entraron ese mes. Comercial
+  // ya los saca de sus cohortes; aquí inflaban «leads con canal» (19 nov 2026).
+  const leadsReales = leads.filter(l => l.creadoPor !== CREADO_POR_IMPORTACION);
   const datos: DatosDemanda = {
     ga4, serieGa4,
     clicsConRef: clicsSitio.filter(e => typeof (e.data as Record<string, unknown> | null)?.ref === "string").length,
-    leadsConRef: leads.filter(l => enPeriodo(ymdMX(l.createdAt), p) && !!l.origenWeb).length,
+    leadsConRef: leadsReales.filter(l => enPeriodo(ymdMX(l.createdAt), p) && !!l.origenWeb).length,
     reservasWeb: reservas.filter(b => tipoFolio(b.confirmationNumber) === "web").map(b => ymdMX(b.createdAt)),
-    leads: leads.map(l => ({ ymd: ymdMX(l.createdAt), canal: l.canal })),
+    leads: leadsReales.map(l => ({ ymd: ymdMX(l.createdAt), canal: l.canal })),
     clicsPanel: clicsSitio.length,
     busquedas: busq.map(e => {
       const data = (e.data ?? {}) as Record<string, unknown>;

@@ -299,7 +299,7 @@ export default function Navbar() {
                 <ChevronDown className={`w-3 h-3 transition-transform ${destinosOpen ? "rotate-180" : ""}`} aria-hidden="true" />
               </button>
               {destinosOpen && (
-                <div className="absolute left-1/2 top-full z-50 mt-4 w-72 -translate-x-1/2 border border-white/10 bg-negro/98 p-2 shadow-2xl">
+                <div className="rounded-xl absolute left-1/2 top-full z-50 mt-4 w-72 -translate-x-1/2 border border-white/10 bg-negro/98 p-2 shadow-2xl">
                   {enlacesPlanea(locale).map((e) => (
                     <Link key={e.href} href={e.href} onClick={() => setDestinosOpen(false)} className="block px-3 py-2.5 hover:bg-white/5 transition-colors">
                       <span className="block font-dm text-[12px] text-crema">{e.texto}</span>
@@ -328,7 +328,7 @@ export default function Navbar() {
               {locale === "en" ? "ES" : "EN"}
             </Link>
 
-            <Link href={reservarHref} className="relative bg-dorado text-negro px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors duration-200 font-medium">
+            <Link href={reservarHref} className="rounded-xl relative bg-dorado text-negro px-5 py-2.5 text-[10px] tracking-[2.5px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors duration-200 font-medium">
               {dict.nav.reservar}
             </Link>
           </div>
@@ -391,7 +391,7 @@ export default function Navbar() {
             </Link>
 
             <div className="pt-4">
-              <Link href={reservarHref} className="block text-center bg-dorado text-negro py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
+              <Link href={reservarHref} className="rounded-xl block text-center bg-dorado text-negro py-4 text-[10px] tracking-[3px] uppercase font-dm hover:bg-terracota hover:text-crema transition-colors font-medium">
                 {dict.nav.reservar}
               </Link>
             </div>

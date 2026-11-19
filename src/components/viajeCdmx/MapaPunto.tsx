@@ -14,7 +14,7 @@ export function MapaPunto({ lat, lng, nombre }: { lat: number; lng: number; nomb
       <button
         type="button"
         onClick={() => setAbierto(true)}
-        className="w-full aspect-[16/9] border border-white/10 bg-negro/50 hover:bg-negro/30 inline-flex flex-col items-center justify-center gap-2 text-crema/70 font-dm text-sm transition-colors"
+        className="rounded-xl w-full aspect-[16/9] border border-white/10 bg-negro/50 hover:bg-negro/30 inline-flex flex-col items-center justify-center gap-2 text-crema/70 font-dm text-sm transition-colors"
       >
         <MapPin className="w-6 h-6 text-dorado" aria-hidden="true" />
         Ver el mapa

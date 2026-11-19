@@ -1080,7 +1080,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             <CtaHeroFicha
               slug={tour.slug}
               tourId={tour.id}
-              className="inline-flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors"
+              className="rounded-xl inline-flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-6 py-3.5 text-[11px] tracking-[2px] uppercase font-dm font-medium transition-colors"
             />
           </div>
         </div>
@@ -1176,7 +1176,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           {tour.garantiaHuasteca && (
             <section
               aria-label={locale === "en" ? "Huasteca Guarantee" : "Garantía Huasteca"}
-              className="flex items-start gap-5 border border-dorado/25 bg-dorado/[0.06] p-5"
+              className="rounded-2xl flex items-start gap-5 border border-dorado/25 bg-dorado/[0.06] p-5"
             >
               <SelloGarantia size={72} idSuffix="-ficha" variante="plano" className="flex-shrink-0" />
               <div className="min-w-0">
@@ -1366,7 +1366,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                 {tour.rutas.map((r) => (
-                  <div key={r.nombre} className="border border-white/10 bg-negro/40 p-5">
+                  <div key={r.nombre} className="rounded-2xl border border-white/10 bg-negro/40 p-5">
                     <div className="flex items-baseline justify-between gap-2 mb-2">
                       <h3 className="font-cormorant text-crema text-lg leading-tight">{r.nombre}</h3>
                       <span className="text-[10px] text-crema/40 font-dm flex-shrink-0">{r.duracion_hrs} h</span>
@@ -1641,7 +1641,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                     <figcaption className="pt-3.5">
                       <ul className="flex flex-wrap gap-1.5">
                         {[...(locale === "en" ? g.certificaciones.en : g.certificaciones.es), locale === "en" ? g.idiomas.en : g.idiomas.es].map((c) => (
-                          <li key={c} className="border border-dorado/40 text-dorado/90 text-[10px] font-dm tracking-wide px-2 py-0.5">
+                          <li key={c} className="rounded-full border border-dorado/40 text-dorado/90 text-[10px] font-dm tracking-wide px-2 py-0.5">
                             {c}
                           </li>
                         ))}
@@ -1688,7 +1688,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               </h2>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
-                <div className="border border-white/10 p-5">
+                <div className="rounded-2xl border border-white/10 p-5">
                   <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-crema/40 mb-4">No incluye</h3>
                   <ul className="space-y-2">
                     {noIncluyeDe(tour.id).map((item) => (
@@ -1700,7 +1700,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                   </ul>
                 </div>
 
-                <div className="border border-white/10 p-5">
+                <div className="rounded-2xl border border-white/10 p-5">
                   <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-crema/40 mb-4">Qué llevar</h3>
                   <ul className="space-y-2">
                     {queLlevarDe(tour.id).map((item) => (
@@ -1727,7 +1727,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                 // "invitar a preguntar"; esto es lo que faltaba para cumplirlo.
                 const hayEdad = Boolean(edadTexto || req?.edadNota);
                 return (
-                  <div className="border border-dorado/25 bg-dorado/[0.06] p-5">
+                  <div className="rounded-2xl border border-dorado/25 bg-dorado/[0.06] p-5">
                     <h3 className="font-dm text-[10px] tracking-[2px] uppercase text-dorado/80 mb-4">
                       {hayEdad ? "Requisitos y edad" : "Requisitos"}
                     </h3>
@@ -1773,7 +1773,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
 
           {/* La misma caja, para móvil, al final de todo (ver la nota del aside). */}
           <div className="lg:hidden space-y-4">
-            <div className="border border-white/10 bg-negro/60 p-5">
+            <div className="rounded-2xl border border-white/10 bg-negro/60 p-5">
               <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">{t.bookWithConfidence}</p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -1830,7 +1830,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             </div>
 
             <Link href={toursHref}
-              className="block text-center border border-white/15 hover:border-crema/30 text-crema/50 hover:text-crema text-[10px] tracking-[2px] uppercase font-dm py-3 transition-all duration-200">
+              className="rounded-xl block text-center border border-white/15 hover:border-crema/30 text-crema/50 hover:text-crema text-[10px] tracking-[2px] uppercase font-dm py-3 transition-all duration-200">
               {t.backToTours}
             </Link>
           </div>
@@ -1858,10 +1858,10 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                 que no cabe. En escritorio el bloque se recorre por dentro: el
                 botón de reservar siempre se alcanza. */}
             <div className="sticky top-24 space-y-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 [scrollbar-width:thin]">
-            <div className="border border-white/10 bg-negro/60 p-5">
+            <div className="rounded-2xl border border-white/10 bg-negro/60 p-5">
               {promo && (
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">
+                  <span className="rounded-full bg-terracota text-white text-[9px] font-dm font-bold tracking-[1px] px-2 py-0.5">
                     {locale === "en" ? `SAVE $${promo.monto} MXN` : `−$${promo.monto}`}
                   </span>
                   <span className="text-[9px] text-crema/35 font-dm">{t.specialPrice}</span>
@@ -1931,7 +1931,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
 
             <div className="space-y-2.5">
               <WhatsAppFicha slug={tour.slug} nombre={tour.nombre} mensajeFijo={waTour} etiqueta={t.askWhatsapp}
-                className="flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
+                className="rounded-xl flex items-center justify-center gap-2 w-full border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] hover:bg-[#25D366]/8 py-3 text-[10px] tracking-[2px] uppercase font-dm transition-all">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
               </WhatsAppFicha>
               {/* Un recorrido con política propia no puede llevar debajo el
@@ -1975,7 +1975,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                     es lo que el cliente necesita para decidir. */}
                 {tour.privateAvailable && (
                   <a href={waLink(waPrivate)} target="_blank" rel="noopener noreferrer"
-                    className="block mt-3 border border-verde-vivo/30 hover:border-verde-vivo/60 bg-verde-vivo/5 px-3 py-2.5 transition-colors group/priv">
+                    className="rounded-xl block mt-3 border border-verde-vivo/30 hover:border-verde-vivo/60 bg-verde-vivo/5 px-3 py-2.5 transition-colors group/priv">
                     <span className="flex items-center gap-1.5 text-[10px] tracking-[1px] uppercase font-dm text-verde-vivo">
                       <Lock className="w-3 h-3" aria-hidden="true" />
                       {locale === "en" ? "Private tour for your group" : "Tour privado para tu grupo"}
@@ -2004,7 +2004,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                   <InventoryBadge tourId={tour.id} tourName={tour.nombre} groupMax={tour.groupMax} />
                 )}
                 {tour.urgencia && (
-                  <p className="text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">
+                  <p className="rounded-full text-[9px] text-dorado/80 bg-dorado/10 border border-dorado/20 px-2 py-1 mt-2 font-dm leading-tight">
                     {tour.urgencia}
                   </p>
                 )}
@@ -2017,7 +2017,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                 de salida colocado encima del argumento de venta. En escritorio
                 se quedan aquí; en móvil se pintan al final de la columna. */}
             <div className="hidden lg:block space-y-4">
-            <div className="border border-white/10 bg-negro/60 p-5">
+            <div className="rounded-2xl border border-white/10 bg-negro/60 p-5">
               <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm mb-4">{t.bookWithConfidence}</p>
               <ul className="space-y-3">
                 <li className="flex items-start gap-3">
@@ -2074,7 +2074,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             </div>
 
             <Link href={toursHref}
-              className="block text-center border border-white/15 hover:border-crema/30 text-crema/50 hover:text-crema text-[10px] tracking-[2px] uppercase font-dm py-3 transition-all duration-200">
+              className="rounded-xl block text-center border border-white/15 hover:border-crema/30 text-crema/50 hover:text-crema text-[10px] tracking-[2px] uppercase font-dm py-3 transition-all duration-200">
               {t.backToTours}
             </Link>
             </div>
@@ -2207,7 +2207,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               <h2 className="font-cormorant text-crema text-2xl mb-10 text-center">{t.combineHeading}</h2>
 
               {comboTour && combo && (
-                <div className="border border-dorado/25 bg-dorado/5 p-5 mb-8 flex flex-col sm:flex-row gap-5 items-start">
+                <div className="rounded-2xl border border-dorado/25 bg-dorado/5 p-5 mb-8 flex flex-col sm:flex-row gap-5 items-start">
                   <div className="sm:flex-shrink-0 w-full sm:w-40">
                     <div className="relative aspect-[3/2] overflow-hidden">
                       {comboTour.imagen_hero && (
@@ -2216,17 +2216,17 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                     </div>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <span className="inline-block text-[8px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 px-2 py-0.5 mb-2">{t.recommendedCombo}</span>
+                    <span className="rounded-full inline-block text-[8px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 px-2 py-0.5 mb-2">{t.recommendedCombo}</span>
                     <h3 className="font-cormorant text-crema text-lg leading-snug mb-1">{comboTour.nombre}</h3>
                     <p className="text-crema/55 font-dm text-xs leading-relaxed mb-3">{comboMsg}</p>
                     <div className="flex flex-wrap items-center gap-3">
                       <span className="font-cormorant text-dorado text-base">{precioConUnidad(comboTour, false)}</span>
                       <Link href={localePath(`/tours/${comboTour.slug}`, locale)}
-                        className="text-[9px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-3 py-1.5 transition-all">
+                        className="rounded-full text-[9px] tracking-[2px] uppercase font-dm text-dorado border border-dorado/40 hover:bg-dorado/10 px-3 py-1.5 transition-all">
                         {t.viewTour}
                       </Link>
                       <Link href={localePath(`/reservar/carrito?agregar=${comboTour.slug}`, locale)}
-                        className="text-[9px] tracking-[2px] uppercase font-dm text-negro bg-dorado hover:bg-lima px-3 py-1.5 transition-all">
+                        className="rounded-full text-[9px] tracking-[2px] uppercase font-dm text-negro bg-dorado hover:bg-lima px-3 py-1.5 transition-all">
                         {t.book}
                       </Link>
                     </div>
@@ -2237,7 +2237,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {otherTours.map((tr) => (
                   <Link key={tr.slug} href={localePath(`/tours/${tr.slug}`, locale)}
-                    className="group border border-white/8 hover:border-verde-vivo/40 bg-negro/40 p-5 flex gap-4 items-start transition-all duration-200">
+                    className="rounded-xl group border border-white/8 hover:border-verde-vivo/40 bg-negro/40 p-5 flex gap-4 items-start transition-all duration-200">
                     <div className="relative w-20 h-20 overflow-hidden flex-shrink-0">
                       {tr.imagen_hero && (<Image src={tr.imagen_hero} alt={tr.nombre} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="80px" />)}
                     </div>
@@ -2256,7 +2256,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                   <Link
                     href={urlComparar("recorridos", [tour.slug, ...otherTours.map((o) => o.slug)], { locale, origen: "ficha" })}
                     prefetch={false}
-                    className="inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+                    className="rounded-xl inline-flex items-center justify-center min-h-[44px] border border-dorado/60 text-dorado hover:bg-dorado/10 px-6 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
                   >
                     {comparadorUI(locale).entradas.ficha}
                   </Link>

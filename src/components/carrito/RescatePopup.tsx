@@ -58,7 +58,7 @@ export function RescatePopup({
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-80 z-[80] border border-negro/15 bg-white shadow-2xl animate-slide-up">
+    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:w-80 z-[80] overflow-hidden rounded-2xl border border-negro/15 bg-white shadow-2xl animate-slide-up">
       <button
         onClick={cerrar}
         aria-label={t.cerrar}
@@ -80,7 +80,7 @@ export function RescatePopup({
           rel="noopener noreferrer"
           data-wa-manual="1"
           onClick={() => trackTourEvent("WHATSAPP_CLICK", { origen: "rescate_carrito" })}
-          className="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
+          className="rounded-xl flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#20ba59] text-white py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
         >
           <MessageCircle className="w-4 h-4" aria-hidden="true" />
           {t.cta}

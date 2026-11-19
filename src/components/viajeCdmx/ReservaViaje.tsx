@@ -226,7 +226,7 @@ export function ReservaViaje({
   }
 
   const fechasTexto = elegida ? t.rangoLargo(elegida.fechaSalida, elegida.fechaRegreso) : undefined;
-  const campo = "w-full bg-white border border-verde-profundo/20 text-verde-profundo placeholder:text-verde-profundo/40 px-3 py-3 text-base font-dm focus:outline-none focus:border-verde-selva";
+  const campo = "rounded-xl w-full bg-white border border-verde-profundo/20 text-verde-profundo placeholder:text-verde-profundo/40 px-3 py-3 text-base font-dm focus:outline-none focus:border-verde-selva";
 
   return (
     <section id="fechas" ref={seccion} className="scroll-mt-20 max-w-6xl mx-auto px-4 sm:px-6 py-16">
@@ -237,7 +237,7 @@ export function ReservaViaje({
         </h2>
         <p className="text-sm text-crema/60 font-dm mt-2">{t.subtitulo}</p>
         {estaSemana > 0 && (
-          <p className="inline-block mt-4 text-xs font-dm text-crema/80 border border-white/15 px-3 py-1.5">{t.estaSemana(estaSemana)}</p>
+          <p className="rounded-full inline-block mt-4 text-xs font-dm text-crema/80 border border-white/15 px-3 py-1.5">{t.estaSemana(estaSemana)}</p>
         )}
         {lider && <p className="block mt-3 text-xs font-dm text-dorado">{t.conLider(lider)}</p>}
       </div>
@@ -245,7 +245,7 @@ export function ReservaViaje({
       {aviso && <p className="text-center text-sm font-dm text-dorado mb-6" role="status">{aviso}</p>}
 
       {salidas.length === 0 ? (
-        <div className="max-w-md mx-auto border border-white/10 bg-negro/40 p-6">
+        <div className="rounded-2xl max-w-md mx-auto border border-white/10 bg-negro/40 p-6">
           <ListaEspera titulo={t.sinFechasTitulo} explicacion={t.sinFechasTexto} locale={locale} />
         </div>
       ) : (
@@ -266,7 +266,7 @@ export function ReservaViaje({
       )}
 
       {salidaEspera && (
-        <div ref={espera} className="max-w-md mx-auto mt-8 border border-white/10 bg-negro/50 p-6">
+        <div ref={espera} className="rounded-2xl max-w-md mx-auto mt-8 border border-white/10 bg-negro/50 p-6">
           <ListaEspera
             key={salidaEspera.id}
             salidaId={salidaEspera.id}
@@ -278,7 +278,7 @@ export function ReservaViaje({
       )}
 
       {elegida && m && (
-        <div ref={panel} className="scroll-mt-20 mt-8 max-w-2xl mx-auto bg-crema text-verde-profundo p-5 sm:p-8">
+        <div ref={panel} className="rounded-2xl scroll-mt-20 mt-8 max-w-2xl mx-auto bg-crema text-verde-profundo p-5 sm:p-8">
           {paso !== "listo" && (
             <div className="flex items-start justify-between gap-4 mb-6 pb-5 border-b border-verde-profundo/15">
               <div>
@@ -301,11 +301,11 @@ export function ReservaViaje({
               <div>
                 <p className="text-sm font-dm font-medium mb-2 inline-flex items-center gap-2"><Users className="w-4 h-4" aria-hidden="true" /> {t.cuantos}</p>
                 <div className="flex items-center gap-3">
-                  <button type="button" aria-label={t.menos} onClick={() => setPersonas((p) => Math.max(1, Math.min(p, maxPersonas) - 1))} className="w-12 h-12 border border-verde-profundo/25 inline-flex items-center justify-center disabled:opacity-30" disabled={m.personas <= 1}>
+                  <button type="button" aria-label={t.menos} onClick={() => setPersonas((p) => Math.max(1, Math.min(p, maxPersonas) - 1))} className="rounded-xl w-12 h-12 border border-verde-profundo/25 inline-flex items-center justify-center disabled:opacity-30" disabled={m.personas <= 1}>
                     <Minus className="w-4 h-4" aria-hidden="true" />
                   </button>
                   <span className="font-cormorant text-3xl w-10 text-center tabular-nums" aria-live="polite">{m.personas}</span>
-                  <button type="button" aria-label={t.mas} onClick={() => setPersonas((p) => Math.min(maxPersonas, Math.min(p, maxPersonas) + 1))} className="w-12 h-12 border border-verde-profundo/25 inline-flex items-center justify-center disabled:opacity-30" disabled={m.personas >= maxPersonas}>
+                  <button type="button" aria-label={t.mas} onClick={() => setPersonas((p) => Math.min(maxPersonas, Math.min(p, maxPersonas) + 1))} className="rounded-xl w-12 h-12 border border-verde-profundo/25 inline-flex items-center justify-center disabled:opacity-30" disabled={m.personas >= maxPersonas}>
                     <Plus className="w-4 h-4" aria-hidden="true" />
                   </button>
                   <span className="text-xs font-dm text-verde-profundo/60">
@@ -326,7 +326,7 @@ export function ReservaViaje({
                   {(["compartido", "privado"] as Cuarto[]).map((c) => {
                     const precio = precioCuarto(elegida.precioVigente, c);
                     return (
-                      <label key={c} className={`flex flex-col gap-1 border p-3 cursor-pointer transition-colors ${cuarto === c ? "border-verde-selva bg-white" : "border-verde-profundo/20 hover:border-verde-profundo/40"}`}>
+                      <label key={c} className={`rounded-xl flex flex-col gap-1 border p-3 cursor-pointer transition-colors ${cuarto === c ? "border-verde-selva bg-white" : "border-verde-profundo/20 hover:border-verde-profundo/40"}`}>
                         <span className="flex items-center justify-between gap-2">
                           <span className="inline-flex items-center gap-2 text-sm font-dm font-medium">
                             <input type="radio" name="cuarto" value={c} checked={cuarto === c} onChange={() => setCuarto(c)} className="w-4 h-4 accent-verde-selva" />

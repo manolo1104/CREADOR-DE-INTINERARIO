@@ -121,7 +121,7 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
 
   return (
     <form onSubmit={handlePay} className="space-y-6">
-      <section className="bg-white border border-negro/8 p-6">
+      <section className="rounded-2xl bg-white border border-negro/8 p-6">
         <div className="flex items-center gap-2 mb-5">
           <Lock className="w-4 h-4 text-verde-selva" />
           <h2 className="font-cormorant text-verde-profundo text-xl">{t.infoPago}</h2>
@@ -142,10 +142,10 @@ function PayStage({ paquete, form, clientSecret, paymentIntentId, cobrado, onDon
           </p>
         )}
       </section>
-      {error && <div className="bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
-      {enProceso && <div role="status" className="bg-verde-selva/8 border border-verde-selva/30 px-4 py-3"><p className="text-verde-profundo font-dm text-sm">{t.pagoEnProceso}</p></div>}
+      {error && <div className="rounded-xl bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
+      {enProceso && <div role="status" className="rounded-xl bg-verde-selva/8 border border-verde-selva/30 px-4 py-3"><p className="text-verde-profundo font-dm text-sm">{t.pagoEnProceso}</p></div>}
       <button type="submit" disabled={loading || !stripe || enProceso}
-        className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+        className="rounded-xl w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
         {loading ? t.procesandoPago : <><Lock className="w-3.5 h-3.5" />{t.pagar(fmx(cobrado))}</>}
       </button>
       <div className="flex items-center justify-center gap-2 text-xs font-dm text-negro/40">
@@ -553,7 +553,7 @@ export default function ReservarPaquetePage() {
         {/* Resumen del paquete */}
         {/* En celular el botón de compartir baja a su renglón: al lado, el nombre
             se quedaba con 80 px y se partía una palabra por línea. */}
-        <div className="bg-white border border-negro/8 p-5 mb-6 flex flex-wrap sm:flex-nowrap items-center gap-4">
+        <div className="rounded-2xl bg-white border border-negro/8 p-5 mb-6 flex flex-wrap sm:flex-nowrap items-center gap-4">
           {paquete.imagen && <img src={paquete.imagen} alt={paquete.nombre} className="w-20 h-20 object-cover flex-shrink-0" loading="lazy" />}
           <div className="flex-1 min-w-[150px]">
             <p className="text-[9px] tracking-[2px] uppercase text-verde-selva/70 font-dm mb-1">{paquete.duracion}</p>
@@ -596,7 +596,7 @@ export default function ReservarPaquetePage() {
         </div>
 
         {stage === "done" ? (
-          <div className="bg-white border border-verde-selva/30 p-8 text-center">
+          <div className="rounded-2xl bg-white border border-verde-selva/30 p-8 text-center">
             <div className="w-14 h-14 rounded-full bg-verde-selva/10 flex items-center justify-center mx-auto mb-4">
               <Check className="w-7 h-7 text-verde-selva" />
             </div>
@@ -618,7 +618,7 @@ export default function ReservarPaquetePage() {
                 decididas. En vez de los selectores, lo que se compra y cuántos
                 lugares quedan (escasez real: sale de `/api/paquetes/cupo`). */}
             {evento && (
-              <section className="bg-white border border-negro/8 p-6">
+              <section className="rounded-2xl bg-white border border-negro/8 p-6">
                 {/* Cifras «lining»: Cormorant trae cifras antiguas y el «1» se lee como «ı». */}
                 <h2 className="font-cormorant text-verde-profundo text-xl mb-1" style={{ fontVariantNumeric: "lining-nums", fontFeatureSettings: '"lnum" 1' }}>{evento.fechaTexto}</h2>
                 {sinHotel ? (
@@ -675,7 +675,7 @@ export default function ReservarPaquetePage() {
                 esta misma reserva —un solo asiento, un solo cupo— y no como
                 paquete aparte. */}
             {sinHotel && tourOpcional && !agotado && (
-              <section className="bg-white border border-negro/8 p-6">
+              <section className="rounded-2xl bg-white border border-negro/8 p-6">
                 <h2 className="font-cormorant text-verde-profundo text-xl mb-1">¿Aprovechas el día?</h2>
                 <p className="font-dm text-sm text-negro/60 leading-relaxed mb-4">
                   Ya que vienes esa noche, el mismo día puedes hacer {tourOpcional.nombreLargo}.
@@ -692,7 +692,7 @@ export default function ReservarPaquetePage() {
                         trackTourEvent("PAQUETE_DIA_COMPLETO", { tour: paquete.slug, conTour: o.on });
                       }}
                       aria-pressed={conTour === o.on}
-                      className={`w-full text-left border px-4 py-3 transition-colors ${conTour === o.on ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      className={`rounded-xl w-full text-left border px-4 py-3 transition-colors ${conTour === o.on ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
                       <span className="flex items-center justify-between gap-3">
                         <span className="min-w-0">
                           <span className="block font-dm text-sm text-negro">{o.titulo}</span>
@@ -718,7 +718,7 @@ export default function ReservarPaquetePage() {
 
             {/* Fecha + personas. En un evento la fecha ya viene puesta: solo se
                 pregunta cuántos van (familias en el paquete, grupos en la noche). */}
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-5">{evento ? "¿Cuántos van?" : t.fechaYPersonas}</h2>
               <div className={`grid grid-cols-1 gap-4 ${evento ? "" : "sm:grid-cols-2"}`}>
                 {!evento && (
@@ -729,7 +729,7 @@ export default function ReservarPaquetePage() {
                       setFecha(e.target.value);
                       if (e.target.value) trackTourEvent("DATE_SELECTED", { tour: paquete.slug, paquete: true });
                     }}
-                    className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                    className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                   <p className="mt-1.5 text-[11px] text-negro/50 font-dm">
                     {t.salimosA}<strong className="text-negro/75">{t.salimosAFuerte}</strong>{t.salimosACola}
                   </p>
@@ -740,12 +740,12 @@ export default function ReservarPaquetePage() {
                   <div className="flex items-center gap-3">
                     <button type="button" aria-label={t.menosPersonas}
                       onClick={() => setPersonas((n) => Math.max(minAdultos, n - 1))}
-                      className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors">−</button>
+                      className="rounded-xl w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors">−</button>
                     <span className="font-dm text-lg text-negro/85 w-8 text-center">{personas}</span>
                     <button type="button" aria-label={t.masPersonas}
                       disabled={totalHuespedes >= maxGrupo}
                       onClick={() => setPersonas((n) => Math.min(maxGrupo, n + 1))}
-                      className="w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors disabled:opacity-40">+</button>
+                      className="rounded-xl w-11 h-11 border border-negro/20 text-negro/60 hover:border-verde-selva transition-colors disabled:opacity-40">+</button>
                   </div>
                   {/* El desglose se enseña siempre que haya extras: si el precio
                       sube, el cliente tiene que ver POR QUÉ sube.
@@ -841,7 +841,7 @@ export default function ReservarPaquetePage() {
                         <span className="flex items-center gap-2">
                           <button type="button" aria-label={t.menosDe(c.label)}
                             onClick={() => c.set((n: number) => Math.max(0, n - 1))}
-                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
+                            className="rounded-full w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva">−</button>
                           <span className="font-dm text-sm text-negro/80 w-5 text-center">{c.v}</span>
                           {/* Los menores también cuentan para el tope. Sin
                             esto se podían poner 12 adultos y 3 niños: el
@@ -850,7 +850,7 @@ export default function ReservarPaquetePage() {
                           <button type="button" aria-label={t.masDe(c.label)}
                             disabled={totalHuespedes >= maxGrupo}
                             onClick={() => c.set((n: number) => n + 1)}
-                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva disabled:opacity-40 disabled:hover:border-negro/20">+</button>
+                            className="rounded-full w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva disabled:opacity-40 disabled:hover:border-negro/20">+</button>
                         </span>
                       </div>
                     ))}
@@ -877,7 +877,7 @@ export default function ReservarPaquetePage() {
                       motor cobra la tarifa de lista y nadie le dijo que eso se
                       negocia. */}
                   {!evento && totalHuespedes >= GRUPO_DESDE && totalHuespedes < MAX_PERSONAS_PAQUETE && cotizacion && (
-                    <div className="mt-4 border border-[#25D366]/40 bg-[#25D366]/5 p-4">
+                    <div className="rounded-xl mt-4 border border-[#25D366]/40 bg-[#25D366]/5 p-4">
                       <p className="font-dm text-[13px] text-negro/85 font-medium">{t.grupoTitulo}</p>
                       <p className="font-dm text-[12px] text-negro/60 mt-1 leading-snug">{t.grupoTexto}</p>
                       <a
@@ -892,7 +892,7 @@ export default function ReservarPaquetePage() {
                         target="_blank" rel="noopener noreferrer"
                         data-wa-manual="1"
                         onClick={() => trackTourEvent("WHATSAPP_CLICK", { tour: paquete.slug, amount: cotizacion.total, context: "paquete_grupo", origen: "paquete_grupo" })}
-                        className="mt-3 inline-flex items-center gap-2 border border-[#25D366] text-[#128C4B] hover:bg-[#25D366]/10 px-4 py-2.5 font-dm text-[12px] transition-colors"
+                        className="rounded-xl mt-3 inline-flex items-center gap-2 border border-[#25D366] text-[#128C4B] hover:bg-[#25D366]/10 px-4 py-2.5 font-dm text-[12px] transition-colors"
                       >
                         <MessageCircle className="w-4 h-4" aria-hidden="true" />
                         {t.grupoCta}
@@ -917,7 +917,7 @@ export default function ReservarPaquetePage() {
             {/* Qué incluye este viaje — antes el checkout de paquetes no decía
                 NADA: ni itinerario, ni horario, ni qué va incluido. El cliente
                 soltaba miles de pesos a ciegas. */}
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.tuViajeDiaPorDia}</h2>
               {/* La etiqueta sola ("· por persona") se quedaba sin referente al
                   dejar de ser "por pareja": va con su importe visible. */}
@@ -1033,13 +1033,13 @@ export default function ReservarPaquetePage() {
               llegaba la reserva sin saber a dónde llevarlo. Los dos valen lo
               mismo, así que la elección no mueve el precio. */}
             {eleccion && (
-              <section className="bg-white border border-negro/8 p-6">
+              <section className="rounded-2xl bg-white border border-negro/8 p-6">
                 <div className="flex items-start justify-between gap-4 mb-1">
                   <h2 className="font-cormorant text-verde-profundo text-xl">{eleccion.titulo}</h2>
                   {/* El contador sólo tiene sentido cuando se eligen varios:
                       con uno, el propio botón marcado ya lo dice todo. */}
                   {eleccionMulti && (
-                    <span className={`flex-shrink-0 font-dm text-xs tabular-nums px-2.5 py-1 border ${
+                    <span className={`rounded-full flex-shrink-0 font-dm text-xs tabular-nums px-2.5 py-1 border ${
                       faltanPorElegir === 0
                         ? "border-verde-selva/40 bg-verde-selva/8 text-verde-selva"
                         : "border-negro/15 text-negro/50"
@@ -1066,7 +1066,7 @@ export default function ReservarPaquetePage() {
                         onClick={() => alternarTour(o.slug)}
                         disabled={lleno}
                         aria-pressed={activa}
-                        className={`text-left border p-4 transition-colors ${
+                        className={`rounded-xl text-left border p-4 transition-colors ${
                           activa
                             ? "border-verde-selva bg-verde-selva/5"
                             : lleno
@@ -1110,7 +1110,7 @@ export default function ReservarPaquetePage() {
               horas de carretera de por medio, eso significa salir de madrugada.
               Manolo lo advertía a mano por WhatsApp en cada venta; aquí sale
               solo, con la salida a un clic. */}
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.cuandoLlegas}</h2>
               <p className="font-dm text-xs text-negro/45 mb-4">
                 {t.cuandoLlegasSub}
@@ -1127,7 +1127,7 @@ export default function ReservarPaquetePage() {
                     : 0;
                   return (
                     <button key={o.t} type="button" onClick={() => setNocheExtra(o.extra)}
-                      className={`w-full text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      className={`rounded-xl w-full text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
                       <span className="flex items-start gap-2">
                         <span className={`mt-0.5 w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
                           {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
@@ -1169,7 +1169,7 @@ export default function ReservarPaquetePage() {
 
             {/* Habitación (en un paquete de evento la asigna el hotel) */}
             {!evento && (
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.tuHabitacion}</h2>
               <p className="font-dm text-xs text-negro/45 mb-5">
                 {t.nochesEnHotel(paquete.noches)}
@@ -1200,7 +1200,7 @@ export default function ReservarPaquetePage() {
                         // y la pantalla decía "vista a la selva".
                         if (habElegida && habElegida.vistaMontana !== o.m) setHabitacionId("");
                       }}
-                      className={`text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      className={`rounded-xl text-left border p-4 transition-colors ${activa ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${activa ? "border-verde-selva" : "border-negro/25"}`}>
                           {activa && <span className="w-2 h-2 rounded-full bg-verde-selva" />}
@@ -1259,7 +1259,7 @@ export default function ReservarPaquetePage() {
                             disabled={!cabe}
                             onClick={() => { setHabitacionId(h.id); setVistaMontana(h.vistaMontana); }}
                             aria-pressed={elegida}
-                            className={`text-left border overflow-hidden transition-colors ${
+                            className={`rounded-2xl text-left border overflow-hidden transition-colors ${
                               elegida ? "border-verde-selva ring-2 ring-verde-selva/25"
                               : cabe   ? "border-negro/10 hover:border-verde-selva/50"
                                        : "border-negro/10 opacity-40 cursor-not-allowed"
@@ -1268,7 +1268,7 @@ export default function ReservarPaquetePage() {
                             <span className="relative block aspect-[4/3] bg-negro/5">
                               <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width:640px) 45vw, 200px" />
                               {elegida && (
-                                <span className="absolute top-1.5 right-1.5 bg-verde-selva text-crema text-[9px] tracking-[1px] uppercase px-1.5 py-0.5">
+                                <span className="rounded-full absolute top-1.5 right-1.5 bg-verde-selva text-crema text-[9px] tracking-[1px] uppercase px-1.5 py-0.5">
                                   {t.elegida}
                                 </span>
                               )}
@@ -1327,18 +1327,18 @@ export default function ReservarPaquetePage() {
                   </p>
                   <div className="space-y-2">
                     {reparto.map((n, idx) => (
-                      <div key={idx} className="flex items-center justify-between gap-3 border border-negro/10 px-3 py-2.5">
+                      <div key={idx} className="rounded-xl flex items-center justify-between gap-3 border border-negro/10 px-3 py-2.5">
                         <span className="font-dm text-[13px] text-negro/70">{t.habitacionN(idx + 1)}</span>
                         <span className="flex items-center gap-2">
                           <button type="button" aria-label={t.menosEnHabitacion(idx + 1)}
                             onClick={() => moverPersona(idx, -1)}
-                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
+                            className="rounded-full w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">−</button>
                           <span className="font-dm text-[13px] text-negro/85 w-16 text-center tabular-nums">
                             {t.personasN(n)}
                           </span>
                           <button type="button" aria-label={t.masEnHabitacion(idx + 1)}
                             onClick={() => moverPersona(idx, 1)}
-                            className="w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
+                            className="rounded-full w-8 h-8 border border-negro/20 text-negro/60 hover:border-verde-selva text-sm leading-none">+</button>
                         </span>
                       </div>
                     ))}
@@ -1355,7 +1355,7 @@ export default function ReservarPaquetePage() {
               estacionamiento— resueltas antes de pedirle la tarjeta, no después
               por WhatsApp. */}
             {!sinHotel && (
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.elHotel}</h2>
               <p className="font-dm text-xs text-negro/45 mb-4">
                 {t.elHotelSub}
@@ -1438,7 +1438,7 @@ export default function ReservarPaquetePage() {
             )}
 
             {/* Cuánto pagar */}
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-1">{t.cuantoPagarHoy}</h2>
               <p className="font-dm text-xs text-negro/45 mb-5">{t.cuantoPagarHoySub}</p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1448,7 +1448,7 @@ export default function ReservarPaquetePage() {
                   const amt = Math.round(totalReal * o.pct / 100);
                   return (
                     <button key={o.pct} type="button" onClick={() => setPct(o.pct)}
-                      className={`text-left border p-4 transition-colors ${active ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                      className={`rounded-xl text-left border p-4 transition-colors ${active ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
                       <div className="flex items-center gap-2 mb-1">
                         <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${active ? "border-verde-selva" : "border-negro/25"}`}>
                           {active && <div className="w-2 h-2 rounded-full bg-verde-selva" />}
@@ -1473,18 +1473,18 @@ export default function ReservarPaquetePage() {
             </section>
 
             {/* Contacto */}
-            <section className="bg-white border border-negro/8 p-6">
+            <section className="rounded-2xl bg-white border border-negro/8 p-6">
               <h2 className="font-cormorant text-verde-profundo text-xl mb-5">{t.datosContacto}</h2>
               <div className="space-y-4">
                 <div>
                   <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">{t.nombreCompleto}</label>
                   <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t.nombrePlaceholder}
-                    className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                    className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                 </div>
                 <div>
                   <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">{t.correo}</label>
                   <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder={t.correoPlaceholder}
-                    className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                    className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                   <p className="mt-1.5 text-xs text-negro/40 font-dm">{t.confirmacionSeEnvia}</p>
                 </div>
                 {/* ── ¿DÓNDE PASAMOS POR TI? (10 oct 2026) ──
@@ -1510,7 +1510,7 @@ export default function ReservarPaquetePage() {
                       ] as const).map((o) => (
                         <button key={o.k} type="button" role="radio" aria-checked={modoRecogida === o.k}
                           onClick={() => setModoRecogida(o.k as typeof modoRecogida)}
-                          className={`w-full text-left border px-4 py-3 transition-colors ${modoRecogida === o.k ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
+                          className={`rounded-xl w-full text-left border px-4 py-3 transition-colors ${modoRecogida === o.k ? "border-verde-selva bg-verde-selva/5" : "border-negro/15 hover:border-negro/30"}`}>
                           <span className="block font-dm text-sm text-negro">{o.t}</span>
                           <span className="block font-dm text-[11px] text-negro/50 mt-0.5">{o.n}</span>
                         </button>
@@ -1523,7 +1523,7 @@ export default function ReservarPaquetePage() {
                         </label>
                         <input id="recogida" type="text" value={recogida} maxLength={200} onChange={(e) => setRecogida(e.target.value)}
                           placeholder="Nombre del hotel o dirección"
-                          className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                          className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                       </div>
                     )}
                     {modoRecogida === "punto" && (
@@ -1536,11 +1536,11 @@ export default function ReservarPaquetePage() {
                 <div>
                   <label className="block text-[10px] tracking-[2px] uppercase text-negro/50 font-dm mb-1.5">{t.whatsappTelefono}</label>
                   <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t.telefonoPlaceholder}
-                    className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
+                    className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors" />
                 </div>
                 {showNotes ? (
                   <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} placeholder={t.notaPlaceholder}
-                    className="w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors resize-none" />
+                    className="rounded-xl w-full border border-negro/20 bg-crema px-4 py-3 font-dm text-sm text-negro focus:outline-none focus:border-verde-selva transition-colors resize-none" />
                 ) : (
                   <button type="button" onClick={() => setShowNotes(true)} className="text-xs font-dm text-verde-selva hover:text-verde-vivo underline underline-offset-2">
                     {t.agregarNota}
@@ -1549,10 +1549,10 @@ export default function ReservarPaquetePage() {
               </div>
             </section>
 
-            {error && <div className="bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
+            {error && <div className="rounded-xl bg-terracota/10 border border-terracota/30 px-4 py-3"><p className="text-terracota font-dm text-sm">{error}</p></div>}
 
             <button onClick={goToPay} disabled={loading || agotado}
-              className="w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
+              className="rounded-xl w-full bg-verde-selva text-crema py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-vivo transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
               {loading ? t.preparandoPago : <><Lock className="w-3.5 h-3.5" />{t.continuarPagar(fmx(chargeAmt))}</>}
             </button>
             <div className="flex items-center justify-center gap-2 text-xs font-dm text-negro/40">

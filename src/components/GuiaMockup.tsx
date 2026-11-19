@@ -50,7 +50,7 @@ export function GuiaMockup() {
             ))}
           </ul>
 
-          <span className="inline-block text-[8px] tracking-[2px] uppercase text-negro bg-dorado px-2.5 py-1 font-dm font-bold">
+          <span className="rounded-full inline-block text-[8px] tracking-[2px] uppercase text-negro bg-dorado px-2.5 py-1 font-dm font-bold">
             PDF · Edición 2026
           </span>
         </div>

@@ -1,3 +1,4 @@
+import { aplicaBlogSeo } from "@/lib/blogSeo";
 import { TOURS_DB } from "@/lib/tours";
 import { localizeTour, localizeDestino } from "@/lib/i18n/localize";
 import { DESTINOS_DB } from "@/lib/destinos";
@@ -47,16 +48,19 @@ async function blogEntradas(): Promise<Entrada[]> {
   try {
     const posts = await prisma.blogPost.findMany({
       where: { published: true },
-      select: { slug: true, title: true, coverImageUrl: true },
+      select: { slug: true, title: true, coverImageUrl: true, coverImageAlt: true },
     });
+    // Las portadas y sus alt que corrige `blogSeo.ts` (19 nov 2026): sin esto,
+    // el sitemap seguía anunciando la foto vieja de otro lugar.
     return posts
+      .map((p) => aplicaBlogSeo(p))
       .filter((p) => !!p.coverImageUrl)
       .map((p) => ({
         // `urlBlog` y no `p.slug`: 18 slugs arrastran sufijo de año y se
         // redirigen (308). Publicar la forma cruda mandaba a Google a rastrear
         // URLs que redirigen, y contradecía al sitemap.xml, que sí normaliza.
         loc: `${BASE}${urlBlog(p.slug)}`,
-        imagenes: [{ url: abs(p.coverImageUrl!), titulo: p.title }],
+        imagenes: [{ url: abs(p.coverImageUrl!), titulo: p.coverImageAlt || p.title }],
       }));
   } catch {
     return [];

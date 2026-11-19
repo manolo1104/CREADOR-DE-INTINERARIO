@@ -107,7 +107,7 @@ const T = {
 
 const etiquetaCls = "block font-dm text-[15px] font-medium text-verde-profundo mb-3";
 const campoCls =
-  "w-full bg-white border border-verde-profundo/20 rounded-md px-4 py-3 font-dm text-base text-negro placeholder:text-negro/35 focus:outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/20";
+  "w-full bg-white border border-verde-profundo/20 rounded-xl px-4 py-3 font-dm text-base text-negro placeholder:text-negro/35 focus:outline-none focus:border-verde-selva focus:ring-2 focus:ring-verde-selva/20";
 
 function Chips({ opciones, valor, onChange, locale, label }: {
   opciones: readonly Opcion[];
@@ -122,7 +122,7 @@ function Chips({ opciones, valor, onChange, locale, label }: {
         const activo = valor === o.valor;
         return (
           <button key={o.valor} type="button" role="radio" aria-checked={activo} onClick={() => onChange(o.valor)}
-            className={`min-h-[44px] px-4 py-2.5 rounded-full border font-dm text-[15px] transition-colors ${
+            className={`min-h-[44px] px-4 py-2.5 rounded-xl border font-dm text-[15px] transition-colors ${
               activo
                 ? "bg-verde-profundo border-verde-profundo text-crema"
                 : "bg-white border-verde-profundo/20 text-verde-profundo hover:border-verde-selva"
@@ -278,7 +278,7 @@ export function CheckinForm({ token, locale, nombre, tour, cuando, yaPaso, puede
           <div role="radiogroup" aria-label={t.primera} className="flex flex-wrap gap-2">
             {[{ v: true, txt: t.si }, { v: false, txt: t.no }].map((o) => (
               <button key={String(o.v)} type="button" role="radio" aria-checked={primera === o.v} onClick={() => setPrimera(o.v)}
-                className={`min-h-[44px] px-4 py-2.5 rounded-full border font-dm text-[15px] transition-colors ${
+                className={`min-h-[44px] px-4 py-2.5 rounded-xl border font-dm text-[15px] transition-colors ${
                   primera === o.v
                     ? "bg-verde-profundo border-verde-profundo text-crema"
                     : "bg-white border-verde-profundo/20 text-verde-profundo hover:border-verde-selva"

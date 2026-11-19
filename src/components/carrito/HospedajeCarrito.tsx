@@ -110,11 +110,11 @@ export function HospedajeCarrito({ c }: { c: CarritoCheckout }) {
                         <Image src={h.imagen} alt={h.nombre} fill className="object-cover" sizes="(max-width: 640px) 100vw, 300px" />
                         {activa && (
                           <span className="absolute inset-0 bg-verde-selva/25 flex items-center justify-center">
-                            <span className="bg-verde-selva text-crema text-[9px] tracking-[2px] uppercase font-dm px-2 py-1">{t.elegida}</span>
+                            <span className="rounded-full bg-verde-selva text-crema text-[9px] tracking-[2px] uppercase font-dm px-2 py-1">{t.elegida}</span>
                           </span>
                         )}
                         {h.vistaMontana && (
-                          <span className="absolute top-2 left-2 bg-dorado text-negro text-[8px] tracking-[1px] uppercase font-dm px-1.5 py-0.5">
+                          <span className="rounded-full absolute top-2 left-2 bg-dorado text-negro text-[8px] tracking-[1px] uppercase font-dm px-1.5 py-0.5">
                             {t.vistaMontana}
                           </span>
                         )}

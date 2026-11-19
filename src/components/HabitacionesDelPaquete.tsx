@@ -49,7 +49,7 @@ export function HabitacionesDelPaquete({
           const cat = HABITACIONES_HOTEL.find((x) => x.id === h.id);
           const fotos = cat?.galeria?.length ?? 1;
           return (
-            <div key={h.id} className="border border-white/10 bg-negro/50 overflow-hidden flex flex-col">
+            <div key={h.id} className="rounded-2xl border border-white/10 bg-negro/50 overflow-hidden flex flex-col">
               <button
                 type="button"
                 onClick={() => setAbierta(h.id)}
@@ -63,7 +63,7 @@ export function HabitacionesDelPaquete({
                   className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
                   sizes={columnas === 2 ? "(max-width: 640px) 100vw, 50vw" : "(max-width: 640px) 100vw, 25vw"}
                 />
-                <span className={`absolute top-2 right-2 text-[9px] font-dm tracking-[1px] uppercase px-2 py-1 ${
+                <span className={`rounded-full absolute top-2 right-2 text-[9px] font-dm tracking-[1px] uppercase px-2 py-1 ${
                   h.destacada ? "bg-dorado text-negro font-bold" : "bg-negro/80 text-crema/80"
                 }`}>
                   {h.etiqueta}

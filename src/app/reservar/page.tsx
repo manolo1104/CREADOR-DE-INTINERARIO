@@ -139,7 +139,7 @@ export default async function ReservarPage() {
         />
         <div className="relative z-10 max-w-3xl mx-auto">
           {/* La píldora con borde e icono, en vez del rótulo suelto. */}
-          <span className="mb-5 inline-flex items-center gap-2 border border-lima/30 px-4 py-1.5 font-dm text-[10px] uppercase tracking-[4px] text-lima">
+          <span className="rounded-full mb-5 inline-flex items-center gap-2 border border-lima/30 px-4 py-1.5 font-dm text-[10px] uppercase tracking-[4px] text-lima">
             <CalendarCheck className="h-3 w-3" aria-hidden="true" /> {t.eyebrow}
           </span>
           <h1
@@ -168,7 +168,7 @@ export default async function ReservarPage() {
             href={GOOGLE_PERFIL_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-5 group inline-flex items-center gap-2.5 border border-dorado/30 bg-dorado/10 px-4 py-2 hover:border-dorado/60 transition-colors"
+            className="rounded-xl mt-5 group inline-flex items-center gap-2.5 border border-dorado/30 bg-dorado/10 px-4 py-2 hover:border-dorado/60 transition-colors"
           >
             <span className="flex gap-0.5" aria-hidden="true">
               {[...Array(5)].map((_, i) => (
@@ -200,7 +200,7 @@ export default async function ReservarPage() {
 
       {/* ── PAQUETES (compacto) ────────────────────────────────────────── */}
       <section id="paquetes" className="mx-auto max-w-3xl px-6 pb-12">
-        <div className="border border-white/10 bg-negro/40 p-5 sm:p-6">
+        <div className="rounded-2xl border border-white/10 bg-negro/40 p-5 sm:p-6">
           <p className="font-dm text-[10px] uppercase tracking-[2px] text-crema/45">{en ? "Multi-day trips" : "¿Varios días?"}</p>
           <h2 className="mt-1 font-cormorant text-[24px] font-light leading-tight text-crema">
             {en ? "Packages with hotel, breakfasts and transport" : "Paquetes con hotel, desayunos y traslados"}
@@ -243,7 +243,7 @@ export default async function ReservarPage() {
           {!en && (
             <Link
               href="/recomendar"
-              className="bg-verde-selva hover:bg-verde-vivo text-crema px-8 py-3.5 text-[10px] tracking-[2.5px] uppercase font-dm transition-colors"
+              className="rounded-xl bg-verde-selva hover:bg-verde-vivo text-crema px-8 py-3.5 text-[10px] tracking-[2.5px] uppercase font-dm transition-colors"
             >
               {t.verMiTourIdeal}
             </Link>
@@ -252,7 +252,7 @@ export default async function ReservarPage() {
             href={waLink(t.waAyuda)}
             target="_blank"
             rel="noopener noreferrer"
-            className="border border-white/20 hover:border-crema/50 text-crema/75 hover:text-crema px-8 py-3.5 text-[10px] tracking-[2.5px] uppercase font-dm transition-colors"
+            className="rounded-xl border border-white/20 hover:border-crema/50 text-crema/75 hover:text-crema px-8 py-3.5 text-[10px] tracking-[2.5px] uppercase font-dm transition-colors"
           >
             {t.preguntarWhatsapp}
           </a>

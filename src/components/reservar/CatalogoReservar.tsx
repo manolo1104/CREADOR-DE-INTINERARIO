@@ -281,7 +281,7 @@ export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; d
       role="option"
       aria-selected={activa}
       onClick={onClick}
-      className={`flex w-full min-h-[44px] items-center justify-between gap-3 px-4 py-2 text-left transition-colors ${
+      className={`rounded-xl flex w-full min-h-[44px] items-center justify-between gap-3 px-4 py-2 text-left transition-colors ${
         activa ? "bg-dorado/15 text-dorado" : "text-crema/90 hover:bg-white/[0.06]"
       }`}
     >
@@ -354,7 +354,7 @@ export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; d
         <button
           type="button"
           onClick={bajarALaLista}
-          className="flex min-h-[60px] items-center justify-center bg-dorado px-7 text-center font-dm text-[13px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-lima sm:min-h-0 sm:min-w-[200px]"
+          className="rounded-xl flex min-h-[60px] items-center justify-center bg-dorado px-7 text-center font-dm text-[13px] font-medium uppercase tracking-[2px] text-negro transition-colors duration-200 hover:bg-lima sm:min-h-0 sm:min-w-[200px]"
         >
           {t.buscar}
         </button>
@@ -439,7 +439,7 @@ export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; d
                   type="button"
                   aria-pressed={activo}
                   onClick={() => elegirChip(c.id)}
-                  className={`inline-flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-full border px-4 font-dm text-[12px] transition-colors duration-200 ${
+                  className={`inline-flex min-h-[40px] items-center gap-1.5 whitespace-nowrap rounded-xl border px-4 font-dm text-[12px] transition-colors duration-200 ${
                     activo
                       ? "border-dorado bg-dorado text-negro"
                       : "border-white/15 bg-white/[0.04] text-crema/75 hover:border-dorado/60 hover:text-crema"
@@ -577,7 +577,7 @@ export function CatalogoReservar({ tours, distintivos = {} }: { tours: Tour[]; d
         {filtrados.length === 0 && (
           <div className="mt-5 border border-white/10 px-6 py-12 text-center">
             <p className="font-cormorant text-2xl font-light text-crema">{ui.vacio}</p>
-            <button type="button" onClick={() => { setEleccion(null); elegirChip("todos"); }} className="mt-5 min-h-[44px] border border-dorado px-6 font-dm text-xs uppercase tracking-[2px] text-dorado transition-colors hover:bg-dorado/10">
+            <button type="button" onClick={() => { setEleccion(null); elegirChip("todos"); }} className="rounded-xl mt-5 min-h-[44px] border border-dorado px-6 font-dm text-xs uppercase tracking-[2px] text-dorado transition-colors hover:bg-dorado/10">
               {ui.limpiar}
             </button>
           </div>

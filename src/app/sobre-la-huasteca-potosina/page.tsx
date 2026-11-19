@@ -121,7 +121,7 @@ export default function SobreLaHuastecaPage() {
           {t.datos.map((d, i) => {
             const Icon = ICONOS_DATOS[i] ?? MapPin;
             return (
-              <div key={d.label} className="text-center p-4 border border-negro/8 bg-crema/50">
+              <div key={d.label} className="rounded-xl text-center p-4 border border-negro/8 bg-crema/50">
                 <Icon className="w-5 h-5 text-verde-selva mx-auto mb-2" aria-hidden="true" />
                 <p className="text-[9px] tracking-[2px] uppercase text-negro/40 font-dm mb-1">{d.label}</p>
                 <p className="text-sm font-dm text-negro/75 font-medium leading-tight">{d.valor}</p>
@@ -206,7 +206,7 @@ export default function SobreLaHuastecaPage() {
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {t.destinosIcono.map((d) => (
-              <div key={d.img} className="group border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors">
+              <div key={d.img} className="rounded-2xl group border border-negro/8 overflow-hidden hover:border-verde-selva/30 transition-colors">
                 <div className="aspect-video overflow-hidden">
                   <img
                     src={d.img}
@@ -224,7 +224,7 @@ export default function SobreLaHuastecaPage() {
           <div className="text-center mt-10">
             <Link
               href={localePath("/destinos", locale)}
-              className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all"
+              className="rounded-xl inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all"
             >
               {t.destinosBtn}
             </Link>
@@ -239,7 +239,7 @@ export default function SobreLaHuastecaPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-left">
           {t.llegar.map((m) => (
-            <div key={m.medio} className="border border-negro/8 bg-white p-5">
+            <div key={m.medio} className="rounded-2xl border border-negro/8 bg-white p-5">
               <p className="font-cormorant text-dorado text-lg mb-2">{m.medio}</p>
               <p className="text-negro/55 font-dm text-sm leading-relaxed">{m.detalle}</p>
             </div>
@@ -247,7 +247,7 @@ export default function SobreLaHuastecaPage() {
         </div>
         <Link
           href={localePath("/info-practica", locale)}
-          className="inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all"
+          className="rounded-xl inline-block border border-verde-selva/40 text-verde-selva px-10 py-3.5 text-sm tracking-[2px] uppercase font-dm hover:bg-verde-selva/10 transition-all"
         >
           {t.llegarBtn}
         </Link>
@@ -295,13 +295,13 @@ export default function SobreLaHuastecaPage() {
         <div className="flex flex-wrap gap-4 justify-center">
           <Link
             href={localePath("/reservar", locale)}
-            className="inline-block bg-dorado text-white px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-terracota transition-colors"
+            className="rounded-xl inline-block bg-dorado text-white px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-terracota transition-colors"
           >
             {t.ctaReservar}
           </Link>
           <Link
             href={localePath("/tours", locale)}
-            className="inline-block border border-crema/30 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-colors"
+            className="rounded-xl inline-block border border-crema/30 text-crema px-10 py-4 text-sm tracking-[2px] uppercase font-dm hover:bg-crema/10 transition-colors"
           >
             {t.ctaTours}
           </Link>

@@ -482,12 +482,7 @@ export const ERRATAS_GRUPO_A: ErratasPorArticulo = {
   ],
 
   "cascada-el-salto-y-el-aguacate-guia": [
-    {
-      campo: "coverImageAlt",
-      from: `cascada el salto Cascada El Aguacate con aguas cristalinas rodeada de selva verde Huasteca Potosina 2026`,
-      to: `Cascada El Aguacate con aguas cristalinas rodeada de selva verde, en Tamasopo, Huasteca Potosina`,
-      porque: "La portada (imagenes/cascada-el-aguacate/hero.jpg) es El Aguacate y el alt le pegaba «cascada el salto».",
-    },
+    // La portada y su alt los pone ahora `blogSeo.ts` (fotos del 19 nov 2026).
     {
       from: ` Según operadores locales de la región, el tramo que conecta cascada El Salto con cascada El Aguacate recibe más de <strong>8,000 visitantes en los meses de temporada alta</strong> (septiembre–octubre de 2026), lo que hace indispensable llegar temprano y planificar bien cada parada.`,
       to: ` En temporada alta (septiembre–octubre) es indispensable llegar temprano y planificar bien cada parada.`,
@@ -556,12 +551,7 @@ export const ERRATAS_GRUPO_A: ErratasPorArticulo = {
   ],
 
   "el-trampolin-de-tamasopo-guia-precio-y-como-llegar": [
-    {
-      campo: "coverImageAlt",
-      from: `el trampolin tamasopo Cascadas de Tamasopo con aguas turquesa entre la selva potosina Huasteca Potosina 2026`,
-      to: `Cascadas de Tamasopo con aguas turquesa entre la selva potosina, Huasteca Potosina`,
-      porque: "La portada (imagenes/cascadas-de-tamasopo/hero.jpg) es el parque de las Cascadas de Tamasopo, no el trampolín; el alt le pegaba «el trampolin tamasopo».",
-    },
+    // La portada y su alt los pone ahora `blogSeo.ts` (fotos del 19 nov 2026).
     {
       from: `—apenas 48 km por la Mex-85—`,
       to: `—a unos 45 minutos por la federal 70, rumbo a Rioverde—`,

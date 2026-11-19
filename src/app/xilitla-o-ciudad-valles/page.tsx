@@ -120,7 +120,7 @@ export default function XilitlaOCiudadVallesPage() {
       {/* ── LAS DOS RESPUESTAS ── */}
       <section className="px-6 pb-16">
         <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="border border-white/10 bg-verde-profundo/30 p-6">
+          <div className="rounded-2xl border border-white/10 bg-verde-profundo/30 p-6">
             <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">{t.vallesSi}</p>
             <ul className="space-y-2 text-crema/70 font-dm text-sm leading-relaxed">
               {t.vallesBullets.map((b) => (
@@ -128,7 +128,7 @@ export default function XilitlaOCiudadVallesPage() {
               ))}
             </ul>
           </div>
-          <div className="border border-lima/25 bg-verde-profundo/40 p-6">
+          <div className="rounded-2xl border border-lima/25 bg-verde-profundo/40 p-6">
             <p className="text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-3">{t.xilitlaSi}</p>
             <ul className="space-y-2 text-crema/70 font-dm text-sm leading-relaxed">
               {t.xilitlaBullets.map((b) => (
@@ -141,7 +141,7 @@ export default function XilitlaOCiudadVallesPage() {
 
       {/* ── DÓNDE ENTRAMOS NOSOTROS ── */}
       <section className="px-6 pb-16">
-        <div className="max-w-4xl mx-auto border border-white/10 bg-negro/40 p-7">
+        <div className="rounded-2xl max-w-4xl mx-auto border border-white/10 bg-negro/40 p-7">
           <h2 className="font-cormorant font-light text-crema text-2xl mb-4">{t.nosotrosTitulo}</h2>
           {/* SEO-10 (19 oct 2026): el hotel se nombra y enlaza a su sitio, con
               www y sin nofollow; antes era «nuestro hotel» a secas. */}
@@ -165,19 +165,19 @@ export default function XilitlaOCiudadVallesPage() {
           <div className="flex flex-wrap gap-3">
             <Link
               href={localePath("/tours", locale)}
-              className="inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
+              className="rounded-xl inline-flex items-center gap-2 border border-lima/40 text-lima font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:bg-lima/10 transition-colors"
             >
               {t.btnTours}
             </Link>
             <Link
               href={localePath(`/paquetes/${paqueteBase.slug}`, locale)}
-              className="inline-flex items-center gap-2 border border-white/15 text-crema/80 font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:border-lima/40 hover:text-lima transition-colors"
+              className="rounded-xl inline-flex items-center gap-2 border border-white/15 text-crema/80 font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:border-lima/40 hover:text-lima transition-colors"
             >
               {t.btnPaquete}
             </Link>
             <Link
               href={localePath("/tours-en-ciudad-valles", locale)}
-              className="inline-flex items-center gap-2 border border-white/15 text-crema/80 font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:border-lima/40 hover:text-lima transition-colors"
+              className="rounded-xl inline-flex items-center gap-2 border border-white/15 text-crema/80 font-dm text-xs tracking-[1.5px] uppercase px-6 py-3 hover:border-lima/40 hover:text-lima transition-colors"
             >
               {t.btnValles}
             </Link>
@@ -212,7 +212,7 @@ export default function XilitlaOCiudadVallesPage() {
               href={waLink(t.waTexto)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
+              className="rounded-xl inline-flex items-center gap-2 bg-[#25D366] text-negro font-dm font-bold text-xs tracking-[1.5px] uppercase px-8 py-4 hover:brightness-110 transition-all"
             >
               {t.waBoton}
             </a>

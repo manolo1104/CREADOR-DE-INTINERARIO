@@ -131,7 +131,7 @@ function RejillaCercanos({ tours, locale, dd }: { tours: Tour[]; locale: Locale;
       {tours.map((t) => (
         <div
           key={t.slug}
-          className="border border-verde-vivo/25 bg-negro/25 hover:border-verde-vivo/50 transition-colors p-4 flex flex-col gap-3"
+          className="rounded-xl border border-verde-vivo/25 bg-negro/25 hover:border-verde-vivo/50 transition-colors p-4 flex flex-col gap-3"
         >
           <Link
             href={localePath(`/tours/${t.slug}`, locale)}
@@ -154,7 +154,7 @@ function RejillaCercanos({ tours, locale, dd }: { tours: Tour[]; locale: Locale;
           </Link>
           <Link
             href={localePath(`/reservar/carrito?agregar=${t.slug}`, locale)}
-            className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
+            className="rounded-xl flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-colors"
           >
             {/* 🔴 El Edén no se reembolsa (ver `cancelacion` en tours.ts): a
                 él no se le puede prometer "cancela gratis 48 h antes". */}
@@ -311,7 +311,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                   <TrackedLink key={t.slug} href={localePath(`/tours/${t.slug}`, locale)}
                     event="DESTINO_TOUR_CLICK"
                     data={{ destino: base.slug, tourSlug: t.slug, tour_name: t.nombre, source: "pildora_hero" }}
-                    className="inline-flex items-center gap-1.5 bg-verde-selva/80 hover:bg-verde-vivo text-crema text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 transition-colors">
+                    className="rounded-full inline-flex items-center gap-1.5 bg-verde-selva/80 hover:bg-verde-vivo text-crema text-[9px] tracking-[1.5px] uppercase font-dm px-3 py-1.5 transition-colors">
                     <Map className="w-3 h-3 flex-shrink-0" />
                     {dd.includedIn} {t.nombre} →
                   </TrackedLink>
@@ -360,7 +360,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                       amount:   t.precio,
                       source:   esCercano ? "banda_destino_cerca" : "banda_destino",
                     }}
-                    className="inline-flex items-center gap-2 bg-lima text-negro px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-crema transition-colors"
+                    className="rounded-xl inline-flex items-center gap-2 bg-lima text-negro px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-crema transition-colors"
                   >
                     {dd.seeDepartures} →
                   </TrackedLink>
@@ -452,13 +452,13 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
 
           <div className="space-y-6">
             {destino.advertencias && (
-              <div className="border-l-2 border-terracota bg-terracota/10 p-4">
+              <div className="rounded-r-xl border-l-2 border-terracota bg-terracota/10 p-4">
                 <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" /> {dd.advertencias}</p>
                 <p className="text-sm text-crema/75">{destino.advertencias}</p>
               </div>
             )}
             {destino.como_llegar && (
-              <div className="border-l-2 border-agua bg-agua/10 p-4">
+              <div className="rounded-r-xl border-l-2 border-agua bg-agua/10 p-4">
                 <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2 flex items-center gap-1.5"><Car className="w-3 h-3" /> {dd.comoLlegar}</p>
                 <p className="text-sm text-crema/75">{destino.como_llegar}</p>
               </div>
@@ -522,7 +522,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           <h2 className="font-cormorant text-crema text-xl mb-4 flex items-center gap-2">
             <MapPin className="w-5 h-5 text-verde-selva" /> {dd.location}
           </h2>
-          <div className="relative overflow-hidden border border-white/10" style={{ height: "280px" }}>
+          <div className="rounded-2xl relative overflow-hidden border border-white/10" style={{ height: "280px" }}>
             <div className="absolute inset-0 bg-verde-profundo/30 animate-pulse" />
             <iframe src={embedUrl} width="100%" height="280" style={{ border: 0, position: "relative", zIndex: 10 }} loading="lazy" title={`${dd.location}: ${destino.nombre}`} allowFullScreen={false} />
           </div>
@@ -566,7 +566,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               <Link
                 key={g.href}
                 href={g.href}
-                className="group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
+                className="rounded-xl group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
               >
                 <span>
                   <span className="block text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-1">{g.rotulo}</span>
@@ -580,7 +580,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           <div className="max-w-4xl mx-auto px-6 pb-12">
             <Link
               href={guiaHref}
-              className="group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
+              className="rounded-xl group flex items-center justify-between gap-4 border border-white/10 bg-negro/30 px-5 py-4 hover:border-lima/40 transition-colors"
             >
               <span>
                 <span className="block text-[9px] tracking-[2px] uppercase font-dm text-lima/60 mb-1">
@@ -631,7 +631,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             {locale === "en" ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                 {resenasEn.map((r) => (
-                  <div key={r.autor} className="border border-white/10 bg-negro/30 p-4">
+                  <div key={r.autor} className="rounded-xl border border-white/10 bg-negro/30 p-4">
                     <div className="flex gap-0.5 mb-2">{[...Array(r.estrellas)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
                     <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-2">&ldquo;{r.texto}&rdquo;</p>
                     {/* Rotulada como traducción y con el texto literal de
@@ -660,7 +660,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {reviewsDestino.map((r) => (
-                <div key={r.nombre} className="border border-white/10 bg-negro/30 p-4">
+                <div key={r.nombre} className="rounded-xl border border-white/10 bg-negro/30 p-4">
                   <div className="flex gap-0.5 mb-2">{[...Array(r.rating)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
                   <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-3">&ldquo;{r.texto}&rdquo;</p>
                   <div className="flex items-center gap-2">
@@ -690,7 +690,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                 {toursCompletos.map((tour) => {
                   const clic = { destino: base.slug, tourSlug: tour.slug, tour_name: tour.nombre, amount: tour.precio, source: "tarjeta_destino" };
                   return (
-                  <div key={tour.slug} className="border border-white/10 bg-negro/60 overflow-hidden text-left">
+                  <div key={tour.slug} className="rounded-2xl border border-white/10 bg-negro/60 overflow-hidden text-left">
                     {/* La tarjeta solo llevaba al carrito y a WhatsApp: quien
                         quería ver el itinerario antes de pagar no tenía por
                         dónde. Foto, tipo y nombre son UN solo enlace a la ficha
@@ -746,11 +746,11 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                       </div>
                       <div className="space-y-2">
                         <Link href={localePath(`/reservar/carrito?agregar=${tour.slug}`, locale)}
-                          className="flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors">
+                          className="rounded-xl flex items-center justify-center gap-2 w-full bg-verde-selva hover:bg-verde-vivo text-crema py-3 text-[10px] tracking-[2px] uppercase font-dm transition-colors">
                           <Lock className="w-3 h-3" />{dd.bookWithCard}
                         </Link>
                         <a href={waLink(waDestino)} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all">
+                          className="rounded-xl flex items-center justify-center gap-2 w-full border border-[#25D366]/40 hover:border-[#25D366] text-[#25D366] py-2.5 text-[10px] tracking-[2px] uppercase font-dm transition-all">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
                           {dd.askWhatsapp}
                         </a>
@@ -807,13 +807,13 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             <div className="flex flex-wrap gap-3 justify-center mb-4">
               <Link
                 href={localePath("/reservar", locale)}
-                className="inline-flex items-center gap-2.5 bg-dorado hover:bg-terracota text-negro hover:text-crema px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
+                className="rounded-xl inline-flex items-center gap-2.5 bg-dorado hover:bg-terracota text-negro hover:text-crema px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200"
               >
                 <Lock className="w-4 h-4 flex-shrink-0" />
                 {dd.verTodosYReservar}
               </Link>
             <a href={waLink(waDestino)} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200">
+              className="rounded-xl inline-flex items-center gap-2.5 border border-[#25D366]/50 hover:border-[#25D366] text-[#25D366] px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors duration-200">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
               {dd.bookViaWhatsapp}
             </a>
@@ -845,14 +845,14 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             <div className="flex flex-wrap gap-3">
               {combinaciones.map((c) => (
                 <Link key={c.slug} href={localePath(`/destinos/${c.slug}`, locale)}
-                  className="border border-verde-selva/30 bg-verde-selva/10 hover:bg-verde-selva/15 text-crema/75 hover:text-crema font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
+                  className="rounded-xl border border-verde-selva/30 bg-verde-selva/10 hover:bg-verde-selva/15 text-crema/75 hover:text-crema font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
                   <span className="text-verde-vivo text-sm">→</span>
                   {comboName(c.slug, c.nombre)}
                 </Link>
               ))}
               {locale !== "en" && (
                 <Link href="/recomendar"
-                  className="border border-dorado/30 bg-dorado/10 hover:bg-dorado/15 text-dorado/75 hover:text-dorado font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
+                  className="rounded-xl border border-dorado/30 bg-dorado/10 hover:bg-dorado/15 text-dorado/75 hover:text-dorado font-dm text-xs px-4 py-2.5 transition-all flex items-center gap-1.5">
                   {dd.createItinerary}
                 </Link>
               )}

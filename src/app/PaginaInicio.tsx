@@ -329,7 +329,7 @@ export async function Pagina({ locale }: { locale: Locale }) {
   const LEAD = "mt-4 max-w-[60ch] font-dm text-[15px] leading-relaxed text-negro/60 sm:text-base";
   /* El botón principal: dorado = «reservar» en todo el sitio. */
   const BOTON_DORADO =
-    "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-full bg-dorado px-8 font-dm text-[15px] font-medium text-negro " +
+    "inline-flex min-h-[52px] items-center justify-center gap-2 rounded-xl bg-dorado px-8 font-dm text-[15px] font-medium text-negro " +
     "transition-[background-color,transform] duration-200 ease-out hover:bg-lima active:scale-[0.98]";
   const ENLACE = "font-dm text-sm text-verde-selva underline decoration-verde-selva/30 underline-offset-4 transition-colors hover:text-terracota";
 
@@ -870,7 +870,7 @@ export async function Pagina({ locale }: { locale: Locale }) {
             <a
               href={waLink(en ? "Hi! I'd like to ask about your Huasteca Potosina tours." : WA_MESSAGES.general)}
               target="_blank" rel="noopener noreferrer"
-              className="inline-flex min-h-[52px] items-center justify-center gap-2.5 rounded-full border border-crema/30 px-8 font-dm text-[15px] font-medium text-crema transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-crema [@media(hover:hover)]:hover:bg-crema/10 active:scale-[0.98]"
+              className="inline-flex min-h-[52px] items-center justify-center gap-2.5 rounded-xl border border-crema/30 px-8 font-dm text-[15px] font-medium text-crema transition-[background-color,border-color,transform] duration-200 ease-out [@media(hover:hover)]:hover:border-crema [@media(hover:hover)]:hover:bg-crema/10 active:scale-[0.98]"
             >
               <MessageCircle className="h-4 w-4" aria-hidden="true" />
               {en ? "Ask on WhatsApp" : "Preguntar por WhatsApp"}
