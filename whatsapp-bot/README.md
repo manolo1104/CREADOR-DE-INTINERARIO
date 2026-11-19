@@ -143,8 +143,18 @@ Copia `.env.example` a `.env` (ahí está explicada cada una). Las importantes:
 - `OWNER_WHATSAPP_NUMBER`: tu WhatsApp. Único destino de los avisos y único número que
   puede mandarle comandos al bot por mensaje directo.
 - `NEVER_RESPOND_NUMBERS`: equipo, guías, proveedores, hotel (el bot nunca les contesta).
-- `HUMAN_TAKEOVER_MS` (2 h), `PAUSA_ESCALACION_MS` (12 h), `HORARIO_HUMANO` (08:00-21:00).
-  🔴 Si en Railway quedó `HUMAN_TAKEOVER_MS=300000` (los 5 min de antes), bórralo.
+- `RESPOND_MODE=strangers` (por omisión): el bot **solo habla con números NO guardados** en
+  los contactos del teléfono del negocio (18 nov 2026). A un contacto guardado no le
+  contesta ni le manda recordatorios, «vence mañana», aviso de pago con liga ni «¿cómo les
+  fue?», aunque ya platicara con él; si estaba a media plática, al dueño le llega UN aviso.
+  En chats @lid revisa también el contacto de su teléfono real. Si no puede saber si está
+  guardado: a un mensaje que llega le contesta (casi siempre es un prospecto nuevo); lo que
+  manda por su cuenta lo deja para la siguiente vuelta. `all` = a todos (solo pruebas).
+  Reglas en `guardados.js`, pruebas en `test-guardados.js`.
+- `BOT_SOLO_CONECTAR=1`: se vincula (QR) y se queda conectado sin contestar ni mandar nada;
+  solo `/status` y `/help`. `QR_OUT_FILE`: archivo con el QR en texto y luego el estado
+  (AUTENTICANDO / CONECTADO / FALLO / DESCONECTADO) para pintarlo en una página.
+- `HUMAN_TAKEOVER_MS` (5 min), `PAUSA_ESCALACION_MS` (12 h), `HORARIO_HUMANO` (08:00-21:00).
 - `ESTADO_PATH`, `COMPROBANTES_DIR`: solo si cambias el volumen.
 - `BANK_NAME`, `BANK_TITULAR`, `BANK_CLABE`, `OXXO_REFERENCIA`: los mismos en el sitio y en el bot.
 

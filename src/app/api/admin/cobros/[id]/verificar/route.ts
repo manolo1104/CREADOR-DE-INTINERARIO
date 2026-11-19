@@ -4,7 +4,7 @@ import { sesionActual } from "@/lib/admin/sesion";
 import { puedeHacer } from "@/lib/admin/usuarios";
 import { registrarEnBitacora, pesos } from "@/lib/admin/bitacora";
 import { consultarCep, PAGINA_CEP } from "@/lib/admin/banxicoCep";
-import { CUENTA_COBRO } from "@/lib/admin/cuentaCobro";
+import { CUENTA_COBRO, hayClabeDeCobro } from "@/lib/admin/cuentaCobro";
 import { cobrosDeReserva, esVerificable } from "@/lib/admin/cobros";
 
 export const dynamic = "force-dynamic";
@@ -64,6 +64,13 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     }
 
     // ── Con Banxico ─────────────────────────────────────────────────────────
+    // Banxico pide la cuenta que recibió el dinero. Sin `BANK_CLABE` en el
+    // servidor no se le pregunta nada (la CLABE ya no va escrita en el código).
+    if (!hayClabeDeCobro()) {
+      return NextResponse.json({
+        error: "Falta la CLABE del negocio en el servidor (variable BANK_CLABE en Railway). Mientras, Manolo o Martín pueden usar «Lo vi en la cuenta».",
+      }, { status: 503 });
+    }
     const claveRastreo = String(b?.claveRastreo ?? mov.claveRastreo ?? "").trim().toUpperCase().slice(0, 30);
     const bancoEmisor  = String(b?.bancoEmisor ?? mov.bancoEmisor ?? "").replace(/\D/g, "").slice(0, 5);
     const fecha        = /^\d{4}-\d{2}-\d{2}$/.test(String(b?.fecha ?? "")) ? String(b.fecha) : mov.fecha;

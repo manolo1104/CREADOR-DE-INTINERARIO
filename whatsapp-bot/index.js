@@ -27,6 +27,7 @@ const { etapaDe } = require("./etapas");
 const { crearEtiquetas } = require("./etiquetas");
 const horario = require("./horario");
 const pausaHumano = require("./pausaHumano");
+const guardados = require("./guardados");
 
 // ── Configuración ─────────────────────────────────────────────
 function msDeEntorno(nombre, porOmision) {
@@ -72,11 +73,18 @@ const MOTIVOS_HASTA_REANUDA = new Set(["queja_incidente", "cancelacion", "client
 const OWNER = numeroEscrito(process.env.OWNER_WHATSAPP_NUMBER);
 const OWNER_JID = OWNER ? `${OWNER}@c.us` : "";
 
-// A quién responde el bot. RESPOND_MODE: "strangers" (default) | "all".
-// En "strangers" un contacto GUARDADO no se atiende… salvo que el bot ya
-// estuviera platicando con él: el equipo guarda los contactos a media venta
-// ("Ana 2pax Tamul 8sep") y el bot se quedaba mudo justo antes del pago.
-const RESPOND_MODE = (process.env.RESPOND_MODE || "strangers").toLowerCase();
+// A quién responde el bot. RESPOND_MODE: "strangers" (default) | "all" (pruebas).
+// En "strangers" el bot SOLO habla con números NO guardados en los contactos
+// del teléfono del negocio (18 nov 2026, Manolo: «que el bot solo responda
+// mensajes de chats no registrados»). Un contacto guardado lo atiende el
+// equipo, aunque el bot ya estuviera platicando con él (antes seguía: el
+// equipo guarda los contactos a media venta, «Ana 2pax Tamul 8sep»); en ese
+// caso al dueño le llega UN aviso para que lo siga. Reglas en guardados.js.
+const RESPOND_MODE = guardados.modoRespuesta(process.env.RESPOND_MODE);
+// BOT_SOLO_CONECTAR=1: se vincula a WhatsApp (QR) y se queda conectado SIN
+// contestar ni mandar nada; solo /status y /help del dueño o del teléfono del
+// negocio. Para escanear el QR antes de que el sitio tenga lo que usa el bot.
+const SOLO_CONECTAR = guardados.soloConectar(process.env.BOT_SOLO_CONECTAR);
 // Números que SIEMPRE reciben respuesta aunque estén guardados (pruebas).
 const ALWAYS_RESPOND = listaDeNumeros(process.env.ALWAYS_RESPOND_NUMBERS);
 // Números que el bot NUNCA contesta, ni texto ni archivos: equipo, guías,
@@ -326,6 +334,83 @@ async function idsEquivalentes(chatId) {
   return [...ids];
 }
 
+// ── ¿Contacto guardado en el teléfono del negocio? ────────────
+// El bot solo les habla a los NO guardados (guardados.js). Lo leído vale 2 min;
+// «no se pudo saber» se vuelve a preguntar a los 30 s.
+const cacheGuardado = new Map(); // chatId -> { valor: true|false|null, at }
+const GUARDADO_VALE_MS = 2 * 60 * 1000;
+const GUARDADO_NULO_MS = 30 * 1000;
+
+/** isMyContact de un id (true/false) o null si WhatsApp no contestó. Nunca lanza. */
+async function leerIsMyContact(id) {
+  try {
+    const c = await conLimite(client.getContactById(id), 8000, null);
+    return c ? Boolean(c.isMyContact) : null;
+  } catch (e) {
+    console.warn(`⚠️ getContactById(${id}) falló: ${primeraLinea(e)}`);
+    return null;
+  }
+}
+
+/**
+ * ¿El chat es de un contacto GUARDADO? true / false / null (no se pudo saber).
+ * En chats @lid se revisa también el contacto de su teléfono real: bajo @lid
+ * el contacto del chat a veces dice «no guardado» aunque el número esté en la
+ * agenda. `contacto` = el que ya trajo msg.getContact() (si no, se pide);
+ * `fresco` = no usar lo leído antes (un mensaje que acaba de llegar).
+ */
+async function contactoGuardado(chatId, { contacto = null, fresco = false } = {}) {
+  const previo = cacheGuardado.get(chatId);
+  if (!fresco && previo && Date.now() - previo.at < (previo.valor === null ? GUARDADO_NULO_MS : GUARDADO_VALE_MS)) {
+    return previo.valor;
+  }
+  const esLid = String(chatId || "").endsWith("@lid");
+  const delChat = contacto ? Boolean(contacto.isMyContact) : await leerIsMyContact(chatId);
+  let delTelefono = null;
+  if (esLid && delChat !== true) {
+    const { pn } = await lidYTelefono(chatId);
+    if (pn) delTelefono = await leerIsMyContact(pn);
+  }
+  const valor = guardados.decidirGuardado({ esLid, delChat, delTelefono });
+  cacheGuardado.set(chatId, { valor, at: Date.now() });
+  return valor;
+}
+
+/**
+ * ¿El bot puede escribirle POR SU CUENTA a este chat (recordatorio, «vence
+ * mañana», pago con liga, «¿cómo les fue?», retomar tras la pausa)?
+ * "mandar" | "no_mandar" (contacto guardado) | "esperar" (no se pudo saber).
+ */
+async function permisoParaEscribir(chatId, telefono) {
+  return guardados.decidirPropio({
+    modo: RESPOND_MODE,
+    guardado: await contactoGuardado(chatId),
+    siempre: esSiempreResponder(chatId, telefono),
+  });
+}
+
+// Lo que el bot dejó de mandar a un contacto guardado se anota UNA vez por
+// chat y por motivo (la revisión corre cada pocos minutos).
+const silenciosAnotados = new Set();
+function anotarSilencio(chatId, que) {
+  const clave = `${chatId}|${que}`;
+  if (silenciosAnotados.has(clave)) return;
+  if (silenciosAnotados.size > 2000) silenciosAnotados.clear();
+  silenciosAnotados.add(clave);
+  console.log(`🔕 [${etiquetaChat(chatId)}] contacto guardado: el bot no le manda ${que} (lo atiende el equipo).`);
+}
+
+/**
+ * El bot platicaba con este chat y lo acaban de guardar: desde ahora es del
+ * equipo. Se le avisa UNA vez al dueño para que nadie se quede sin respuesta.
+ */
+async function avisarGuardadoAMediaPlatica(chatId) {
+  const s = sesionExistente(chatId);
+  if (!s || s.avisoGuardadoAt) return;
+  s.avisoGuardadoAt = Date.now();
+  await avisarAlDueno(`📇 ${etiquetaChat(chatId)} ya está guardado en los contactos del teléfono del negocio y venía platicando con el bot. Desde ahora el bot ya no le contesta ni le escribe: síguelo tú.`);
+}
+
 /** El teléfono REAL del chat (dígitos) o null. Nunca los dígitos de un @lid. */
 async function telefonoDeChat(chatId, contact) {
   const ses = sesionExistente(chatId);
@@ -358,7 +443,8 @@ async function datosDelContacto(msg) {
   const datos = {
     telefono: await telefonoDeChat(chatId, contact),
     nombre: String((contact && (contact.pushname || contact.verifiedName)) || "").trim() || null,
-    guardado: Boolean(contact && contact.isMyContact),
+    // true / false / null (no se pudo saber). En @lid revisa también su teléfono real.
+    guardado: await contactoGuardado(chatId, { contacto: contact, fresco: true }),
   };
   contactos.set(chatId, datos);
   return datos;
@@ -560,6 +646,15 @@ async function retomarPausasVencidas(ahora = Date.now()) {
     if (!pendiente) {
       estado.quitarPausa(chatId);
       notaDeRetomar(chatId, p);
+      continue;
+    }
+    // Lo guardaron en los contactos durante la pausa: ya es del equipo, el bot
+    // no retoma. Si no se pudo saber, se reintenta en la siguiente vuelta.
+    const permiso = await permisoParaEscribir(chatId, s && s.telefono);
+    if (permiso === "esperar") continue;
+    if (permiso === "no_mandar") {
+      estado.quitarPausa(chatId);
+      anotarSilencio(chatId, "la respuesta al terminar la pausa del equipo");
       continue;
     }
     // El mismo candado que las respuestas: si el chat está contestando o tiene
@@ -990,6 +1085,21 @@ client.on("message", async (msg) => {
     // Grupos, difusiones y canales: no. (msg.author solo viene en grupos.)
     if (!chatId || chatId === "status@broadcast" || /@(g\.us|broadcast|newsletter)$/.test(chatId) || msg.author) return;
     if (TIPOS_IGNORADOS.has(msg.type)) return;
+    // «Solo conectar»: conectado a WhatsApp pero sin contestar ni guardar nada.
+    // Solo el dueño puede preguntar /status (o /help) para ver que está vivo.
+    if (SOLO_CONECTAR) {
+      const dueno = await datosDelContacto(msg);
+      const comando = esNumeroDelDueno(chatId, dueno.telefono) && msg.type === "chat"
+        ? extraerComando(String(msg.body || "").trim())
+        : null;
+      if (comando && guardados.comandoPermitidoSoloConectar(comando)) {
+        if (chatId.endsWith("@lid")) ownerLid = chatId;
+        await handleOwnerCommand({ canal: "dueno", chatActual: null, confirmadoPor: "manolo", responder: (t) => enviar(chatId, t) }, comando);
+      } else {
+        console.log(`   💤 modo «solo conectar»: llegó un mensaje de ${etiquetaChat(chatId)} y no lo contesto.`);
+      }
+      return;
+    }
     // Antes de cualquier espera: así una respuesta automática de WhatsApp
     // Business a ESTE mensaje se reconoce en message_create.
     anotarEntrante(chatId);
@@ -1045,14 +1155,24 @@ client.on("message", async (msg) => {
       return;
     }
 
-    // 3) Contactos guardados: los atiende el equipo, salvo que el bot ya
-    // estuviera platicando con ellos.
-    if (RESPOND_MODE === "strangers" && contacto.guardado && !esSiempreResponder(chatId, contacto.telefono)) {
-      const s = sesionExistente(chatId);
-      if (!(s && s.botAt)) {
-        console.log(`   ⏭️  ${chatId} es contacto guardado y el bot no ha platicado con él → lo atiende el equipo.`);
-        return;
-      }
+    // 3) Solo chats NO guardados (guardados.js). Un contacto guardado lo
+    // atiende el equipo, aunque el bot ya estuviera platicando con él: en ese
+    // caso al dueño le llega UN aviso para que lo siga.
+    const sesBot = sesionExistente(chatId);
+    const decision = guardados.decidirEntrante({
+      modo: RESPOND_MODE,
+      guardado: contacto.guardado,
+      siempre: esSiempreResponder(chatId, contacto.telefono),
+      platicabaConElBot: Boolean(sesBot && sesBot.botAt),
+      yaAvisado: Boolean(sesBot && sesBot.avisoGuardadoAt),
+    });
+    if (decision !== "contestar") {
+      console.log(`   ⏭️  ${chatId} es contacto guardado → lo atiende el equipo (el bot no contesta).`);
+      if (decision === "ignorar_y_avisar") await avisarGuardadoAMediaPlatica(chatId);
+      return;
+    }
+    if (contacto.guardado === null && RESPOND_MODE === "strangers") {
+      console.log(`   ❔ ${chatId}: no pude saber si está guardado → lo atiendo como cliente nuevo.`);
     }
 
     // El cliente escribió: el seguimiento (seguimiento.js) se reinicia.
@@ -1128,6 +1248,22 @@ async function atenderRafaga(chatId, texto, info = {}) {
         if (el && el.tipo === "comprobante") pushHistory(chatId, "user", medios.notaHistorialComprobante(el.folio, { enPausa: true }));
         else if (el && el.tipo === "texto" && String(el.texto || "").trim()) pushHistory(chatId, "user", String(el.texto).trim());
       }
+      return;
+    }
+
+    // Lo guardaron en los contactos mientras se juntaba la ráfaga (hasta 90 s):
+    // ya es del equipo. Se pregunta otra vez en el momento.
+    const guardadoAhora = await contactoGuardado(chatId, { fresco: true });
+    const decisionRafaga = guardados.decidirEntrante({
+      modo: RESPOND_MODE,
+      guardado: guardadoAhora,
+      siempre: esSiempreResponder(chatId, telefonoConocido(chatId)),
+      platicabaConElBot: Boolean(sesionExistente(chatId) && sesionExistente(chatId).botAt),
+      yaAvisado: Boolean(sesionExistente(chatId) && sesionExistente(chatId).avisoGuardadoAt),
+    });
+    if (decisionRafaga !== "contestar") {
+      console.log(`   ⏭️  [${etiquetaChat(chatId)}] lo guardaron en los contactos mientras escribía: lo atiende el equipo (no contesto la ráfaga).`);
+      if (decisionRafaga === "ignorar_y_avisar") await avisarGuardadoAMediaPlatica(chatId);
       return;
     }
 
@@ -1555,6 +1691,11 @@ client.on("message_create", async (msg) => {
         console.log(`   🚫 comando escrito en ${target || "un chat sin id"}: en grupos no se ejecuta.`);
         return;
       }
+      // «Solo conectar»: de los comandos, solo /status y /help.
+      if (SOLO_CONECTAR && !guardados.comandoPermitidoSoloConectar(body)) {
+        console.log(`   💤 modo «solo conectar»: ${body.split(/\s+/)[0]} no se ejecuta.`);
+        return;
+      }
       const esChatDeCliente = !esChatDelDueno(target) && !esChatPropio(target);
       await handleOwnerCommand({
         canal: "negocio",
@@ -1566,6 +1707,8 @@ client.on("message_create", async (msg) => {
     }
 
     if (sinChat) return;
+    // «Solo conectar»: el bot no atiende a nadie, así que no hay nada que pausar.
+    if (SOLO_CONECTAR) return;
     // Eventos internos sin contenido (abrir un chat, notificaciones…).
     if (!body && !msg.hasMedia) return;
     // El chat con el dueño es de avisos y comandos, y «Tú» es donde el bot
@@ -1716,7 +1859,10 @@ function textoStatus() {
     .filter(([, p]) => p);
   const r = estado.resumen();
   const L = [
-    "✅ *Bot activo*",
+    SOLO_CONECTAR ? "💤 *Bot conectado en modo «solo conectar»*: no contesta ni manda nada" : "✅ *Bot activo*",
+    RESPOND_MODE === "all"
+      ? "⚠️ Contesta a TODOS, también a contactos guardados (RESPOND_MODE=all, solo para pruebas)"
+      : "👥 Contesta solo a números NO guardados en el teléfono del negocio",
     `🕗 Equipo: ${horario.horarioTexto("es")} (hora de México) · ahorita ${horario.enHorarioHumano() ? "en horario" : "fuera de horario"}`,
     `⏸️ Chats en pausa: ${vigentes.length}`,
     ...vigentes.slice(0, 10).map(([id, p]) => `   • ${etiquetaChat(id)} — ${etiquetaMotivo(p.motivo || p.modo)} · ${p.hasta === null ? "hasta /reanuda" : `hasta ${cuandoMx(p.hasta)}`}`),
@@ -2051,6 +2197,14 @@ const SEGUIMIENTO_APAGADO = process.env.SEGUIMIENTO === "0";
 let whatsappListo = false;
 let revisandoSeguimiento = false;
 let relojSeguimiento = null;
+// Para la bitácora: qué dejó de mandarle el bot a un contacto guardado.
+const NOMBRE_ACCION_SEGUIMIENTO = {
+  recordar: "el recordatorio (3/24/72 h)",
+  agendado: "el seguimiento a la hora acordada",
+  vence_manana: "el «vence mañana»",
+  revisar_pago: "el aviso del pago con liga",
+  post_viaje: "el «¿cómo les fue?»",
+};
 
 /** El cliente escribió: se reinicia su seguimiento (lo recién acordado se respeta). */
 function marcarCliente(chatId) {
@@ -2077,6 +2231,13 @@ async function revisarSeguimientos() {
       if (esNuncaResponder(chatId, s.telefono)) continue;
       const d = seguimiento.decidirSeguimiento(s, { ahora: Date.now(), pausa: Boolean(pausaActiva(chatId)) });
       if (d.accion === "nada") continue;
+      // Contacto guardado: lo atiende el equipo, el bot no le escribe por su
+      // cuenta. Si no se pudo saber, se reintenta en la siguiente vuelta.
+      const permiso = await permisoParaEscribir(chatId, s.telefono);
+      if (permiso !== "mandar") {
+        if (permiso === "no_mandar") anotarSilencio(chatId, NOMBRE_ACCION_SEGUIMIENTO[d.accion] || d.accion);
+        continue;
+      }
       await rafagas.ejecutarExclusivo(chatId, () => ejecutarSeguimiento(chatId, d));
     }
   } catch (e) {
@@ -2225,17 +2386,36 @@ client.on("qr", (qr) => {
   // El QR caduca en ~60 s y WhatsApp manda uno nuevo. Si se pide por `QR_OUT_FILE`,
   // se guarda tambien el texto crudo para poder pintarlo fuera de la terminal
   // (imagen, panel web, etc.) sin tener que leer el dibujo ASCII.
-  if (process.env.QR_OUT_FILE) {
-    try {
-      fs.writeFileSync(process.env.QR_OUT_FILE, qr);
-    } catch (e) {
-      console.error("   no pude guardar el QR en QR_OUT_FILE:", e.message);
-    }
-  }
+  escribirEstadoQr(qr);
 });
-client.on("authenticated", () => console.log("🔐 Autenticado."));
+
+/**
+ * Con `QR_OUT_FILE`, el archivo dice en qué va la conexión para la página que
+ * pinta el QR: el texto del QR, o AUTENTICANDO / CONECTADO / FALLO /
+ * DESCONECTADO. Nunca lanza.
+ */
+function escribirEstadoQr(contenido) {
+  if (!process.env.QR_OUT_FILE) return;
+  try {
+    fs.writeFileSync(process.env.QR_OUT_FILE, contenido);
+  } catch (e) {
+    console.error("   no pude escribir QR_OUT_FILE:", e.message);
+  }
+}
+
+client.on("authenticated", () => {
+  console.log("🔐 Autenticado.");
+  escribirEstadoQr("AUTENTICANDO");
+});
 client.on("ready", () => {
   whatsappListo = true;
+  escribirEstadoQr("CONECTADO");
+  if (SOLO_CONECTAR) {
+    console.log("\n✅ Bot de Tours Huasteca Potosina CONECTADO en modo «solo conectar»: no contesta ni manda nada.");
+    console.log("   Para comprobar que está vivo: manda /status desde tu WhatsApp al número del negocio.");
+    console.log("   Para que atienda clientes, reinícialo sin BOT_SOLO_CONECTAR (la sesión se queda: no pide QR otra vez).\n");
+    return;
+  }
   if (!relojPausas) {
     relojPausas = setInterval(() => { retomarPausasVencidas().catch((e) => console.error("❌ retomar pausas:", primeraLinea(e))); }, pausaHumano.REVISAR_PAUSAS_CADA_MS);
     console.log(`🙋 Pausa por mensaje del equipo: ${duracionTexto(HUMAN_TAKEOVER_MS)}; al vencer, el bot contesta lo que quedó pendiente.`);
@@ -2247,8 +2427,15 @@ client.on("ready", () => {
   console.log("\n✅ Bot de Tours Huasteca Potosina conectado y listo.");
   console.log("Comandos: /confirma <folio> <monto> · /noespago · /pausa · /reanuda · /olvida · /status · /help\n");
 });
-client.on("auth_failure", (m) => console.error("❌ Auth falló:", m, "\n   Borra .wwebjs_auth/ y reintenta."));
-client.on("disconnected", (r) => { whatsappListo = false; console.log("⚠️ Desconectado:", r); });
+client.on("auth_failure", (m) => {
+  console.error("❌ Auth falló:", m, "\n   Borra .wwebjs_auth/ y reintenta.");
+  escribirEstadoQr("FALLO");
+});
+client.on("disconnected", (r) => {
+  whatsappListo = false;
+  console.log("⚠️ Desconectado:", r);
+  escribirEstadoQr("DESCONECTADO");
+});
 
 // ── Arranque ──────────────────────────────────────────────────
 function arrancar() {
@@ -2260,6 +2447,12 @@ function arrancar() {
   if (!process.env.ANTHROPIC_API_KEY) console.warn("⚠️ Falta ANTHROPIC_API_KEY");
   if (!process.env.AGENT_API_TOKEN) console.warn("⚠️ Falta AGENT_API_TOKEN (reservas no funcionarán)");
   if (!OWNER) console.warn("⚠️ Falta OWNER_WHATSAPP_NUMBER: comprobantes y escalaciones no le llegarán a nadie.");
+  if (RESPOND_MODE === "all") {
+    console.warn("\n⚠️⚠️ RESPOND_MODE=all: el bot contesta a TODOS, también a contactos guardados. Solo para pruebas.\n");
+  } else {
+    console.log("👥 Contesta solo a números NO guardados en los contactos del teléfono del negocio.");
+  }
+  if (SOLO_CONECTAR) console.log("💤 BOT_SOLO_CONECTAR=1: se conecta a WhatsApp pero no contesta ni manda nada.");
   client.initialize();
 }
 
