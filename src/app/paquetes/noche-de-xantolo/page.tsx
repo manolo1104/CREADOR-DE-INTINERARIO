@@ -143,7 +143,12 @@ export default async function NocheXantoloPage() {
       <style dangerouslySetInnerHTML={{ __html: XAN_CSS_ENTRADA }} />
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="relative isolate overflow-hidden lg:grid lg:min-h-[80dvh] lg:grid-cols-12">
+      {/* `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto del altar arranca justo debajo del menú fijo. En
+          el celular el texto mide la pantalla menos el menú entero
+          (`--menu-alto`, antes se suponía un menú de 64 px) y el relleno de
+          arriba ya no tiene que librarlo. */}
+      <section className="hero-bajo-menu relative isolate overflow-hidden lg:grid lg:min-h-[80dvh] lg:grid-cols-12">
         <div className="absolute inset-0 -z-10 lg:relative lg:z-0 lg:col-span-6 lg:col-start-7 lg:row-start-1">
           <Image
             src={FOTO_ALTAR}
@@ -160,8 +165,8 @@ export default async function NocheXantoloPage() {
           <div className="absolute inset-0 hidden lg:block" style={{ background: `linear-gradient(to right, ${XAN_FONDO} 0%, rgba(20,10,24,0) 30%)` }} />
         </div>
 
-        <div className="flex min-h-[calc(100dvh-4rem)] flex-col justify-end px-5 pb-10 pt-44 sm:px-8 lg:col-span-6 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:justify-center lg:py-24 lg:pl-12 lg:pr-10 xl:pl-20">
-          <p className="xan-sube font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: XAN_FLOR, animationDelay: "120ms" }}>
+        <div className="flex min-h-[calc(100svh_-_var(--menu-alto))] flex-col justify-end px-5 pb-10 pt-10 sm:px-8 lg:col-span-6 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:justify-center lg:py-24 lg:pl-12 lg:pr-10 xl:pl-20">
+          <p className="xan-sube texto-sobre-foto font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: XAN_FLOR, animationDelay: "120ms" }}>
             Sábado 31 o domingo 1 · Xilitla
           </p>
           <h1

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
-import { ALTO_BANDA_VIAJE } from "@/lib/viajeCdmx/config";
 import { resenasTexto, GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
 import Image from "next/image";
 import Link from "next/link";
@@ -999,17 +998,27 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
 
       {/* ── HERO ── */}
       {/* El hero mide 60vh en los 14 recorridos. Los que traen vídeo vertical
-          crecen EN TELÉFONO hasta la barra fija de reservar (4.5rem): el corte
+          crecen EN TELÉFONO hasta la barra fija de reservar: el corte
           es 9:16 y el vídeo llena la pantalla; la franja de duración y nivel
           aparece al bajar (Manolo, 5 oct 2026: antes era 85vh y la franja se
           comía el final del vídeo). `svh` y no `vh`: en iOS el `vh` cuenta la
           barra del navegador escondida y el hero se metía bajo la de reservar.
           En escritorio vuelve a 60vh, porque ahí no hay vídeo y una foto
-          apaisada estirada solo empujaría el contenido sin enseñar nada más. */}
+          apaisada estirada solo empujaría el contenido sin enseñar nada más.
+          🔴 19 nov 2026 (Manolo: «el navbar se come parte de la imagen y
+          videos»): el menú fijo tapaba los primeros 109 px de la foto o del
+          vídeo en el celular (94 en la computadora; en el rafting, las caras
+          de la tripulación). Ahora el hero arranca justo debajo del menú
+          (`hero-bajo-menu`, globals.css) y el de vídeo resta además el menú
+          entero (`--menu-alto`): el vídeo queda completo entre el menú y la
+          barra de reservar.
+          20 nov 2026: la barra mide 69 px, no los 4.5rem (72) que se restaban,
+          y entre el vídeo y la barra asomaban 3 px de la página (una doble
+          raya). Ahora los dos leen el mismo `--alto-barra-reservar`. */}
       <section
-        className={`relative overflow-hidden ${
+        className={`hero-bajo-menu relative overflow-hidden ${
           tour.videoHeroMovil
-            ? "h-[calc(100svh-4.5rem)] min-h-[560px] lg:h-[60vh] lg:min-h-[400px]"
+            ? "h-[calc(100svh_-_var(--alto-barra-reservar)_-_var(--menu-alto))] min-h-[440px] lg:h-[60vh] lg:min-h-[400px]"
             : "h-[60vh] min-h-[400px]"
         }`}
       >
@@ -1021,9 +1030,10 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
         {/* `flex-wrap` y el margen a la derecha son por el sello de
             exclusividad: es el más largo de los tres y en un teléfono se salía
             de la pantalla en vez de bajar a la segunda línea. */}
-        {/* Debajo del menú REAL: con la banda del río el menú mide ~108 px en
-            teléfono y el `top-24` (96 px) dejaba los badges medio tapados. */}
-        <div className="absolute left-6 right-6 flex flex-wrap gap-2" style={{ top: `calc(var(--navbar-alto, 126px) - ${ALTO_BANDA_VIAJE}px + 12px)` }}>
+        {/* 12 px dentro del hero, que ya arranca debajo del menú (19 nov 2026).
+            Antes se calculaban con el alto que medía el menú y se movían dos
+            veces mientras cargaba la página. */}
+        <div className="absolute left-6 right-6 top-3 flex flex-wrap gap-2">
           <span className="bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full inline-flex items-center gap-1.5">
             {tour.icon === "Instagram" && <IconoInstagram size={13} />}
             {tour.tipo}
@@ -1041,7 +1051,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 max-w-4xl">
-          <p className="text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3">
+          <p className="texto-sobre-foto text-[9px] tracking-[3px] uppercase text-verde-vivo font-dm mb-3">
             {todoIncluido ? t.guidedAllInclusive : (locale === "en" ? "Guided tour" : "Tour guiado")}
           </p>
           {/* El nombre corto: el detalle que iba tras el guion ya está en el
@@ -1861,8 +1871,17 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             {/* 🔴 13 nov 2026: con el calendario ya abierto el bloque mide más
                 que una laptop (~1.100 px contra ~860), y `sticky` no enseña lo
                 que no cabe. En escritorio el bloque se recorre por dentro: el
-                botón de reservar siempre se alcanza. */}
-            <div className="sticky top-24 space-y-4 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 [scrollbar-width:thin]">
+                botón de reservar siempre se alcanza.
+                🔴 20 nov 2026: se pegaba a 96 px (`top-24`) y el menú, que mide
+                125 px con sus dos franjas, lo tapaba al volver a salir al
+                subir («DESDE» quedaba debajo). Ahora se pega 16 px debajo del
+                menú y lo sigue cuando se esconde, como los subnavs pegajosos
+                (`--navbar-offset`). El tope de alto sigue la misma cuenta, y los
+                dos se mueven juntos para que el borde de abajo no brinque. */}
+            <div
+              className="sticky space-y-4 transition-[top,max-height] duration-300 motion-reduce:transition-none lg:max-h-[calc(100vh_-_var(--navbar-offset)_-_2rem)] lg:overflow-y-auto lg:overscroll-contain lg:pr-1 [scrollbar-width:thin]"
+              style={{ top: "calc(var(--navbar-offset) + 16px)" }}
+            >
             <div className="rounded-2xl border border-white/10 bg-negro/60 p-5">
               {promo && (
                 <div className="flex items-center gap-2 mb-2">

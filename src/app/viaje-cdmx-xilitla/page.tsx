@@ -436,15 +436,20 @@ export default async function Page({ searchParams }: { searchParams: { lider?: s
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(buildOrganizationJsonLd(locale)) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(esquema(salidas, [...faqsCdmx, ...faqs], locale)) }} />
 
-      {/* ── HERO ── La foto arriba y el texto debajo en el celular: sobre la foto, el precio se perdía. */}
-      <section data-hero-viaje className="relative lg:min-h-[640px] lg:flex lg:items-end">
+      {/* ── HERO ── La foto arriba y el texto debajo en el celular: sobre la foto, el precio se perdía.
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): aquí no sale la franja del viaje ni su hueco, así que la
+          foto empezaba en 0 y el menú tapaba casi un tercio (la orilla de Tamul).
+          El margen es el menú sin esa franja (`--menu-encima`): justo su alto
+          en esta página. En escritorio el texto ya no necesita `lg:pt-36`. */}
+      <section data-hero-viaje className="hero-bajo-menu relative lg:min-h-[640px] lg:flex lg:items-end">
         <div className="relative h-[44vh] min-h-[280px] lg:absolute lg:inset-0 lg:h-auto">
           <Image src={HERO} alt={t.heroAlt} fill priority sizes="100vw" className="object-cover object-[28%_50%] lg:object-[20%_50%]" />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(14,23,16,0.15)_0%,rgba(14,23,16,0)_70%,#0e1710_100%)] lg:bg-[linear-gradient(270deg,#0e1710_0%,rgba(14,23,16,0.86)_42%,rgba(14,23,16,0.05)_100%)]" />
         </div>
-        <div className="relative px-4 sm:px-6 pt-2 pb-12 lg:pt-36 lg:pb-20 w-full max-w-6xl mx-auto">
+        <div className="relative px-4 sm:px-6 pt-2 pb-12 lg:pt-20 lg:pb-20 w-full max-w-6xl mx-auto">
           <div className="max-w-xl lg:ml-auto">
-            <p className={etiquetaSeccion}>{t.eyebrow}</p>
+            <p className={`${etiquetaSeccion} texto-sobre-foto`}>{t.eyebrow}</p>
             <h1 className="font-cormorant font-light text-crema leading-[1.05] mb-4" style={{ fontSize: "clamp(38px,7vw,68px)" }}>{t.h1}</h1>
             <p className="text-crema/80 font-dm text-[15px] leading-relaxed mb-5">{t.intro}</p>
 

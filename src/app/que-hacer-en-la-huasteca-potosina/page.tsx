@@ -75,8 +75,11 @@ export default function QueHacerPage() {
     <main id="main-content" className="min-h-screen bg-negro">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
 
-      {/* ── HERO ── */}
-      <section className="relative px-6 pt-36 pb-20 overflow-hidden">
+      {/* ── HERO ──
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto de Tamul arranca justo debajo del menú fijo. El
+          `pt-36` solo libraba el menú; ahora arriba va el mismo aire que abajo. */}
+      <section className="hero-bajo-menu relative px-6 pt-20 pb-20 overflow-hidden">
         <Image
           src="/imagenes/cascada-de-tamul/hero.jpg"
           alt={t.heroAlt}
@@ -93,7 +96,7 @@ export default function QueHacerPage() {
           style={{ backgroundImage: "linear-gradient(to bottom, rgb(14 23 16 / 0.75), rgb(14 23 16 / 0.6) 50%, #0e1710)" }}
         />
         <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+          <p className="texto-sobre-foto text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             {t.heroEyebrow}
           </p>
           <h1 className="font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(34px,5.5vw,60px)" }}>

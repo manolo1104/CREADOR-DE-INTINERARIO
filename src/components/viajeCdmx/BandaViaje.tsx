@@ -56,7 +56,10 @@ export function BandaViaje() {
   const fechas = abiertas.slice(0, 2).map((s) => (en ? rangoCortoEn(s.fechaSalida, s.fechaRegreso) : rangoCorto(s.fechaSalida, s.fechaRegreso)));
 
   return (
-    <div className="bg-dorado text-negro border-b border-negro/10" style={{ height: ALTO_BANDA_VIAJE }}>
+    // `data-banda-viaje` (19 nov 2026): le dice a globals.css que la franja
+    // está; donde no sale, `--alto-banda-viaje` vale 0 y `--menu-alto` mide el
+    // menú real. 🔴 ALTO_BANDA_VIAJE (30) tiene que ser igual a ese token.
+    <div data-banda-viaje="" className="bg-dorado text-negro border-b border-negro/10" style={{ height: ALTO_BANDA_VIAJE }}>
       <TrackedLink
         href={`${en ? VIAJE_RUTA_EN : VIAJE_RUTA}#fechas`}
         event="VIAJE_BANNER_CLICK"

@@ -977,8 +977,12 @@ export default async function BlogPostPage({ params }: { params: { slug: string 
               </div>
             </article>
 
-            {/* ── SIDEBAR STICKY ── */}
-            <aside className="hidden space-y-5 lg:sticky lg:top-24 lg:block">
+            {/* ── SIDEBAR STICKY ──
+                20 nov 2026: se pegaba a 96 px (`top-24`) y el menú (125 px con sus
+                dos franjas) le tapaba la parte de arriba al volver a salir. Ahora
+                va 16 px debajo del menú y lo sigue cuando se esconde
+                (`--navbar-offset`), como la columna de reserva de los tours. */}
+            <aside className="hidden space-y-5 transition-[top] duration-300 motion-reduce:transition-none lg:sticky lg:block" style={{ top: "calc(var(--navbar-offset) + 16px)" }}>
               {/* Tour relevante (escritorio; en móvil va dentro del artículo) */}
               {relevantTour && <TarjetaTour tour={relevantTour} />}
 

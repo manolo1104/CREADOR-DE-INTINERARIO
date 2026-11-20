@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TourCalendar } from "@/components/booking/TourCalendar";
+import { BOTON_CONTADOR_OSCURO } from "@/components/checkout/estilos";
 import { minBookingDate } from "@/lib/tourBooking";
 import { TOURS_DB, salidaCorta, recogidaDeTour } from "@/lib/tours";
 import { computeVehiculoCharge } from "@/lib/tourPricing";
@@ -184,13 +185,14 @@ export function RzrBookingForm({
         </label>
         <div className="flex items-center justify-between gap-3">
           <span className="font-dm text-[12px] text-crema/60">{tf.cuantosVehiculos}</span>
-          <span className="flex items-center gap-2">
+          {/* `shrink-0`: los botones (44 px, redondos como el checkout, 20 nov 2026) nunca se encogen. */}
+          <span className="flex shrink-0 items-center gap-2">
             <button
               type="button"
               aria-label={t.menos(tf.cuantosVehiculos, nombre)}
               onClick={() => setUnidades((n) => Math.max(1, n - 1))}
               disabled={unidades <= 1}
-              className="w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+              className={BOTON_CONTADOR_OSCURO}
             >−</button>
             <span className="font-dm text-[13px] text-crema/85 w-5 text-center tabular-nums">{unidades}</span>
             <button
@@ -198,7 +200,7 @@ export function RzrBookingForm({
               aria-label={t.mas(tf.cuantosVehiculos, nombre)}
               onClick={() => setUnidades((n) => Math.min(10, n + 1))}
               disabled={unidades >= 10}
-              className="rounded-full w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+              className={BOTON_CONTADOR_OSCURO}
             >+</button>
           </span>
         </div>

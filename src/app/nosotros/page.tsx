@@ -152,12 +152,23 @@ export default function NosotrosPage() {
         <script key={s.name} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(s) }} />
       ))}
 
-      {/* HERO */}
-      <section className="relative bg-verde-profundo px-6 pt-36 pb-28 text-center overflow-hidden min-h-[60vh] flex items-center justify-center">
+      {/* HERO
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto de los guías arranca justo debajo del menú fijo.
+          El `pt-36` solo libraba el menú; ahora arriba va el mismo aire que abajo.
+          20 nov 2026: al bajar la foto, en la computadora el hero terminaba
+          ~60 px más abajo y la primera pantalla (1366×768) acababa en una franja
+          blanca vacía en vez de en las cifras (+10,000 · 15+ · 4.7★ · 0). Desde
+          `md` lleva menos relleno y su alto mínimo resta lo que ya ocupa el menú
+          (`--menu-encima`): el hero vuelve a terminar donde terminaba y la foto
+          que se ve mide lo mismo que antes, solo que ya sin el menú encima. En
+          el celular no cambia. El velo es más oscuro arriba (40 → 60 %): ahí va
+          el antetítulo, y con la foto más abajo quedó sobre el follaje claro. */}
+      <section className="hero-bajo-menu relative bg-verde-profundo px-6 pt-28 pb-28 md:pt-20 md:pb-20 text-center overflow-hidden min-h-[60vh] md:min-h-[calc(60vh_-_var(--menu-encima))] flex items-center justify-center">
         <Image src="/imagenes/guias/equipo-guias.jpg" alt="Equipo de guías certificados de Tours Huasteca Potosina" fill className="object-cover object-center" priority quality={85} />
-        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/50 to-negro/40" />
+        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/50 to-negro/60" />
         <div className="relative z-10 max-w-3xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">{t.heroEyebrow}</p>
+          <p className="reveal-fade texto-sobre-foto text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">{t.heroEyebrow}</p>
           <h1 className="reveal-up font-cormorant font-light text-crema mb-6 leading-tight" style={{ fontSize: "clamp(36px,6vw,68px)" }}>
             {t.heroH1a}<em className="shimmer-gold block">{t.heroH1b}</em>
           </h1>

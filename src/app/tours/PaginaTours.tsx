@@ -266,12 +266,15 @@ export function Pagina({ locale }: { locale: Locale }) {
       }) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
 
-      {/* ── HERO ── */}
-      <section className="relative overflow-hidden bg-verde-profundo px-6 pt-32 pb-16 text-center">
+      {/* ── HERO ──
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto de los guías arranca justo debajo del menú fijo.
+          El `pt-32` solo libraba el menú; ahora arriba va el mismo aire que abajo. */}
+      <section className="hero-bajo-menu relative overflow-hidden bg-verde-profundo px-6 pt-16 pb-16 text-center">
         <Image src="/imagenes/guias/equipo-guias.jpg" alt="Equipo de guías certificados de Tours Huasteca Potosina recorriendo la región" fill className="object-cover object-center" priority quality={85} />
         <div className="absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/70 to-negro/65" />
         <div className="relative z-10 max-w-3xl mx-auto">
-        <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+        <p className="reveal-fade texto-sobre-foto text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
           {/* Decía "Tours con todo incluido"; "guiados" ya lo dice el H1. */}
           {en ? "Day tours" : "Tours de un día"}
         </p>

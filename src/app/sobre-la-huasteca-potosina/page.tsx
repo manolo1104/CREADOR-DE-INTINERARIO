@@ -91,8 +91,11 @@ export default function SobreLaHuastecaPage() {
 
       {/* ── HERO ──
           H1 propio (10 nov 2026): antes decía «La Huasteca Potosina», igual que
-          el inicio. Ahora responde lo que se busca: dónde está. */}
-      <section className="relative min-h-[65vh] flex items-end overflow-hidden">
+          el inicio. Ahora responde lo que se busca: dónde está.
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto arranca justo debajo del menú fijo, que antes se
+          comía la orilla de la cascada de Tamul. */}
+      <section className="hero-bajo-menu relative min-h-[65vh] flex items-end overflow-hidden">
         <Image
           src="/imagenes/cascada-de-tamul/hero-mobile.jpg"
           alt={t.heroAlt}
@@ -100,9 +103,11 @@ export default function SobreLaHuastecaPage() {
           className="object-cover object-center"
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/30 to-transparent" />
+        {/* El centro más oscuro (via-negro/50, antes /30; 20 nov 2026): en el teléfono la
+            etiqueta de arriba cae sobre la caída de agua y no se leía ni con sombra. */}
+        <div className="absolute inset-0 bg-gradient-to-t from-negro/80 via-negro/50 to-transparent" />
         <div className="relative z-10 px-6 pb-16 max-w-4xl">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+          <p className="texto-sobre-foto text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             {t.heroEyebrow}
           </p>
           <h1 className="font-cormorant font-light text-crema leading-tight" style={{ fontSize: "clamp(36px,5.5vw,68px)" }}>

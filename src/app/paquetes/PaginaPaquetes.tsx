@@ -109,8 +109,11 @@ export function Pagina({ locale }: { locale: Locale }) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(paquetesSchema) }}
       />
 
-      {/* ── HERO ── */}
-      <section className="relative px-6 pt-36 pb-28 overflow-hidden min-h-[520px] flex items-center">
+      {/* ── HERO ──
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto arranca justo debajo del menú fijo. El `pt-36`
+          solo libraba el menú; ahora arriba va el mismo aire que abajo. */}
+      <section className="hero-bajo-menu relative px-6 pt-28 pb-28 overflow-hidden min-h-[520px] flex items-center">
         {/* El skybike de las Cascadas de Micos. La ruta dice
             `cascadas-minas-viejas` porque la foto entró por la galería de ese
             tour, que visita los dos sitios; el lugar de la foto es Micos. */}
@@ -139,7 +142,7 @@ export function Pagina({ locale }: { locale: Locale }) {
           }}
         />
         <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <p className="text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
+          <p className="texto-sobre-foto text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
             {t.heroEyebrow}
           </p>
           <h1 className="reveal-up font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(38px,6vw,70px)" }}>

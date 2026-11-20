@@ -41,5 +41,17 @@ export const BOTON_CONTADOR =
   "transition-[border-color,background-color,transform] duration-150 hover:border-verde-selva hover:text-verde-selva " +
   "active:scale-[0.94] disabled:opacity-30 disabled:hover:border-negro/15 disabled:hover:text-negro/70 sm:h-9 sm:w-9";
 
+/**
+ * Los mismos − y + en los módulos OSCUROS de reserva de las fichas de tour
+ * (ReservaFichaTour, RzrBookingForm), 20 nov 2026: antes medían 28 px y no
+ * hacían juego (el − cuadrado y el + redondo). 44 px en el teléfono, lo mínimo
+ * para el dedo; 36 en la columna de escritorio, como el checkout, para que las
+ * etiquetas largas («niños de 4 a 7 · 50 %») no se partan.
+ */
+export const BOTON_CONTADOR_OSCURO =
+  "grid h-11 w-11 place-items-center rounded-full border border-crema/20 font-dm text-base leading-none text-crema/70 " +
+  "transition-[border-color,transform] duration-150 hover:border-verde-vivo active:scale-[0.94] " +
+  "disabled:opacity-25 disabled:hover:border-crema/20 lg:h-9 lg:w-9";
+
 /** La etiqueta chica arriba de un grupo («¿Cuántos van?», «Tu habitación»). */
 export const ETIQUETA_GRUPO = "font-dm text-[11px] font-medium tracking-[1.5px] uppercase text-negro/50";

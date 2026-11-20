@@ -143,11 +143,58 @@ export default function Navbar() {
 
   const destinosRef = useRef<HTMLDivElement>(null);
 
+  // La altura REAL del menú, no 64 px fijos.
+  // 🔴 2 oct 2026: la banda del estado del río vive DENTRO del menú (para
+  // esconderse con él) y lo hace 28 a 43 px más alto, pero `--navbar-offset`
+  // seguía en 64. Todo lo que se pega debajo del menú —el subnav de /tours, el
+  // índice de /info-practica, el encabezado del comparador— quedaba tapado
+  // esos píxeles cada vez que el menú reaparecía al subir. Se mide con
+  // ResizeObserver.
+  // Con el menú móvil abierto no se mide: crece a toda la pantalla y ese alto
+  // no es el que tapa nada.
+  // 🔴 19 nov 2026: arranca en `null`, NO en 64. Ahora las dos franjas tienen
+  // alto fijo desde el servidor y globals.css ya trae el alto correcto del menú
+  // (`--navbar-alto` y `--navbar-offset` = `--menu-alto`); escribir un 64
+  // provisional al montar lo pisaba un cuadro y lo que se acomoda con esas
+  // variables brincaba. Solo se escribe lo medido, que da lo mismo que el CSS.
+  const navRef = useRef<HTMLElement>(null);
+  const mobileOpenRef = useRef(false);
+  const altoNavRef = useRef(0);
+  const [altoNav, setAltoNav] = useState<number | null>(null);
+  // El panel de «Avísame cuando esté turquesa» flota debajo del menú
+  // (BandaRio): mientras esté abierto el menú no se esconde, o el panel se
+  // quedaría solo arriba de la pantalla.
+  const [panelRio, setPanelRio] = useState(false);
+  useEffect(() => {
+    mobileOpenRef.current = mobileOpen;
+  }, [mobileOpen]);
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav || typeof ResizeObserver === "undefined") return;
+    const medir = () => {
+      if (mobileOpenRef.current) return;
+      const alto = Math.round(nav.getBoundingClientRect().height);
+      if (alto > 0) {
+        altoNavRef.current = alto;
+        setAltoNav(alto);
+      }
+    };
+    const ro = new ResizeObserver(medir);
+    ro.observe(nav);
+    medir();
+    return () => ro.disconnect();
+  }, []);
+
   useEffect(() => {
     const onScroll = () => {
       const currentY = window.scrollY;
       setScrolled(currentY > 40);
-      if (currentY <= 80 || mobileOpen) {
+      // 🔴 19 nov 2026: el menú se esconde hasta que se bajó MÁS que su propio
+      // alto (antes, a los 80 px). Los heros con foto arrancan debajo del menú:
+      // si se escondiera antes, arriba de la foto quedaría una franja vacía
+      // donde estaba el menú.
+      const umbral = altoNavRef.current || navRef.current?.offsetHeight || 80;
+      if (currentY <= umbral || mobileOpen || panelRio) {
         setNavbarVisible(true);
       } else if (currentY > lastScrollY.current + 8) {
         setNavbarVisible(false);
@@ -158,45 +205,22 @@ export default function Navbar() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [mobileOpen]);
+  }, [mobileOpen, panelRio]);
 
-  // La altura REAL del menú, no 64 px fijos.
-  // 🔴 2 oct 2026: la banda del estado del río vive DENTRO del menú (para
-  // esconderse con él) y lo hace 28 a 43 px más alto, pero `--navbar-offset`
-  // seguía en 64. Todo lo que se pega debajo del menú —el subnav de /tours, el
-  // índice de /info-practica, el encabezado del comparador— quedaba tapado
-  // esos píxeles cada vez que el menú reaparecía al subir. Se mide con
-  // ResizeObserver porque la banda llega después (pide el estado al servidor).
-  // Con el menú móvil abierto no se mide: crece a toda la pantalla y ese alto
-  // no es el que tapa nada.
-  const navRef = useRef<HTMLElement>(null);
-  const mobileOpenRef = useRef(false);
-  const [altoNav, setAltoNav] = useState(64);
+  // Escondido: 0 (los subnavs pegajosos suben al borde). A la vista: lo medido;
+  // sin medir todavía, el valor de globals.css.
   useEffect(() => {
-    mobileOpenRef.current = mobileOpen;
-  }, [mobileOpen]);
-  useEffect(() => {
-    const nav = navRef.current;
-    if (!nav || typeof ResizeObserver === "undefined") return;
-    const medir = () => {
-      if (mobileOpenRef.current) return;
-      const alto = Math.round(nav.getBoundingClientRect().height);
-      if (alto > 0) setAltoNav(alto);
-    };
-    const ro = new ResizeObserver(medir);
-    ro.observe(nav);
-    medir();
-    return () => ro.disconnect();
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.style.setProperty("--navbar-offset", navbarVisible ? `${altoNav}px` : "0px");
+    const estilo = document.documentElement.style;
+    if (!navbarVisible) estilo.setProperty("--navbar-offset", "0px");
+    else if (altoNav != null) estilo.setProperty("--navbar-offset", `${altoNav}px`);
+    else estilo.removeProperty("--navbar-offset");
   }, [navbarVisible, altoNav]);
 
-  // El alto del menú aunque esté escondido: lo usa lo que vive DENTRO del
-  // hero (los badges de la ficha de tour) y no debe brincar al esconderse.
+  // El alto del menú aunque esté escondido: lo usan las páginas que dejan
+  // libre el menú con su relleno de arriba (blog, info práctica…) y no debe
+  // brincar al esconderse.
   useEffect(() => {
-    document.documentElement.style.setProperty("--navbar-alto", `${altoNav}px`);
+    if (altoNav != null) document.documentElement.style.setProperty("--navbar-alto", `${altoNav}px`);
   }, [altoNav]);
 
   useEffect(() => {
@@ -252,8 +276,9 @@ export default function Navbar() {
 
       {/* `data-navbar-sitio`: el checkout cerrado lo esconde por CSS (globals.css). */}
       <nav ref={navRef} data-navbar-sitio className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
-        {/* Estado del río: dentro del contenedor fijo para esconderse con él. */}
-        <BandaRio />
+        {/* Estado del río: dentro del contenedor fijo para esconderse con él.
+            Alto fijo desde el servidor (19 nov 2026, ver globals.css). */}
+        <BandaRio onPanelAbierto={setPanelRio} />
         {/* El viaje desde CDMX, justo debajo (17 oct 2026). Su alto lo repone `EspacioBandaViaje`. */}
         <BandaViaje />
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -341,8 +366,11 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Menu Panel */}
-        <div className={`lg:hidden transition-all duration-300 border-t border-white/8 ${mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto opacity-100" : "max-h-0 overflow-hidden opacity-0"}`}>
+        {/* Mobile Menu Panel
+            La raya de arriba solo con el panel abierto (19 nov 2026): cerrado
+            sumaba 1 px al menú debajo de 1024 y la fila ya no medía lo mismo en
+            todos los tamaños (`--alto-fila-menu` en globals.css). */}
+        <div className={`lg:hidden transition-all duration-300 ${mobileOpen ? "max-h-[calc(100vh-4rem)] overflow-y-auto opacity-100 border-t border-white/8" : "max-h-0 overflow-hidden opacity-0"}`}>
           <div className="px-6 py-6 space-y-1 bg-negro/98">
             <Link href={lp("/")} className="block py-3 text-[11px] tracking-[3px] uppercase font-dm text-crema/70 hover:text-crema border-b border-white/6">
               {locale === "en" ? "Home" : "Inicio"}

@@ -187,8 +187,12 @@ export default async function PaqueteXantoloPage() {
       {/* ── Hero ─────────────────────────────────────────────────────────
           Celular: la foto llena la pantalla y el texto va abajo, sobre un
           velo, con el botón visible sin bajar. Escritorio: texto a la
-          izquierda y la foto a la derecha hasta el borde. */}
-      <section className="relative isolate overflow-hidden lg:grid lg:min-h-[88dvh] lg:grid-cols-12">
+          izquierda y la foto a la derecha hasta el borde.
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): la foto arranca justo debajo del menú fijo. En el celular
+          el texto mide la pantalla menos el menú entero (`--menu-alto`, antes
+          se suponía un menú de 64 px) y el relleno de arriba ya no lo libra. */}
+      <section className="hero-bajo-menu relative isolate overflow-hidden lg:grid lg:min-h-[88dvh] lg:grid-cols-12">
         <div className="absolute inset-0 -z-10 lg:relative lg:z-0 lg:col-span-6 lg:col-start-7 lg:row-start-1">
           <Image
             src={FOTO_ALTAR}
@@ -208,8 +212,8 @@ export default async function PaqueteXantoloPage() {
           />
         </div>
 
-        <div className="flex min-h-[calc(100dvh-4rem)] flex-col justify-end px-5 pb-10 pt-44 sm:px-8 lg:col-span-6 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:justify-center lg:py-24 lg:pl-12 lg:pr-10 xl:pl-20">
-          <p className="xan-sube font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: FLOR, animationDelay: "120ms" }}>
+        <div className="flex min-h-[calc(100svh_-_var(--menu-alto))] flex-col justify-end px-5 pb-10 pt-10 sm:px-8 lg:col-span-6 lg:col-start-1 lg:row-start-1 lg:min-h-0 lg:justify-center lg:py-24 lg:pl-12 lg:pr-10 xl:pl-20">
+          <p className="xan-sube texto-sobre-foto font-dm text-[11px] uppercase tracking-[2.5px]" style={{ color: FLOR, animationDelay: "120ms" }}>
             Domingo 1 de noviembre · Xilitla
           </p>
           <h1

@@ -13,7 +13,60 @@
   --arena: #e6d4b0;
   --dorado: #c4882a;
   --terracota: #9a4a1e;
-  --navbar-offset: 64px;
+
+  /* ── Alto del menú fijo (19 nov 2026, Manolo: «que el navbar no tape parte
+     de las fotos o los videos») ───────────────────────────────────────────
+     El menú es `fixed` y se pinta ENCIMA de la página: en el inicio y en las
+     fichas de tour se comía 109 px de la foto o del video en el celular (94 en
+     la computadora). Ahora cada pieza del menú tiene un alto FIJO desde el
+     servidor y los heros arrancan justo debajo con `.hero-bajo-menu`.
+     · Franja del río (BandaRio): 2 renglones en el celular, 1 desde 640 px
+       (el `sm` de Tailwind). Incluye su raya de abajo.
+     · Franja del viaje (BandaViaje): 30 px. Su hueco en el flujo lo pone
+       `EspacioBandaViaje`, por eso los heros no la cuentan.
+     · Fila del menú: 64 px + 1 de la raya de abajo del <nav>.
+     🔴 Si cambia el alto de una franja, se cambia AQUÍ y en su componente. */
+  --alto-banda-rio: 30px;
+  --alto-banda-viaje: 30px;
+  --alto-fila-menu: 65px;
+  /* Lo que el menú tapa de la página: el río + la fila. La del viaje ya tiene
+     su hueco en el flujo, así que esto vale igual en las rutas sin ella. */
+  --menu-encima: calc(var(--alto-banda-rio) + var(--alto-fila-menu));
+  /* El menú entero, de arriba a abajo (para los heros de pantalla completa). */
+  --menu-alto: calc(var(--menu-encima) + var(--alto-banda-viaje));
+  /* Valores del servidor. Navbar.tsx los reescribe con lo que mide, que ahora
+     es lo mismo: nada brinca al hidratar. `--navbar-offset` baja a 0 cuando el
+     menú se esconde al bajar (lo siguen los subnavs pegajosos). */
+  --navbar-alto: var(--menu-alto);
+  --navbar-offset: var(--menu-alto);
+
+  /* ── Alto de la barra de reservar del celular (20 nov 2026) ──────────────
+     `MobileBookingBar` en las fichas de tour: el botón de WhatsApp (44 px, lo
+     más alto de la barra) + 12 px arriba y abajo + 1 px de su raya de arriba.
+     El hero con vídeo resta ESTE valor para terminar justo donde empieza la
+     barra; con el 4.5rem (72 px) de antes quedaban 3 px de la página entre
+     los dos y se veía una doble raya. La barra lo usa como alto mínimo.
+     🔴 Si cambia el alto de la barra, se cambia AQUÍ. No lleva el margen de
+     la barra de gestos del iPhone porque la barra tampoco lo lleva. */
+  --alto-barra-reservar: 69px;
+}
+
+/* El río en el celular: el texto de siempre en dos renglones. */
+@media (max-width: 639.98px) {
+  :root {
+    --alto-banda-rio: 44px;
+  }
+}
+
+/* Rutas donde una franja no sale (el pago no lleva la del río; la página del
+   viaje no lleva la suya): su alto vale 0 para que `--menu-alto` y los valores
+   del servidor midan el menú real. Navegadores sin `:has()` ignoran la regla y
+   se quedan con los altos de arriba; el menú corrige al medirse. */
+:root:not(:has([data-banda-rio])) {
+  --alto-banda-rio: 0px;
+}
+:root:not(:has([data-banda-viaje])) {
+  --alto-banda-viaje: 0px;
 }
 
 /* Sticky subnavs that track navbar hide/show */
@@ -59,6 +112,31 @@ html {
     background: linear-gradient(135deg, #c4882a, #8fbe3a);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
+  }
+
+  /* Hero con foto o video (19 nov 2026): arranca justo donde termina el menú
+     fijo, así no se pierde nada de la imagen debajo de él. Solo baja lo que
+     tapan el río y la fila del menú: los 30 px de la franja del viaje ya los
+     mete `EspacioBandaViaje` en el flujo (y donde esa franja no sale, tampoco
+     sale su hueco). Los heros de pantalla completa restan `--menu-alto` de su
+     alto para seguir terminando en el borde de la pantalla. */
+  .hero-bajo-menu {
+    margin-top: var(--menu-encima);
+  }
+
+  /* Letra chica ENCIMA de una foto o un vídeo (20 nov 2026): antetítulos
+     («✦ Quiénes somos»), «← Todos los destinos», «Tour guiado…». Al bajar las
+     fotos para que el menú no las tape, varios quedaron sobre cielo o agua
+     clara y no se leían (1.3:1 sobre la cascada de /sobre-la-huasteca). Una
+     sombra corta marca el borde de cada letra y dos halos oscurecen lo que hay
+     detrás; sobre un fondo oscuro no se notan. Se probó con una sola sombra
+     (0 1px 8px) y sobre la cascada seguía sin leerse. Una sola receta para
+     todos los heros. */
+  .texto-sobre-foto {
+    text-shadow:
+      0 1px 2px rgb(0 0 0 / 0.8),
+      0 0 10px rgb(0 0 0 / 0.9),
+      0 0 18px rgb(0 0 0 / 0.6);
   }
 }
 

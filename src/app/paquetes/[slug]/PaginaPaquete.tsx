@@ -338,8 +338,11 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           visitan: la misma pieza que usan la tarjeta del paquete y las de
           /tours, así que la ficha se lee como la suma de sus recorridos en
           lugar de como una postal suelta. Con una sola foto se pinta entera,
-          que es el caso de un paquete sin collage curado. */}
-      <section className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
+          que es el caso de un paquete sin collage curado.
+          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
+          las fotos»): arranca justo debajo del menú fijo, que antes se comía la
+          parte de arriba de cada panel del collage. */}
+      <section className="hero-bajo-menu relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
         <TourCollage
           panels={collagePaquete(p).map((src) => ({ src, alt: altDeFoto(src, locale, p.nombre, t.habitacionAlt) }))}
           nombre={p.nombre}
@@ -351,11 +354,15 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             precio y el botón, y el collage trae partes claras (el agua turquesa
             de Micos y Minas Viejas) donde el texto crema se perdía. */}
         <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/85 to-negro/45" />
-        {/* El relleno de arriba deja libre la barra de navegación fija: el hero
-            alinea abajo, pero cuando el contenido crece se comía los 76 px de
-            la barra y el enlace de volver quedaba debajo del menú. */}
-        <div className="relative z-10 px-6 md:px-16 pt-28 pb-14 max-w-5xl mx-auto w-full">
-          <Link href={lp("/paquetes")} className="flex w-fit items-center gap-1.5 text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors mb-6 [text-shadow:0_1px_8px_rgba(0,0,0,0.85)]">
+        {/* El relleno de arriba era `pt-28` para librar la barra de navegación
+            fija. Desde el 19 nov 2026 el hero ya arranca debajo del menú
+            (`hero-bajo-menu`): arriba lleva el mismo aire que abajo. */}
+        <div className="relative z-10 px-6 md:px-16 pt-14 pb-14 max-w-5xl mx-auto w-full">
+          {/* La sombra es la receta común de letra sobre foto (`texto-sobre-foto`,
+              globals.css). 44 px de alto para el dedo (20 nov 2026) sin mover
+              nada: el renglón mide 15 px y los 29 de más se devuelven con los
+              márgenes (−14.5 arriba; 24 − 14.5 abajo). */}
+          <Link href={lp("/paquetes")} className="texto-sobre-foto flex w-fit min-h-[44px] items-center gap-1.5 -mt-[14.5px] mb-[9.5px] text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors">
             <ArrowLeft className="w-3 h-3" /> {t.todosLosPaquetes}
           </Link>
           {p.badge && (

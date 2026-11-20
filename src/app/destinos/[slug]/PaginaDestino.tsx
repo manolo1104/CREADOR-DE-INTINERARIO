@@ -272,20 +272,39 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
       />
       <main className="min-h-screen">
 
-        {/* ── HERO ── */}
-        <div className="relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
+        {/* ── HERO ──
+            `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte
+            de las fotos»): arranca justo debajo del menú fijo. Antes el menú se
+            comía la parte de arriba de la foto (en Tamul, la orilla de la
+            cascada) y el enlace «Todos los destinos» quedaba debajo de él. */}
+        <div className="hero-bajo-menu relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
           {destino.imagen_hero ? (
             <>
               {/* El mismo alt que su miniatura en la galería: la foto es la misma. */}
               <Image src={destino.imagen_hero} alt={altsGaleria[0]} fill priority className="object-cover" sizes="100vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/60 to-transparent" />
+              {/* Sombra ARRIBA (20 nov 2026): con la foto ya debajo del menú,
+                  «← Todos los destinos» quedó sobre el cielo y se leía a 1.5:1.
+                  Va debajo del texto (el contenido es `z-10`) y no recibe
+                  toques. Degradado escrito a mano por lo mismo que en
+                  /que-hacer-en-la-huasteca-potosina: una extensión de Chrome
+                  con Tailwind 4 anula el from/to de Tailwind 3. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-40"
+                style={{ backgroundImage: "linear-gradient(to bottom, rgb(14 23 16 / 0.7), rgb(14 23 16 / 0))" }}
+              />
             </>
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-verde-profundo to-verde-bosque" />
           )}
 
           <div className="relative z-10 px-6 md:px-20 py-14">
-            <Link href={localePath("/destinos", locale)} className="text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors mb-8 block">
+            {/* 44 px de alto para el dedo (20 nov 2026) sin mover nada: el
+                renglón mide 15 px, así que los 29 de más se devuelven con los
+                márgenes (−14.5 arriba; 32 − 14.5 abajo) y la letra queda donde
+                estaba. */}
+            <Link href={localePath("/destinos", locale)} className="texto-sobre-foto flex w-fit min-h-[44px] items-center -mt-[14.5px] mb-[17.5px] text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors">
               {dd.allDestinations}
             </Link>
             <DestinoIcon name={destino.icon} className="w-12 h-12 text-crema/60 mb-4" />
@@ -298,7 +317,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                 incluso en los que ningún tour visita. Es la nota del NEGOCIO
                 (`src/lib/resenas.ts`) y ya no va en el héroe: solo abajo, en la
                 sección de opiniones, rotulada con el nombre de la operadora. */}
-            <p className="text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4">{destino.zona} · {destino.tipo}</p>
+            <p className="texto-sobre-foto text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4">{destino.zona} · {destino.tipo}</p>
 
             <p className="text-crema/75 max-w-2xl leading-relaxed text-base mb-5">{destino.descripcion}</p>
 

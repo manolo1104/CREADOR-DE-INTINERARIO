@@ -16,6 +16,12 @@ import { pctACobrar } from "@/lib/carrito";
 import { ID_MODULO_RESERVA, abrirCalendario } from "@/lib/anclas";
 import { publicarSeleccion, guardarSeleccionSesion, leerSeleccionSesion, textoDiaBoton } from "@/lib/seleccionFicha";
 import { marcarToqueHumano } from "@/lib/toqueHumano";
+import { BOTON_CONTADOR_OSCURO } from "@/components/checkout/estilos";
+
+/* Los − y + de los contadores (20 nov 2026, regla de Manolo para el checkout):
+   la forma redonda del checkout en los colores oscuros de la ficha, compartida
+   con el RZR (`BOTON_CONTADOR_OSCURO`, checkout/estilos.ts). */
+const BOTON_CONTADOR_FICHA = BOTON_CONTADOR_OSCURO;
 
 /**
  * Elegir fecha y personas SIN salir de la ficha del tour.
@@ -233,13 +239,15 @@ export function ReservaFichaTour({
     return (
       <div className="flex items-center justify-between gap-3">
         <span className="font-dm text-[12px] text-crema/60">{etiqueta}</span>
-        <span className="flex items-center gap-2">
+        {/* `shrink-0`: en un teléfono angosto la etiqueta baja a dos renglones;
+            los botones nunca se encogen. */}
+        <span className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             aria-label={t.menos(etiqueta, nombre)}
             onClick={() => set(Math.max(min, valor - 1))}
             disabled={valor <= min}
-            className="w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+            className={BOTON_CONTADOR_FICHA}
           >−</button>
           <span className="font-dm text-[13px] text-crema/85 w-5 text-center tabular-nums">{valor}</span>
           <button
@@ -247,7 +255,7 @@ export function ReservaFichaTour({
             aria-label={t.mas(etiqueta, nombre)}
             onClick={() => set(valor + 1)}
             disabled={!hayHueco}
-            className="rounded-full w-7 h-7 border border-crema/20 text-crema/70 hover:border-verde-vivo disabled:opacity-25 disabled:hover:border-crema/20 text-sm leading-none transition-colors"
+            className={BOTON_CONTADOR_FICHA}
           >+</button>
         </span>
       </div>

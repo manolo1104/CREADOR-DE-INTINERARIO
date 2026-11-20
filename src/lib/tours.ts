@@ -1282,6 +1282,10 @@ const TOURS_RAW: Tour[] = [
       "Paradas para nadar en los tramos tranquilos del cañón",
     ],
     imagen_hero: "/imagenes/rio-tampaon-rafting/gallery-5.webp",
+    // 20 nov 2026: se queda centrada A PROPÓSITO. Subirla («50% 30%») dejaba
+    // completos los cascos en 1366×461, pero en pantallas 4:3 o 5:4 (1024×768,
+    // 1280×1024, iPad acostado) asomaba arriba a la derecha el sello del
+    // fotógrafo (está al 4–12 % de la foto); centrada queda fuera de cuadro.
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla." },

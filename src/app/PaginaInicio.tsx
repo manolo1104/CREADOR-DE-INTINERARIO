@@ -348,21 +348,34 @@ export async function Pagina({ locale }: { locale: Locale }) {
         /* Marcador para `BarraInferiorMovil`: en el celular la barra de abajo
            sale solo cuando este hero ya pasó, para no tapar su «Reservar tour». */
         data-hero-inicio=""
-        /* 🔴 `min-h-[100svh]` y `svh`, no `vh`: en el teléfono `vh` cuenta la barra
-           de direcciones que luego se esconde. El menú es `fixed` y se pinta encima,
-           así que el relleno de arriba (`pt-[9.5rem]`) es mayor que la barra del
-           río + el menú (109 px) para que nada se meta debajo.
+        /* 🔴 `svh`, no `vh`: en el teléfono `vh` cuenta la barra de direcciones
+           que luego se esconde.
+           🔴 19 nov 2026 (Manolo: «que el navbar no tape parte de las fotos o los
+           videos»): el menú es `fixed` y se pintaba ENCIMA del video, que perdía
+           109 px arriba en el celular y 94 en la computadora. Ahora el hero
+           arranca justo debajo del menú (`hero-bajo-menu`, globals.css) y mide
+           la pantalla MENOS el menú entero (`--menu-alto`): termina en el borde
+           de la primera pantalla, como antes. El relleno de arriba ya no tiene
+           que librar el menú: es el mismo de abajo.
            El contenido se ancla ABAJO (`justify-end`): el buscador queda pegado al
            borde inferior de la primera pantalla, que es donde el pulgar llega, y
            si el contenido fuera más alto que la pantalla la sección crece, no se
            reparte el sobrante por arriba. */
-        className="relative flex min-h-[100svh] flex-col justify-end overflow-hidden bg-negro px-6 pb-14 pt-[9.5rem] supports-[overflow:clip]:overflow-clip sm:pb-20 sm:pt-32"
+        className="hero-bajo-menu relative flex min-h-[calc(100svh_-_var(--menu-alto))] flex-col justify-end overflow-hidden bg-negro px-6 pb-14 pt-14 supports-[overflow:clip]:overflow-clip sm:pb-20 sm:pt-20"
       >
-        {/* El video se queda FIJO a la pantalla mientras se baja por el hero.
-            `overflow-clip` y no `hidden`: `hidden` crea un contenedor de
-            scroll y apaga el `sticky`. */}
+        {/* La caja del video mide la primera pantalla menos el menú
+            (19 nov 2026): el corte 9:16 del celular cabe entre el menú y el
+            borde de la pantalla, sin nada tapado.
+            🔴 `min-h-full` (19 nov 2026): nunca más bajita que el hero. Si el
+            contenido lo estira más que eso (iPhone SE, Safari con sus barras,
+            laptop de 768 con las del navegador), la caja crece con él; con
+            solo el `calc`, al bajar asomaba debajo del buscador el borde del
+            video y una franja negra. Con la caja del alto del hero el `sticky`
+            ya no tiene a dónde moverse: el video sube con la página.
+            `overflow-clip` y no `hidden` en el hero: `hidden` crea un
+            contenedor de scroll y apaga el `sticky`. */}
         <div className="absolute inset-0" aria-hidden="true">
-          <div className="sticky top-0 h-lvh w-full overflow-hidden">
+          <div className="sticky top-0 h-[calc(100svh_-_var(--menu-alto))] min-h-full w-full overflow-hidden">
             <HeroVideo alt={en ? "Tamul Waterfall in the Huasteca Potosina" : "Cascada de Tamul en la Huasteca Potosina"} />
           </div>
         </div>

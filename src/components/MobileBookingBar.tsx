@@ -77,7 +77,11 @@ export function MobileBookingBar({ tourSlug, precio, tourId, tourName, precioUni
   const ctaClass = "rounded-xl flex items-center gap-2 bg-verde-selva hover:bg-verde-vivo text-crema px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors font-medium flex-shrink-0";
 
   return (
-    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-negro/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
+    /* `min-h` = `--alto-barra-reservar` (globals.css, 20 nov 2026): el hero con
+       vídeo de la ficha resta ese mismo alto para terminar justo donde empieza
+       esta barra. Hoy la barra ya mide eso sola (botón de 44 px + `py-3` + la
+       raya); con el nombre del tour arriba (`etiqueta`, en destinos) crece. */
+    <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 min-h-[var(--alto-barra-reservar)] border-t border-white/10 bg-negro/95 backdrop-blur-sm px-4 py-3 flex items-center gap-3">
       <div className="flex-1 min-w-0">
         {etiqueta && <p className="font-dm text-[12px] text-crema/80 leading-tight truncate mb-0.5">{etiqueta}</p>}
         <p className="text-[9px] tracking-[2px] uppercase text-crema/40 font-dm">{t.desde}</p>
