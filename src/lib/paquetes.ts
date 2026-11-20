@@ -365,73 +365,11 @@ export const LOGISTICA = {
     "Ya en la zona, nuestro transporte te lleva del hotel al inicio de cada tour y de regreso. Como referencia: Xilitla está a ~40 min de Aquismón y ~1 h 30 de Ciudad Valles; Ciudad Valles a ~50 min de Tamasopo.",
 };
 
-// ── Reseñas (estilo real; sin contadores inventados) ────────────────────────
-
-export interface Resena {
-  nombre: string;
-  ciudad: string;
-  foto: string;
-  texto: string;
-  estrellas: number;
-  tour: string;
-}
-
-// Reseñas ESPECÍFICAS por paquete — cada página de detalle muestra testimonios
-// de gente que sí hizo ESE paquete (prueba social relevante al producto).
-export const RESENAS_POR_PAQUETE: Record<string, Resena[]> = {
-  "gran-huasteca": [
-    {
-      nombre: "La familia Herrera", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-32.jpg", estrellas: 5, tour: "Gran Huasteca",
-      texto: "Viajamos con dos niños de 8 y 11 años con el Paquete Familiar. Todo perfectamente coordinado — los guías pacientes y el ritmo ideal para los niños. Las Cascadas del Meco los dejaron boquiabiertos y en Micos se metieron al agua con chaleco sin un solo susto. El hotel los trató como reyes.",
-    },
-    {
-      nombre: "Mariana L.", ciudad: "Puebla", foto: "/imagenes/reviews/reviewer-12.jpg", estrellas: 5, tour: "Gran Huasteca",
-      texto: "Hicimos el Paquete Familiar: tres días de tours distintos, el Meco el primero y el jardín de Edward James el segundo, que fue el que más les gustó a los niños. Ninguna caminata larga y cada día algo nuevo sin cambiar de hotel. La logística, impecable.",
-    },
-  ],
-  aventura: [
-    {
-      nombre: "Diego R.", ciudad: "Querétaro", foto: "/imagenes/reviews/reviewer-5.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "Aventura Extrema son tres días de tour y cada uno más fuerte que el anterior. El de llegada ya vas manejando el todoterreno por la sierra, y el último te avientas los saltos de Micos. Te deja sin palabras. Volvería sin pensarlo.",
-    },
-    {
-      nombre: "Luis M.", ciudad: "Guadalajara", foto: "/imagenes/reviews/reviewer-tamul-grupo.jpg", estrellas: 5, tour: "Paquete Aventura",
-      texto: "Hice Aventura Extrema con amigos. Los rápidos Clase III del Tampaón nos dejaron muertos de risa y al día siguiente ya estábamos saltando las cascadas de Micos con chaleco y guía. Pide condición física, pero se puede sin experiencia previa.",
-    },
-  ],
-  "tu-huasteca": [
-    {
-      nombre: "Andrea & Sofía", ciudad: "Monterrey", foto: "/imagenes/reviews/reviewer-turquoise-group.png", estrellas: 5, tour: "Tu Huasteca",
-      texto: "Tu Huasteca es otro nivel. Cuatro días seguidos de tour y los elegimos nosotras: el jardín de Edward James, Tamul, el Puente de Dios y las Cascadas del Meco. Terminamos agotadas y felices. Si vas a ir, ve por este.",
-    },
-    {
-      nombre: "Jorge y Paty", ciudad: "León", foto: "/imagenes/reviews/reviewer-8.jpg", estrellas: 5, tour: "Tu Huasteca",
-      texto: "Con Tu Huasteca armamos el viaje a nuestra medida: elegimos los cuatro recorridos al reservar y cambiamos uno una semana antes sin ningún problema. Salimos del mismo hotel los cuatro días, sin rehacer maletas. Repetiríamos sin dudar.",
-    },
-  ],
-  "odisea-huasteca": [
-    {
-      nombre: "Familia Vázquez", ciudad: "CDMX", foto: "/imagenes/reviews/reviewer-familia-tamul.png", estrellas: 5, tour: "Odisea Huasteca",
-      texto: "Veníamos con la duda de si cinco días de tour eran demasiados y nos quedamos cortos. La Odisea Huasteca te deja vivir la Huasteca completa, con calma y durmiendo siempre en el mismo hotel. El día a elegir lo usamos en el Puente de Dios. La organización, impecable.",
-    },
-    {
-      nombre: "Gerardo P.", ciudad: "Aguascalientes", foto: "/imagenes/reviews/reviewer-23.jpg", estrellas: 5, tour: "Odisea Huasteca",
-      texto: "Era nuestra primera vez en la Huasteca y no queríamos volver con la lista a medias. Cinco días de tour y ninguno se parece al anterior: Edward James, Tamul con los pericos, Minas Viejas y Micos. Cerrar en la finca de café fue el descanso que no sabíamos que necesitábamos.",
-    },
-  ],
-};
-
-/**
- * Mezcla para la página de listado. La rejilla es de TRES columnas, así que no
- * caben los cinco paquetes: se escoge un testimonio por PERFIL DE VIAJERO, que
- * es el criterio con el que está ordenado el catálogo — pareja, familia y el
- * que viene a verlo todo.
- */
-export const RESENAS_PAQUETES: Resena[] = [
-  RESENAS_POR_PAQUETE["gran-huasteca"][0],
-  RESENAS_POR_PAQUETE.aventura[0],
-  RESENAS_POR_PAQUETE["odisea-huasteca"][1],
-];
+// ── Reseñas ──────────────────────────────────────────────────────────────
+// Las reseñas «estilo real» por paquete (`RESENAS_POR_PAQUETE`) se BORRARON el
+// 20 nov 2026: no estaban en Google, usaban fotos de banco y citaban lugares
+// que el paquete no visita. Las fichas enseñan solo las reales
+// (`resenasReales.ts`), escogidas en `fichaPaquete.ts`.
 
 // ── FAQ compartido para las páginas de detalle ──────────────────────────────
 

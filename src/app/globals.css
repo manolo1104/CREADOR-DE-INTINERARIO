@@ -1096,3 +1096,15 @@ html[data-checkout-cerrado] {
     }
   }
 }
+
+/* Número de cada parada en el mapa de la ruta de un paquete (20 nov 2026):
+   el tooltip de Leaflet sin su caja blanca, centrado sobre el círculo. */
+.leaflet-tooltip.mapa-num {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  color: #0e1710;
+  font: 700 11px/1 var(--font-dm, system-ui), sans-serif;
+  padding: 0;
+}
+.leaflet-tooltip.mapa-num::before { display: none; }

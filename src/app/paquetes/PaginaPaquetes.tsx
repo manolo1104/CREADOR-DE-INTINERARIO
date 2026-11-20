@@ -1,19 +1,47 @@
 import type { Locale } from "@/lib/i18n/config";
 import { Metadata } from "next";
-import { BannerViaje } from "@/components/viajeCdmx/BannerViaje";
-import { BloqueXantolo } from "@/components/BloqueXantolo";
 import Image from "next/image";
-import { Star, TreePine, UtensilsCrossed, MapPin, Bus, ArrowDown, MessageCircle } from "lucide-react";
-import { PaquetesInteractivo } from "@/components/PaquetesInteractivo";
-import { FloatingLeaves } from "@/components/FloatingLeaves";
-import { RESENAS_PAQUETES, TRASLADOS_TEXTO, precioVisible } from "@/lib/paquetes";
-import { GOOGLE_RATING } from "@/lib/resenas";
-import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
-import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
-import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI } from "@/lib/i18n/paquetes.en";
-import { resenasRealesPara } from "@/lib/i18n/resenasReales.en";
+import Link from "next/link";
+import { ArrowDown, ArrowRight, BadgeCheck, Car, Compass, Route, MessagesSquare, Mountain, BedDouble, Languages, Users, Star, Plane, Bus } from "lucide-react";
+import { BloqueXantolo } from "@/components/BloqueXantolo";
 import { AvatarResena } from "@/components/AvatarResena";
 import { ResenaOriginal } from "@/components/ResenaOriginal";
+import { PageViewTracker } from "@/components/PageViewTracker";
+import { ListaToursTracker } from "@/components/ListaToursTracker";
+import { TiendaPaquetes } from "@/components/paquetes/TiendaPaquetes";
+import { PorDuracion } from "@/components/paquetes/PorDuracion";
+import { EnlaceMedido } from "@/components/paquetes/EnlaceMedido";
+import { TRASLADOS_TEXTO, precioVisible } from "@/lib/paquetes";
+import { GOOGLE_PERFIL_URL, GOOGLE_RATING, GOOGLE_RESENAS } from "@/lib/resenas";
+import { GRUPO_MAX, PRIVADO_EXTRA_POR_PERSONA } from "@/lib/tours";
+import { TRASLADO_MIN } from "@/lib/traslados";
+import { MSI_DESDE } from "@/lib/stripeMsi";
+import { asLocale, localePath, localeUrl, buildAlternates, SITE } from "@/lib/i18n/config";
+import { buildOrganizationNode, buildHotelNode } from "@/lib/jsonld";
+import { getLocalizedPaquetes, getLocalizedFaqs, getPaquetesUI, formatoMXN } from "@/lib/i18n/paquetes.en";
+import { resenasRealesPara } from "@/lib/i18n/resenasReales.en";
+import { textosTienda } from "@/lib/i18n/paquetesTiendaTextos";
+import { itemsTienda } from "@/lib/paquetesTienda";
+import { urlComparar } from "@/lib/comparador";
+import { waLink } from "@/lib/whatsapp";
+import { salidasPublicas } from "@/lib/viajeCdmx/salidas";
+
+/**
+ * /paquetes y /en/paquetes — rediseño del 20 nov 2026 (Manolo: «una tienda de
+ * experiencias premium, no un catálogo»).
+ *
+ *  1 hero · 2 encuentra tu experiencia · 3 destacados · 4 por duración ·
+ *  5 viaje a tu manera · 6 por qué nosotros · 7 reseñas · 8 complementa ·
+ *  9 preguntas · 10 cierre
+ *
+ * 🔴 Reglas que no se rompen aquí:
+ *  - Precio SIEMPRE con `precioVisible()` (`precio` es el total de la pareja).
+ *  - Reseñas: solo las reales de Google (`resenasReales.ts`). Las de
+ *    `RESENAS_PAQUETES` NO están en el perfil y ya no se enseñan.
+ *  - La página es ISR (`revalidate` en page.tsx): no leer la petición (ni
+ *    cabeceras ni cookies).
+ *    `isr.test.ts` lo vigila.
+ */
 
 export function metadataPagina(locale: Locale): Metadata {
   const t = getPaquetesUI(locale);
@@ -29,49 +57,86 @@ export function metadataPagina(locale: Locale): Metadata {
       siteName: "Tours Huasteca Potosina",
       locale: locale === "en" ? "en_US" : "es_MX",
       type: "website",
-      // Sin `images`: la tarjeta la pone `opengraph-image.tsx` de cada segmento
-      // (español aquí, inglés en /en/paquetes). Declararla aquí las anularía —
-      // lo que declara la página gana al archivo. Ver la nota en destinos/page.tsx.
+      // Sin `images`: la tarjeta la pone `opengraph-image.tsx` de cada segmento.
     },
   };
 }
 
-export function Pagina({ locale }: { locale: Locale }) {
-  const t        = getPaquetesUI(locale);
-  const lp       = (path: string) => localePath(path, locale);
+/** El precio del viaje CDMX de la próxima salida a la venta; null si no hay o la base no responde. */
+async function precioViajeCdmx(): Promise<number | null> {
+  try {
+    const salidas = await Promise.race([
+      salidasPublicas(),
+      new Promise<never>((_, no) => setTimeout(() => no(new Error("lento")), 1500)),
+    ]);
+    const s = salidas.find((x) => x.estado === "preventa" || x.estado === "disponible" || x.estado === "ultimos");
+    return s ? s.precioVigente : null;
+  } catch {
+    return null;
+  }
+}
+
+const H2 = "font-cormorant font-light leading-[1.05] text-crema";
+const EYEBROW = "font-dm text-[12px] uppercase tracking-[3px] text-agua";
+const TAM_H2 = { fontSize: "clamp(32px,4.4vw,54px)" };
+const BOTON_PRIMARIO =
+  "tactil inline-flex min-h-[52px] items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-dorado px-7 font-dm text-[12px] font-medium uppercase tracking-[2px] text-negro hover:bg-crema";
+const BOTON_SECUNDARIO =
+  "tactil inline-flex min-h-[52px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-crema/35 px-7 font-dm text-[12px] uppercase tracking-[2px] text-crema hover:border-crema hover:bg-crema/10";
+
+export async function Pagina({ locale: localeProp }: { locale: Locale }) {
+  const locale = asLocale(localeProp);
+  const en = locale === "en";
+  const ui = getPaquetesUI(locale);
+  const t = textosTienda(locale);
+  const lp = (path: string) => localePath(path, locale);
   const paquetes = getLocalizedPaquetes(locale);
-  const faqs     = getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale));
-  // 🔴 En inglés NO van las de `RESENAS_PAQUETES` (no están en el perfil de
-  // Google; traducirlas sería inventar): salían en español y sin `lang`. Van
-  // las tres REALES de la operadora, traducidas y con su original. El español
-  // no cambia (página congelada).
-  const resenasEn = locale === "en" ? resenasRealesPara("en", 3) : [];
-  const paquetesSchema = {
+  const items = itemsTienda(locale, await precioViajeCdmx());
+  const resenas = resenasRealesPara(locale, 3);
+  const mxn = (n: number) => formatoMXN(n, locale);
+
+  // Las del prompt primero; de las de siempre se quita la que ya responde «¿Cómo puedo reservar?».
+  const repetidas = new Set(["¿Cómo confirman la disponibilidad?", "How do you confirm availability?"]);
+  const faqs = [
+    ...t.faqExtra(mxn(MSI_DESDE), mxn(PRIVADO_EXTRA_POR_PERSONA)),
+    ...getLocalizedFaqs(locale, TRASLADOS_TEXTO(locale)).filter((f) => !repetidas.has(f.q)),
+  ];
+
+  // «Diseñar mi viaje»: el recomendador solo existe en español; en inglés, WhatsApp.
+  const itinerario = en
+    ? { href: waLink(t.persWa), externo: true }
+    : { href: "/recomendar", externo: false };
+
+  const schema = {
     "@context": "https://schema.org",
     "@graph": [
-      // La operadora y el hotel: dos entidades distintas del mismo dueño. Los
-      // paquetes son justo donde se juntan (tours de una, camas del otro).
       buildOrganizationNode(locale),
       buildHotelNode(),
       {
         "@type": "BreadcrumbList",
         itemListElement: [
-          { "@type": "ListItem", position: 1, name: t.breadcrumbInicio, item: `${SITE}${lp("/")}` },
-          { "@type": "ListItem", position: 2, name: t.breadcrumbPaquetes, item: localeUrl("/paquetes", locale) },
+          { "@type": "ListItem", position: 1, name: ui.breadcrumbInicio, item: `${SITE}${lp("/")}` },
+          { "@type": "ListItem", position: 2, name: ui.breadcrumbPaquetes, item: localeUrl("/paquetes", locale) },
         ],
+      },
+      {
+        "@type": "ItemList",
+        name: ui.breadcrumbPaquetes,
+        itemListElement: paquetes.map((p, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: localeUrl(`/paquetes/${p.slug}`, locale),
+          name: p.nombre,
+        })),
       },
       ...paquetes.map((p) => ({
         "@type": "Product",
         name: p.nombre,
-        description: t.productDescripcion(p.subtitulo, p.duracion),
+        description: ui.productDescripcion(p.subtitulo, p.duracion),
         image: `${SITE}${p.imagen}`,
         url: localeUrl(`/paquetes/${p.slug}`, locale),
         brand: { "@type": "Brand", name: "Tours Huasteca Potosina" },
-        // 🔴 `precioVisible` y con su unidad, igual que en la ficha
-        // (/paquetes/[slug]): `p.precio` es SIEMPRE el total de la pareja, y el
-        // día que un paquete vuelva a anunciarse por persona el marcado diría el
-        // doble de lo que enseña la tarjeta. Un Offer sin unidad se lee «por
-        // persona».
+        // 🔴 `precioVisible` y con su unidad: `p.precio` es el total de la pareja.
         offers: {
           "@type": "Offer",
           price: precioVisible(p),
@@ -81,8 +146,8 @@ export function Pagina({ locale }: { locale: Locale }) {
             price: precioVisible(p),
             priceCurrency: "MXN",
             unitText: p.precioPorPersona
-              ? (locale === "en" ? "per person" : "por persona")
-              : (locale === "en" ? "per couple (2 people)" : "por pareja (2 personas)"),
+              ? (en ? "per person" : "por persona")
+              : (en ? "per couple (2 people)" : "por pareja (2 personas)"),
           },
           availability: "https://schema.org/InStock",
           url: localeUrl(`/paquetes/${p.slug}`, locale),
@@ -96,373 +161,345 @@ export function Pagina({ locale }: { locale: Locale }) {
           acceptedAnswer: { "@type": "Answer", text: f.a },
         })),
       },
-      // Aquí iba un HowTo de «cómo llegar desde CDMX». Google retiró ese
-      // resultado enriquecido y el marcado repetía un precio de autobús escrito
-      // a mano; la sección visible «Si vienes de CDMX» sigue igual.
     ],
   };
 
+  const iconosPorque = [Route, BadgeCheck, MessagesSquare, Mountain];
+  const iconosComp: Record<string, typeof Car> = { hotel: BedDouble, traslado: Car, tours: Compass, ingles: Languages, grupos: Users };
+  const fotosViajeros = [
+    "/imagenes/puente-de-dios-tamasopo/gallery-15.jpg",
+    "/imagenes/rio-tampaon-rafting/gallery-7.jpg",
+    "/imagenes/tours/rzr-xilitla/familia-sobre-el-maverick-mirador.jpg",
+    "/imagenes/tours/meco/rio-turquesa-entre-sabinos.jpg",
+  ];
+
   return (
-    <main id="main-content" className="min-h-screen bg-negro">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(paquetesSchema) }}
+    <main id="main-content" className="min-h-screen overflow-x-clip bg-negro">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <PageViewTracker event="VIEW_PACKAGES" data={{ locale }} />
+      <ListaToursTracker
+        listaId="catalogo_paquetes"
+        listaNombre={en ? "Packages" : "Paquetes"}
+        tours={paquetes.map((p) => ({ id: p.slug, nombre: p.nombre, precio: precioVisible(p), tipo: "paquete" }))}
       />
 
-      {/* ── HERO ──
-          `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte de
-          las fotos»): la foto arranca justo debajo del menú fijo. El `pt-36`
-          solo libraba el menú; ahora arriba va el mismo aire que abajo. */}
-      <section className="hero-bajo-menu relative px-6 pt-28 pb-28 overflow-hidden min-h-[520px] flex items-center">
-        {/* El skybike de las Cascadas de Micos. La ruta dice
-            `cascadas-minas-viejas` porque la foto entró por la galería de ese
-            tour, que visita los dos sitios; el lugar de la foto es Micos. */}
+      {/* ── 1 · HERO ──
+          Tamul desde el río: la foto que dice «agua turquesa» en un vistazo. En
+          el celular se recorta al centro, donde cae la cascada. */}
+      <section
+        data-seccion="hero"
+        className="hero-bajo-menu relative flex min-h-[calc(100svh_-_var(--menu-alto))] items-end overflow-hidden supports-[overflow:clip]:overflow-clip"
+      >
         <Image
-          src="/imagenes/cascadas-minas-viejas/gallery-new-8.jpg"
-          alt={locale === "en"
-            ? "Skybike over the turquoise pools of Micos Waterfalls (Cascadas de Micos), Huasteca Potosina"
-            : "Skybike sobre las pozas turquesa de las Cascadas de Micos, Huasteca Potosina"}
+          src="/imagenes/cascada-de-tamul/hero-mobile.jpg"
+          alt={t.heroAlt}
           fill
-          className="object-cover object-center"
           priority
+          sizes="100vw"
+          className="object-cover object-[47%_50%]"
         />
-        {/* El velo sube al 72 % en la franja donde vive el texto: con el 55 %
-            anterior, la cascada dejaba el antetítulo y el párrafo casi ilegibles
-            sobre el agua blanca.
-
-            🔴 Va como degradado escrito a mano y no con clases de Tailwind:
-            `via-negro/72` NO existe en su escala de opacidades, no genera regla
-            y el degradado entero se queda TRANSPARENTE sin avisar de nada. Se
-            ve igual que si no hubiera velo. */}
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(14,23,16,.78) 0%, rgba(14,23,16,.72) 45%, rgba(14,23,16,.92) 100%)",
-          }}
-        />
-        <div className="relative z-10 max-w-4xl mx-auto text-center w-full">
-          <p className="texto-sobre-foto text-[10px] tracking-[4px] uppercase text-verde-vivo mb-4 font-dm">
-            {t.heroEyebrow}
-          </p>
-          <h1 className="reveal-up font-cormorant font-light text-crema mb-5 leading-tight" style={{ fontSize: "clamp(38px,6vw,70px)" }}>
-            {t.heroH1a}
-            <em className="shimmer-gold block italic">{t.heroH1b}</em>
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-b from-negro/40 via-negro/30 to-negro/95" />
+        <div className="relative mx-auto w-full max-w-6xl px-4 pb-14 pt-28 sm:px-6 md:pb-20">
+          <p className="texto-sobre-foto font-dm text-[12px] uppercase tracking-[3px] text-crema/85">{t.heroEyebrow}</p>
+          <h1 className="reveal-up mt-4 max-w-4xl font-cormorant font-light leading-[0.98] text-crema" style={{ fontSize: "clamp(40px,7vw,88px)" }}>
+            {t.heroH1} <em className="text-dorado">{t.heroH1Em}</em>
           </h1>
-          <p className="reveal-up text-crema/75 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-8" style={{ animationDelay: "80ms" }}>
-            {t.heroIntro1}
-            <strong className="text-crema">{t.heroHotel}</strong>
-            {t.heroIntro2}
+          <p className="reveal-up texto-sobre-foto mt-5 max-w-2xl font-dm text-[16px] leading-relaxed text-crema/85 md:text-[18px]" style={{ animationDelay: "80ms" }}>
+            {t.heroSub}
           </p>
-          {/* El hero no tenía ni un botón: se leía el título y había que
-              adivinar que los paquetes estaban más abajo. Primero mirar, y
-              para quien ya sabe lo que quiere, el atajo a WhatsApp. */}
-          <div className="reveal-up flex flex-col sm:flex-row items-center justify-center gap-3" style={{ animationDelay: "160ms" }}>
-            <a
-              href="#catalogo"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg bg-verde-selva px-8 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema whitespace-nowrap transition-[background-color,transform] duration-200 hover:bg-verde-vivo active:scale-[0.98]"
-            >
+          <div className="reveal-up mt-8 flex flex-col gap-3 sm:flex-row" style={{ animationDelay: "160ms" }}>
+            <a href="#catalogo" className={BOTON_PRIMARIO}>
               {t.heroCta}
-              <ArrowDown className="h-3.5 w-3.5" aria-hidden="true" />
+              <ArrowDown className="h-4 w-4" aria-hidden="true" />
             </a>
-            <a
-              href={`https://wa.me/524891090388?text=${encodeURIComponent(t.heroWaMsg)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-lg border border-crema/40 px-8 py-4 font-dm text-[11px] uppercase tracking-[2px] text-crema whitespace-nowrap transition-[background-color,border-color,transform] duration-200 hover:border-crema hover:bg-crema/10 active:scale-[0.98]"
+            <EnlaceMedido
+              href={itinerario.href}
+              externo={itinerario.externo}
+              event="CLICK_CUSTOM_ITINERARY"
+              data={{ origen: "hero" }}
+              className={BOTON_SECUNDARIO}
             >
-              <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" />
-              {t.heroCtaWa}
-            </a>
+              {t.heroCta2}
+            </EnlaceMedido>
+          </div>
+          <ul className="texto-sobre-foto mt-8 flex flex-wrap gap-x-6 gap-y-2 font-dm text-[13px] text-crema/80">
+            <li className="inline-flex items-center gap-1.5">
+              <Star className="h-4 w-4 fill-dorado text-dorado" aria-hidden="true" />
+              {t.heroConfianza(String(GOOGLE_RATING), GOOGLE_RESENAS)}
+            </li>
+            <li className="inline-flex items-center gap-1.5">
+              <BadgeCheck className="h-4 w-4 text-agua" aria-hidden="true" />
+              {t.heroGuias}
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      {/* Paquete de temporada (Xantolo): no pinta nada fuera de sus fechas. */}
+      {!en && <BloqueXantolo origen="paquetes" />}
+
+      {/* ── 2 y 3 · ENCUENTRA TU EXPERIENCIA + DESTACADOS ── */}
+      <TiendaPaquetes
+        items={items}
+        locale={locale}
+        urlComparar={urlComparar("paquetes", paquetes.map((p) => p.slug), { locale, origen: "paquetes" })}
+        hrefTours={lp("/tours")}
+      />
+
+      {/* ── 4 · POR DURACIÓN ── */}
+      <section aria-labelledby="h-duracion" className="mt-20 border-y border-white/10 bg-verde-profundo/30 md:mt-28">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+          <p className={EYEBROW}>{t.durEyebrow}</p>
+          <h2 id="h-duracion" className={`${H2} mt-3`} style={TAM_H2}>
+            {t.durH2} <em className="text-dorado">{t.durH2Em}</em>
+          </h2>
+          <p className="mb-8 mt-3 max-w-xl font-dm text-[15px] leading-relaxed text-crema/65">{t.durLead}</p>
+          <PorDuracion items={items} locale={locale} />
+        </div>
+      </section>
+
+      {/* ── 5 · TU VIAJE, A TU MANERA ── */}
+      <section data-seccion="personalizado" aria-labelledby="h-personalizado" className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+        <div className="grid overflow-hidden rounded-2xl border border-white/10 bg-negro md:grid-cols-2">
+          <div className="relative aspect-[4/3] md:aspect-auto">
+            <Image
+              src="/imagenes/cascada-el-meco/gallery-9.jpg"
+              alt={en ? "Turquoise terraces below a waterfall in the Huasteca Potosina" : "Terrazas de agua turquesa bajo una cascada de la Huasteca Potosina"}
+              fill
+              sizes="(max-width: 768px) 100vw, 560px"
+              className="object-cover"
+            />
+          </div>
+          <div className="flex flex-col justify-center p-6 sm:p-10">
+            <p className={EYEBROW}>{t.persEyebrow}</p>
+            <h2 id="h-personalizado" className={`${H2} mt-3`} style={TAM_H2}>
+              {t.persH2} <em className="text-dorado">{t.persH2Em}</em>
+            </h2>
+            <p className="mt-4 font-dm text-[15px] leading-relaxed text-crema/70">{t.persTexto}</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row md:flex-col">
+              <EnlaceMedido
+                href={itinerario.href}
+                externo={itinerario.externo}
+                event="CLICK_CUSTOM_ITINERARY"
+                data={{ origen: "personalizado" }}
+                className={BOTON_PRIMARIO}
+              >
+                {t.persCta}
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </EnlaceMedido>
+              {!en && (
+                <a href={waLink(t.persWa)} target="_blank" rel="noopener noreferrer" className={BOTON_SECUNDARIO}>
+                  {t.persCta2}
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── EL VIAJE CDMX–XILITLA ── Justo debajo del hero (Manolo, 15 oct 2026).
-          Solo en español: el viaje solo se vende así. */}
-      {locale === "es" && <BannerViaje origen="paquetes" />}
-      {/* ── PAQUETE DE EVENTO (Xantolo) ── Subió aquí, debajo del viaje (15 oct 2026), con su patrón de temporada.
-          Va fuera de la fila de paquetes a propósito: es una sola fecha y no se compara con los viajes de todo el año. */}
-      {locale === "es" && <BloqueXantolo origen="paquetes" />}
-
-      {/* ── TEMPORADA ──
-          Sustituye a la franja que sólo repetía la nota de WhatsApp: ahora
-          encabeza con el momento del año y deja la nota como su respaldo. */}
-      <div className="border-b border-white/6 bg-gradient-to-r from-verde-profundo/50 via-dorado/12 to-verde-profundo/50">
-        <div className="max-w-5xl mx-auto px-6 py-5 text-center">
-          <p className="font-cormorant text-crema leading-tight" style={{ fontSize: "clamp(20px,3vw,30px)" }}>
-            {t.bannerTemporada}
-          </p>
-          <p className="mt-1.5 text-[11px] font-dm text-crema/60">
-            {t.bannerTemporadaNota}
-          </p>
+      {/* ── 6 · POR QUÉ NOSOTROS ── */}
+      <section aria-labelledby="h-porque" className="border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+          <p className={EYEBROW}>{t.porqueEyebrow}</p>
+          <h2 id="h-porque" className={`${H2} mt-3`} style={TAM_H2}>
+            {t.porqueH2} <em className="text-dorado">{t.porqueH2Em}</em>
+          </h2>
+          <ul className="mt-10 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-10 lg:grid-cols-4">
+            {t.porque(GRUPO_MAX).map((p, i) => {
+              const Icono = iconosPorque[i];
+              return (
+                <li key={p.t} className="border-t border-white/15 pt-6">
+                  <Icono className="h-6 w-6 text-agua" strokeWidth={1.5} aria-hidden="true" />
+                  <h3 className="mt-4 font-cormorant text-[21px] leading-tight text-crema sm:text-[24px]">{p.t}</h3>
+                  <p className="mt-2 font-dm text-[13px] leading-relaxed text-crema/65 sm:text-[14px]">{p.d}</p>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-      </div>
+      </section>
 
-      {/* ── CONFIANZA ──
-          Las calificaciones salieron del hero: ahí competían con el botón y
-          dejaban el hero con cinco bloques de texto. Aquí siguen viéndose
-          antes de los precios, que es donde hacen falta. */}
-      <div className="border-b border-white/6 bg-negro/60">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-0.5">
-              {"★★★★★".split("").map((s, i) => (
-                <span key={i} className="text-dorado text-sm">{s}</span>
-              ))}
+      {/* ── 7 · RESEÑAS REALES ──
+          Solo las de Google, con su nombre y su foto de perfil (o su inicial).
+          Las fotos de abajo son de nuestros recorridos y NO se le atribuyen a
+          quien firma la reseña. */}
+      <section data-seccion="resenas" aria-labelledby="h-resenas" className="border-t border-white/10 bg-verde-profundo/20">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div>
+              <p className={EYEBROW}>{t.resEyebrow}</p>
+              <h2 id="h-resenas" className={`${H2} mt-3`} style={TAM_H2}>
+                {t.resH2} <em className="text-dorado">{t.resH2Em}</em>
+              </h2>
             </div>
-            <p className="text-[10px] font-dm text-crema/55">{t.googleReviews}</p>
+            <div className="flex items-center gap-4">
+              <p className="font-cormorant text-[56px] leading-none text-dorado">{GOOGLE_RATING}</p>
+              <div>
+                <div className="flex gap-0.5" aria-hidden="true">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <Star key={i} className="h-4 w-4 fill-dorado text-dorado" />
+                  ))}
+                </div>
+                <p className="mt-1 font-dm text-[13px] text-crema/60">{t.resRating(GOOGLE_RESENAS)}</p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2.5">
-            {/* 🔴 De `resenas.ts`, nunca a mano: aquí decía 4.9 · 492 mientras
-                el JSON-LD de esta misma página declaraba 4.7 · 161. La franja
-                de «4.8 Booking · 180 op.» se quitó: no tenía fuente. */}
-            <p className="font-cormorant text-dorado text-2xl leading-none">{GOOGLE_RATING}</p>
-            <p className="text-[10px] font-dm text-crema/55">{t.resenasN}</p>
-          </div>
-        </div>
-      </div>
 
-      {/* ── PAQUETES + BARRA FIJA ── */}
-      <PaquetesInteractivo paquetes={paquetes} />
-
-      {/* ── RESEÑAS ── */}
-      <section className="relative border-b border-white/6 bg-negro/80 py-12 px-6 overflow-hidden">
-        <FloatingLeaves count={12} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-crema/30 font-dm text-center mb-8">
-            {t.resenasTitulo}
-            {t.resenasEnEspanol && (
-              <span className="block normal-case tracking-normal text-crema/40 italic mt-1">{t.resenasEnEspanol}</span>
-            )}
-          </p>
-          {/* Tres reseñas iguales en tres columnas se leían como una lista de
-              relleno y ninguna se leía entera. Ahora una manda —tamaño de cita,
-              no de tarjeta— y las otras dos la acompañan. */}
-          {locale === "en" ? (
-            /* Misma composición que en español —una manda, dos la acompañan—
-               con las reseñas reales traducidas y su original a un toque. */
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-              {resenasEn.slice(0, 1).map((r) => (
-                <figure
-                  key={r.autor}
-                  className="reveal-up lg:col-span-7 rounded-2xl border border-dorado/25 bg-gradient-to-br from-verde-profundo/40 to-negro/60 p-7 flex flex-col"
-                >
-                  <div className="flex gap-0.5 mb-4" aria-label={`${r.estrellas} out of 5 stars`}>
-                    {[...Array(r.estrellas)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
+          <ul className="mt-10 grid gap-5 lg:grid-cols-3">
+            {resenas.map((r) => (
+              <li key={r.autor}>
+                <figure className="flex h-full flex-col rounded-2xl border border-white/10 bg-negro/50 p-6">
+                  <div className="flex gap-0.5" role="img" aria-label={en ? `${r.estrellas} out of 5 stars` : `${r.estrellas} de 5 estrellas`}>
+                    {Array.from({ length: r.estrellas }).map((_, i) => (
+                      <Star key={i} className="h-3.5 w-3.5 fill-dorado text-dorado" aria-hidden="true" />
                     ))}
                   </div>
-                  <blockquote className="font-cormorant font-light italic text-crema/90 leading-snug" style={{ fontSize: "clamp(19px,2.2vw,25px)" }}>
+                  <blockquote className="mt-4 font-cormorant text-[20px] font-light italic leading-snug text-crema/90 line-clamp-6">
                     &ldquo;{r.texto}&rdquo;
                   </blockquote>
-                  <ResenaOriginal r={r} className="mt-4" />
-                  <figcaption className="mt-auto pt-6 flex items-center gap-3">
-                    {/* Su foto de perfil de Google o su inicial, nunca una de archivo. */}
-                    <AvatarResena autor={r.autor} foto={r.foto} className="h-11 w-11 border border-dorado/40" />
+                  <ResenaOriginal r={r} className="mt-3" />
+                  <figcaption className="mt-auto flex items-center gap-3 pt-6">
+                    <AvatarResena autor={r.autor} foto={r.foto} className="h-10 w-10 border border-white/15" />
                     <div>
-                      <p className="font-dm text-sm text-crema font-medium leading-none">{r.autor}</p>
-                      <p className="text-[10px] font-dm text-crema/45 mt-1">Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}</p>
+                      <p className="font-dm text-sm font-medium text-crema">{r.autor}</p>
+                      <p className="mt-0.5 font-dm text-[12px] text-crema/45">Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}</p>
                     </div>
                   </figcaption>
                 </figure>
-              ))}
-
-              <div className="lg:col-span-5 grid gap-5 content-start">
-                {resenasEn.slice(1).map((r) => (
-                  <figure
-                    key={r.autor}
-                    className="reveal-up rounded-2xl border border-white/10 bg-negro/50 p-5"
-                  >
-                    <div className="flex items-center justify-between gap-3 mb-3">
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <AvatarResena autor={r.autor} foto={r.foto} className="h-8 w-8 border border-white/15" />
-                        <div className="min-w-0">
-                          <p className="font-dm text-xs text-crema/85 font-medium leading-none truncate">{r.autor}</p>
-                          <p className="text-[9px] font-dm text-crema/35 mt-1 truncate">Google · {r.fecha}{r.recorrido ? ` · ${r.recorrido}` : ""}</p>
-                        </div>
-                      </div>
-                      <div className="flex gap-0.5 flex-shrink-0" aria-label={`${r.estrellas} out of 5 stars`}>
-                        {[...Array(r.estrellas)].map((_, i) => (
-                          <Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
-                        ))}
-                      </div>
-                    </div>
-                    <blockquote className="font-dm text-xs text-crema/70 leading-relaxed line-clamp-4">
-                      &ldquo;{r.texto}&rdquo;
-                    </blockquote>
-                    <ResenaOriginal r={r} className="mt-3" />
-                  </figure>
-                ))}
-              </div>
-            </div>
-          ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {RESENAS_PAQUETES.slice(0, 1).map((r) => (
-              <figure
-                key={r.nombre}
-                className="reveal-up lg:col-span-7 rounded-2xl border border-dorado/25 bg-gradient-to-br from-verde-profundo/40 to-negro/60 p-7 flex flex-col"
-              >
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(r.estrellas)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-dorado text-dorado" aria-hidden="true" />
-                  ))}
-                </div>
-                <blockquote className="font-cormorant font-light italic text-crema/90 leading-snug" style={{ fontSize: "clamp(19px,2.2vw,25px)" }}>
-                  &ldquo;{r.texto}&rdquo;
-                </blockquote>
-                <figcaption className="mt-auto pt-6 flex items-center gap-3">
-                  {/* Con nombre y ciudad, como en la ficha de cada paquete: con
-                      alt vacío las tres fotos contaban como imágenes sin
-                      descripción en la auditoría. */}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={r.foto} alt={`${r.nombre}, ${r.ciudad}`} className="w-11 h-11 rounded-full object-cover flex-shrink-0 border border-dorado/40" loading="lazy" />
-                  <div>
-                    <p className="font-dm text-sm text-crema font-medium leading-none">{r.nombre}</p>
-                    <p className="text-[10px] font-dm text-crema/45 mt-1">{r.ciudad} · {r.tour}</p>
-                  </div>
-                </figcaption>
-              </figure>
+              </li>
             ))}
+          </ul>
 
-            <div className="lg:col-span-5 grid gap-5 content-start">
-              {RESENAS_PAQUETES.slice(1).map((r) => (
-                <figure
-                  key={r.nombre}
-                  className="reveal-up rounded-2xl border border-white/10 bg-negro/50 p-5"
-                >
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={r.foto} alt={`${r.nombre}, ${r.ciudad}`} className="w-8 h-8 rounded-full object-cover flex-shrink-0 border border-white/15" loading="lazy" />
-                      <div className="min-w-0">
-                        <p className="font-dm text-xs text-crema/85 font-medium leading-none truncate">{r.nombre}</p>
-                        <p className="text-[9px] font-dm text-crema/35 mt-1 truncate">{r.ciudad} · {r.tour}</p>
-                      </div>
-                    </div>
-                    <div className="flex gap-0.5 flex-shrink-0">
-                      {[...Array(r.estrellas)].map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-dorado text-dorado" aria-hidden="true" />
-                      ))}
-                    </div>
-                  </div>
-                  <blockquote className="font-dm text-xs text-crema/70 leading-relaxed line-clamp-4">
-                    &ldquo;{r.texto}&rdquo;
-                  </blockquote>
-                </figure>
-              ))}
-            </div>
+          <a
+            href={GOOGLE_PERFIL_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-8 inline-flex min-h-[44px] items-center gap-2 font-dm text-[14px] text-crema/80 underline decoration-white/25 underline-offset-4 hover:text-crema"
+          >
+            {t.resVerMas}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </a>
+
+          <p className="mt-12 font-dm text-[12px] uppercase tracking-[2px] text-crema/45">{t.resFotos}</p>
+          <ul className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+            {fotosViajeros.map((src, i) => (
+              <li key={src} className="relative aspect-square overflow-hidden rounded-2xl">
+                <Image src={src} alt={t.resFotosAlt[i]} fill sizes="(max-width: 768px) 50vw, 280px" className="zoom-foto object-cover" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      {/* ── 8 · COMPLEMENTA TU EXPERIENCIA ── */}
+      <section data-seccion="complementa" aria-labelledby="h-complementa" className="border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24">
+          <p className={EYEBROW}>{t.compEyebrow}</p>
+          <h2 id="h-complementa" className={`${H2} mt-3`} style={TAM_H2}>
+            {t.compH2} <em className="text-dorado">{t.compH2Em}</em>
+          </h2>
+          <ul className="mt-10 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-5">
+            {t.comp(mxn(TRASLADO_MIN)).map((c) => {
+              const Icono = iconosComp[c.id];
+              const clase = "tactil mt-auto inline-flex min-h-[44px] items-center gap-1.5 pt-4 font-dm text-[13px] text-agua hover:text-crema";
+              return (
+                <li key={c.id} className="flex flex-col rounded-2xl border border-white/10 bg-verde-profundo/25 p-4 last:col-span-2 sm:p-5 lg:last:col-span-1">
+                  <Icono className="h-5 w-5 text-agua" strokeWidth={1.5} aria-hidden="true" />
+                  <h3 className="mt-3 font-cormorant text-[22px] leading-tight text-crema">{c.t}</h3>
+                  <p className="mt-2 font-dm text-[13px] leading-relaxed text-crema/65">{c.d}</p>
+                  {"wa" in c && c.wa ? (
+                    <a href={waLink(c.wa)} target="_blank" rel="noopener noreferrer" className={clase}>
+                      {c.cta} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </a>
+                  ) : (
+                    <Link href={lp(c.href!)} className={clase}>
+                      {c.cta} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                    </Link>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* «Cómo llegar»: las respuestas del FAQ y la lista de «no incluye» mandan aquí. */}
+          <div id="como-llegar" className="mt-10 scroll-mt-24 rounded-2xl border border-white/10 bg-negro/40 p-6">
+            <h3 className="font-cormorant text-[24px] text-crema">{t.llegarTitulo}</h3>
+            <ul className="mt-4 grid gap-3 md:grid-cols-3">
+              {t.llegar.map((l, i) => {
+                const Icono = [Car, Plane, Bus][i];
+                return (
+                  <li key={l} className="flex items-start gap-2.5 font-dm text-[14px] leading-relaxed text-crema/70">
+                    <Icono className="mt-0.5 h-4 w-4 flex-shrink-0 text-agua" aria-hidden="true" />
+                    {l}
+                  </li>
+                );
+              })}
+            </ul>
           </div>
+        </div>
+      </section>
+
+      {/* ── 9 · PREGUNTAS FRECUENTES ── */}
+      <section aria-labelledby="h-faq" className="border-t border-white/10">
+        <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 md:py-24">
+          <p className={EYEBROW}>{t.faqEyebrow}</p>
+          <h2 id="h-faq" className={`${H2} mt-3`} style={TAM_H2}>
+            {t.faqH2} <em className="text-dorado">{t.faqH2Em}</em>
+          </h2>
+          {/* Las 8 del prompt a la vista; las demás (que siguen en el FAQPage)
+              plegadas para no hacer un bloque eterno en el celular. */}
+          <div className="mt-8 space-y-3">
+            {faqs.slice(0, 8).map((f) => <Pregunta key={f.q} q={f.q} a={f.a} />)}
+          </div>
+          {faqs.length > 8 && (
+            <details className="group/mas mt-3">
+              <summary className="tactil inline-flex min-h-[44px] cursor-pointer list-none items-center gap-2 font-dm text-[14px] text-agua hover:text-crema [&::-webkit-details-marker]:hidden">
+                {t.faqMas(faqs.length - 8)}
+                <ArrowDown className="h-4 w-4 transition-transform group-open/mas:rotate-180" aria-hidden="true" />
+              </summary>
+              <div className="mt-3 space-y-3">
+                {faqs.slice(8).map((f) => <Pregunta key={f.q} q={f.q} a={f.a} />)}
+              </div>
+            </details>
           )}
         </div>
       </section>
 
-      {/* ── HOTEL INFO ── */}
-      <section className="relative bg-verde-profundo/30 border-t border-white/6 py-16 px-6 overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10 max-w-4xl mx-auto text-center">
-          <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo mb-3 font-dm">{t.hotelEyebrow}</p>
-          <h2 className="reveal-up font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
-            {t.hotelH2}<em className="shimmer-gold">Xilitla</em>
+      {/* ── 10 · CIERRE ── */}
+      <section data-seccion="cierre" aria-labelledby="h-cierre" className="relative overflow-hidden">
+        <Image
+          src="/imagenes/cascada-el-salto/hero.jpg"
+          alt={t.ctaAlt}
+          fill
+          sizes="100vw"
+          className="object-cover"
+        />
+        <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-t from-negro via-negro/45 to-negro/20" />
+        <div className="relative mx-auto max-w-3xl px-4 py-24 text-center sm:px-6 md:py-32">
+          <h2 id="h-cierre" className={`${H2} texto-sobre-foto`} style={{ fontSize: "clamp(40px,6vw,76px)" }}>
+            {t.ctaH2} <em className="text-dorado">{t.ctaH2Em}</em>
           </h2>
-          <p className="text-crema/55 font-dm text-sm leading-relaxed max-w-2xl mx-auto mb-10">
-            {t.hotelIntro}
-          </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
-            {[TreePine, UtensilsCrossed, MapPin].map((Icon, i) => {
-              const text = t.hotelPuntos[i];
-              return (
-              <div key={text} className="rounded-xl border border-white/10 bg-negro/30 px-4 py-4 text-center">
-                <Icon className="w-6 h-6 text-verde-vivo mx-auto mb-2" aria-hidden="true" />
-                <p className="text-[11px] text-crema/60 font-dm">{text}</p>
-              </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ── SI VIENES DE CDMX ── */}
-      <section id="si-vienes-de-cdmx" className="relative border-b border-white/6 bg-gradient-to-b from-verde-profundo/45 to-negro py-16 px-6 overflow-hidden scroll-mt-24">
-        <FloatingLeaves count={10} />
-        <div className="relative z-10 max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="reveal-fade text-[10px] tracking-[4px] uppercase text-verde-vivo font-dm mb-3 flex items-center justify-center gap-1.5">
-              <Bus className="w-3.5 h-3.5" aria-hidden="true" /> {t.cdmxEyebrow}
-            </p>
-            <h2 className="reveal-up font-cormorant font-light text-crema leading-tight mb-3" style={{ fontSize: "clamp(26px,4vw,44px)" }}>
-              {t.cdmxH2a}<em className="shimmer-gold">{t.cdmxH2b}</em>
-            </h2>
-            <p className="text-crema/60 font-dm text-sm leading-relaxed max-w-2xl mx-auto">
-              {t.cdmxIntro}
-            </p>
-          </div>
-
-          <ol className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {t.cdmxPasos.map((s) => (
-              <li key={s.n} className="rounded-2xl relative border border-white/10 bg-negro/40 p-5 list-none">
-                <span className="font-cormorant text-dorado text-3xl leading-none" aria-hidden="true">{s.n}</span>
-                <p className="font-dm text-crema/90 text-sm font-medium mt-3 mb-1.5">{s.t}</p>
-                <p className="font-dm text-crema/55 text-[12px] leading-relaxed">{s.d}</p>
-              </li>
-            ))}
-          </ol>
-
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 text-center">
-            <a
-              href="https://coordinados.conectagfa.com.mx/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-xl inline-flex items-center gap-2 border border-verde-vivo/50 text-verde-vivo hover:bg-verde-vivo/10 px-6 py-3 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
-            >
-              {t.cdmxBoletos}
+          <p className="texto-sobre-foto mx-auto mt-4 max-w-xl font-dm text-[16px] leading-relaxed text-crema/85">{t.ctaSub}</p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <a href="#catalogo" className={BOTON_PRIMARIO}>{t.ctaExplorar}</a>
+            <a href={waLink(t.ctaWa)} target="_blank" rel="noopener noreferrer" className={BOTON_SECUNDARIO}>
+              {t.ctaAsesor}
             </a>
-            <p className="text-crema/40 font-dm text-[11px] max-w-xs">
-              {t.cdmxAutoAvion1}
-              <span className="text-crema/60">&ldquo;{t.cdmxComoLlegar}&rdquo;</span>{t.cdmxAutoAvion2}
-            </p>
           </div>
         </div>
       </section>
-
-      {/* ── FAQ ── */}
-      <section className="max-w-3xl mx-auto px-6 py-16">
-        <h2 className="reveal-up font-cormorant text-crema text-2xl mb-8 text-center">{t.faqTitulo}<em className="text-dorado">{t.faqTituloEm}</em></h2>
-        <div className="space-y-4">
-          {faqs.map((faq) => (
-            <details key={faq.q} className="border border-white/10 bg-negro/40">
-              <summary className="px-5 py-4 cursor-pointer text-crema/80 font-dm text-sm hover:text-crema transition-colors list-none flex items-center justify-between gap-3">
-                {faq.q}
-                <span className="text-verde-vivo flex-shrink-0 text-lg leading-none">+</span>
-              </summary>
-              <div className="px-5 pb-5 border-t border-white/8 pt-4">
-                <p className="text-crema/55 font-dm text-sm leading-relaxed">{faq.a}</p>
-              </div>
-            </details>
-          ))}
-        </div>
-      </section>
-
-      {/* ── CTA FINAL ── */}
-      <section className="relative bg-verde-profundo/40 border-t border-white/6 py-16 px-6 text-center overflow-hidden">
-        <FloatingLeaves count={14} />
-        <div className="relative z-10">
-          <h2 className="reveal-up font-cormorant text-crema text-2xl mb-3">{t.ctaH2}</h2>
-          <p className="text-crema/50 font-dm text-sm mb-8 max-w-md mx-auto">
-            {t.ctaTexto}
-          </p>
-          <a
-            href={`https://wa.me/524891090388?text=${encodeURIComponent(t.ctaWa)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="rounded-xl inline-flex items-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-white px-10 py-4 text-[11px] tracking-[2px] uppercase font-dm transition-colors"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 flex-shrink-0" aria-hidden="true"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.532 5.86L.054 23.447a.75.75 0 0 0 .916.99l5.764-1.511A11.943 11.943 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75a9.693 9.693 0 0 1-4.953-1.357l-.355-.211-3.68.965.981-3.585-.232-.369A9.712 9.712 0 0 1 2.25 12C2.25 6.615 6.615 2.25 12 2.25S21.75 6.615 21.75 12 17.385 21.75 12 21.75z"/></svg>
-            {t.ctaBoton}
-          </a>
-        </div>
-      </section>
-
     </main>
+  );
+}
+
+function Pregunta({ q, a }: { q: string; a: string }) {
+  return (
+    <details className="group rounded-xl border border-white/10 bg-negro/30 open:border-white/20">
+      <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-dm text-[15px] text-crema/90 hover:text-crema [&::-webkit-details-marker]:hidden">
+        {q}
+        <span aria-hidden="true" className="flex-shrink-0 text-xl leading-none text-agua transition-transform duration-200 group-open:rotate-45">+</span>
+      </summary>
+      <p className="border-t border-white/10 px-5 pb-5 pt-4 font-dm text-[14px] leading-relaxed text-crema/65">{a}</p>
+    </details>
   );
 }

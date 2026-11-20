@@ -68,7 +68,10 @@ export function enPantallaDePago(pathname: string | null | undefined): boolean {
  */
 export function conBarraPropia(pathname: string | null | undefined): boolean {
   // Y su gemela en inglés (16 oct 2026).
-  return /^\/(viaje-cdmx-xilitla|en\/huasteca-potosina-from-mexico-city)(\/|$)/.test(pathname ?? "");
+  // Y la ficha de cada paquete (20 nov 2026): trae su propia barra con el precio
+  // del paquete y su cotizador; la global mandaba al catálogo de tours.
+  return /^\/(viaje-cdmx-xilitla|en\/huasteca-potosina-from-mexico-city)(\/|$)/.test(pathname ?? "")
+      || /^\/(?:en\/)?paquetes\/(?!xantolo-2026$|noche-de-xantolo$)[a-z0-9-]+$/.test(pathname ?? "");
 }
 
 /**
@@ -97,7 +100,10 @@ export function sinFlotantes(pathname: string | null | undefined): boolean {
  */
 export function conReservarPropio(pathname: string | null | undefined): boolean {
   const p = pathname ?? "";
-  return p === "/paquetes/xantolo-2026"
+  // /paquetes (rediseño del 20 nov 2026): cada tarjeta trae su «Reservar» y el
+  // genérico mandaba al catálogo de TOURS, otra cosa. Abajo queda WhatsApp.
+  return p === "/paquetes" || p === "/en/paquetes"
+      || p === "/paquetes/xantolo-2026"
       || p === "/paquetes/noche-de-xantolo"
       || /^\/(?:en\/)?comparar$/.test(p);
 }

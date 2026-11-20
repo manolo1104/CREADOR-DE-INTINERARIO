@@ -17,7 +17,7 @@ import { localizeTour } from "./localize";
  * autobús) NO se traducen: se copian tal cual del español. Ninguna cifra de este
  * archivo es nueva.
  *
- * Las RESEÑAS de `RESENAS_POR_PAQUETE` no se traducen a propósito: no están en
+ * Las reseñas inventadas por paquete se borraron el 20 nov 2026; antes no se traducían: no estaban en
  * el perfil de Google, y ponerles palabras en la boca en otro idioma no es
  * traducir, es inventar. Desde el 10 nov 2026 en `/en` ni se enseñan: van las
  * reales de la operadora, traducidas y con el original a un toque
@@ -765,8 +765,17 @@ function textoBannerTemporada(locale: Locale): string {
   return `La mejor temporada para venir a la Huasteca: del ${fecha} a diciembre`;
 }
 
+/** «3, 4 y 5» / «3, 4 and 5»: las duraciones distintas del catálogo, en orden. */
+function DIAS_TITULO(locale: Locale): string {
+  const d = Array.from(new Set(PAQUETES_DB.map((p) => p.dias))).sort((a, b) => a - b).map(String);
+  if (d.length < 2) return d.join("");
+  return `${d.slice(0, -1).join(", ")} ${locale === "en" ? "and" : "y"} ${d[d.length - 1]}`;
+}
+
 const UI_ES: PaquetesUI = {
-  metaTitle: "Paquetes Huasteca Potosina — Tours + Hotel Todo Incluido",
+  // Rediseño del 20 nov 2026: los días en el título, que es como se busca
+  // («paquetes huasteca potosina 3 días», «4 días»). Salen del catálogo.
+  metaTitle: `Paquetes Huasteca Potosina de ${DIAS_TITULO("es")} días con hotel`,
   // Medía 183 y cerraba con «salvo el de Luna de Miel», un paquete retirado.
   // El precio y su unidad salen del catálogo (el más barato, con su etiqueta).
   // 🔴 «Traslados» pegado a los tours y no «transporte» suelto: se leía como
@@ -846,7 +855,7 @@ const UI_ES: PaquetesUI = {
 };
 
 const UI_EN: PaquetesUI = {
-  metaTitle: "Huasteca Potosina Packages — Tours + Hotel, All Inclusive",
+  metaTitle: `Huasteca Potosina Packages: ${DIAS_TITULO("en")}-Day Trips with Hotel`,
   // Getter: el precio «desde» se lee al pedir la página, no al arrancar.
   get metaDescription() { return primeroQueQuepa([
     `${PAQ_CORTO.dias}- to ${PAQ_LARGO.dias}-day Huasteca Potosina packages: guided tours with transfers, a hotel in Xilitla, breakfasts and entrance fees. From ${formatoMXN(visibleBarato(), "en")} MXN ${etiquetaPrecio(PAQ_BARATO, "en")}.`,
