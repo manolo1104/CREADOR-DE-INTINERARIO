@@ -1,22 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { motivoNoSeElimina } from "../borrarReserva";
+import { decidirBorrado } from "../borrarReserva";
 
-const sinNada = { cobrado: 0, movimientosVivos: 0, ligasPagadas: 0, pagoStripe: false };
+const sinNada = { cobrado: 0, movimientosVivos: 0, ligasPagadas: 0, pagoStripe: false, enCorteCerrado: null };
 
 describe("eliminar una reserva (20 nov 2026)", () => {
-  it("una prueba, un duplicado o un error sin dinero se elimina", () => {
-    expect(motivoNoSeElimina(sinNada)).toBeNull();
+  it("una prueba, un duplicado o un error sin dinero se elimina directo", () => {
+    expect(decidirBorrado(sinNada)).toEqual({ tipo: "si" });
   });
-  it("con lo cobrado > 0 no se elimina y dice cuánto", () => {
-    expect(motivoNoSeElimina({ ...sinNada, cobrado: 930 })).toContain("$930 cobrados");
+  it("con cobros anotados (el bot con /confirma, o a mano) se elimina, pero pregunta diciendo cuánto", () => {
+    const d = decidirBorrado({ ...sinNada, cobrado: 930, movimientosVivos: 1 });
+    expect(d.tipo).toBe("confirmar");
+    expect(d.tipo === "confirmar" && d.aviso).toContain("$930 anotados como cobrados");
   });
-  it("con un cobro o gasto sin anular no se elimina, aunque lo cobrado diga 0", () => {
-    expect(motivoNoSeElimina({ ...sinNada, movimientosVivos: 1 })).toContain("anúlalos primero");
+  it("con un gasto anotado y $0 cobrado también pregunta", () => {
+    expect(decidirBorrado({ ...sinNada, movimientosVivos: 1 }).tipo).toBe("confirmar");
   });
-  it("con una liga pagada no se elimina", () => {
-    expect(motivoNoSeElimina({ ...sinNada, ligasPagadas: 1 })).toContain("liga de pago ya pagada");
+  it("pagada en el sitio con tarjeta nunca se elimina", () => {
+    const d = decidirBorrado({ ...sinNada, cobrado: 3100, pagoStripe: true });
+    expect(d.tipo).toBe("no");
+    expect(d.tipo === "no" && d.motivo).toContain("Stripe");
   });
-  it("pagada en el sitio con tarjeta no se elimina", () => {
-    expect(motivoNoSeElimina({ ...sinNada, pagoStripe: true })).toContain("Stripe");
+  it("con una liga pagada nunca se elimina", () => {
+    expect(decidirBorrado({ ...sinNada, cobrado: 930, ligasPagadas: 1 }).tipo).toBe("no");
+  });
+  it("si ya entró en un corte semanal cerrado no se elimina", () => {
+    const d = decidirBorrado({ ...sinNada, enCorteCerrado: "2026-11-16" });
+    expect(d.tipo === "no" && d.motivo).toContain("2026-11-16");
   });
 });

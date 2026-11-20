@@ -14,7 +14,7 @@ import {
 import { hoyMX } from "@/lib/dates";
 import { motivoParaGuardar } from "@/lib/admin/cancelacion";
 import { leadDesdeReserva, leadTrasCancelarReserva, leadTrasReactivarReserva, recalcularLead } from "@/lib/admin/crmDatos";
-import { motivoNoSeElimina } from "@/lib/admin/borrarReserva";
+import { decidirBorrado } from "@/lib/admin/borrarReserva";
 import { asegurarHistorico, sincronizarDeposito } from "@/lib/admin/cobros";
 import { cobradoAFijarAntesDeEditar, montoCobrado } from "@/lib/admin/dinero";
 import { apagarLigasDe } from "@/lib/admin/linksPago";
@@ -280,55 +280,60 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 /**
- * Eliminar una reserva (20 nov 2026, «habilita la eliminación de reservas»).
- * Del 3 al 20 nov no se borraban: se cancelaban con motivo, porque al borrarlas
- * la línea base decía «0 canceladas» aunque sí las hubo. Ahora se elimina SOLO
- * la que no tiene dinero vivo (pruebas, duplicados, errores de captura): la que
- * tiene cobros o gastos sin anular, una liga pagada o un pago en el sitio sigue
- * cancelándose con motivo (`motivoNoSeElimina`), para que Cobros y el corte
- * nunca se descuadren. Solo quien puede anular cobros (Manolo y socios).
+ * Eliminar una reserva (20 nov 2026, «habilita la eliminación de reservas» y
+ * «que las hechas por el bot también se puedan eliminar»). Del 3 al 20 nov no
+ * se borraban: se cancelaban con motivo. La regla vive en `decidirBorrado`:
+ * nunca con dinero real en Stripe ni ya metida en un corte semanal cerrado; con
+ * cobros ANOTADOS (a mano o por el bot con /confirma) solo con `?conCobros=1`,
+ * después de que el panel preguntó diciendo cuánto. Solo quien puede anular
+ * cobros (Manolo y socios).
  *
- * Todo en una transacción: sus comprobantes, sus cobros ya anulados, sus
+ * Todo en una transacción: sus comprobantes, sus cobros y gastos, sus
  * seguimientos automáticos pendientes, su lugar apartado (se libera), sus ligas
  * sin pagar (se apagan en Stripe antes) y la cotización que la originó vuelve a
  * «Enviada» para poder borrarla o convertirla otra vez. Las encuestas se van solas
  * (cascada). Después el lead se recalcula y queda un renglón en la bitácora.
  */
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const sesion = await sesionActual();
   if (!sesion || !puedeHacer(sesion.rol, "anularMovimiento")) {
     return NextResponse.json({ error: "Solo Manolo o un socio pueden eliminar reservas." }, { status: 403 });
   }
+  const conCobros = new URL(req.url).searchParams.get("conCobros") === "1";
   const b = await prisma.tourBooking.findUnique({ where: { id: params.id } }).catch(() => null);
   if (!b) return NextResponse.json({ error: "Esa reserva ya no existe (alguien más la eliminó)." }, { status: 404 });
 
-  const hechos = async () => {
+  // ¿Ya la nombra un corte semanal cerrado? Sus llaves son «fecha|<id de la reserva>|slug».
+  const cortes = await prisma.corteSemanal.findMany({ where: { estado: "cerrado" }, select: { semana: true, captura: true } });
+  const enCorteCerrado = cortes.find(c => Object.keys((c.captura ?? {}) as Record<string, unknown>).some(k => k.split("|")[1] === b.id))?.semana ?? null;
+
+  type Tx = Pick<typeof prisma, "movimiento" | "linkPago">;
+  const hechos = async (db: Tx, r: typeof b) => {
     const [movimientosVivos, ligasPagadas] = await Promise.all([
-      prisma.movimiento.count({ where: { reservaId: b.id, anulado: false } }),
-      prisma.linkPago.count({ where: { reservaId: b.id, estado: "pagado" } }),
+      db.movimiento.count({ where: { reservaId: r.id, anulado: false } }),
+      db.linkPago.count({ where: { reservaId: r.id, estado: "pagado" } }),
     ]);
-    return { cobrado: montoCobrado(b), movimientosVivos, ligasPagadas, pagoStripe: !!b.stripePaymentIntentId };
+    return { cobrado: montoCobrado(r), movimientosVivos, ligasPagadas, pagoStripe: !!r.stripePaymentIntentId, enCorteCerrado };
   };
-  const motivo = motivoNoSeElimina(await hechos());
-  if (motivo) return NextResponse.json({ error: motivo }, { status: 409 });
+  const decision = decidirBorrado(await hechos(prisma, b));
+  if (decision.tipo === "no") return NextResponse.json({ error: decision.motivo }, { status: 409 });
+  if (decision.tipo === "confirmar" && !conCobros) return NextResponse.json({ confirmar: decision.aviso, cobrado: montoCobrado(b) }, { status: 409 });
 
   // Las ligas activas se apagan en Stripe antes (fuera de la transacción: llama a Stripe).
   await apagarLigasDe({ reservaIds: [b.id] }, `se eliminó la reserva ${b.confirmationNumber}`);
 
+  let borrados = 0;
   try {
     await prisma.$transaction(async tx => {
       // Otra vez adentro: un pago pudo llegar mientras se apagaban las ligas.
-      const [vivos, pagadas, fresca] = await Promise.all([
-        tx.movimiento.count({ where: { reservaId: b.id, anulado: false } }),
-        tx.linkPago.count({ where: { reservaId: b.id, estado: "pagado" } }),
-        tx.tourBooking.findUnique({ where: { id: b.id } }),
-      ]);
+      const fresca = await tx.tourBooking.findUnique({ where: { id: b.id } });
       if (!fresca) throw new Error("ya-no-existe");
-      const otra = motivoNoSeElimina({ cobrado: montoCobrado(fresca), movimientosVivos: vivos, ligasPagadas: pagadas, pagoStripe: !!fresca.stripePaymentIntentId });
-      if (otra) throw new Error(`no-se-elimina:${otra}`);
+      const otra = decidirBorrado(await hechos(tx, fresca));
+      if (otra.tipo === "no") throw new Error(`no-se-elimina:${otra.motivo}`);
+      if (otra.tipo === "confirmar" && !conCobros) throw new Error(`no-se-elimina:${otra.aviso}`);
 
       await tx.evidencia.deleteMany({ where: { bookingId: b.id } });
-      await tx.movimiento.deleteMany({ where: { reservaId: b.id, anulado: true } });
+      borrados = (await tx.movimiento.deleteMany({ where: { reservaId: b.id } })).count;
       await tx.linkPago.updateMany({ where: { reservaId: b.id }, data: { reservaId: null } });
       await tx.apartadoSalida.updateMany({ where: { bookingId: b.id }, data: { bookingId: null, estado: "liberado" } });
       await tx.tarea.deleteMany({ where: { estado: "pendiente", claveRegla: { contains: b.id } } });
@@ -345,11 +350,12 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: "No se pudo eliminar la reserva" }, { status: 500 });
   }
 
+  const cobrado = montoCobrado(b);
   await registrarEnBitacora({
     accion:     "eliminó",
     entidad:    "reserva",
     referencia: b.confirmationNumber,
-    resumen:    `Eliminó la reserva ${b.confirmationNumber} de ${b.customerName} (${b.tourName}, ${b.tourDate}, total ${pesos(b.totalAmount)}, sin dinero cobrado)`,
+    resumen:    `Eliminó la reserva ${b.confirmationNumber} de ${b.customerName} (${b.tourName}, ${b.tourDate}, total ${pesos(b.totalAmount)}, ${cobrado > 0 ? `con ${pesos(cobrado)} anotados como cobrados` : "sin dinero cobrado"}${borrados ? `; se borraron ${borrados} movimiento(s)` : ""})`,
   });
   if (b.oportunidadId) {
     await recalcularLead(b.oportunidadId, `se eliminó la reserva ${b.confirmationNumber}`).catch(e => console.error("recalcularLead tras eliminar:", (e as Error)?.message));

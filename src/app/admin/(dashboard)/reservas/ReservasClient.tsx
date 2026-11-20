@@ -198,15 +198,24 @@ export default function ReservasClient(
     setStatusEditing(null);
   }
 
-  // El bote sale solo en las que no tienen dinero; el servidor lo vuelve a revisar (cobros, ligas pagadas).
-  const sinDinero = (b: TourBooking) => cobradoDe(b) === 0 && !b.stripePaymentIntentId;
+  // El bote sale en todas menos las pagadas en el sitio con tarjeta (dinero en
+  // Stripe); el servidor decide lo demás (ligas pagadas, corte cerrado) y, si
+  // tiene cobros anotados (a mano o por el bot), pregunta otra vez con el monto.
+  const sePuedeIntentarEliminar = (b: TourBooking) => !b.stripePaymentIntentId;
 
   async function eliminarReserva(b: TourBooking) {
     if (!window.confirm(`¿Eliminar la reserva ${b.confirmationNumber} de ${b.customerName}? Se borra por completo y no se puede deshacer.\n\nÚsalo para pruebas, duplicados o errores. Si el cliente canceló, mejor cancélala con su motivo: así cuenta en los números.`)) return;
     playClick(); setEliminando(true);
     try {
-      const r = await fetch(`/api/admin/reservas/${encodeURIComponent(b.id)}`, { method: "DELETE" });
-      const d = await r.json().catch(() => null);
+      const url = `/api/admin/reservas/${encodeURIComponent(b.id)}`;
+      let r = await fetch(url, { method: "DELETE" });
+      let d = await r.json().catch(() => null);
+      // Con cobros anotados: el servidor pide una segunda confirmación con el monto.
+      if (r.status === 409 && d?.confirmar) {
+        if (!window.confirm(`${d.confirmar}\n\n¿Eliminar ${b.confirmationNumber} de todos modos?`)) return;
+        r = await fetch(`${url}?conCobros=1`, { method: "DELETE" });
+        d = await r.json().catch(() => null);
+      }
       if (r.ok || r.status === 404) {
         playSuccess();
         setBookings(bs => bs.filter(x => x.id !== b.id));
@@ -650,7 +659,7 @@ export default function ReservasClient(
                 <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                   className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
                 {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
-                {sinDinero(b) && <button onClick={() => void eliminarReserva(b)} disabled={eliminando} title="Eliminar reserva" aria-label="Eliminar reserva"
+                {sePuedeIntentarEliminar(b) && <button onClick={() => void eliminarReserva(b)} disabled={eliminando} title="Eliminar reserva" aria-label="Eliminar reserva"
                   className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-[#b8413f]/60 hover:text-[#b8413f] disabled:opacity-25"><Trash2 className="w-4 h-4" /></button>}
               </div>
             </div>
@@ -750,7 +759,7 @@ export default function ReservasClient(
                         <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
                         {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
-                        {sinDinero(b) && <button onClick={() => void eliminarReserva(b)} disabled={eliminando} title="Eliminar reserva (sin dinero cobrado)" aria-label="Eliminar reserva"
+                        {sePuedeIntentarEliminar(b) && <button onClick={() => void eliminarReserva(b)} disabled={eliminando} title="Eliminar reserva" aria-label="Eliminar reserva"
                           className="text-[#b8413f]/50 hover:text-[#b8413f] transition-colors disabled:opacity-25"><Trash2 className="w-4 h-4" /></button>}
                       </div>
                     </td>
@@ -787,7 +796,7 @@ export default function ReservasClient(
             </div>
             {/* ¿Prueba, duplicado o error? Se elimina por completo (20 nov 2026). */}
             <div className="mt-4 border-t border-[#1B4332]/10 pt-3">
-              <p className="text-[11px] font-dm text-[#1B4332]/55 mb-2">¿Es una prueba, un duplicado o un error de captura? Elimínala por completo (solo si no tiene dinero cobrado).</p>
+              <p className="text-[11px] font-dm text-[#1B4332]/55 mb-2">¿Es una prueba, un duplicado o un error de captura? Elimínala por completo. Si tiene cobros anotados te pregunta antes; si se pagó con tarjeta o con liga, no se puede.</p>
               <button type="button" onClick={() => void eliminarReserva(cancelando)} disabled={eliminando}
                 className="inline-flex min-h-[44px] items-center px-4 text-xs font-dm text-[#b8413f] border border-[#b8413f]/40 rounded-sm hover:bg-[#b8413f]/5 disabled:opacity-40 panel-foco">
                 {eliminando ? "Eliminando…" : "Eliminar la reserva"}
