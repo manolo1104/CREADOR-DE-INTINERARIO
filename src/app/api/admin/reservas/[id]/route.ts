@@ -13,7 +13,8 @@ import {
 } from "@/lib/encuestas/cumple";
 import { hoyMX } from "@/lib/dates";
 import { motivoParaGuardar } from "@/lib/admin/cancelacion";
-import { leadDesdeReserva, leadTrasCancelarReserva, leadTrasReactivarReserva } from "@/lib/admin/crmDatos";
+import { leadDesdeReserva, leadTrasCancelarReserva, leadTrasReactivarReserva, recalcularLead } from "@/lib/admin/crmDatos";
+import { motivoNoSeElimina } from "@/lib/admin/borrarReserva";
 import { asegurarHistorico, sincronizarDeposito } from "@/lib/admin/cobros";
 import { cobradoAFijarAntesDeEditar, montoCobrado } from "@/lib/admin/dinero";
 import { apagarLigasDe } from "@/lib/admin/linksPago";
@@ -279,22 +280,79 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
 }
 
 /**
- * Las reservas ya NO se borran (3 nov 2026). Antes esta ruta eliminaba la fila
- * y anulaba sus cobros; en la línea base el panel decía «0 canceladas» aunque
- * sí las hubo, porque se borraban. Ahora se cancelan con motivo y queda el
- * rastro en la reserva y en la bitácora. Se deja la ruta para que un panel
- * viejo en caché reciba una respuesta clara, no un 404.
+ * Eliminar una reserva (20 nov 2026, «habilita la eliminación de reservas»).
+ * Del 3 al 20 nov no se borraban: se cancelaban con motivo, porque al borrarlas
+ * la línea base decía «0 canceladas» aunque sí las hubo. Ahora se elimina SOLO
+ * la que no tiene dinero vivo (pruebas, duplicados, errores de captura): la que
+ * tiene cobros o gastos sin anular, una liga pagada o un pago en el sitio sigue
+ * cancelándose con motivo (`motivoNoSeElimina`), para que Cobros y el corte
+ * nunca se descuadren. Solo quien puede anular cobros (Manolo y socios).
+ *
+ * Todo en una transacción: sus comprobantes, sus cobros ya anulados, sus
+ * seguimientos automáticos pendientes, su lugar apartado (se libera), sus ligas
+ * sin pagar (se apagan en Stripe antes) y la cotización que la originó vuelve a
+ * «Enviada» para poder borrarla o convertirla otra vez. Las encuestas se van solas
+ * (cascada). Después el lead se recalcula y queda un renglón en la bitácora.
  */
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const antes = await prisma.tourBooking.findUnique({ where: { id: params.id }, select: { confirmationNumber: true } }).catch(() => null);
+  const sesion = await sesionActual();
+  if (!sesion || !puedeHacer(sesion.rol, "anularMovimiento")) {
+    return NextResponse.json({ error: "Solo Manolo o un socio pueden eliminar reservas." }, { status: 403 });
+  }
+  const b = await prisma.tourBooking.findUnique({ where: { id: params.id } }).catch(() => null);
+  if (!b) return NextResponse.json({ error: "Esa reserva ya no existe (alguien más la eliminó)." }, { status: 404 });
+
+  const hechos = async () => {
+    const [movimientosVivos, ligasPagadas] = await Promise.all([
+      prisma.movimiento.count({ where: { reservaId: b.id, anulado: false } }),
+      prisma.linkPago.count({ where: { reservaId: b.id, estado: "pagado" } }),
+    ]);
+    return { cobrado: montoCobrado(b), movimientosVivos, ligasPagadas, pagoStripe: !!b.stripePaymentIntentId };
+  };
+  const motivo = motivoNoSeElimina(await hechos());
+  if (motivo) return NextResponse.json({ error: motivo }, { status: 409 });
+
+  // Las ligas activas se apagan en Stripe antes (fuera de la transacción: llama a Stripe).
+  await apagarLigasDe({ reservaIds: [b.id] }, `se eliminó la reserva ${b.confirmationNumber}`);
+
+  try {
+    await prisma.$transaction(async tx => {
+      // Otra vez adentro: un pago pudo llegar mientras se apagaban las ligas.
+      const [vivos, pagadas, fresca] = await Promise.all([
+        tx.movimiento.count({ where: { reservaId: b.id, anulado: false } }),
+        tx.linkPago.count({ where: { reservaId: b.id, estado: "pagado" } }),
+        tx.tourBooking.findUnique({ where: { id: b.id } }),
+      ]);
+      if (!fresca) throw new Error("ya-no-existe");
+      const otra = motivoNoSeElimina({ cobrado: montoCobrado(fresca), movimientosVivos: vivos, ligasPagadas: pagadas, pagoStripe: !!fresca.stripePaymentIntentId });
+      if (otra) throw new Error(`no-se-elimina:${otra}`);
+
+      await tx.evidencia.deleteMany({ where: { bookingId: b.id } });
+      await tx.movimiento.deleteMany({ where: { reservaId: b.id, anulado: true } });
+      await tx.linkPago.updateMany({ where: { reservaId: b.id }, data: { reservaId: null } });
+      await tx.apartadoSalida.updateMany({ where: { bookingId: b.id }, data: { bookingId: null, estado: "liberado" } });
+      await tx.tarea.deleteMany({ where: { estado: "pendiente", claveRegla: { contains: b.id } } });
+      if (b.cotizacionId) {
+        await tx.tourQuote.updateMany({ where: { id: b.cotizacionId, status: "aceptada" }, data: { status: "enviada", aceptadaEn: null } });
+      }
+      await tx.tourBooking.delete({ where: { id: b.id } });
+    });
+  } catch (e) {
+    const m = (e as Error)?.message ?? "";
+    if (m === "ya-no-existe") return NextResponse.json({ error: "Esa reserva ya no existe (alguien más la eliminó)." }, { status: 404 });
+    if (m.startsWith("no-se-elimina:")) return NextResponse.json({ error: m.slice("no-se-elimina:".length) }, { status: 409 });
+    console.error("eliminar reserva:", m);
+    return NextResponse.json({ error: "No se pudo eliminar la reserva" }, { status: 500 });
+  }
+
   await registrarEnBitacora({
-    accion:     "modificó",
+    accion:     "eliminó",
     entidad:    "reserva",
-    referencia: antes?.confirmationNumber ?? params.id,
-    resumen:    `Intento de borrar la reserva ${antes?.confirmationNumber ?? params.id}: las reservas no se borran, se cancelan con motivo`,
+    referencia: b.confirmationNumber,
+    resumen:    `Eliminó la reserva ${b.confirmationNumber} de ${b.customerName} (${b.tourName}, ${b.tourDate}, total ${pesos(b.totalAmount)}, sin dinero cobrado)`,
   });
-  return NextResponse.json(
-    { error: "Las reservas no se borran: cámbiala a «Cancelada» y di el motivo." },
-    { status: 403 },
-  );
+  if (b.oportunidadId) {
+    await recalcularLead(b.oportunidadId, `se eliminó la reserva ${b.confirmationNumber}`).catch(e => console.error("recalcularLead tras eliminar:", (e as Error)?.message));
+  }
+  return NextResponse.json({ ok: true, folio: b.confirmationNumber });
 }

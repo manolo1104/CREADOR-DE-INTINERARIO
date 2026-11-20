@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { TourBooking } from "@prisma/client";
-import { Search, RefreshCw, Mail, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote } from "lucide-react";
+import { Search, RefreshCw, Mail, Plus, Download, Pencil, Sun, SlidersHorizontal, ChevronDown, ChevronUp, BedDouble, Eye, Banknote, Trash2 } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA } from "@/lib/tours";
 import { descuentoDeMeta, historialDeMeta, montoDescuento } from "@/lib/admin/descuento";
@@ -18,6 +18,7 @@ import { extrasDe, totalExtras, normalizarExtra, EXTRAS_PRESET, type PresetExtra
 import ReservaDetalle from "@/components/admin/ReservaDetalle";
 import { pickupParaFormulario } from "@/lib/admin/hospedaje";
 import CobroModal from "@/components/admin/CobroModal";
+import { AvisoFlotante } from "@/components/admin/AvisoFlotante";
 import { avisoDeCobro } from "@/lib/admin/metodosCobro";
 import { origenValido } from "@/lib/origenReserva";
 import { MOTIVOS_CANCELACION, motivoParaGuardar, type MotivoCancelacion } from "@/lib/admin/cancelacion";
@@ -98,6 +99,14 @@ export default function ReservasClient(
   const [cancelando,    setCancelando]    = useState<TourBooking | null>(null);
   const [motivo,        setMotivo]        = useState<MotivoCancelacion | "">("");
   const [motivoDetalle, setMotivoDetalle] = useState("");
+  // Eliminar (20 nov 2026): solo la que no tiene dinero; el servidor decide y dice por qué no.
+  const [eliminando,    setEliminando]    = useState(false);
+  const [aviso,         setAviso]         = useState<{ texto: string; error?: boolean } | null>(null);
+  useEffect(() => {
+    if (!aviso) return;
+    const reloj = setTimeout(() => setAviso(null), aviso.error ? 15000 : 10000);
+    return () => clearTimeout(reloj);
+  }, [aviso]);
   const [msg,           setMsg]           = useState("");
   const [modal,         setModal]         = useState<"new" | "edit" | null>(null);
   const [editTarget,    setEditTarget]    = useState<TourBooking | null>(null);
@@ -187,6 +196,30 @@ export default function ReservasClient(
       flash(`❌ ${d?.error || "No se pudo actualizar el estado"}`);
     }
     setStatusEditing(null);
+  }
+
+  // El bote sale solo en las que no tienen dinero; el servidor lo vuelve a revisar (cobros, ligas pagadas).
+  const sinDinero = (b: TourBooking) => cobradoDe(b) === 0 && !b.stripePaymentIntentId;
+
+  async function eliminarReserva(b: TourBooking) {
+    if (!window.confirm(`¿Eliminar la reserva ${b.confirmationNumber} de ${b.customerName}? Se borra por completo y no se puede deshacer.\n\nÚsalo para pruebas, duplicados o errores. Si el cliente canceló, mejor cancélala con su motivo: así cuenta en los números.`)) return;
+    playClick(); setEliminando(true);
+    try {
+      const r = await fetch(`/api/admin/reservas/${encodeURIComponent(b.id)}`, { method: "DELETE" });
+      const d = await r.json().catch(() => null);
+      if (r.ok || r.status === 404) {
+        playSuccess();
+        setBookings(bs => bs.filter(x => x.id !== b.id));
+        setCancelando(null);
+        setAviso({ texto: r.ok ? `Reserva ${b.confirmationNumber} eliminada.` : (d?.error || "Esa reserva ya no existía.") });
+        router.refresh();
+      } else {
+        playError();
+        setAviso({ texto: d?.error || "No se pudo eliminar la reserva", error: true });
+      }
+    } catch {
+      playError(); setAviso({ texto: "No se pudo eliminar: revisa tu conexión e intenta de nuevo", error: true });
+    } finally { setEliminando(false); }
   }
 
   // Cancelar pasa por el cuadro del motivo; los demás estados cambian directo.
@@ -617,6 +650,8 @@ export default function ReservasClient(
                 <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                   className={pendiente > 0 ? "text-[#52B788]" : "text-[#1B4332]/50 hover:text-[#52B788]"}><Banknote className="w-4 h-4" /></button>
                 {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
+                {sinDinero(b) && <button onClick={() => void eliminarReserva(b)} disabled={eliminando} title="Eliminar reserva" aria-label="Eliminar reserva"
+                  className="ml-auto inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-[#b8413f]/60 hover:text-[#b8413f] disabled:opacity-25"><Trash2 className="w-4 h-4" /></button>}
               </div>
             </div>
           );
@@ -715,6 +750,8 @@ export default function ReservasClient(
                         <button onClick={() => { playClick(); setCobrando(b); }} title="Registrar cobro"
                           className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Banknote className="w-4 h-4" /></button>
                         {b.status !== "cancelled" && <CheckinBoton r={b} estado={checkins[b.id]} onEstado={ponCheckin(b.id)} />}
+                        {sinDinero(b) && <button onClick={() => void eliminarReserva(b)} disabled={eliminando} title="Eliminar reserva (sin dinero cobrado)" aria-label="Eliminar reserva"
+                          className="text-[#b8413f]/50 hover:text-[#b8413f] transition-colors disabled:opacity-25"><Trash2 className="w-4 h-4" /></button>}
                       </div>
                     </td>
                   </tr>
@@ -742,15 +779,24 @@ export default function ReservasClient(
             <input value={motivoDetalle} onChange={e => setMotivoDetalle(e.target.value)} maxLength={200}
               placeholder="Por ejemplo: avisó por WhatsApp el martes"
               className="w-full border border-[#1B4332]/20 rounded-sm px-3 py-2.5 text-[16px] font-dm mb-4 panel-foco" />
-            <p className="text-[11px] font-dm text-[#1B4332]/55 mb-4">La reserva no se borra: queda como cancelada con este motivo y en la bitácora. Sus ligas de pago sin pagar se apagan solas. Si tiene cobros, regístralos o anúlalos desde Cobros.</p>
+            <p className="text-[11px] font-dm text-[#1B4332]/55 mb-4">Queda como cancelada con este motivo y en la bitácora. Sus ligas de pago sin pagar se apagan solas. Si tiene cobros, regístralos o anúlalos desde Cobros.</p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setCancelando(null)} className="px-4 py-2.5 text-xs font-dm text-[#1B4332]/70 hover:text-[#1B4332] panel-foco">Dejarla como está</button>
               <button onClick={() => { playClick(); confirmarCancelacion(); }} disabled={!motivo}
                 className="px-4 py-2.5 text-xs font-dm bg-[#b8413f] text-white rounded-sm disabled:opacity-40 panel-pulsable panel-foco">Cancelar la reserva</button>
             </div>
+            {/* ¿Prueba, duplicado o error? Se elimina por completo (20 nov 2026). */}
+            <div className="mt-4 border-t border-[#1B4332]/10 pt-3">
+              <p className="text-[11px] font-dm text-[#1B4332]/55 mb-2">¿Es una prueba, un duplicado o un error de captura? Elimínala por completo (solo si no tiene dinero cobrado).</p>
+              <button type="button" onClick={() => void eliminarReserva(cancelando)} disabled={eliminando}
+                className="inline-flex min-h-[44px] items-center px-4 text-xs font-dm text-[#b8413f] border border-[#b8413f]/40 rounded-sm hover:bg-[#b8413f]/5 disabled:opacity-40 panel-foco">
+                {eliminando ? "Eliminando…" : "Eliminar la reserva"}
+              </button>
+            </div>
           </div>
         </div>
       )}
+      {aviso && <AvisoFlotante texto={aviso.texto} tono={aviso.error ? "error" : "bien"} onCerrar={() => setAviso(null)} />}
       {detalle && (
         <ReservaDetalle reserva={detalle} onClose={() => setDetalle(null)} onCheckin={ponCheckin(detalle.id)} />
       )}
