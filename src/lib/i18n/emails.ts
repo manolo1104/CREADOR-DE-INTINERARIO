@@ -478,7 +478,7 @@ const ES: EmailMessages = {
     tuItinerario: "Tu itinerario",
     diaN: (n) => `Día ${n}`,
     todoIncluido: "Todo lo que incluye",
-    guiaAdjunta: "Te adjuntamos la Guía de la Huasteca Potosina en PDF para que vayas planeando.",
+    guiaAdjunta: "Te adjuntamos tu bienvenida en PDF: qué sigue, qué llevar y qué pasa si llueve.",
   },
 };
 
@@ -703,7 +703,7 @@ const EN: EmailMessages = {
     tuItinerario: "Your itinerary",
     diaN: (n) => `Day ${n}`,
     todoIncluido: "Everything included",
-    guiaAdjunta: "We've attached our Huasteca Potosina Guide (PDF) so you can start planning.",
+    guiaAdjunta: "We've attached your welcome PDF: what happens next, what to bring and what happens if it rains.",
   },
 };
 

@@ -13,6 +13,7 @@
 //    `depositoPagado` como espejo de la suma — nunca se escribe a mano;
 //  · el bot nunca confirma solo: esto lo dispara el `/confirma` de una persona.
 
+import { adjuntoBienvenida } from "@/lib/bienvenidaAdjunto";
 import { randomInt } from "crypto";
 import type { Prisma, TourBooking, TourQuote } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -756,6 +757,8 @@ export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor
         ? `Your tour is confirmed — ${b.confirmationNumber}`
         : `Tu tour está confirmado — ${b.confirmationNumber}`,
       htmlContent: html,
+      // La bienvenida en PDF, en el idioma de la compra (20 nov 2026).
+      attachments: adjuntoBienvenida(meta.locale),
     });
 
     // El renglón que lee la ficha del lead («Falta mandar la confirmación»): el

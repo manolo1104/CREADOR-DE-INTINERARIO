@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { adjuntoBienvenida } from "@/lib/bienvenidaAdjunto";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
 import { revisarSobrecupo } from "@/lib/sobrecupo";
@@ -14,8 +15,6 @@ import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { esIdApartado, liberarApartado } from "@/lib/apartadosAlmacen";
 import { armarReservaWeb, productoDelPago, PAGO_DE_OTRO_PRODUCTO } from "@/lib/reservaWeb";
 import { registrarReservaPaquete } from "@/lib/reservaPaquete";
-import fs from "fs";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -282,14 +281,9 @@ export async function POST(req: NextRequest) {
 
         const adminTo = process.env.ADMIN_EMAIL_TOURS || "daftpunkmanolo@gmail.com";
 
-        let pdfAttachment: { name: string; content: string }[] = [];
-        try {
-          const pdfPath = path.join(process.cwd(), "public", "guia-huasteca-potosina.pdf");
-          const pdfBase64 = fs.readFileSync(pdfPath).toString("base64");
-          pdfAttachment = [{ name: "Guia-Huasteca-Potosina.pdf", content: pdfBase64 }];
-        } catch {
-          // Si el PDF no está disponible, el correo igual se envía
-        }
+        // La bienvenida en PDF, en el idioma de la compra (20 nov 2026; antes
+        // iba la guía gratis). Sin archivo, el correo sale igual.
+        const pdfAttachment = adjuntoBienvenida(idioma);
 
         await sendBrevoEmail({
           to:      [{ email, name: customerName }],

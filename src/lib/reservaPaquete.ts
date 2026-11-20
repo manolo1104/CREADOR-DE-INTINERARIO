@@ -13,6 +13,7 @@
  * Solo quien CREA la fila manda el correo: si la reserva ya existía, nadie
  * vuelve a escribirle al cliente.
  */
+import { adjuntoBienvenida } from "@/lib/bienvenidaAdjunto";
 import type Stripe from "stripe";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { prisma } from "@/lib/prisma";
@@ -29,8 +30,6 @@ import { anotarConfirmacionEnviada } from "@/lib/admin/confirmacionReservaDatos"
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { revisarSobrecupo } from "@/lib/sobrecupo";
 import { HOTEL_PARAISO_WEB, importeHotelDePaquete, pctDelPaquete } from "@/lib/reservaWeb";
-import fs from "fs";
-import path from "path";
 
 const fmx = (n: number) => `$${Math.round(n).toLocaleString("es-MX")} MXN`;
 
@@ -351,13 +350,9 @@ export async function registrarReservaPaquete(
         totalFull, cobrado, pendiente, pctNum,
       });
 
-      // La guía en PDF, igual que en la confirmación de tours. Si el archivo
-      // no está, el correo sale de todos modos.
-      let adjuntos: { name: string; content: string }[] = [];
-      try {
-        const pdfPath = path.join(process.cwd(), "public", "guia-huasteca-potosina.pdf");
-        adjuntos = [{ name: "Guia-Huasteca-Potosina.pdf", content: fs.readFileSync(pdfPath).toString("base64") }];
-      } catch { /* sin PDF, el correo igual se envía */ }
+      // La bienvenida en PDF, igual que en la confirmación de tours (20 nov
+      // 2026; antes iba la guía gratis). Sin archivo, el correo sale igual.
+      const adjuntos = adjuntoBienvenida(L);
 
       await sendBrevoEmail({
         to:  [{ email, name: customerName }],

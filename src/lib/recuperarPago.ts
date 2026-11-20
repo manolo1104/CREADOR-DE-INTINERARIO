@@ -18,6 +18,7 @@
  *
  * Solo quien CREA la fila manda el correo, así que nadie lo recibe dos veces.
  */
+import { adjuntoBienvenida } from "@/lib/bienvenidaAdjunto";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
@@ -320,6 +321,7 @@ export async function recuperarPago(
             bcc: process.env.ADMIN_EMAIL_TOURS ? [{ email: process.env.ADMIN_EMAIL_TOURS }] : undefined,
             subject: `Tu tour está confirmado — ${confirmationNumber}`,
             htmlContent: html,
+            attachments: adjuntoBienvenida(locale),
           });
           actividad("📧  CORREO ENVIADO (recuperado)", nombreCorto(meta.tourName || ""), clienteEmail, confirmationNumber);
           // El mismo renglón que el botón del panel: la ficha del lead ya sabe
