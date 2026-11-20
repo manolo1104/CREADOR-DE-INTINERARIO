@@ -21,9 +21,25 @@ import { agregarRef, guardarOrigenVisita, marcarRef, nuevaRef } from "@/lib/refW
  * Los botones que YA se miden solos llevan `data-wa-manual="1"` y aquí se
  * ignoran: mandan su propio evento con más contexto (el monto del carrito, el
  * tour de la tarjeta) y contarlos dos veces inflaría la cifra.
+ *
+ * En el panel (/admin) no hace nada (revisión del 20 nov 2026): ver `esPanel`.
  */
 
 const SLUGS = new Set(TOURS_DB.map(t => t.slug));
+
+/**
+ * ¿Es una página del panel? Ahí los enlaces a WhatsApp los usa el EQUIPO para
+ * escribirle a un cliente o a un proveedor («Pedir reseña por WhatsApp», la
+ * confirmación de la salida, la cotización…), no un visitante. Montado en el
+ * layout raíz, esto también corría ahí: le pegaba «(ref. 2MGXT)» al mensaje
+ * que el equipo le manda al cliente y mandaba el clic como si fuera del sitio
+ * (la marca del equipo, `hp_interno`, y /api/track ya lo tiraban: la cifra no
+ * se inflaba, pero no tenía por qué salir).
+ * En el panel: ni código, ni evento, ni origen de la visita (20 nov 2026).
+ */
+function esPanel(path: string): boolean {
+  return path === "/admin" || path.startsWith("/admin/");
+}
 
 /** El tour del que habla la página, si la URL lo dice. */
 function tourDeLaRuta(path: string): string | undefined {
@@ -43,9 +59,13 @@ export default function WhatsAppClickTracker() {
   useEffect(() => {
     // De dónde llegó la visita (UTM o el sitio de origen), una vez por sesión:
     // viaja con el clic a WhatsApp y de ahí al lead (`lib/refWhatsapp.ts`).
-    guardarOrigenVisita();
+    // Abrir el panel no es una visita.
+    if (!esPanel(window.location.pathname)) guardarOrigenVisita();
 
     function alHacerClic(e: MouseEvent) {
+      // Se mira en cada clic y no solo al montar: el layout raíz no se vuelve a
+      // montar cuando se navega sin recargar entre el panel y el sitio.
+      if (esPanel(window.location.pathname)) return;
       const destino = e.target as HTMLElement | null;
       const enlace = destino?.closest?.(
         'a[href*="wa.me"], a[href*="api.whatsapp.com"], a[href^="whatsapp:"]',

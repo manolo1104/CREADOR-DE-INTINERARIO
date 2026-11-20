@@ -2,10 +2,12 @@
 
 import DescuentoEditor from "@/components/admin/DescuentoEditor";
 import { descuentoDeMeta, historialDeMeta, type Descuento, type EventoDescuento } from "@/lib/admin/descuento";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { Aviso, AvisoFlotante } from "@/components/admin/AvisoFlotante";
 import type { TourQuote } from "@prisma/client";
-import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing, MapPin } from "lucide-react";
-import { CodigoTour } from "@/components/admin/CodigoTour";
+import { Plus, Mail, Download, Trash2, Search, MessageCircle, X, Pencil, Check, BedDouble, BookCheck, ChevronRight, ChevronLeft, Eye, BellRing, MapPin, FileText } from "lucide-react";
+import { BadgesTour } from "../leads/etapas";
+import { nombreDeTour } from "@/lib/admin/coloresTour";
 import { TOURS_LISTA, cargoVallesDe, type Tour } from "@/lib/tours";
 import {
   type PackageItem, type LineItem, calcPackageLine, calcTourLine, esTourVehiculo, vehiculoLineName,
@@ -14,7 +16,8 @@ import {
   SLUG_PERSONALIZADO, esLineaPersonalizada, lineaCompleta, TrasladoVallesLinea, conTrasladoValles,
   EleccionLinea, eleccionPorOmision,
 } from "@/components/admin/ReservaModal";
-import CotizacionDetalle from "@/components/admin/CotizacionDetalle";
+import CotizacionDetalle, { ChipPerdido } from "@/components/admin/CotizacionDetalle";
+import { marcaPerdido, type MarcaPerdido } from "@/lib/cotizaciones/marcaPerdido";
 import ConvertirReservaModal, { type DatosConversion, type ResultadoConversion } from "@/components/admin/ConvertirReservaModal";
 import CobroModal, { type ReservaCobrable } from "@/components/admin/CobroModal";
 import Link from "next/link";
@@ -30,7 +33,7 @@ import {
 import { avisoSoloLectura, mensajeTrasRegresar } from "@/lib/cotizaciones/reglasEnvio";
 import { PAQUETES_PANEL, cargarPaquete } from "@/lib/admin/paquetesPanel";
 import { Package } from "lucide-react";
-import { grupoDe, grupoParaGuardar } from "@/lib/admin/reserva";
+import { grupoDe, grupoParaGuardar, lineasDe, type ConLineas, type LineaTour } from "@/lib/admin/reserva";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { escapeHtml } from "@/lib/escapeHtml";
 import { htmlCotizacion } from "@/lib/documentos/htmlCotizacion";
@@ -128,22 +131,101 @@ export interface InicioCotizaciones {
   editar?: string | null; convertir?: string | null; nueva?: boolean;
   lead?: { id: string; nombre: string; telefono: string | null; correo: string | null } | null;
 }
-/** Del lead de cada cotización: su canal (se sugiere al convertir) y su idioma. */
-export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string }>;
+/**
+ * Del lead de cada cotización: su canal (se sugiere al convertir), su idioma
+ * y, desde el 19 nov 2026, su etapa y motivo: la cotización de un lead
+ * Perdido lleva la marca «Perdido · motivo» (`marcaPerdido.ts`).
+ */
+export type LeadsDeCotizaciones = Record<string, { canal: string; idioma: string; etapa?: string | null; motivoPerdida?: string | null }>;
+
+/** Sin reservas: constante para que el valor por omisión no cambie en cada render. */
+const SIN_RESERVAS: Record<string, string> = {};
+
+/**
+ * Los botones de ícono de las tarjetas del celular: 44 px para el dedo (19 nov
+ * 2026). Antes eran íconos de 16 px sin relleno: costaba atinarles y el bote
+ * de basura quedaba pegado a los demás.
+ */
+const iconoMovil = (color = "text-[#1B4332]/50 hover:text-[#1B4332]") =>
+  `inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm active:bg-[#1B4332]/5 disabled:opacity-25 ${color}`;
+const textoMovil = "inline-flex min-h-[44px] items-center px-2 text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline";
+/** Botón del celular con ícono Y nombre (20 nov 2026): «Abrir» y «Eliminar» se leen sin adivinar el ícono. */
+const conNombreMovil = (color = "text-[#1B4332]/60 hover:text-[#1B4332]") =>
+  `inline-flex min-h-[44px] shrink-0 items-center gap-1 rounded-sm px-2 text-[11px] font-dm active:bg-[#1B4332]/5 ${color}`;
+
+/**
+ * Los botones de la tabla de la compu (20 nov 2026): íconos en un cuadro de
+ * 24 px y, en el renglón de abajo, las acciones con su nombre. Todo cabe en la
+ * columna de Acciones, de ancho fijo: antes era una sola fila de ~290 px y, en
+ * una pantalla de 1366 px, «Eliminar» quedaba fuera de la vista.
+ */
+const iconoTabla = (color = "text-[#1B4332]/40 hover:text-[#1B4332]") =>
+  `inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm transition-colors hover:bg-[#1B4332]/5 disabled:opacity-25 ${color}`;
+/** Sin color al pasar el cursor: cada botón pone el suyo (dos `hover:text-` juntos no se sabe cuál gana). */
+const textoTabla = "inline-flex min-h-[24px] items-center whitespace-nowrap text-[11px] font-dm text-[#1B4332]/60 underline transition-colors";
+
+/**
+ * Una aceptada ya no se edita: se abre para VER (lote 4). Antes era un segundo
+ * ojo igual al de «Vista previa», uno junto al otro (20 nov 2026): ahora es
+ * «Abrir», con su ícono y su nombre.
+ */
+const TITULO_ABRIR = "Abrir la cotización para verla (ya es venta: se cambia en su reserva)";
+
+/**
+ * Los tours de una cotización como badges (20 nov 2026, regla de Manolo:
+ * «siempre badges con colores y el acrónimo»): TODOS sus renglones, sin el
+ * `_meta`. Antes se pintaba solo el primero con su nombre largo, y una de
+ * TAM + SUR se veía como si fuera solo TAM. El nombre largo va en el `title`.
+ */
+function toursDe(x: ConLineas): { slugs: string[]; nombres: Record<string, string> } {
+  const lineas = lineasDe(x).filter(l => l.tourSlug);
+  const base: LineaTour[] = lineas.length ? lineas : [{ tourSlug: x.tourSlug, tourName: x.tourName }];
+  const nombres: Record<string, string> = {};
+  for (const l of base) {
+    if (!l.tourSlug) continue;
+    const nombre = l.tourName?.trim() || nombreDeTour(l.tourSlug);
+    const antes = nombres[l.tourSlug];
+    nombres[l.tourSlug] = !antes ? nombre : antes.includes(nombre) ? antes : `${antes} + ${nombre}`;
+  }
+  return { slugs: Object.keys(nombres), nombres };
+}
+function ToursDe({ x }: { x: ConLineas }) {
+  const t = toursDe(x);
+  return <BadgesTour slugs={t.slugs} nombres={t.nombres} />;
+}
 
 export default function CotizacionesClient(
-  { initialQuotes, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, pagadoEnLinea = {}, reservasDeCotizaciones = {} }:
+  { initialQuotes, presetsExtras = EXTRAS_PRESET, verCostos = true, quien = "Admin", guiasConocidos = [], leads = {}, inicio = {}, pagadasSinReserva = {}, pagadoEnLinea = {}, reservasDeCotizaciones = SIN_RESERVAS }:
   { initialQuotes: TourQuote[]; presetsExtras?: PresetExtra[]; verCostos?: boolean; quien?: string; guiasConocidos?: string[]; leads?: LeadsDeCotizaciones; inicio?: InicioCotizaciones; pagadasSinReserva?: Record<string, number>; pagadoEnLinea?: Record<string, number>; reservasDeCotizaciones?: Record<string, string> },
 ) {
   const router = useRouter();
   const [quotes,         setQuotes]         = useState(initialQuotes);
+  // Al recargar (`router.refresh`) llega también la lista de la base (20 nov
+  // 2026): sin esto, la fila de una cotización que ya era reserva seguía
+  // diciendo «Enviada», con «Marcar vencida», después del aviso del servidor (409).
+  useEffect(() => { setQuotes(initialQuotes); }, [initialQuotes]);
   // El folio de la reserva viva de cada aceptada (lote 4, 5 nov 2026): el
   // aviso de «solo lectura» lo nombra y sin él se ofrece «Regresar a Enviada».
   const [reservasDe,     setReservasDe]     = useState(reservasDeCotizaciones);
+  // Al recargar (`router.refresh`) llega lo de la base (19 nov 2026): la
+  // reserva que se canceló en otra pestaña deja de esconder «Eliminar».
+  useEffect(() => { setReservasDe(reservasDeCotizaciones); }, [reservasDeCotizaciones]);
   const folioReserva = (q: TourQuote): string | null => {
     const m = getMeta((q as any).packageItems ?? []) as any;
     return reservasDe[q.id] ?? (typeof m.reservaFolio === "string" && m.reservaFolio ? m.reservaFolio : null);
   };
+  /**
+   * La reserva VIVA de la cotización (19 nov 2026): con ella no se ofrece
+   * «Eliminar», igual que el servidor (409). Solo la que la base dio por viva;
+   * el folio que quedó en el `_meta` de una reserva ya cancelada no cuenta: esa
+   * cotización sí se puede eliminar.
+   */
+  const reservaViva = (q: TourQuote): string | null => reservasDe[q.id] ?? null;
+  // La marca «Perdido» (19 nov 2026): sale de la etapa de su lead, no se guarda
+  // en la cotización. Sin correos automáticos y fuera de «Por vencer».
+  const marcaDe = (q: TourQuote): MarcaPerdido | null => marcaPerdido(q.oportunidadId ? leads[q.oportunidadId] : null, q.status);
+  /** «Marcar vencida» solo donde cambia algo: la vencida ya lo está y la aceptada ya es venta. */
+  const puedeVencer = (q: TourQuote) => q.status === "borrador" || q.status === "enviada";
   // «Regresar a Enviada»: solo la aceptada que no es reserva ni tiene un pago
   // por liga (la que el cron de antes marcó por la reserva de otra cotización).
   const regresable = (q: TourQuote) => q.status === "aceptada" && !folioReserva(q) && !((pagadasSinReserva[q.id] ?? 0) > 0);
@@ -197,8 +279,10 @@ export default function CotizacionesClient(
   const [saving,         setSaving]         = useState(false);
   const [sending,        setSending]        = useState<string | null>(null);
   const [msg,            setMsg]            = useState("");
+  // El reloj del aviso: uno nuevo reinicia la cuenta (antes, el reloj del anterior lo borraba antes de tiempo).
+  const relojAviso = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
-  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "archivada" | "bot">("all");
+  const [statusFilter,   setStatusFilter]   = useState<"all" | "borrador" | "enviada" | "por-vencer" | "aceptada" | "expirada" | "perdidas" | "archivada" | "bot">("all");
   const [sortBy,         setSortBy]         = useState<"reciente" | "tourDate" | "monto" | "vence">("reciente");
 
   // «Hoy» en México: de aquí salen el «vence…», la franja y los mensajes.
@@ -381,14 +465,27 @@ export default function CotizacionesClient(
   }
   function removeLine(i: number) { if (lines.length > 1) setLines(ls => ls.filter((_, idx) => idx !== i)); }
 
+  /**
+   * El aviso flota a la vista (20 nov 2026): 10 s si salió bien y 15 s si no,
+   * o hasta que lo cierren. Antes duraba 5 s arriba de la página y, con la
+   * lista bajada, no se veía.
+   */
   function flash(m: string) {
     setMsg(m);
     if (m.startsWith("✅")) playSuccess();
     else if (m.startsWith("❌")) playError();
-    setTimeout(() => setMsg(""), 5000);
+    if (relojAviso.current) clearTimeout(relojAviso.current);
+    relojAviso.current = setTimeout(() => setMsg(""), m.startsWith("✅") ? 10000 : 15000);
+  }
+  function cerrarAviso() {
+    if (relojAviso.current) clearTimeout(relojAviso.current);
+    setMsg("");
   }
 
   function openNew(lead?: InicioCotizaciones["lead"]) {
+    // El aviso de la lista no entra al editor (revisión del 20 nov 2026): junto
+    // a «Guardar», un «❌ …» de otra cotización parecía un error al guardar.
+    cerrarAviso();
     setEditTarget(null);
     setAvisoLectura(null);
     setParaLead(lead?.id ?? null);
@@ -405,6 +502,7 @@ export default function CotizacionesClient(
   }
 
   function openEdit(q: TourQuote) {
+    cerrarAviso(); // El de la lista no entra al editor (ver `openNew`).
     setEditTarget(q);
     // Una aceptada se abre para VER, con el aviso de dónde se cambia (lote 4).
     setAvisoLectura(avisoSoloLectura(q, folioReserva(q)));
@@ -472,7 +570,8 @@ export default function CotizacionesClient(
     setModal("edit");
   }
 
-  function closeModal() { setModal(null); setEditTarget(null); setParaLead(null); }
+  // El aviso que era del editor se va con él: no se queda flotando sobre la lista.
+  function closeModal() { setModal(null); setEditTarget(null); setParaLead(null); cerrarAviso(); }
 
   // Desde la ficha del lead: «Editar cotización», «Convertir a reserva» o
   // «Nueva cotización» abren aquí directo lo que se pidió (una sola vez).
@@ -576,8 +675,9 @@ export default function CotizacionesClient(
       closeModal();
       flash(modal === "edit" ? "✅ Cotización actualizada · su lead ya tiene los datos nuevos"
         // Su lead anterior estaba Operado o Perdido: la venta nueva no se queda ahí (5 nov 2026).
-        : creada?.leadNuevo ? "✅ Cotización creada · su lead anterior ya estaba cerrado: se le abrió uno nuevo en Calificado"
-        : "✅ Cotización creada · su lead quedó en Calificado");
+        // Crear la cotización lleva el lead a Cotizado (regla de Manolo, 19 nov 2026); antes, Calificado.
+        : creada?.leadNuevo ? "✅ Cotización creada · su lead anterior ya estaba cerrado: se le abrió uno nuevo en Cotizado"
+        : "✅ Cotización creada · su lead pasa a Cotizado (si ya iba más adelante, se queda donde está)");
       // La ficha del lead lee estos datos: que no se quede con los de antes.
       router.refresh();
     } else {
@@ -645,17 +745,30 @@ export default function CotizacionesClient(
     }
   }
 
-  async function expireQ(id: string) {
-    if (!confirm("¿Marcar como vencida?")) return;
-    const r = await fetch(`/api/admin/cotizaciones/${id}`, { method: "DELETE" }).catch(() => null);
+  /**
+   * «Marcar vencida» NO la elimina (19 nov 2026): sigue en la lista como
+   * Vencida. Antes era una X sin palabras junto al bote de basura y parecía
+   * que «eliminar» no hacía nada; ahora el botón lo dice y el aviso también.
+   */
+  async function expireQ(q: TourQuote) {
+    if (!confirm(`¿Marcar la cotización ${q.quoteNumber} de ${q.customerName} como vencida?\n\nNo se borra: sigue en la lista como Vencida y su liga de pago deja de poder pagarse. Para quitarla de la lista usa «Eliminar».`)) return;
+    const r = await fetch(`/api/admin/cotizaciones/${q.id}`, { method: "DELETE" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
     if (r?.ok) {
-      const d = await r.json().catch(() => ({}));
-      setQuotes(q => q.map(x => x.id === id ? { ...x, status: "expirada" } : x));
+      setQuotes(qs => qs.map(x => x.id === q.id ? { ...x, status: "expirada" } : x));
       // Su liga sin pagar se apaga sola (lote 3, 5 nov 2026): que se note.
       flash(`✅ Cotización marcada como vencida${d?.ligasApagadas > 0 ? " · su liga de pago ya no se puede pagar" : ""}`);
       router.refresh();
+    } else if (r?.status === 404) {
+      // Alguien más la eliminó: ya no hay nada que marcar.
+      setQuotes(qs => qs.filter(x => x.id !== q.id));
+      flash(`❌ ${d.error || "Esa cotización ya no existe."}`);
+      router.refresh();
     } else {
-      flash("❌ No se pudo actualizar la cotización");
+      // Lo que dijo el servidor (por ejemplo, que ya es una reserva), no un error genérico.
+      flash(`❌ ${d.error || (r ? "No se pudo marcar como vencida" : "No se pudo marcar como vencida: revisa tu conexión e intenta de nuevo")}`);
+      // La lista estaba vieja (20 nov 2026): se recarga y la fila toma su estado real.
+      if (r?.status === 409) router.refresh();
     }
   }
 
@@ -698,20 +811,38 @@ export default function CotizacionesClient(
     return { ok: true };
   }
 
-  async function hardDeleteQ(id: string) {
-    if (!confirm("¿Eliminar completamente esta cotización?\n\nSi su lead solo existía por ella, el lead también se quita. Si tiene una liga de pago sin pagar, se apaga. Si el cliente no la quiso, mejor márcala como Perdido en su ficha.")) return;
-    const r = await fetch(`/api/admin/cotizaciones/${id}?hard=1`, { method: "DELETE" }).catch(() => null);
+  /**
+   * Eliminar de verdad. 19 nov 2026 (Manolo: «no puedo eliminar
+   * cotizaciones»): el aviso dice cuál se borra y que no se deshace; si el
+   * servidor no la borra, se enseña su motivo (antes, «No se pudo eliminar» a
+   * secas). La que ya es una reserva viva no se elimina (409): se cancela la
+   * reserva con su motivo. La que ya no existía se quita de la lista (404).
+   */
+  async function hardDeleteQ(q: TourQuote) {
+    const yaPerdida = !!marcaDe(q);
+    if (!confirm(`¿Eliminar la cotización ${q.quoteNumber} de ${q.customerName}?\n\nSe borra y no se puede deshacer. Si su lead solo existía por ella, el lead también se quita. Si tiene una liga de pago sin pagar, se apaga.${yaPerdida ? "" : " Si el cliente no la quiso, mejor márcala como Perdido en su ficha: la cotización se queda con la marca y cuenta en los números."}`)) return;
+    const r = await fetch(`/api/admin/cotizaciones/${q.id}?hard=1`, { method: "DELETE" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
     if (r?.ok) {
-      const d = await r.json().catch(() => ({}));
-      setQuotes(q => q.filter(x => x.id !== id));
+      setQuotes(qs => qs.filter(x => x.id !== q.id));
       const ligas = d?.pagosSinReserva > 0 ? " · ⚠️ ya tenía un pago por liga sin reserva: Manolo tiene el seguimiento"
         : d?.ligasApagadas > 0 ? " · su liga de pago ya no se puede pagar" : "";
       flash((d?.lead === "borrado" ? "✅ Cotización eliminada · su lead también se quitó (no tenía nada más)"
         : d?.lead === "actualizado" ? "✅ Cotización eliminada · su lead se queda (tiene más cosas) y quedó anotado"
         : "✅ Cotización eliminada") + ligas);
       router.refresh();
+    } else if (r?.status === 404) {
+      // Ya no estaba (otra pestaña o alguien más la eliminó): que tampoco se vea aquí.
+      setQuotes(qs => qs.filter(x => x.id !== q.id));
+      flash("✅ Esa cotización ya se había eliminado (otra pestaña o alguien más): ya no está en la lista");
+      router.refresh();
     } else {
-      flash("❌ No se pudo eliminar la cotización");
+      // Ya es una reserva: la lista lo sabe desde ahora y deja de ofrecer «Eliminar».
+      if (r?.status === 409 && typeof d.reservaFolio === "string") setReservasDe(m => ({ ...m, [q.id]: d.reservaFolio }));
+      flash(`❌ ${d.error || (r ? "No se pudo eliminar la cotización" : "No se pudo eliminar: revisa tu conexión e intenta de nuevo")}`);
+      // Y se recarga (20 nov 2026): la fila deja de decir «Enviada» con «Marcar
+      // vencida» y toma lo que dice la base (Aceptada, con «Ver reserva»).
+      if (r?.status === 409) router.refresh();
     }
   }
 
@@ -799,12 +930,14 @@ export default function CotizacionesClient(
   }
 
   // Lo que toca recordar hoy: Enviadas a las que les queda un día o menos y a
-  // las que nadie les ha escrito todavía por WhatsApp.
+  // las que nadie les ha escrito todavía por WhatsApp. Sin las de un lead
+  // Perdido (19 nov 2026): el cliente ya dijo que no, no hay que recordarle.
   const porVencer = useMemo(
     () => quotes
-      .filter(q => etapaDe(q, hoy) === "por-vencer")
+      .filter(q => etapaDe(q, hoy) === "por-vencer" && !marcaDe(q))
       .sort((a, b) => (fechaLimite(a) ?? "").localeCompare(fechaLimite(b) ?? "")),
-    [quotes, hoy],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [quotes, hoy, leads],
   );
   // Las que el equipo puede recordar y no ha recordado (sin teléfono solo les llega el correo).
   const tocaRecordar = porVencer.filter(q => !recordadoPorWhatsapp(q) && !!waRecordatorio(q));
@@ -812,8 +945,10 @@ export default function CotizacionesClient(
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     const list = quotes.filter(c => {
-      if (statusFilter === "por-vencer") { if (etapaDe(c, hoy) !== "por-vencer") return false; }
+      if (statusFilter === "por-vencer") { if (etapaDe(c, hoy) !== "por-vencer" || marcaDe(c)) return false; }
       else if (statusFilter === "bot") { if (!esDelBot(c)) return false; }
+      // Las de un lead Perdido (19 nov 2026), sin las archivadas, como «Todas».
+      else if (statusFilter === "perdidas") { if (!marcaDe(c) || c.status === "archivada") return false; }
       // «Todas» no enseña las archivadas: para eso está su pestaña.
       else if (statusFilter === "all") { if (c.status === "archivada") return false; }
       else if (c.status !== statusFilter) return false;
@@ -830,7 +965,8 @@ export default function CotizacionesClient(
       }
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(); // más recientes
     });
-  }, [quotes, search, statusFilter, sortBy, hoy]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quotes, search, statusFilter, sortBy, hoy, leads]);
 
   const isEditMode = modal === "edit";
 
@@ -841,16 +977,17 @@ export default function CotizacionesClient(
           <h1 className="font-cormorant text-[#1B4332] text-2xl font-light">Cotizaciones</h1>
           <p className="text-[#1B4332]/50 font-dm text-sm mt-1">{quotes.length} cotizaciones · {quotes.filter(q => q.status === "aceptada").length} aceptadas</p>
         </div>
+        {/* 44 px de alto para el dedo hasta 1279 px, como las pestañas (revisión del 20 nov 2026): medían 34 y 38. */}
         <div className="flex flex-wrap gap-2">
           <select value={sortBy} onChange={e => { playClick(); setSortBy(e.target.value as any); }}
-            className="bg-white border border-[#1B4332]/20 text-[#1B4332]/70 text-xs font-dm px-2.5 py-2 rounded-sm focus:outline-none focus:border-[#1B4332] cursor-pointer">
+            className="min-h-[44px] xl:min-h-0 bg-white border border-[#1B4332]/20 text-[#1B4332]/70 text-xs font-dm px-2.5 py-2 rounded-sm focus:outline-none focus:border-[#1B4332] cursor-pointer">
             <option value="reciente">Más recientes</option>
             <option value="tourDate">Fecha de tour</option>
             <option value="monto">Mayor monto</option>
             <option value="vence">Fecha límite</option>
           </select>
           <button onClick={() => { playClick(); openNew(); }}
-            className="flex items-center gap-2 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-4 py-2.5 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
+            className="flex min-h-[44px] xl:min-h-0 items-center gap-2 bg-[#1B4332] hover:bg-[#2D5A45] text-white px-4 py-2.5 text-xs font-dm uppercase tracking-[1px] transition-colors rounded-sm">
             <Plus className="w-4 h-4" />Nueva Cotización
           </button>
         </div>
@@ -862,9 +999,17 @@ export default function CotizacionesClient(
           <Link href={`/admin/leads/${leadVuelta.id}`} className="panel-foco font-semibold underline-offset-2 hover:underline">← Volver a su ficha</Link>
         </div>
       )}
-      {msg && (
-        <div className={`animate-slide-up mb-4 text-sm font-dm px-4 py-2 rounded border ${msg.startsWith("✅") ? "bg-green-50 border-green-200 text-green-800" : "bg-red-50 border-red-200 text-red-700"}`}>{msg}</div>
-      )}
+      {/* El aviso flota abajo, a la vista aunque la fila esté lejos (20 nov
+          2026): antes salía 5 s arriba de la página y, con la lista bajada,
+          eliminar una que ya era reserva (409) parecía no hacer nada. Tampoco
+          empuja la página al salir. Va encima de los avisos de seguimientos
+          (z-70, abajo a la derecha: en el celular lo tapaban) y se esconde
+          mientras hay una ventana abierta, para no tapar sus botones; con el
+          editor abierto va dentro del editor.
+          Va en el `body`, como CobroModal (revisión del 20 nov 2026): dentro de
+          `main` (relative z-10) ningún z-index lo subía sobre esos avisos, que
+          son hermanos de `main`; con z-75 seguía debajo de los de z-70. */}
+      {msg && !modal && !detalle && !convirtiendo && !cobrando && <AvisoFlotante texto={msg} onCerrar={cerrarAviso} />}
       {avisosConv.length > 0 && (
         <div role="status" className="mb-4 flex items-start justify-between gap-3 rounded-sm border border-amber-300/70 bg-amber-50/70 px-4 py-3 text-sm font-dm text-amber-900">
           <div className="min-w-0">
@@ -896,14 +1041,18 @@ export default function CotizacionesClient(
               const url   = waRecordatorio(q);
               return (
                 <li key={q.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 py-2 font-dm">
-                  <button onClick={() => { playClick(); setDetalle(q); }} className="text-[#1B4332] text-sm font-medium hover:underline text-left">{q.customerName}</button>
-                  <span className="text-[#1B4332]/50 text-xs truncate max-w-[240px]">{q.tourName.split("—")[0].trim()} · {fDate(q.tourDate)}</span>
+                  {/* 44 px de alto en celular y tableta, como su botón de WhatsApp (20 nov 2026). */}
+                  <button onClick={() => { playClick(); setDetalle(q); }} className="min-h-[44px] xl:min-h-0 text-[#1B4332] text-sm font-medium hover:underline text-left">{q.customerName}</button>
+                  {/* Los tours como badges, como en toda la lista (20 nov 2026). */}
+                  <span className="flex items-center gap-1.5 text-[#1B4332]/50 text-xs"><ToursDe x={q} /><span>{fDate(q.tourDate)}</span></span>
                   <span className={`text-xs ${claseVence(diasParaVencer(vence, hoy))}`}>{etiquetaVence(vence, hoy)}</span>
                   <span className="ml-auto flex items-center gap-2.5">
                     {rec && <span className="text-xs text-[#40916C]">✓ Recordado {fRecordado(rec, hoy)}</span>}
                     {url ? (
+                      // El verde del botón de WhatsApp de Leads y la ficha (20 nov 2026):
+                      // blanco sobre #25D366 se leía mal (2:1) y en el celular medía 28 px.
                       <button onClick={() => recordar(q)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-sm transition-colors ${rec ? "border border-[#25D366]/50 text-[#128C7E] hover:bg-[#25D366]/10" : "bg-[#25D366] hover:bg-[#1fb457] text-white"}`}>
+                        className={`flex min-h-[44px] xl:min-h-0 items-center gap-1.5 px-3 py-1.5 text-xs rounded-sm transition-colors ${rec ? "border border-[#1f7a4d]/40 text-[#1f7a4d] hover:bg-[#1f7a4d]/5" : "bg-[#1f7a4d] hover:bg-[#19673f] text-white"}`}>
                         <MessageCircle className="w-3.5 h-3.5" />{rec ? "Otra vez" : "Recordar por WhatsApp"}
                       </button>
                     ) : (
@@ -927,16 +1076,19 @@ export default function CotizacionesClient(
           { key: "por-vencer", label: "Por vencer" },
           { key: "aceptada", label: "Aceptadas" },
           { key: "expirada", label: "Vencidas"  },
+          { key: "perdidas", label: "Perdidas"  },
           { key: "archivada", label: "Archivadas" },
           { key: "bot",      label: "Bot"       },
         ] as const).map(tab => {
           const count = tab.key === "all" ? quotes.filter(q => q.status !== "archivada").length
             : tab.key === "por-vencer" ? porVencer.length
             : tab.key === "bot" ? quotes.filter(esDelBot).length
+            : tab.key === "perdidas" ? quotes.filter(q => !!marcaDe(q) && q.status !== "archivada").length
             : quotes.filter(q => q.status === tab.key).length;
           return (
+            // 44 px de alto para el dedo hasta 1279 px, donde se ven las tarjetas (20 nov 2026).
             <button key={tab.key} onClick={() => { playClick(); setStatusFilter(tab.key); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-dm whitespace-nowrap rounded-sm transition-colors ${
+              className={`flex min-h-[44px] xl:min-h-0 items-center gap-1.5 px-3 py-1.5 text-xs font-dm whitespace-nowrap rounded-sm transition-colors ${
                 statusFilter === tab.key ? "bg-[#1B4332] text-white" : "border border-[#1B4332]/15 text-[#1B4332]/60 hover:text-[#1B4332] hover:border-[#1B4332]/30"
               }`}>
               {tab.label}
@@ -954,14 +1106,21 @@ export default function CotizacionesClient(
         />
       </div>
 
-      {/* ── Tarjetas (móvil) ── */}
-      <div className="md:hidden space-y-2.5">
-        {filtered.length === 0 && <p className="py-10 text-center text-[#1B4332]/30 font-dm text-sm">Sin cotizaciones</p>}
+      {/* ── Tarjetas (celular y tableta) ──
+          Hasta 1279 px (20 nov 2026): con la barra lateral, la tabla no cabe
+          entera ahí (a 1024 px le quedan 744). Desde 1024 px, en dos columnas.
+          `grid-cols-1` a propósito (20 nov 2026): sin él, un correo largo
+          ensanchaba TODAS las tarjetas más allá de la pantalla del celular y
+          «Eliminar», a la derecha, quedaba fuera de la vista. */}
+      <div className="xl:hidden grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:items-start">
+        {filtered.length === 0 && <p className="py-10 text-center text-[#1B4332]/30 font-dm text-sm lg:col-span-2">Sin cotizaciones</p>}
         {filtered.map(q => {
           const s = STATUS[q.status] || { label: q.status, cls: "bg-gray-100 text-gray-600" };
           const sinEnviar = q.status === "borrador" && !!q.customerEmail;
           const vence = fechaLimite(q);
           const rec   = recordadoPorWhatsapp(q);
+          const marca = marcaDe(q);
+          const reserva = reservaViva(q);
           return (
             <div key={q.id} onClick={() => { playClick(); setDetalle(q); }}
               className="bg-white border border-[#1B4332]/10 rounded-md p-4 cursor-pointer active:bg-[#FAFAF8]">
@@ -973,55 +1132,93 @@ export default function CotizacionesClient(
                   <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${s.cls}`}>{s.label}</span>
                 </div>
               </div>
+              {marca && <div className="mb-1.5 flex min-w-0"><ChipPerdido marca={marca} /></div>}
               <ChipPagoEnLinea monto={pagadoEnLinea[q.id]} folio={folioReserva(q)} />
-              <p className="text-[#1B4332] font-medium">{q.customerName}</p>
-              <p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p>
-              <div className="flex items-center justify-between mt-1.5">
-                <p className="text-[#1B4332]/70 text-sm truncate max-w-[60%] flex items-center gap-1.5">
-                  <CodigoTour slug={q.tourSlug} className="text-[11px] flex-shrink-0" />
-                  <span className="truncate">{q.tourName}</span>
-                </p>
-                <span className="text-[#52B788] font-medium text-sm">{fmx(q.totalAmount)}</span>
+              <p className="text-[#1B4332] font-medium break-words">{q.customerName}</p>
+              {/* El correo largo se recorta con «…» (completo en su `title`), como en la tabla. */}
+              <p className="text-[#1B4332]/40 text-xs truncate" title={q.customerEmail || undefined}>{q.customerEmail || "—"}</p>
+              {/* Todos sus tours como badges, con la fecha (20 nov 2026): el nombre largo va en el `title`. */}
+              <div className="flex items-center justify-between gap-2 mt-1.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+                  <ToursDe x={q} />
+                  <span className="text-xs text-[#1B4332]/50">{fDate(q.tourDate)}</span>
+                </div>
+                <span className="shrink-0 text-[#52B788] font-medium text-sm">{fmx(q.totalAmount)}</span>
               </div>
               {vence && (
-                <p className={`text-[11px] font-dm mt-1 ${claseVence(diasParaVencer(vence, hoy))}`}>
+                // De un lead Perdido, el «vence…» va apagado: ya no es un pendiente.
+                <p className={`text-[11px] font-dm mt-1 ${marca ? "text-[#1B4332]/40" : claseVence(diasParaVencer(vence, hoy))}`}>
                   {etiquetaVence(vence, hoy)}{rec ? <span className="text-[#40916C] font-normal"> · ✓ recordado {fRecordado(rec, hoy)}</span> : null}
                 </p>
               )}
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
-                <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" className="text-[#1B4332]/50 hover:text-[#1B4332]"><Eye className="w-4 h-4" /></button>
-                {q.status === "archivada" && (
-                  <button onClick={() => { playClick(); desarchivar(q.id); }} className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
-                )}
-                {regresable(q) && (
-                  <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
-                    className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Regresar a Enviada</button>
-                )}
-                {convertible(q) && (
-                  <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" className="text-[#1B4332]/50 hover:text-[#1B4332]"><BookCheck className="w-4 h-4" /></button>
-                )}
-                <button onClick={() => { playClick(); openEdit(q); }} title={q.status === "aceptada" ? "Ver (ya aceptada: se cambia en su reserva)" : "Editar"} className="text-[#1B4332]/50 hover:text-[#1B4332]">{q.status === "aceptada" ? <Eye className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
-                <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)} className="text-[#1B4332]/50 hover:text-[#1B4332] disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} className="text-[#1B4332]/50 hover:text-[#25D366]"><MessageCircle className="w-4 h-4" /></a>
-                {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && waRecordatorio(q) && (
-                  <button onClick={() => recordar(q)} title="Recordar que vence" className="text-amber-600/70 hover:text-amber-600"><BellRing className="w-4 h-4" /></button>
-                )}
-                <button onClick={() => { playClick(); downloadPDF(q); }} className="text-[#1B4332]/50 hover:text-[#52B788]"><Download className="w-4 h-4" /></button>
-                <button onClick={() => { playClick(); hardDeleteQ(q.id); }} className="text-[#1B4332]/50 hover:text-red-600 ml-auto"><Trash2 className="w-4 h-4" /></button>
+              {/* Botones de 44 px para el dedo, en una o dos filas: nunca se enciman (19 nov 2026).
+                  Primero los íconos y al final lo que lleva nombre (20 nov 2026): «Marcar
+                  vencida», que antes solo estaba en la compu, y «Eliminar» o «Ver reserva». */}
+              <div className="mt-2 pt-1 border-t border-[#1B4332]/8" onClick={e => e.stopPropagation()}>
+                <div className="-mx-3 flex flex-wrap items-center gap-x-0.5">
+                  <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" aria-label="Vista previa" className={iconoMovil()}><Eye className="w-4 h-4" /></button>
+                  {convertible(q) && (
+                    <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" aria-label="Convertir a reserva" className={iconoMovil()}><BookCheck className="w-4 h-4" /></button>
+                  )}
+                  {q.status === "aceptada" ? (
+                    <button onClick={() => { playClick(); openEdit(q); }} title={TITULO_ABRIR} className={conNombreMovil()}><FileText className="w-4 h-4" />Abrir</button>
+                  ) : (
+                    <button onClick={() => { playClick(); openEdit(q); }} title="Editar" aria-label="Editar" className={iconoMovil()}><Pencil className="w-4 h-4" /></button>
+                  )}
+                  <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)} aria-label="Enviar por correo" className={iconoMovil()}><Mail className="w-4 h-4" /></button>
+                  <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} title="Enviar por WhatsApp" aria-label="Enviar por WhatsApp" className={iconoMovil("text-[#1B4332]/50 hover:text-[#25D366]")}><MessageCircle className="w-4 h-4" /></a>
+                  {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && !marca && waRecordatorio(q) && (
+                    <button onClick={() => recordar(q)} title="Recordar que vence" aria-label="Recordar por WhatsApp que vence" className={iconoMovil("text-amber-600/70 hover:text-amber-600")}><BellRing className="w-4 h-4" /></button>
+                  )}
+                  <button onClick={() => { playClick(); downloadPDF(q); }} title="Descargar PDF" aria-label="Descargar PDF" className={iconoMovil("text-[#1B4332]/50 hover:text-[#52B788]")}><Download className="w-4 h-4" /></button>
+                  {q.status === "archivada" && (
+                    <button onClick={() => { playClick(); desarchivar(q.id); }} title="Volver a borrador" className={textoMovil}>Desarchivar</button>
+                  )}
+                  {regresable(q) && (
+                    <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
+                      className={textoMovil}>Regresar a Enviada</button>
+                  )}
+                  {puedeVencer(q) && (
+                    <button onClick={() => { playClick(); expireQ(q); }} title="No se borra: queda como Vencida y su liga de pago deja de poder pagarse"
+                      className={textoMovil}>Marcar vencida</button>
+                  )}
+                  {reserva ? (
+                    // Ya es una reserva viva: no se elimina; si el cliente ya no va, se cancela la reserva (19 nov 2026).
+                    <a href={`/admin/reservas?folio=${encodeURIComponent(reserva)}`} title={`Ya es la reserva ${reserva}: no se elimina. Si el cliente ya no va, cancélala con su motivo en Reservas.`}
+                      className={`${textoMovil} ml-auto`}>Ver reserva</a>
+                  ) : (
+                    <button onClick={() => { playClick(); hardDeleteQ(q); }} title="Eliminar cotización" aria-label="Eliminar cotización"
+                      className={`${conNombreMovil("text-[#1B4332]/60 hover:text-red-600")} ml-auto`}><Trash2 className="w-4 h-4" />Eliminar</button>
+                  )}
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* ── Tabla (escritorio) ── */}
-      <div className="hidden md:block panel-card overflow-hidden">
+      {/* ── Tabla (compu) ──
+          Desde 1280 px y con el ancho de cada columna fijo (20 nov 2026): a
+          1366 px la tabla medía 1217 px en un hueco de 1084 y «Eliminar»
+          quedaba fuera de la vista. Fijas: 136 + 120 + 120 + 192 + 216 = 784 px;
+          el cliente se queda con el resto (≈ 200 px a 1280 px, con la barra
+          lateral). Lo largo se parte en renglones o se recorta con «…» y su
+          `title`; nada empuja la tabla más allá del hueco. */}
+      <div className="hidden xl:block panel-card overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm font-dm">
+          <table className="w-full table-fixed text-sm font-dm">
+            <colgroup>
+              <col className="w-[136px]" />
+              <col />
+              <col className="w-[120px]" />
+              <col className="w-[120px]" />
+              <col className="w-[192px]" />
+              <col className="w-[216px]" />
+            </colgroup>
             <thead className="bg-[#FAFAF8]">
               <tr className="border-b border-[#1B4332]/10 text-[#1B4332]/50 text-[10px] tracking-[1.5px] uppercase">
-                {["Número","Cliente","Tour(s)","Total","Estado","Acciones"].map(h => (
-                  <th key={h} className="py-3 px-4 text-left font-dm">{h}</th>
+                {["Número","Cliente","Tour(s)","Total","Estado","Acciones"].map((h, i, todas) => (
+                  <th key={h} className={`py-3 text-left font-dm ${i === 0 ? "pl-4 pr-3" : i === todas.length - 1 ? "pl-3 pr-4" : "px-3"}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -1032,64 +1229,84 @@ export default function CotizacionesClient(
                 const sinEnviar = q.status === "borrador" && !!q.customerEmail;
                 const vence = fechaLimite(q);
                 const rec   = recordadoPorWhatsapp(q);
+                const marca = marcaDe(q);
+                const reserva = reservaViva(q);
                 return (
                   <tr key={q.id} onClick={() => { playClick(); setDetalle(q); }}
                     title="Ver la cotización completa"
                     className="border-b border-[#1B4332]/6 hover:bg-[#FAFAF8]/50 transition-colors cursor-pointer">
-                    <td className="py-3 px-4 text-[#1B4332] font-mono text-xs font-medium">{q.quoteNumber}</td>
-                    <td className="py-3 px-4"><p className="text-[#1B4332] font-medium">{q.customerName}</p><p className="text-[#1B4332]/40 text-xs">{q.customerEmail || "—"}</p></td>
-                    <td className="py-3 px-4 text-[#1B4332]/70 max-w-[200px]"><p className="text-xs flex items-center gap-1.5"><CodigoTour slug={q.tourSlug} className="text-[10px] flex-shrink-0" /><span className="truncate">{q.tourName}</span></p><p className="text-xs text-[#1B4332]/40">{fDate(q.tourDate)}</p></td>
-                    <td className="py-3 px-4 text-[#52B788] font-medium whitespace-nowrap">{fmx(q.totalAmount)}</td>
-                    <td className="py-3 px-4">
-                      <div className="flex items-center gap-1.5">
+                    {/* El folio en un renglón (20 nov 2026): antes se partía en «COT-» / «MWMWRJ8ISY». */}
+                    <td className="py-3 pl-4 pr-3 whitespace-nowrap text-[#1B4332] font-mono text-[11px] font-medium">{q.quoteNumber}</td>
+                    <td className="py-3 px-3"><p className="text-[#1B4332] font-medium break-words">{q.customerName}</p><p className="text-[#1B4332]/40 text-xs truncate" title={q.customerEmail || undefined}>{q.customerEmail || "—"}</p></td>
+                    <td className="py-3 px-3"><ToursDe x={q} /><p className="mt-1 text-xs text-[#1B4332]/40">{fDate(q.tourDate)}</p></td>
+                    <td className="py-3 px-3 text-[#52B788] font-medium">{fmx(q.totalAmount)}</td>
+                    <td className="py-3 px-3">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <span className={`text-[10px] tracking-[1px] uppercase px-2 py-1 rounded font-dm ${s.cls}`}>{s.label}</span>
                         {sinEnviar && <span className="text-[9px] tracking-[0.5px] uppercase px-1.5 py-0.5 rounded font-dm bg-[#C9484A]/12 text-[#C9484A] font-bold">Sin enviar</span>}
                         {esDelBot(q) && <ChipBot />}
                       </div>
+                      {/* Al ancho de la columna: el motivo largo se recorta con «…» y completo va en su `title`. */}
+                      {marca && <div className="mt-1.5 flex min-w-0"><ChipPerdido marca={marca} /></div>}
                       <ChipPagoEnLinea monto={pagadoEnLinea[q.id]} folio={folioReserva(q)} />
                       {vence && (
-                        <p className={`text-[11px] font-dm mt-1 whitespace-nowrap ${claseVence(diasParaVencer(vence, hoy))}`}
+                        // De un lead Perdido, el «vence…» va apagado: ya no es un pendiente.
+                        <p className={`text-[11px] font-dm mt-1 whitespace-nowrap ${marca ? "text-[#1B4332]/40" : claseVence(diasParaVencer(vence, hoy))}`}
                           title={`Fecha límite: ${fDate(vence)}`}>
                           {etiquetaVence(vence, hoy)}
                         </p>
                       )}
                       {rec && <p className="text-[10px] font-dm text-[#40916C] whitespace-nowrap">✓ recordado {fRecordado(rec, hoy)}</p>}
                     </td>
-                    <td className="py-3 px-4" onClick={e => e.stopPropagation()}>
-                      <div className="flex items-center gap-2">
-                        <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa"
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><Eye className="w-4 h-4" /></button>
+                    {/* Dos renglones en 188 px (20 nov 2026): arriba los íconos (hasta 7 × 24 px)
+                        y abajo lo que lleva nombre, con «Eliminar» o «Ver reserva» siempre a la
+                        derecha. El peor caso, una Enviada con campanita, mide 180 px. */}
+                    <td className="py-3 pl-3 pr-4" onClick={e => e.stopPropagation()}>
+                      <div className="-ml-1 flex flex-wrap items-center gap-0.5">
+                        <button onClick={() => { playClick(); setDetalle(q); }} title="Vista previa" aria-label="Vista previa" className={iconoTabla()}><Eye className="w-4 h-4" /></button>
+                        {convertible(q) && (
+                          <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva" aria-label="Convertir a reserva" className={iconoTabla()}><BookCheck className="w-4 h-4" /></button>
+                        )}
+                        {q.status === "aceptada" ? (
+                          <button onClick={() => { playClick(); openEdit(q); }} title={TITULO_ABRIR}
+                            className="inline-flex h-6 shrink-0 items-center gap-1 rounded-sm px-1 text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] hover:bg-[#1B4332]/5 transition-colors"><FileText className="w-4 h-4" />Abrir</button>
+                        ) : (
+                          <button onClick={() => { playClick(); openEdit(q); }} title="Editar" aria-label="Editar" className={iconoTabla()}><Pencil className="w-4 h-4" /></button>
+                        )}
+                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)} aria-label="Enviar por correo" className={iconoTabla()}><Mail className="w-4 h-4" /></button>
+                        <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} title="Enviar por WhatsApp" aria-label="Enviar por WhatsApp"
+                          className={iconoTabla("text-[#1B4332]/40 hover:text-[#25D366]")}><MessageCircle className="w-4 h-4" /></a>
+                        {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && !marca && waRecordatorio(q) && (
+                          <button onClick={() => recordar(q)} title="Recordar por WhatsApp que vence" aria-label="Recordar por WhatsApp que vence"
+                            className={iconoTabla("text-amber-600/60 hover:text-amber-600")}><BellRing className="w-4 h-4" /></button>
+                        )}
+                        <button onClick={() => { playClick(); downloadPDF(q); }} title="Descargar PDF" aria-label="Descargar PDF"
+                          className={iconoTabla("text-[#1B4332]/40 hover:text-[#52B788]")}><Download className="w-4 h-4" /></button>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
                         {q.status === "archivada" && (
                           <button onClick={() => { playClick(); desarchivar(q.id); }} title="Volver a borrador"
-                            className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline">Desarchivar</button>
+                            className={`${textoTabla} hover:text-[#1B4332]`}>Desarchivar</button>
                         )}
                         {regresable(q) && (
                           <button onClick={() => { playClick(); regresarAEnviada(q); }} title="Se marcó Aceptada sin reserva: regrésala a Enviada"
-                            className="text-[11px] font-dm text-[#1B4332]/60 hover:text-[#1B4332] underline whitespace-nowrap">Regresar a Enviada</button>
+                            className={`${textoTabla} hover:text-[#1B4332]`}>Regresar a Enviada</button>
                         )}
-                        {convertible(q) && (
-                          <button onClick={() => { playClick(); setConvirtiendo(q); }} title="Convertir a reserva"
-                            className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors"><BookCheck className="w-4 h-4" /></button>
+                        {/* «Marcar vencida» con su nombre y lejos del bote de basura (19 nov 2026):
+                            antes era una X junto a él y parecía que eliminar no hacía nada.
+                            Una aceptada ya es venta: no se marca vencida (lote 4, 5 nov 2026). */}
+                        {puedeVencer(q) && (
+                          <button onClick={() => { playClick(); expireQ(q); }} title="No se borra: queda como Vencida y su liga de pago deja de poder pagarse"
+                            className={`${textoTabla} hover:text-orange-600`}>Marcar vencida</button>
                         )}
-                        <button onClick={() => { playClick(); openEdit(q); }} title={q.status === "aceptada" ? "Ver (ya aceptada: se cambia en su reserva)" : "Editar"}
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors">{q.status === "aceptada" ? <Eye className="w-4 h-4" /> : <Pencil className="w-4 h-4" />}</button>
-                        <button onClick={() => { playClick(); sendEmail(q.id); }} disabled={sending === q.id} title={tituloCorreo(q)}
-                          className="text-[#1B4332]/40 hover:text-[#1B4332] transition-colors disabled:opacity-25"><Mail className="w-4 h-4" /></button>
-                        <a href={waMsg(q)} target="_blank" rel="noopener noreferrer" onClick={() => enviarPorWhatsapp(q)} title="Enviar por WhatsApp"
-                          className="text-[#1B4332]/40 hover:text-[#25D366] transition-colors"><MessageCircle className="w-4 h-4" /></a>
-                        {etapaDe(q, hoy) !== "vencida" && q.status === "enviada" && waRecordatorio(q) && (
-                          <button onClick={() => recordar(q)} title="Recordar por WhatsApp que vence"
-                            className="text-amber-600/60 hover:text-amber-600 transition-colors"><BellRing className="w-4 h-4" /></button>
+                        {/* Ya es una reserva viva: no se elimina; si el cliente ya no va, se cancela la reserva (19 nov 2026). */}
+                        {reserva ? (
+                          <a href={`/admin/reservas?folio=${encodeURIComponent(reserva)}`} title={`Ya es la reserva ${reserva}: no se elimina. Si el cliente ya no va, cancélala con su motivo en Reservas.`}
+                            className={`${textoTabla} ml-auto hover:text-[#1B4332]`}>Ver reserva</a>
+                        ) : (
+                          <button onClick={() => { playClick(); hardDeleteQ(q); }} title="Eliminar cotización" aria-label="Eliminar cotización"
+                            className="ml-auto inline-flex min-h-[24px] items-center gap-1 whitespace-nowrap text-[11px] font-dm text-[#1B4332]/60 hover:text-red-600 transition-colors"><Trash2 className="w-3.5 h-3.5" />Eliminar</button>
                         )}
-                        <button onClick={() => { playClick(); downloadPDF(q); }} title="PDF"
-                          className="text-[#1B4332]/40 hover:text-[#52B788] transition-colors"><Download className="w-4 h-4" /></button>
-                        {/* Una aceptada ya es venta: no se marca vencida (lote 4, 5 nov 2026). */}
-                        {q.status !== "aceptada" && (
-                          <button onClick={() => { playClick(); expireQ(q.id); }} title="Marcar vencida"
-                            className="text-[#1B4332]/40 hover:text-orange-500 transition-colors"><X className="w-4 h-4" /></button>
-                        )}
-                        <button onClick={() => { playClick(); hardDeleteQ(q.id); }} title="Eliminar"
-                          className="text-[#1B4332]/40 hover:text-red-600 transition-colors"><Trash2 className="w-4 h-4" /></button>
                       </div>
                     </td>
                   </tr>
@@ -1101,7 +1318,7 @@ export default function CotizacionesClient(
       </div>
 
       {detalle && (
-        <CotizacionDetalle cotizacion={detalle} onClose={() => setDetalle(null)} />
+        <CotizacionDetalle cotizacion={detalle} onClose={() => setDetalle(null)} perdido={marcaDe(detalle)} />
       )}
 
       {convirtiendo && (() => {
@@ -1126,7 +1343,7 @@ export default function CotizacionesClient(
 
       {cobrando && (
         <CobroModal reserva={cobrando} quien={quien} onClose={() => setCobrando(null)}
-          onGuardado={(cobrado, que) => { flash(`✅ ${que === "anulado" ? "Cobro anulado" : "Pago registrado"}: ${cobrado.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} cobrados. El lead quedó al día.`); router.refresh(); }} />
+          onGuardado={(cobrado, que) => { flash(`✅ ${que === "anulado" ? "Cobro anulado" : "Pago registrado"}: ${cobrado.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 0 })} cobrados. El lead ya se actualizó.`); router.refresh(); }} />
       )}
 
       {/* Modal nueva/editar cotización */}
@@ -1687,6 +1904,10 @@ export default function CotizacionesClient(
 
             </fieldset>
             </div>{/* end scrollable */}
+
+            {/* El aviso del editor, junto a sus botones (20 nov 2026): antes salía
+                arriba de la página, detrás del editor, y no se veía. */}
+            {msg && <Aviso texto={msg} onCerrar={cerrarAviso} className="mx-6 mb-3 mt-1" />}
 
             {/* Footer navigation */}
             <div className="px-6 pb-5 pt-3 border-t border-[#1B4332]/8 flex items-center justify-between gap-3">

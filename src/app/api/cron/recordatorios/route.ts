@@ -26,10 +26,13 @@ export async function POST(req: NextRequest) {
   const paso = async <T,>(nombre: string, f: () => Promise<T>): Promise<T | null> => {
     try { return await f(); } catch (e: any) { console.error(`cron/recordatorios (${nombre}):`, e?.message); fallos.push(nombre); return null; }
   };
-  // Reglas automáticas + resumen de las 7:30 + recordatorios (Fase 3).
+  // Viaje ya pasado → Operado, reglas automáticas, resumen de las 7:30 y
+  // recordatorios (Fase 3; desde el 19 nov 2026 la vuelta ya empieza por Operado).
   const avisos = await paso("avisos", () => vueltaDeAvisos());
-  // Viaje ya pasado → Operado (lote 9). No lanza: devuelve cuántos movió.
-  const operados = await paso("operados", () => operarViajesPasados());
+  // Viaje ya pasado → Operado (lote 9), otra vez por si la vuelta falló antes:
+  // es idempotente y no lanza (devuelve cuántos movió). Se reportan los dos.
+  const operadosOtraVez = await paso("operados", () => operarViajesPasados());
+  const operados = (avisos?.operados ?? 0) + (operadosOtraVez ?? 0);
   // El agente de los chats (lote 9): respeta el tope y el apagado, y no corre
   // dos veces a la vez con el reloj del servidor. Revisión (10 nov 2026): cada
   // chat se reclama en la base (dos vueltas a la vez nunca pagan el mismo) y

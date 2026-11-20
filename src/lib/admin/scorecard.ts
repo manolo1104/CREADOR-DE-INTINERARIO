@@ -218,12 +218,14 @@ export function calcularScorecard(e: EntradaScorecard): Scorecard {
   });
 
   // Embudo: el de «Embudo comercial» si hay cohorte (lote 9; «reservaron» ya
-  // es con dinero); si no, Leads → Cotizados → Reserva → Anticipo pagado.
+  // es con dinero); si no, Leads → Cotizados → Reservaron → Pagaron anticipo.
+  // El último paso es dinero (reservas con algo cobrado), no la etapa vieja
+  // «Anticipo pagado», que se unió a Confirmado el 19 nov 2026.
   const pasos: PasoEmbudo[] = com ? com.embudo : [
     { etiqueta: "Leads", n: leads ?? 0, conversion: null },
     { etiqueta: "Cotizados", n: cotizados, conversion: leads ? pct(cotizados, leads) : null },
     { etiqueta: "Reservaron", n: e.reservasCreadas, conversion: cotizados ? pct(e.reservasCreadas, cotizados) : null },
-    { etiqueta: "Anticipo pagado", n: e.conAnticipo, conversion: e.reservasCreadas ? pct(e.conAnticipo, e.reservasCreadas) : null },
+    { etiqueta: "Pagaron anticipo", n: e.conAnticipo, conversion: e.reservasCreadas ? pct(e.conAnticipo, e.reservasCreadas) : null },
   ];
   let mayorCaida: string | null = null;
   let peor = 101;

@@ -918,7 +918,8 @@ export type ResultadoRuta =
  *     solo adultos, fecha, ruta), 400 con el motivo y NO nace un folio: una
  *     cotización a la que le falta un recorrido le llegaría al cliente por
  *     correo como si fuera lo que pidió.
- *  2. La guarda como «borrador» (`guardarCotizacionBot`, folio COT-).
+ *  2. La guarda como «borrador» (`guardarCotizacionBot`, folio COT-) y su
+ *     lead pasa a Cotizado, como en el panel (19 nov 2026).
  *  3. La manda por correo como el botón del panel: al cliente con copia al
  *     equipo. Ahí nacen la fecha límite (7 días) y el seguimiento. Si el correo
  *     falla, o el cliente no dejó correo (solo le llega al equipo y ya no
@@ -970,6 +971,23 @@ export async function cotizarParaBot(input: CotizacionBotInput, etiqueta = "bot/
   const { quote, calc } = guardada;
   if (!quote) {
     return { status: 400, body: { error: motivosDe(calc.errores) || "No se pudo crear la cotización.", errores: calc.errores } };
+  }
+
+  // Su lead pasa a Cotizado al crearla, como en el panel (19 nov 2026, Manolo:
+  // «si a un lead se le crea una cotización que pase automáticamente a
+  // cotizado»). Antes la del bot no tocaba el CRM: solo se enlazaba si salía la
+  // liga de Stripe, y entonces saltaba a En seguimiento. Va ANTES del correo:
+  // así la liga que nace ahí ya encuentra el lead. Un chat «@lid» trae correo
+  // pero no teléfono: el lead es el de ESE chat en la Bandeja, no uno nuevo por
+  // el correo (`leadDesdeCotizacion` → `contactoDelChat`, 20 nov 2026). Sin
+  // teléfono ni correo no se busca: no hay con qué encontrar a la persona y
+  // nacería un contacto repetido. Import dinámico, como en `linksPago.ts` (el
+  // CRM se carga solo cuando hace falta), y nunca tumba la cotización: si
+  // falla, solo se anota en el log.
+  if (quote.customerPhone || quote.customerEmail?.trim()) {
+    await import("@/lib/admin/crmDatos")
+      .then(m => m.leadDesdeCotizacion(quote.id, "cotizado", BOT.nombre, `cotización ${quote.quoteNumber} del bot`))
+      .catch((e: unknown) => console.error(`❌ ${etiqueta} lead de ${quote.quoteNumber}:`, e instanceof Error ? e.message : e));
   }
 
   let envio: ResultadoEnvio = await enviarCotizacionPorCorreo(quote.id, BOT);

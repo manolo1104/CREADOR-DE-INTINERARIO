@@ -81,10 +81,13 @@ export function EditorSeguimiento({ inicial, responsables, onGuardar, onCancelar
   return (
     <form className="space-y-2" onSubmit={ev => { ev.preventDefault(); void onGuardar(e); }}>
       <input aria-label="Qué hay que hacer" value={e.titulo} onChange={x => setE(v => ({ ...v, titulo: x.target.value }))} className={inputCls} autoFocus />
-      <div className="grid grid-cols-3 gap-2">
-        <input aria-label="Día" type="date" value={e.vence} onChange={x => setE(v => ({ ...v, vence: x.target.value }))} className={inputCls} />
-        <input aria-label="Hora" type="time" value={e.hora} onChange={x => setE(v => ({ ...v, hora: x.target.value }))} className={inputCls} />
-        <select aria-label="Responsable" value={e.responsable} onChange={x => setE(v => ({ ...v, responsable: x.target.value }))} className={inputCls}>{lista.map(r => <option key={r} value={r}>{r}</option>)}</select>
+      {/* Día, hora y responsable se acomodan como en la ficha (20 nov 2026): en tres
+          columnas iguales, en la tarjeta angosta de la ficha a 1366 px se cortaba el año
+          y la hora. Si no caben juntos, el responsable baja al siguiente renglón. */}
+      <div className="flex flex-wrap gap-2">
+        <input aria-label="Día" type="date" value={e.vence} onChange={x => setE(v => ({ ...v, vence: x.target.value }))} className={`${inputCls} min-w-0 flex-[1.3_1_8.75rem]`} />
+        <input aria-label="Hora" type="time" value={e.hora} onChange={x => setE(v => ({ ...v, hora: x.target.value }))} className={`${inputCls} min-w-0 flex-[1_1_8.5rem]`} />
+        <select aria-label="Responsable" value={e.responsable} onChange={x => setE(v => ({ ...v, responsable: x.target.value }))} className={`${inputCls} min-w-0 flex-[1_1_7rem]`}>{lista.map(r => <option key={r} value={r}>{r}</option>)}</select>
       </div>
       <div className="flex gap-2">
         <button type="submit" disabled={!e.titulo.trim() || !e.vence || ocupado} className={botonPrimario}>Guardar cambios</button>

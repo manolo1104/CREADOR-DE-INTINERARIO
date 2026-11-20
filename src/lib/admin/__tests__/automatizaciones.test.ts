@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { reglaCotizado, reglaLiga, reglaSaldo, reglaSalida, RESPONSABLE_COBROS, RESPONSABLE_OPERACION } from "../automatizaciones";
+import { esperaRespuestaDesde, ligaCubiertaPorCotizado, reglaCotizado, reglaLiga, reglaSaldo, reglaSalida, yaNoAplica, RESPONSABLE_COBROS, RESPONSABLE_OPERACION } from "../automatizaciones";
 import { correoResumen } from "../automatizaciones";
+import { CREADOR_LIGA_COTIZACION, CREADOR_LIGA_PARTES, esLigaAutomatica } from "../ligasReglas";
 
 const HOY = "2026-11-04";
 const AHORA = new Date("2026-11-04T16:00:00Z"); // 10:00 en México
@@ -21,6 +22,28 @@ describe("Cotizado 24 h sin seguimiento", () => {
   });
   it("sin responsable del equipo, a Operación", () => {
     expect(reglaCotizado([{ ...base, responsable: "Importación inicial" }], AHORA, HOY, EQUIPO)[0].responsable).toBe(RESPONSABLE_OPERACION);
+  });
+});
+
+describe("¿la vio? cuenta desde que la cotización SALIÓ (19 nov 2026: el lead pasa a Cotizado al crearla)", () => {
+  const ms = (h: number) => hace(h).getTime();
+  it("borrador que nadie mandó: no hay a quién preguntarle", () => {
+    expect(esperaRespuestaDesde(ms(30), [])).toBeNull();
+  });
+  it("creada (entró a Cotizado) hace 30 h y mandada hace 5 h: cuenta desde el envío, todavía no toca", () => {
+    const desde = esperaRespuestaDesde(ms(30), [ms(5)]);
+    expect(desde).toBe(ms(5));
+    const lead = { id: "L1", responsable: "Erick", cotizadoId: "E1", cotizadoEn: new Date(desde!), pendientes: 0, cliente: "Ana", folio: "COT-1", fechaViaje: "2026-11-20" };
+    expect(reglaCotizado([lead], AHORA, HOY, EQUIPO)).toHaveLength(0);
+    expect(reglaCotizado([{ ...lead, cotizadoEn: new Date(esperaRespuestaDesde(ms(60), [ms(26)])!) }], AHORA, HOY, EQUIPO)).toHaveLength(1);
+  });
+  it("con dos envíos, el primero desde que entró", () => {
+    expect(esperaRespuestaDesde(ms(30), [ms(2), ms(10)])).toBe(ms(10));
+  });
+  it("salió ANTES de entrar (como antes: al mandarla pasaba a Cotizado; o la regresaron a mano): desde que entró", () => {
+    expect(esperaRespuestaDesde(ms(30), [ms(30) - 50])).toBe(ms(30));
+    // 0 = salió antes de que el panel guardara la fecha de envío.
+    expect(esperaRespuestaDesde(ms(30), [0])).toBe(ms(30));
   });
 });
 
@@ -47,6 +70,36 @@ describe("Liga de pago sin pagar 24 h", () => {
       { id: "P3", titulo: "Anticipo", cliente: null, monto: 500, creadaEn: hace(48), creadoPor: null, oportunidadId: null },
     ], AHORA, HOY, EQUIPO);
     expect(ts.map(t => [t.claveRegla, t.responsable])).toEqual([["liga-24h:P1", "Martín"], ["liga-24h:P3", RESPONSABLE_OPERACION]]);
+  });
+  it("con su lead Perdido no se le insiste (la liga sigue cobrando)", () => {
+    expect(reglaLiga([{ id: "P1", titulo: "Anticipo", cliente: "Ana", monto: 900, creadaEn: hace(30), creadoPor: "Martín", oportunidadId: "L1", etapaLead: "perdido" }], AHORA, HOY, EQUIPO)).toHaveLength(0);
+  });
+});
+
+describe("una cotización, UNA tarea a las 24 h (revisión del 20 nov 2026)", () => {
+  // Erick manda COT-X: la liga automática nace con el correo y el lead se queda en Cotizado.
+  const lead = { id: "L1", responsable: "Erick", cotizadoId: "E1", cotizadoEn: hace(25), pendientes: 0, cliente: "Ana", folio: "COT-X", fechaViaje: "2026-11-20" };
+  const liga = { id: "P1", titulo: "Anticipo COT-X", cliente: "Ana", monto: 900, creadaEn: hace(25), creadoPor: CREADOR_LIGA_COTIZACION, oportunidadId: "L1", etapaLead: "cotizado" };
+  it("🔴 en la misma vuelta del reloj solo sale «¿la vio?», no también «la liga no se ha pagado»", () => {
+    const tareas = [...reglaCotizado([lead], AHORA, HOY, EQUIPO), ...reglaLiga([liga], AHORA, HOY, EQUIPO)];
+    expect(tareas.map(t => t.regla)).toEqual(["cotizado-24h"]);
+  });
+  it("las «una por persona» del bot, igual", () => {
+    expect(reglaLiga([{ ...liga, creadoPor: CREADOR_LIGA_PARTES }], AHORA, HOY, EQUIPO)).toHaveLength(0);
+  });
+  it("la que hizo una persona (Cobros, la ficha) sí pide su recordatorio aunque el lead siga en Cotizado", () => {
+    expect(reglaLiga([{ ...liga, creadoPor: "Martín" }], AHORA, HOY, EQUIPO).map(t => t.claveRegla)).toEqual(["liga-24h:P1"]);
+  });
+  it("fuera de Cotizado (o sin lead) la automática vuelve a pedirlo: ya no hay «¿la vio?»", () => {
+    expect(reglaLiga([{ ...liga, etapaLead: "seguimiento" }], AHORA, HOY, EQUIPO)).toHaveLength(1);
+    expect(reglaLiga([{ ...liga, oportunidadId: null, etapaLead: null }], AHORA, HOY, EQUIPO)).toHaveLength(1);
+  });
+  it("una que ya estaba abierta se cierra sola mientras el lead siga en Cotizado", () => {
+    expect(yaNoAplica("liga-24h", { ligaEstado: "activo", ligaAutomatica: true, etapaLead: "cotizado" }, HOY)).toBe(true);
+    expect(yaNoAplica("liga-24h", { ligaEstado: "activo", ligaAutomatica: false, etapaLead: "cotizado" }, HOY)).toBe(false);
+    expect(yaNoAplica("liga-24h", { ligaEstado: "activo", ligaAutomatica: true, etapaLead: "seguimiento" }, HOY)).toBe(false);
+    expect(ligaCubiertaPorCotizado(esLigaAutomatica(CREADOR_LIGA_COTIZACION), "cotizado")).toBe(true);
+    expect(esLigaAutomatica(null)).toBe(false);
   });
 });
 
@@ -100,5 +153,16 @@ describe("juntar salidas", () => {
     const r = sugerenciasDeAgrupar([s("A", "2026-11-14", 2), s("B", "2026-11-15", 1), s("C", "2026-11-17", 2)], o);
     expect(r).toHaveLength(1);
     expect(new Set([r[0].mover.clave, r[0].hacia.clave])).toEqual(new Set(["A", "B"]));
+  });
+});
+
+import { HECHA_POR_PAGO, HECHA_POR_REGLA } from "../automatizaciones";
+describe("seguimientos que se cierran solos al pagar (revisión del 20 nov 2026)", () => {
+  it("su «hecho por» no es el de las reglas: el reloj solo reabre los «Regla (ya no aplica)», nunca estos", () => {
+    expect(HECHA_POR_PAGO).toBe("Regla (ya pagó)");
+    expect(HECHA_POR_PAGO).not.toBe(HECHA_POR_REGLA);
+  });
+  it("las reglas no cierran los que puso una persona (sin regla)", () => {
+    expect(yaNoAplica(null, { etapaLead: "confirmado" }, HOY)).toBe(false);
   });
 });

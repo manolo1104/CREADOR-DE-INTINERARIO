@@ -5,11 +5,19 @@ import { ESTADOS_RESERVA_MUERTA } from "@/lib/cotizaciones/reglasEnvio";
 import { metaDe } from "@/lib/admin/reserva";
 import { sesionVeCostos } from "@/lib/admin/permisos";
 import { presetsSinCosto, sinCostosDeExtras } from "@/lib/admin/extras";
+import { leadsDeCotizaciones } from "@/lib/cotizaciones/marcaPerdido";
 import CotizacionesClient, { type InicioCotizaciones, type LeadsDeCotizaciones } from "./CotizacionesClient";
 
 export const dynamic = "force-dynamic";
 
 const param = (v: string | string[] | undefined) => (typeof v === "string" && v.length <= 60 ? v : null);
+
+/** El folio de reserva que la conversión dejó en el `_meta` de `packageItems`, o null. */
+function folioEnMeta(packageItems: unknown): string | null {
+  if (!Array.isArray(packageItems)) return null;
+  const m = packageItems.find((p) => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta === true) as { reservaFolio?: unknown } | undefined;
+  return typeof m?.reservaFolio === "string" && m.reservaFolio ? m.reservaFolio : null;
+}
 
 /**
  * Desde la ficha de un lead se llega con `?editar=`, `?convertir=` o
@@ -26,9 +34,11 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
     leadId ? prisma.oportunidad.findUnique({ where: { id: leadId }, include: { contacto: true } }).catch(() => null) : null,
   ]);
   // El canal y el idioma del lead de cada cotización: se sugieren al convertirla.
-  const ids = Array.from(new Set(quotes.map(q => q.oportunidadId).filter((x): x is string => !!x)));
-  const ops = ids.length ? await prisma.oportunidad.findMany({ where: { id: { in: ids } }, select: { id: true, canal: true, contacto: { select: { idioma: true } } } }).catch(() => []) : [];
-  const leads: LeadsDeCotizaciones = Object.fromEntries(ops.map(o => [o.id, { canal: o.canal, idioma: o.contacto.idioma }]));
+  // Y su etapa y motivo (19 nov 2026): la cotización de un lead Perdido lleva
+  // la marca «Perdido · motivo» y sale de «Por vencer» (ver `marcaPerdido.ts`).
+  const ids = leadsDeCotizaciones(quotes);
+  const ops = ids.length ? await prisma.oportunidad.findMany({ where: { id: { in: ids } }, select: { id: true, canal: true, etapa: true, motivoPerdida: true, contacto: { select: { idioma: true } } } }).catch(() => []) : [];
+  const leads: LeadsDeCotizaciones = Object.fromEntries(ops.map(o => [o.id, { canal: o.canal, idioma: o.contacto.idioma, etapa: o.etapa, motivoPerdida: o.motivoPerdida }]));
   // Cotizaciones cuya liga de pago YA se pagó y todavía no tienen reserva (caso de Erick, 4 nov 2026):
   // quedan «aceptadas» pero se pueden convertir, y el anticipo pagado entra solo como cobro.
   const ligasPagadas = await prisma.linkPago.findMany({ where: { estado: "pagado", reservaId: null, cotizacionId: { not: null } }, select: { cotizacionId: true, montoPagado: true, monto: true } }).catch(() => []);
@@ -63,6 +73,22 @@ export default async function CotizacionesPage({ searchParams = {} }: { searchPa
       const id = porFolio.get(String(metaDe(b).cotizacionOrigen ?? ""));
       if (id && !reservasDeCotizaciones[id]) reservasDeCotizaciones[id] = b.confirmationNumber;
     }
+  }
+  // Y la del folio que la conversión dejó en su `_meta`, si esa reserva sigue
+  // viva: las mismas tres fuentes que revisa el servidor al eliminar
+  // (`reservaVivaDeCotizacion`). Con reserva viva la lista no ofrece eliminar
+  // (19 nov 2026); con la reserva cancelada, sí.
+  const conFolioEnMeta = aceptadas
+    .filter(q => !reservasDeCotizaciones[q.id])
+    .map(q => ({ id: q.id, folio: folioEnMeta(q.packageItems) }))
+    .filter((x): x is { id: string; folio: string } => !!x.folio);
+  if (conFolioEnMeta.length) {
+    const vivasPorFolio = await prisma.tourBooking.findMany({
+      where:  { confirmationNumber: { in: conFolioEnMeta.map(x => x.folio) }, status: { notIn: [...ESTADOS_RESERVA_MUERTA] } },
+      select: { confirmationNumber: true },
+    }).catch(() => []);
+    const vivos = new Set(vivasPorFolio.map(b => b.confirmationNumber));
+    for (const x of conFolioEnMeta) if (vivos.has(x.folio)) reservasDeCotizaciones[x.id] = x.folio;
   }
   // Lo que nos cuestan los extras, solo a quien ve costos (lote 8, 10 nov 2026).
   const verCostos = await sesionVeCostos(sesion);

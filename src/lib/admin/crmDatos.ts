@@ -7,17 +7,20 @@ import { addDaysYMD, hoyMX } from "@/lib/dates";
 import { origenValido } from "@/lib/origenReserva";
 import { TOURS_LISTA } from "@/lib/tours";
 import { registrarEnBitacora, SISTEMA } from "./bitacora";
-import { montoCobrado } from "./dinero";
+import { montoCobrado, saldoPendiente } from "./dinero";
 import { lineasDe } from "./reserva";
 import { correoParaContacto } from "@/lib/reservaWeb";
 import { resumenLead, cotizacionVigente, cotizacionViva } from "./resumenLead";
 import { fechaLimite, etapaDe } from "../vencimientoCotizacion";
 import { etiquetaMotivo as etiquetaCancelacion } from "./cancelacion";
-import { HECHA_POR_REGLA, RESPONSABLE_OPERACION, tituloConsultaNueva } from "./automatizaciones";
+import { HECHA_POR_PAGO, HECHA_POR_REGLA, RESPONSABLE_OPERACION, tituloConsultaNueva } from "./automatizaciones";
+import { esLigaAutomatica } from "./ligasReglas";
+import { ultimoDiaReserva } from "./confirmacionReserva";
 import {
   esEtapa, estaAbierta, etapaPorCobro, etapaPorReglas, horaValida, viajeYaPaso, ETAPAS_QUE_SE_OPERAN, motivoPerdidaParaGuardar, normalizarTelefono, subirA, validarCambioEtapa,
-  etiquetaEtapa, etapaPorHechos, montoPorHechos, canalTrasReserva, cerradoHaceMenosDe, fechasDelViaje, completarLead, loQueMandaLaCotizacion, leadVacio,
-  DIAS_CIERRE_RECIENTE, type Etapa, type ReservaDelLead,
+  etiquetaEtapa, etapaPorHechos, etapaPorLiga, montoPorHechos, canalTrasReserva, cerradoHaceMenosDe, fechasDelViaje, completarLead, loQueMandaLaCotizacion, leadVacio, normalizarEtapa,
+  pasaAConfirmado, seguimientosQueCierraElPago,
+  DIAS_CIERRE_RECIENTE, DIAS_LISTA_CERRADOS, ETAPAS_ABIERTAS_BD, ETAPAS_POR_CERRAR, type Etapa, type ReservaDelLead,
 } from "./crm";
 
 const texto = (v: unknown, max: number) => { const t = String(v ?? "").trim().slice(0, max); return t || null; };
@@ -37,13 +40,29 @@ export async function registrarEtapa(oportunidadId: string, anterior: string | n
 
 /**
  * Fuera de Cotizado, el «Seguimiento a la cotización: ¿la vio?» ya no aplica y
- * se cierra solo (antes le pedía a Erick perseguir a quien ya pagó). Y un lead
- * que revive (Perdido u Operado → abierto) no deja otro abierto y vacío del
- * mismo contacto: ese se junta con él.
+ * se cierra solo (antes le pedía a Erick perseguir a quien ya pagó). Al pagar
+ * (de una etapa sin dinero a Confirmado), tampoco los seguimientos VENCIDOS que
+ * puso una persona (revisión del 20 nov 2026). Y un lead que revive (Perdido u
+ * Operado → abierto) no deja otro abierto y vacío del mismo contacto: ese se
+ * junta con él.
  */
 async function trasCambiarEtapa(oportunidadId: string, anterior: string, nueva: string) {
   if (anterior === "cotizado") await cerrarSeguimientosDeCotizacion(oportunidadId);
+  if (pasaAConfirmado(anterior, nueva)) await cerrarSeguimientosVencidosAlPagar(oportunidadId, anterior, nueva);
   if (!estaAbierta(anterior) && estaAbierta(nueva)) await juntarLeadsVacios(oportunidadId);
+}
+
+/**
+ * Pagó: sus seguimientos vencidos que puso una persona («Escribirle: ¿qué
+ * decidieron?») se cierran como hechos por `HECHA_POR_PAGO`. Cuáles, en
+ * `seguimientosQueCierraElPago`: los de las reglas y lo de hoy en adelante se quedan.
+ */
+async function cerrarSeguimientosVencidosAlPagar(oportunidadId: string, anterior: string, nueva: string) {
+  const pendientes = await prisma.tarea.findMany({ where: { oportunidadId, estado: "pendiente" }, select: { id: true, titulo: true, estado: true, regla: true, vence: true } });
+  const ts = seguimientosQueCierraElPago(anterior, nueva, pendientes, hoyMX());
+  if (!ts.length) return;
+  await prisma.tarea.updateMany({ where: { id: { in: ts.map(t => t.id) }, estado: "pendiente" }, data: { estado: "hecha", hechaPor: HECHA_POR_PAGO, hechaEn: new Date() } });
+  for (const t of ts) await sincronizarProximoPaso(oportunidadId, t.titulo);
 }
 
 /** Cierra los «Seguimiento a la cotización» automáticos pendientes de un lead. */
@@ -58,7 +77,7 @@ async function cerrarSeguimientosDeCotizacion(oportunidadId: string) {
 async function juntarLeadsVacios(oportunidadId: string) {
   const op = await prisma.oportunidad.findUnique({ where: { id: oportunidadId } });
   if (!op || !estaAbierta(op.etapa)) return;
-  const otros = await prisma.oportunidad.findMany({ where: { contactoId: op.contactoId, id: { not: op.id }, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } } });
+  const otros = await prisma.oportunidad.findMany({ where: { contactoId: op.contactoId, id: { not: op.id }, etapa: { in: ETAPAS_ABIERTAS_BD } } });
   for (const o of otros) {
     const [cotizaciones, reservas] = await Promise.all([
       prisma.tourQuote.count({ where: { oportunidadId: o.id } }),
@@ -89,7 +108,7 @@ export async function juntarContactos(destinoId: string, origenId: string, porqu
   await prisma.contacto.delete({ where: { id: o.id } }).catch(() => null);
   await registrarEnBitacora({ accion: "modificó", entidad: "lead", referencia: d.nombre, resumen: `${d.nombre}: se juntaron dos contactos de la misma persona (${porque})` });
 
-  const abiertos = await prisma.oportunidad.findMany({ where: { contactoId: d.id, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } }, orderBy: { createdAt: "asc" } });
+  const abiertos = await prisma.oportunidad.findMany({ where: { contactoId: d.id, etapa: { in: ETAPAS_ABIERTAS_BD } }, orderBy: { createdAt: "asc" } });
   if (abiertos.length < 2) return;
   const conCuentas = await Promise.all(abiertos.map(async a => ({
     a, vacio: leadVacio({ etapa: a.etapa, cotizaciones: await prisma.tourQuote.count({ where: { oportunidadId: a.id } }), reservas: await prisma.tourBooking.count({ where: { oportunidadId: a.id } }) }),
@@ -169,7 +188,7 @@ export async function crearOportunidad(d: NuevoLead, quien: string): Promise<{ o
   if (!nombre) throw new ErrorCrm("Falta el nombre.");
   if (d.telefono && !telefono) throw new ErrorCrm("Ese teléfono no parece válido (10 dígitos, o con +país).");
   const contacto = await contactoPara({ nombre, telefono, correo, idioma: texto(d.idioma, 2) });
-  const abierta = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } }, orderBy: { createdAt: "desc" } });
+  const abierta = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_ABIERTAS_BD } }, orderBy: { createdAt: "desc" } });
   if (abierta) {
     const j = await juntarCaptura(abierta, d, quien);
     return { oportunidad: { ...abierta, etapa: j.etapa }, existente: true, agregado: j.agregado };
@@ -266,7 +285,8 @@ export async function moverEtapa(id: string, hacia: unknown, motivo: { clave?: u
   const motivoTexto = hacia === "perdido" ? motivoPerdidaParaGuardar(motivo.clave, motivo.detalle) : null;
   const v = validarCambioEtapa(hacia, motivoTexto);
   if (!v.ok) throw new ErrorCrm(v.error);
-  if (op.etapa === hacia) return op;
+  // Ya está ahí (la clave vieja «anticipo» ya es Confirmado, 19 nov 2026): no se escribe nada.
+  if (normalizarEtapa(op.etapa) === hacia) return op;
   const r = await prisma.oportunidad.update({
     where: { id },
     data: { etapa: hacia as string, motivoPerdida: hacia === "perdido" ? motivoTexto : null },
@@ -290,8 +310,8 @@ export async function agregarNota(id: string, t: unknown, quien: string) {
 /**
  * Enlaza una cotización (COT-…) o una reserva (HP…) por su folio. La etapa
  * sube sola: con cotización, a Cotizado; con reserva, según lo cobrado (ver
- * `etapaPorCobro`): sin pago En seguimiento, con anticipo Anticipo pagado,
- * liquidada Confirmado. Nunca baja.
+ * `etapaPorCobro`): sin pago En seguimiento; con algo cobrado, Confirmado
+ * (19 nov 2026: ya no hay «Anticipo pagado»). Nunca baja.
  */
 export async function vincularFolio(id: string, folioCrudo: unknown, quien: string) {
   const folio = String(folioCrudo ?? "").trim().toUpperCase();
@@ -388,32 +408,79 @@ export function toursDe(x: { tourSlug: string; lineItems?: unknown }): string[] 
   return Array.from(new Set(s.length ? s : [x.tourSlug].filter(Boolean)));
 }
 
+const ETAPAS_CERRADAS = ["operado", "perdido"];
+
+/**
+ * El tablero de Leads (19 nov 2026). Todos los abiertos (con la clave vieja
+ * «anticipo», que se lee como Confirmado) y los cerrados (Operado y Perdido)
+ * de los últimos 4 meses POR EL DÍA EN QUE SE CERRARON (`cerradoEn`): antes se
+ * tomaba `updatedAt`, que lo mueve cualquier cosa (el próximo paso, el monto) y
+ * un cierre viejo aparecía como reciente. Las columnas Operado y Perdido
+ * enseñan los de `DIAS_TABLERO_CERRADOS` días; el resto va en «Ver todos».
+ * Cada tarjeta trae su dinero (lo cobrado y lo que falta de sus reservas vivas)
+ * y el último día de su viaje.
+ */
 export async function listarPipeline() {
   await operarViajesPasados();
-  const desde = new Date(Date.now() - 120 * 86400000);
+  const desde = new Date(Date.now() - DIAS_LISTA_CERRADOS * 86400000);
+  // Un cierre de los últimos 4 meses también movió `updatedAt` ese día: este
+  // filtro trae a todos esos (y alguno más viejo, que se descarta abajo).
   const ops = await prisma.oportunidad.findMany({
-    where: { OR: [{ etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } }, { updatedAt: { gte: desde } }] },
+    where: { OR: [{ etapa: { in: ETAPAS_ABIERTAS_BD } }, { etapa: { in: ETAPAS_CERRADAS }, updatedAt: { gte: desde } }] },
     include: { contacto: true, _count: { select: { tareas: { where: { estado: "pendiente" } } } } },
     orderBy: { updatedAt: "desc" },
   });
-  // La cotización vigente de cada lead, para enseñar cuándo vence en su tarjeta.
-  const cots = ops.length ? await prisma.tourQuote.findMany({
-    where: { oportunidadId: { in: ops.map(o => o.id) } },
-    select: { id: true, oportunidadId: true, status: true, tourDate: true, lineItems: true, packageItems: true, createdAt: true, quoteNumber: true, totalAmount: true, tourName: true, tourSlug: true, adults: true, children: true, notes: true, extraItems: true },
-  }) : [];
+  const ids = ops.map(o => o.id);
+  const idsCerrados = ops.filter(o => ETAPAS_CERRADAS.includes(o.etapa)).map(o => o.id);
+  const [cots, vivas, cierres] = await Promise.all([
+    // La cotización vigente de cada lead, para enseñar cuándo vence en su tarjeta.
+    ids.length ? prisma.tourQuote.findMany({
+      where: { oportunidadId: { in: ids } },
+      select: { id: true, oportunidadId: true, status: true, tourDate: true, lineItems: true, packageItems: true, createdAt: true, quoteNumber: true, totalAmount: true, tourName: true, tourSlug: true, adults: true, children: true, notes: true, extraItems: true },
+    }) : Promise.resolve([]),
+    // Sus reservas vivas: lo cobrado, lo que falta y el último día del viaje.
+    ids.length ? prisma.tourBooking.findMany({
+      where: { oportunidadId: { in: ids }, status: { not: "cancelled" } },
+      select: { oportunidadId: true, tourDate: true, tourSlug: true, lineItems: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true },
+    }) : Promise.resolve([]),
+    // Cuándo se cerró cada cerrado: su último paso a la etapa en que está.
+    idsCerrados.length ? prisma.etapaOportunidad.findMany({
+      where: { oportunidadId: { in: idsCerrados }, nueva: { in: ETAPAS_CERRADAS } },
+      select: { oportunidadId: true, nueva: true, createdAt: true }, orderBy: { createdAt: "desc" },
+    }) : Promise.resolve([]),
+  ]);
   const hoy = hoyMX();
   const venceDe = (id: string) => {
     const q = cotizacionVigente(cots.filter(c => c.oportunidadId === id));
     if (!q) return { venceCotizacion: null, estadoCotizacion: null };
     return { venceCotizacion: fechaLimite(q), estadoCotizacion: etapaDe(q, hoy) };
   };
-  return ops.map(o => ({
-    ...venceDe(o.id),
-    id: o.id, etapa: o.etapa, canal: o.canal, tours: o.tours, fechaViaje: o.fechaViaje, pax: o.pax, monto: o.monto,
-    responsable: o.responsable, proximoPaso: o.proximoPaso, proximoPasoEn: o.proximoPasoEn, motivoPerdida: o.motivoPerdida,
-    nombre: o.contacto.nombre, telefono: o.contacto.telefono, tareasPendientes: o._count.tareas,
-    createdAt: o.createdAt.toISOString(), updatedAt: o.updatedAt.toISOString(),
-  }));
+  const cerradoEnDe = (o: (typeof ops)[number]): Date | null => {
+    if (!ETAPAS_CERRADAS.includes(o.etapa)) return null;
+    // Sin su renglón en el historial (no debería pasar), el último cambio del lead.
+    return cierres.find(c => c.oportunidadId === o.id && c.nueva === o.etapa)?.createdAt ?? o.updatedAt;
+  };
+  return ops.flatMap(o => {
+    const cerradoEn = cerradoEnDe(o);
+    if (cerradoEn && cerradoEn < desde) return [];
+    const suyas = vivas.filter(r => r.oportunidadId === o.id);
+    const ultimoDia = suyas.map(ultimoDiaDe).filter((f): f is string => !!f).sort().at(-1) ?? o.fechaViaje;
+    return [{
+      ...venceDe(o.id),
+      // La clave vieja «anticipo» llega como «confirmado» (19 nov 2026).
+      id: o.id, etapa: normalizarEtapa(o.etapa), canal: o.canal, tours: o.tours, fechaViaje: o.fechaViaje, pax: o.pax, monto: o.monto,
+      responsable: o.responsable, proximoPaso: o.proximoPaso, proximoPasoEn: o.proximoPasoEn, motivoPerdida: o.motivoPerdida,
+      nombre: o.contacto.nombre, telefono: o.contacto.telefono, tareasPendientes: o._count.tareas,
+      createdAt: o.createdAt.toISOString(), updatedAt: o.updatedAt.toISOString(),
+      /** Cuándo pasó a Operado o Perdido (ISO); null si está abierto. */
+      cerradoEn: cerradoEn?.toISOString() ?? null,
+      /** El último día de tour de sus reservas vivas; sin reservas, la fecha del lead (YYYY-MM-DD). */
+      ultimoDia,
+      /** Lo cobrado y lo que falta de sus reservas vivas (pesos): «Anticipo $X · falta $Y» o «Pagado». */
+      cobrado: suyas.reduce((t, r) => t + montoCobrado(r), 0),
+      saldo: suyas.reduce((t, r) => t + saldoPendiente(r), 0),
+    }];
+  });
 }
 export type LeadTarjeta = Awaited<ReturnType<typeof listarPipeline>>[number];
 
@@ -434,15 +501,24 @@ export async function fichaOportunidad(id: string) {
   const ligas = cotizaciones.length ? await prisma.linkPago.findMany({ where: { cotizacionId: { in: cotizaciones.map(c => c.id) }, estado: "pagado", reservaId: null }, select: { cotizacionId: true, montoPagado: true, monto: true } }) : [];
   const pagadoPorLiga = (cid: string) => ligas.filter(l => l.cotizacionId === cid).reduce((t, l) => t + (l.montoPagado ?? l.monto), 0);
   const hoy = hoyMX();
+  const vivas = reservas.filter(r => r.status !== "cancelled");
+  const cerrado = op.etapa === "operado" || op.etapa === "perdido";
   return {
     resumen: resumenLead(cotizaciones, reservas, hoy),
-    id: op.id, etapa: op.etapa, canal: op.canal, tours: op.tours, fechaViaje: op.fechaViaje, pax: op.pax, perfil: op.perfil,
+    // La clave vieja «anticipo» llega como «confirmado» (19 nov 2026); el historial va tal cual.
+    id: op.id, etapa: normalizarEtapa(op.etapa), canal: op.canal, tours: op.tours, fechaViaje: op.fechaViaje, pax: op.pax, perfil: op.perfil,
     quiereHospedaje: op.quiereHospedaje, monto: op.monto, responsable: op.responsable, proximoPaso: op.proximoPaso,
     proximoPasoEn: op.proximoPasoEn, motivoPerdida: op.motivoPerdida, creadoPor: op.creadoPor, createdAt: op.createdAt.toISOString(),
+    // Lo mismo que trae su tarjeta del tablero (19 nov 2026): cuándo se cerró,
+    // el último día de su viaje y el dinero de sus reservas vivas.
+    cerradoEn: cerrado ? (op.historial.find(h => h.nueva === op.etapa)?.createdAt ?? op.updatedAt).toISOString() : null,
+    ultimoDia: vivas.map(ultimoDiaDe).filter((f): f is string => !!f).sort().at(-1) ?? op.fechaViaje,
+    cobrado: vivas.reduce((t, r) => t + montoCobrado(r), 0),
+    saldo: vivas.reduce((t, r) => t + saldoPendiente(r), 0),
     // De qué página y canal llegó (código de referencia del WhatsApp, 4 nov 2026).
     origenWeb: leerOrigenWeb(op.origenWeb),
     contacto: { id: op.contacto.id, nombre: op.contacto.nombre, telefono: op.contacto.telefono, correo: op.contacto.correo, idioma: op.contacto.idioma },
-    otras: op.contacto.oportunidades.filter(o => o.id !== id).map(o => ({ id: o.id, etapa: o.etapa, createdAt: o.createdAt.toISOString(), tours: o.tours })),
+    otras: op.contacto.oportunidades.filter(o => o.id !== id).map(o => ({ id: o.id, etapa: normalizarEtapa(o.etapa), createdAt: o.createdAt.toISOString(), tours: o.tours })),
     historial: op.historial.map(h => ({ id: h.id, anterior: h.anterior, nueva: h.nueva, por: h.por, origen: h.origen, en: h.createdAt.toISOString() })),
     notas: op.notasLista.map(n => ({ id: n.id, autor: n.autor, texto: n.texto, en: n.createdAt.toISOString() })),
     tareas: op.tareas.map(t => ({ id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, hora: t.hora, estado: t.estado, hechaPor: t.hechaPor, hechaEn: t.hechaEn?.toISOString() ?? null, creadaPor: t.creadaPor, en: t.createdAt.toISOString() })),
@@ -469,17 +545,21 @@ export async function tareasPendientes() {
     id: t.id, titulo: t.titulo, responsable: t.responsable, vence: t.vence, hora: t.hora, estado: t.estado, origen: t.origen, hechaPor: t.hechaPor,
     oportunidadId: t.oportunidadId, salidaClave: t.salidaClave,
     cliente: t.oportunidad?.contacto.nombre ?? null, telefono: t.oportunidad?.contacto.telefono ?? null,
-    etapa: t.oportunidad?.etapa ?? null,
+    etapa: t.oportunidad ? normalizarEtapa(t.oportunidad.etapa) : null,
   }));
 }
 export type TareaFila = Awaited<ReturnType<typeof tareasPendientes>>[number];
 
-/** Para los contadores del menú: leads abiertos y seguimientos vencidos. */
+/**
+ * Para los contadores del menú: leads por cerrar y seguimientos vencidos. Por
+ * cerrar = todavía sin dinero (Nuevo a En seguimiento). Desde el 19 nov 2026 un
+ * lead que pagó el anticipo ya es Confirmado y sale de esta cuenta.
+ */
 export async function contadoresCrm(): Promise<{ leads: number; vencidos: number }> {
   try {
     const hoy = hoyMX();
     const [leads, vencidos] = await Promise.all([
-      prisma.oportunidad.count({ where: { etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo"] } } }),
+      prisma.oportunidad.count({ where: { etapa: { in: ETAPAS_POR_CERRAR } } }),
       prisma.tarea.count({ where: { estado: "pendiente", vence: { lt: hoy } } }),
     ]);
     return { leads, vencidos };
@@ -489,17 +569,21 @@ export async function contadoresCrm(): Promise<{ leads: number; vencidos: number
 }
 
 // ── Cambios de etapa automáticos (3 nov 2026, pedido de Manolo) ─────────────
-// «La creación de cotización agrega automáticamente el lead, el flujo empieza
-// desde Calificado y una vez que se manda por correo o se descarga el PDF pasa
-// a Cotizado.» Nunca tumban la operación que los dispara: si algo falla, se
-// anota en el log y la cotización o la reserva se guardan igual.
+// «La creación de cotización agrega automáticamente el lead.» Desde el 19 nov
+// 2026 (Manolo: «si a un lead se le crea una cotización que pase
+// automáticamente a cotizado») el lead pasa a Cotizado al CREARLA, en el panel,
+// al editar un borrador o desde el bot; antes empezaba en Calificado y pasaba a
+// Cotizado al mandarla o bajar su PDF. Los KPIs y el «¿la vio?» siguen contando
+// solo las que de verdad salieron (`COTIZADO_AL_CREAR_DESDE`, `enviadaEn`).
+// Nunca tumban la operación que los dispara: si algo falla, se anota en el log
+// y la cotización o la reserva se guardan igual.
 
 const ESTADOS_SIN_LEAD = ["expirada", "archivada", "aceptada"];
 
 /**
  * El lead de una cotización: el que ya tiene enlazado, el abierto de esa
  * persona, o uno nuevo con los datos de la cotización. Sube a `objetivo`
- * (Calificado al crearla, Cotizado al mandarla o descargar su PDF), nunca baja.
+ * (Cotizado al crearla o mandarla), nunca baja.
  */
 export async function leadDesdeCotizacion(
   quoteId: string, objetivo: "calificado" | "cotizado", quien: string, motivo: string, sincronizar = false,
@@ -511,8 +595,11 @@ export async function leadDesdeCotizacion(
     const datos = { tours: toursDe(q), fechaViaje: ymd(q.tourDate), pax: (q.adults + q.children) || null };
     let op = q.oportunidadId ? await prisma.oportunidad.findUnique({ where: { id: q.oportunidadId } }) : null;
     if (!op) {
-      const contacto = await contactoPara({ nombre: q.customerName, telefono: normalizarTelefono(q.customerPhone), correo: q.customerEmail?.trim() || null });
-      op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } }, orderBy: { createdAt: "desc" } });
+      // La del bot en un chat «@lid» (sin teléfono): la persona es la de ese
+      // chat de la Bandeja; por teléfono o correo, como siempre (20 nov 2026).
+      const contacto = (await contactoDelChat(q))
+        ?? await contactoPara({ nombre: q.customerName, telefono: normalizarTelefono(q.customerPhone), correo: q.customerEmail?.trim() || null });
+      op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_ABIERTAS_BD } }, orderBy: { createdAt: "desc" } });
       if (!op) {
         // Canal HONESTO (KPI «Leads con canal de origen», 4 nov 2026): antes todo
         // lead nacido de una cotización quedaba «WhatsApp» por omisión y el KPI
@@ -579,6 +666,38 @@ export async function leadDesdeCotizacion(
 
 const pesosCorto = (n: number) => `$${Math.round(n).toLocaleString("es-MX")}`;
 
+/** El chat de WhatsApp de una cotización del bot (`waChatId` en el `_meta` de `packageItems`), o null. */
+function chatDeCotizacion(packageItems: unknown): string | null {
+  if (!Array.isArray(packageItems)) return null;
+  const meta = (packageItems as unknown[]).find(p => !!p && typeof p === "object" && (p as { _meta?: unknown })._meta === true) as { waChatId?: unknown } | undefined;
+  const chat = typeof meta?.waChatId === "string" ? meta.waChatId.trim() : "";
+  return chat || null;
+}
+
+/**
+ * El contacto de una cotización del bot SIN teléfono (un chat «@lid»), sacado
+ * de su chat en la Bandeja, o null (revisión del 20 nov 2026). Ese chat ya
+ * tiene su contacto (sin teléfono ni correo) y su lead en Nuevo: buscarlo por
+ * el correo de la cotización creaba un SEGUNDO contacto y un segundo lead en
+ * Cotizado, y el del chat se quedaba en Nuevo. Con teléfono no hace falta (por
+ * él se encuentra a la misma persona); sin chat en la Bandeja, o si el chat
+ * está marcado «no es cliente», tampoco: se busca como siempre. Al contacto se
+ * le completa el correo si no lo tiene y no es ya de otra persona.
+ */
+async function contactoDelChat(q: { customerPhone: string | null; customerEmail: string | null; packageItems: unknown }) {
+  if (normalizarTelefono(q.customerPhone)) return null;
+  const chatId = chatDeCotizacion(q.packageItems);
+  if (!chatId) return null;
+  const conv = await prisma.conversacion.findUnique({ where: { chatId }, select: { contactoId: true, noEsCliente: true } });
+  if (!conv?.contactoId || conv.noEsCliente) return null;
+  const c = await prisma.contacto.findUnique({ where: { id: conv.contactoId } });
+  if (!c) return null;
+  const correo = q.customerEmail?.trim().toLowerCase() || null;
+  if (c.correo || !correo) return c;
+  const deOtro = await prisma.contacto.findFirst({ where: { correo, id: { not: c.id } }, select: { id: true } });
+  return deOtro ? c : prisma.contacto.update({ where: { id: c.id }, data: { correo } });
+}
+
 /**
  * Nombre, correo y teléfono de la cotización editada pasan al contacto. El
  * teléfono solo si no es ya de otra persona (es único). Devuelve qué cambió.
@@ -601,9 +720,16 @@ async function contactoDesdeCotizacion(contactoId: string, q: { customerName: st
   return [data.nombre && "nombre", data.correo && "correo", data.telefono && "teléfono"].filter((x): x is string => !!x);
 }
 
-/** El último día de tour de una reserva (sus renglones, o el principal). */
-const ultimoDiaDe = (r: { tourDate: string; lineItems?: unknown }) =>
-  [...lineasDe(r as never).map(l => l.tourDate), r.tourDate].filter((f): f is string => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort().at(-1) ?? null;
+/**
+ * El último día del viaje de una reserva (o de una cotización): sus renglones y
+ * su fecha principal, y el viaje CDMX hasta su domingo de regreso. Es
+ * `ultimoDiaReserva`, la misma cuenta que la confirmación por correo y la
+ * encuesta. 🔴 Revisión del 20 nov 2026: el viaje CDMX guarda solo el viernes de
+ * salida, y con esa fecha el lead pasaba a Operado el sábado a las 00:05, a
+ * media estancia. Lo usan Operado (`operarViajesPasados`), el regreso de un
+ * Operado (`recalcularLead`) y el «último día» de la tarjeta y la ficha.
+ */
+const ultimoDiaDe = (r: { tourDate: string; tourSlug?: string | null; lineItems?: unknown }) => ultimoDiaReserva(r);
 
 /**
  * Pone el lead al día con sus HECHOS (5 nov 2026): la etapa y el monto salen
@@ -708,7 +834,7 @@ export async function leadParaReservaSinLead(bookingId: string, quien: string, {
     // Sin teléfono ni correo no hay a quién darle seguimiento: no se inventa un contacto.
     if (!telefono && !correo) return null;
     const contacto = await contactoPara({ nombre: r.customerName || "Sin nombre", telefono, correo, idioma: r.idiomaTour });
-    const op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } }, orderBy: { createdAt: "desc" } })
+    const op = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_ABIERTAS_BD } }, orderBy: { createdAt: "desc" } })
       ?? await leadCerradoReciente(contacto.id, ["perdido"]);
     if (!op) {
       const etapa = etapaPorCobro(montoCobrado(r), r.totalAmount);
@@ -735,21 +861,22 @@ export async function leadParaReservaSinLead(bookingId: string, quien: string, {
  * El lead de una cotización NUEVA hecha desde la ficha o la Bandeja (5 nov
  * 2026). Si ese lead ya está cerrado (Operado o Perdido), la venta nueva no se
  * queda colgada de él —ahí ninguna regla la mueve y no aparece en el tablero—:
- * va al lead abierto de esa persona o a uno nuevo del mismo contacto.
+ * va al lead abierto de esa persona o a uno nuevo del mismo contacto, que nace
+ * ya en Cotizado (19 nov 2026: crear la cotización lo pone en Cotizado).
  */
 export async function leadParaCotizacionNueva(v: unknown, quien: string): Promise<{ id: string; nuevo: boolean } | null> {
   if (typeof v !== "string" || !v || v.length > 40) return null;
   const op = await prisma.oportunidad.findUnique({ where: { id: v } }).catch(() => null);
   if (!op) return null;
   if (estaAbierta(op.etapa)) return { id: op.id, nuevo: false };
-  const abierto = await prisma.oportunidad.findFirst({ where: { contactoId: op.contactoId, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } }, orderBy: { createdAt: "desc" } });
+  const abierto = await prisma.oportunidad.findFirst({ where: { contactoId: op.contactoId, etapa: { in: ETAPAS_ABIERTAS_BD } }, orderBy: { createdAt: "desc" } });
   if (abierto) return { id: abierto.id, nuevo: false };
   const tieneChat = await prisma.conversacion.count({ where: { contactoId: op.contactoId } }).catch(() => 0);
   const nuevo = await prisma.oportunidad.create({
-    data: { contactoId: op.contactoId, etapa: "calificado", canal: tieneChat ? "whatsapp" : "por_confirmar", responsable: quien, creadoPor: quien },
+    data: { contactoId: op.contactoId, etapa: "cotizado", canal: tieneChat ? "whatsapp" : "por_confirmar", responsable: quien, creadoPor: quien },
     include: { contacto: { select: { nombre: true } } },
   });
-  await registrarEtapa(nuevo.id, null, "calificado", `Regla: cotización nueva de un cliente con su lead anterior ${etiquetaEtapa(op.etapa)}`, "regla");
+  await registrarEtapa(nuevo.id, null, "cotizado", `Regla: cotización nueva de un cliente con su lead anterior ${etiquetaEtapa(op.etapa)}`, "regla");
   const dia = op.createdAt.toLocaleDateString("es-MX", { timeZone: "America/Mexico_City", day: "numeric", month: "short", year: "numeric" }).replace(/\./g, "");
   await prisma.notaOportunidad.create({ data: { oportunidadId: nuevo.id, autor: quien, texto: `Cliente que vuelve: su lead del ${dia} está ${etiquetaEtapa(op.etapa)}. Esta cotización abre un lead nuevo para no mezclar los viajes.` } });
   await registrarEnBitacora({ accion: "creó", entidad: "lead", referencia: nuevo.contacto.nombre, resumen: `Lead nuevo de ${nuevo.contacto.nombre}: cotización nueva y su lead anterior estaba ${etiquetaEtapa(op.etapa)}` });
@@ -758,11 +885,11 @@ export async function leadParaCotizacionNueva(v: unknown, quien: string): Promis
 
 /**
  * La liga de pago de una cotización o reserva mueve su lead (reglas del
- * prompt, revisión del 4 nov 2026): mandarla → En seguimiento; pagarla →
- * Anticipo pagado (si era de una cotización; la de una reserva ya entra por
- * `registrarCobro`). Nunca baja; un perdido que paga vuelve. No lanza.
+ * prompt, revisión del 4 nov 2026; etapas del 19 nov en `etapaPorLiga`). La de
+ * una reserva pagada ya entra por `registrarCobro`. Nunca baja; un perdido que
+ * paga vuelve (su liga sigue cobrando aunque esté Perdido). No lanza.
  */
-export async function leadPorLigaDePago(link: { cotizacionId: string | null; reservaId: string | null; titulo?: string | null }, evento: "creada" | "pagada", quien: string): Promise<void> {
+export async function leadPorLigaDePago(link: { cotizacionId: string | null; reservaId: string | null; titulo?: string | null; creadoPor?: string | null }, evento: "creada" | "pagada", quien: string): Promise<void> {
   try {
     let opId: string | null = null;
     if (link.cotizacionId) {
@@ -775,7 +902,9 @@ export async function leadPorLigaDePago(link: { cotizacionId: string | null; res
     const op = await prisma.oportunidad.findUnique({ where: { id: opId } });
     if (!op) return;
     if (evento === "pagada" && !link.cotizacionId) return; // la de reserva: registrarCobro ya lo movió
-    const objetivo: Etapa = evento === "creada" ? "seguimiento" : "anticipo";
+    // Las que nacen solas con la cotización (la del correo y sus recordatorios, y las «una por persona» del bot).
+    const automatica = esLigaAutomatica(link.creadoPor ?? quien);
+    const objetivo = etapaPorLiga(evento, automatica);
     const etapa = evento === "pagada" && op.etapa === "perdido" ? objetivo : subirA(op.etapa as Etapa, objetivo);
     if (etapa === op.etapa) return;
     await prisma.oportunidad.update({ where: { id: op.id }, data: { etapa, ...(op.etapa === "perdido" ? { motivoPerdida: null } : {}) } });
@@ -784,8 +913,6 @@ export async function leadPorLigaDePago(link: { cotizacionId: string | null; res
     console.error("leadPorLigaDePago:", (e as Error)?.message);
   }
 }
-
-const ETAPAS_PIPELINE_ABIERTAS = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
 
 export { estaAbierta, esEtapa };
 
@@ -897,13 +1024,17 @@ export async function leadTrasReactivarReserva(bookingId: string): Promise<void>
 
 // ── Viaje ya pasado → Operado (regla del prompt, 3 nov 2026) ───────────────
 // Pregunta de Manolo: «¿qué pasa con los que ya están confirmados y pasa la
-// fecha del tour?». Al día siguiente del último tour, un lead con Anticipo
-// pagado o Confirmado pasa solo a Operado y sale del tablero. Si quedó saldo
-// sin registrar, se anota en su historial para cobrarlo o registrarlo. Se
-// revisa al abrir Leads o una ficha y, desde el lote 9 (10 nov 2026), también
-// cada hora en el cron (`/api/cron/recordatorios`): si nadie abría Leads, el
-// lead seguía «Confirmado» y quien volvía a escribir no disparaba «¿Consulta
-// nueva?». Es idempotente: solo mueve si nadie lo movió mientras tanto.
+// fecha del tour?». Al día siguiente del último tour, un lead Confirmado (ya
+// pagó algo; la clave vieja «anticipo» también) pasa solo a Operado. Si quedó
+// saldo sin registrar, se anota en su historial para cobrarlo o registrarlo.
+// 19 nov 2026, Manolo: «que pase a operado después de que pase su último tour;
+// si se operó el sábado, el domingo a las 12am ya tiene que aparecer en
+// operado». Manda el último día de sus reservas vivas (una cotización o un
+// borrador que se quedó ya no lo detiene, ver `fechasDelViaje`) y lo revisa
+// PRIMERO el reloj del servidor cada 5 minutos (`recordatoriosTimer.ts`), además
+// de Leads, la ficha y el cron horario. Un lead con reserva pero SIN pago
+// registrado no se mueve solo: se queda con el aviso rojo de su tarjeta.
+// Es idempotente: solo mueve si nadie lo movió mientras tanto.
 
 /** Pasa a Operado los leads cuyo viaje ya pasó. Con `soloId`, solo ese. Devuelve cuántos movió. */
 export async function operarViajesPasados(hoy: string = hoyMX(), soloId?: string): Promise<number> {
@@ -918,19 +1049,21 @@ export async function operarViajesPasados(hoy: string = hoyMX(), soloId?: string
         where: { oportunidadId: { in: ops.map(o => o.id) }, status: { not: "cancelled" } },
         select: { oportunidadId: true, confirmationNumber: true, tourDate: true, tourSlug: true, lineItems: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true },
       }),
-      // Una venta nueva cotizada sobre este lead (otro viaje) también cuenta (5 nov 2026):
-      // antes el lead pasaba a Operado por la reserva vieja y la venta nueva se perdía ahí.
+      // Solo cuentan si el lead NO tiene reservas vivas (p. ej. pagó la liga y
+      // la reserva no se pudo crear): con reservas, mandan ellas (19 nov 2026).
       prisma.tourQuote.findMany({
         where: { oportunidadId: { in: ops.map(o => o.id) }, status: { in: ["borrador", "enviada"] } },
-        select: { oportunidadId: true, status: true, tourDate: true, lineItems: true, packageItems: true, createdAt: true },
+        select: { oportunidadId: true, status: true, tourDate: true, tourSlug: true, lineItems: true, packageItems: true, createdAt: true },
       }),
     ]);
     let movidos = 0;
     for (const op of ops) {
       const suyas = ress.filter(r => r.oportunidadId === op.id);
-      const deReservas = suyas.flatMap(r => { const f = lineasDe(r as never).map(l => l.tourDate); return f.length ? f : [r.tourDate]; });
-      const deCotizaciones = cots.filter(q => q.oportunidadId === op.id && cotizacionViva(q, hoy))
-        .flatMap(q => { const f = lineasDe(q as never).map(l => l.tourDate).filter((x): x is string => !!x); return f.length ? f : [q.tourDate]; });
+      // El último día de cada reserva: sus renglones Y su fecha principal (19 nov
+      // 2026: un renglón sin fecha dejaba la reserva sin ninguna y nunca se operaba),
+      // y el domingo de regreso del viaje CDMX (20 nov 2026, ver `ultimoDiaDe`).
+      const deReservas = suyas.map(ultimoDiaDe);
+      const deCotizaciones = cots.filter(q => q.oportunidadId === op.id && cotizacionViva(q, hoy)).map(ultimoDiaDe);
       const { paso, ultima } = viajeYaPaso(fechasDelViaje(deReservas, deCotizaciones, op.fechaViaje), hoy);
       if (!paso || !ultima) continue;
       // Solo si nadie la movió mientras tanto.
@@ -1024,7 +1157,7 @@ export async function leadDesdeWeb(d: LeadWeb): Promise<{ id: string; nuevo: boo
     if (!telefono && !correo) return null;
     const contacto = await contactoDeLaWeb({ nombre: texto(d.nombre, 120), telefono, correo, idioma: d.idioma ?? null });
     const nota = d.que.trim().slice(0, 2000);
-    const abierta = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_PIPELINE_ABIERTAS } }, orderBy: { createdAt: "desc" } });
+    const abierta = await prisma.oportunidad.findFirst({ where: { contactoId: contacto.id, etapa: { in: ETAPAS_ABIERTAS_BD } }, orderBy: { createdAt: "desc" } });
     const perdido = abierta ? null : await leadCerradoReciente(contacto.id, ["perdido"]);
     const suyo = abierta ?? perdido;
     if (suyo) {

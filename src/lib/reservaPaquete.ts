@@ -24,6 +24,8 @@ import { buildPaqueteConfirmEmailHtml } from "@/lib/paqueteEmail";
 import { TOURS_DB } from "@/lib/tours";
 import { parseEleccion } from "@/lib/paquetePricing";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
+import { SISTEMA } from "@/lib/admin/bitacora";
+import { anotarConfirmacionEnviada } from "@/lib/admin/confirmacionReservaDatos";
 import { cerrarCarritosDe } from "@/lib/cerrarCarrito";
 import { revisarSobrecupo } from "@/lib/sobrecupo";
 import { HOTEL_PARAISO_WEB, importeHotelDePaquete, pctDelPaquete } from "@/lib/reservaWeb";
@@ -365,6 +367,9 @@ export async function registrarReservaPaquete(
         attachments: adjuntos,
       });
       actividad("📧  CORREO PAQUETE ENVIADO", paquete.nombre, email, confirmationNumber);
+      // El mismo renglón que el botón del panel: la ficha del lead ya sabe que
+      // le llegó su confirmación (19 nov 2026). No lanza.
+      await anotarConfirmacionEnviada({ folio: confirmationNumber, destinatario: email, cliente: customerName, actor: SISTEMA });
     } catch (e: any) {
       console.error("❌ Brevo paquete email:", enmascararTexto(String(e?.message ?? "")));
     }

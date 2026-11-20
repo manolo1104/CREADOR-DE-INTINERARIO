@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { reservasParaLigaDeSaldo } from "@/lib/admin/linksPago";
+import { leadsDeCotizaciones, marcaPerdido } from "@/lib/cotizaciones/marcaPerdido";
 import CobrosClient from "./CobrosClient";
 
 export const dynamic = "force-dynamic";
@@ -56,9 +57,15 @@ export default async function CobrosPage() {
     select: {
       id: true, quoteNumber: true, customerName: true,
       tourName: true, tourSlug: true, tourDate: true, totalAmount: true, status: true,
-      adults: true, children: true, lineItems: true,
+      adults: true, children: true, lineItems: true, oportunidadId: true,
     },
   });
+  // La marca «Perdido · motivo» (revisión del 20 nov 2026): su liga todavía se
+  // puede cobrar, pero quien la elige sabe que el lead ya dijo que no.
+  const ids = leadsDeCotizaciones(cotizaciones);
+  const leads = ids.length
+    ? await prisma.oportunidad.findMany({ where: { id: { in: ids } }, select: { id: true, etapa: true, motivoPerdida: true } }).catch(() => [])
+    : [];
 
   return (
     <CobrosClient
@@ -73,6 +80,7 @@ export default async function CobrosPage() {
         total: c.totalAmount,
         estado: c.status,
         personas: personasDe(c),
+        perdido: marcaPerdido(leads.find(o => o.id === c.oportunidadId), c.status),
       }))}
     />
   );

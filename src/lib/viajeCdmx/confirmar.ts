@@ -21,6 +21,8 @@ import { prisma } from "@/lib/prisma";
 import { logger, actividad, mxn, nombreCorto, nombreParaLog } from "@/lib/logger";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { registrarEnBitacora, pesos as pesosBitacora, SISTEMA } from "@/lib/admin/bitacora";
+import { correoUsable } from "@/lib/admin/confirmacionReserva";
+import { anotarConfirmacionEnviada } from "@/lib/admin/confirmacionReservaDatos";
 import { enviarCompraGA4 } from "@/lib/ga4Server";
 import { pagoDelEquipo } from "@/lib/equipoInterno";
 import { conSalidaBloqueada, libres, ocupacion } from "./cupo";
@@ -193,6 +195,14 @@ export async function confirmarPasaje(
 
   try {
     await correoConfirmacion(reserva.id);
+    // El mismo renglón que el botón del panel: la ficha del lead ya sabe que le
+    // llegó (19 nov 2026). Solo con un correo que sirva (la regla de la ficha):
+    // a un correo vacío Brevo ni lo acepta y se cae al `catch`. No lanza.
+    if (correoUsable(reserva.customerEmail)) {
+      await anotarConfirmacionEnviada({
+        reservaId: reserva.id, folio: reserva.confirmationNumber, destinatario: reserva.customerEmail, cliente: reserva.customerName, actor: SISTEMA,
+      });
+    }
   } catch (e) {
     logger.error("viaje_cdmx_correo_confirmacion_fallo", { reserva: reserva.confirmationNumber, reason: e instanceof Error ? e.message : String(e) });
   }

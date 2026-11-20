@@ -159,7 +159,7 @@ Cada pantalla debe tener estado vacío, estado de carga y versión de celular.
 
 - Encabezado: fecha, número de semana y selector Semana / Mes / Temporada. Botón "Revisión del jueves" que lleva a Score WhatsApp.
 - 8 tarjetas de KPI, cada una con valor, contexto, meta y chip de estado: leads nuevos, tiempo de primera respuesta, conversión lead → anticipo, pax por salida, vendido, margen de contribución, score de WhatsApp y tasa de reseñas. Fórmulas en "Reglas de negocio".
-- Embudo de la semana: Leads → Calificados → Cotizados → Anticipo pagado, con conversión entre pasos y un aviso automático en el paso con la mayor caída.
+- Embudo de la semana: Leads → Calificados → Cotizados → Anticipo pagado, con conversión entre pasos y un aviso automático en el paso con la mayor caída. (19 nov 2026: el último paso es dinero —«Pagaron anticipo»—, ya no una etapa.)
 - Pendientes de hoy: seguimientos vencidos, salidas del día con avance del checklist, anticipos por vencer, reseñas por pedir y salidas que conviene agrupar. Cada pendiente enlaza a su pantalla.
 - Tabla "Salidas de la semana": fecha, tour, clientes, pax, margen estimado y estado (En meta / Bajo mínimo / Lleno). Si un tour no tiene costos capturados, se muestra "Faltan costos".
 
@@ -173,7 +173,8 @@ Cada pantalla debe tener estado vacío, estado de carga y versión de celular.
 
 ### Leads — pipeline
 
-- Columnas por etapa: Nuevo, Calificado, Cotizado, En seguimiento, Anticipo pagado, Confirmado. Perdido y Operado van en vistas aparte. Las tarjetas se arrastran entre columnas.
+- Columnas por etapa: Nuevo, Calificado, Cotizado, En seguimiento, Confirmado, Operado y Perdido. Las tarjetas se arrastran entre columnas.
+  - *Cambio del 19 nov 2026 (Manolo):* «Anticipo pagado» se unió a Confirmado («una vez que pagan se confirma el tour»): con cualquier pago el lead queda Confirmado y su tarjeta dice «Anticipo $X · falta $Y» o «Pagado». Operado y Perdido ya son columnas del tablero con los cerrados de los últimos 14 días (por el día en que se cerraron); los más viejos, en «Ver todos».
 - Tarjeta: nombre, chips de tour, fecha del viaje, pax, monto, canal y próximo paso (rojo si está vencido).
 - Filtros por canal, tour, responsable y fecha del viaje, además de un buscador por nombre o teléfono.
 - Ficha del lead: barra de etapas; campos (canal, tour, fecha, pax, perfil, hospedaje, monto, anticipo 30 %, responsable, próximo paso); historial unificado (mensajes, cambios de etapa, pagos, notas, tareas); acciones; motivo de pérdida obligatorio al marcar Perdido.
@@ -273,7 +274,7 @@ Adáptalo al ORM y a las tablas que ya existen. Si ya hay una tabla equivalente 
 ### Stripe
 
 - Webhooks de pago exitoso, fallido y reembolso. Enlaza cada pago con su reserva y su lead.
-- Pago del anticipo → lead a "Anticipo pagado", reserva confirmada y salida actualizada.
+- Pago del anticipo → lead a "Confirmado" (desde el 19 nov 2026 ya no hay etapa "Anticipo pagado"), reserva confirmada y salida actualizada.
 - Links de pago del anticipo (30 %) generados desde la ficha del lead o la cotización, con fecha de vencimiento.
 
 ### Correo
@@ -310,21 +311,26 @@ Adáptalo al ORM y a las tablas que ya existen. Si ya hay una tabla equivalente 
 | --- | --- |
 | Primer mensaje de un número sin lead abierto | Nuevo |
 | Se capturan fecha, pax y tour | Calificado |
-| Se envía una cotización | Cotizado |
-| Se envía el link de anticipo | En seguimiento |
-| Stripe confirma el anticipo | Anticipo pagado |
-| La reserva se asigna a una salida | Confirmado |
-| Pasa la fecha de la salida | Operado |
+| Se crea una cotización (en el panel, al editar un borrador o desde el bot) | Cotizado |
+| Una persona manda una liga de pago, o hay una reserva sin pago | En seguimiento |
+| Entra cualquier pago (Stripe, liga, transferencia o efectivo) | Confirmado |
+| Pasa el último día de tour de sus reservas (si fue el sábado, el domingo desde las 00:00) | Operado |
 | Se marca perdido (motivo obligatorio: precio, no contestó tras cotizar, fecha sin disponibilidad, se fue con otro operador, otro) | Perdido |
 
 Cualquier persona puede mover la etapa a mano. Cada cambio queda en el historial con quién lo hizo.
+
+*Cambios del 19 nov 2026 (Manolo):*
+- **Cotizado al crear la cotización.** Antes pasaba al mandarla o bajar su PDF. La liga que va sola en el correo de la cotización deja el lead en Cotizado; En seguimiento es una reserva o una liga que mandó una persona, todavía sin dinero. Los KPIs (Leads cotizados, PDF a calificados, Embudo e Inicio), el reporte de los jueves y el seguimiento «¿la vio?» de 24 h siguen contando solo las cotizaciones que de verdad salieron al cliente.
+- **Anticipo pagado se unió a Confirmado.** La clave vieja «anticipo» se lee como Confirmado; el script `src/scripts/unir-anticipo-confirmado.ts` cambia las que queden en la base (ensayo y luego `--aplicar=<huella>`).
+- **Operado.** Lo revisa el reloj del servidor cada 5 minutos. Una cotización o un borrador que se quedó ya no lo detiene; un lead con reserva pero sin pago registrado no pasa solo (su tarjeta lo avisa en rojo).
+- **Perdido.** Sus cotizaciones se marcan «Perdido · motivo» y dejan de recibir correos automáticos; su liga sigue cobrando y, si paga, el lead vuelve solo.
 
 ### Automatizaciones
 
 | Disparador | Acción | Canal |
 | --- | --- | --- |
 | Lead nuevo sin respuesta en 10 min (horario 8:00–20:00) | Alerta al operador | Panel + notificación |
-| Cotizado sin respuesta 24 h | Tarea de seguimiento | Interno |
+| Cotizado sin respuesta 24 h (desde que la cotización salió al cliente) | Tarea de seguimiento | Interno |
 | Cotizado sin respuesta 72 h | Propuesta de mensaje de seguimiento (aprobación) | WhatsApp, plantilla |
 | Link de anticipo sin pagar 24 h | Recordatorio con fecha límite | WhatsApp + correo |
 | 48 h y 24 h antes de la salida | Confirmación, punto de encuentro, qué llevar | WhatsApp + correo |

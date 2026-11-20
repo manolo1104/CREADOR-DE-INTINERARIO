@@ -146,8 +146,9 @@ export default function ConvertirReservaModal({ q, canalSugerido, idiomaSugerido
                 <Clock className="h-4 w-4 shrink-0" />Todavía no
               </button>
             </div>
-            {d.yaPago === true && <p className="mt-1.5 text-[11.5px] font-dm text-[#1B4332]/60">Al crear la reserva se abre «Registrar cobro»{q.anticipo > 0 ? ` con el anticipo de ${fmx(q.anticipo)}` : ""}: eliges cómo entró, quién lo recibió y subes el comprobante. El lead pasa a Anticipo pagado.</p>}
-            {d.yaPago === false && <p className="mt-1.5 text-[11.5px] font-dm text-[#1B4332]/60">La reserva queda pendiente de pago y el lead en En seguimiento. El cobro se registra después en Reservas o desde la ficha del lead.</p>}
+            {d.yaPago === true && <p className="mt-1.5 text-[11.5px] font-dm text-[#1B4332]/60">Al crear la reserva se abre «Registrar cobro»{q.anticipo > 0 ? ` con el anticipo de ${fmx(q.anticipo)}` : ""}: eliges cómo entró, quién lo recibió y subes el comprobante. El lead pasa a Confirmado.</p>}
+            {/* 19 nov 2026: «Anticipo pagado» se unió a Confirmado; con cualquier pago, el lead queda Confirmado. */}
+            {d.yaPago === false && <p className="mt-1.5 text-[11.5px] font-dm text-[#1B4332]/60">La reserva queda pendiente de pago y el lead en En seguimiento. El cobro se registra después en Reservas o desde la ficha del lead; con el primer pago, el lead pasa a Confirmado.</p>}
           </fieldset>
 
           {/* 3. Cliente */}

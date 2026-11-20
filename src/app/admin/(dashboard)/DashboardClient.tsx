@@ -4,30 +4,69 @@ import Link from "next/link";
 import { BookOpen, Calendar, FileText, TrendingUp, Users, Plus, ArrowRight } from "lucide-react";
 import type { TourBooking, TourQuote } from "@prisma/client";
 import CountUp from "@/components/admin/CountUp";
-import { CodigoTour } from "@/components/admin/CodigoTour";
-import { grupoDe, grupoCorto } from "@/lib/admin/reserva";
+import { nombreDeTour } from "@/lib/admin/coloresTour";
+import { grupoDe, grupoCorto, lineasDe, type ConLineas, type LineaTour } from "@/lib/admin/reserva";
+import { BadgesTour } from "./leads/etapas";
 import { RioEstadoControl } from "./RioEstadoControl";
 import { CupoPaqueteControl } from "./CupoPaqueteControl";
 import { PermisosPanel, type PersonaPermisos } from "./PermisosPanel";
 import { Cifra } from "@/components/admin/Cifra";
 import { ScorecardSemanal } from "./ScorecardSemanal";
 import type { DatosScorecard } from "@/lib/admin/scorecardDatos";
+import { ChipPerdido } from "@/components/admin/CotizacionDetalle";
+import type { MarcaPerdido } from "@/lib/cotizaciones/marcaPerdido";
 
 const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
 
-const STATUS_STYLE: Record<string, string> = {
-  paid:      "bg-green-100 text-green-800",
-  pending:   "bg-yellow-100 text-yellow-800",
-  cancelled: "bg-red-100 text-red-700",
+/**
+ * Cómo va el cobro de una reserva (20 nov 2026). La etiqueta de «Últimas
+ * reservas» sale del dinero y no del `status`: desde que cualquier pago
+ * confirma la reserva, una con anticipo se quedaba en «pending» y aquí decía
+ * «Pendiente», como si no hubiera pagado. Lo decide el servidor con la regla
+ * única de cobrado y saldo (`dinero.ts`); aquí no se hacen cuentas.
+ */
+export type PagoReserva = "pagada" | "anticipo" | "sin-pago";
+const ESTADO_RESERVA: Record<PagoReserva | "cancelada", { label: string; cls: string }> = {
+  pagada:     { label: "Pagada",          cls: "bg-green-100 text-green-800"   },
+  anticipo:   { label: "Anticipo pagado", cls: "bg-amber-100 text-amber-800"   },
+  // «Sin cobro registrado», como la ficha y el tablero (20 nov 2026).
+  "sin-pago": { label: "Sin cobro registrado", cls: "bg-orange-100 text-orange-800" },
+  cancelada:  { label: "Cancelada",       cls: "bg-red-100 text-red-700"       },
 };
-const STATUS_LABEL: Record<string, string> = { paid: "Pagada", pending: "Pendiente", cancelled: "Cancelada" };
+
+/**
+ * Los tours de una reserva o cotización como badges (20 nov 2026, regla de
+ * Manolo: «siempre badges con colores y el acrónimo»): TODOS sus renglones,
+ * sin el `_meta`. Antes se pintaba solo el primero con su nombre largo, y un
+ * viaje de TAM + SUR salía como solo TAM. El nombre largo va en el `title`.
+ */
+function toursDe(x: ConLineas): { slugs: string[]; nombres: Record<string, string> } {
+  const lineas = lineasDe(x).filter(l => l.tourSlug);
+  const base: LineaTour[] = lineas.length ? lineas : [{ tourSlug: x.tourSlug, tourName: x.tourName }];
+  const nombres: Record<string, string> = {};
+  for (const l of base) {
+    if (!l.tourSlug) continue;
+    const nombre = l.tourName?.trim() || nombreDeTour(l.tourSlug);
+    const antes = nombres[l.tourSlug];
+    nombres[l.tourSlug] = !antes ? nombre : antes.includes(nombre) ? antes : `${antes} + ${nombre}`;
+  }
+  return { slugs: Object.keys(nombres), nombres };
+}
+function ToursDe({ x }: { x: ConLineas }) {
+  const t = toursDe(x);
+  return <BadgesTour slugs={t.slugs} nombres={t.nombres} />;
+}
 
 interface Props {
   todayBookings:    TourBooking[];
   upcomingBookings: TourBooking[];
   recentBookings:   TourBooking[];
+  /** Cómo va el cobro de cada una de `recentBookings`, por id (lo calcula el servidor). */
+  pagoReservas:     Record<string, PagoReserva>;
   pendingQuotes:    TourQuote[];
+  /** «Perdido · motivo» de las cotizaciones pendientes cuyo lead está Perdido, por id de cotización. */
+  marcasPerdido?:   Record<string, MarcaPerdido>;
   monthIngresos:    number;
   monthReservas:    number;
   pendingAmount:    number;
@@ -41,7 +80,7 @@ interface Props {
 }
 
 export default function DashboardClient({
-  todayBookings, upcomingBookings, recentBookings, pendingQuotes,
+  todayBookings, upcomingBookings, recentBookings, pagoReservas, pendingQuotes, marcasPerdido = {},
   monthIngresos, monthReservas, pendingAmount, activeQuotes, verDinero = true, personas = [], scorecard = null,
 }: Props) {
   const today      = new Date();
@@ -128,10 +167,7 @@ export default function DashboardClient({
               {todayBookings.map(b => (
                 <div key={b.id} className="px-5 py-3">
                   <p className="font-dm text-sm font-medium text-[#1B4332]">{b.customerName}</p>
-                  <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
-                    <CodigoTour slug={b.tourSlug} className="text-[10px]" />
-                    <span className="truncate">{b.tourName}</span>
-                  </p>
+                  <div className="mt-0.5"><ToursDe x={b} /></div>
                   <div className="flex items-center justify-between mt-1">
                     <span className="font-dm text-[10px] text-[#1B4332]/40">{grupoCorto(grupoDe(b as any))}</span>
                     <span className="font-dm text-xs text-[#52B788] font-medium">{fmx(b.totalAmount)}</span>
@@ -168,10 +204,7 @@ export default function DashboardClient({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="font-dm text-sm font-medium text-[#1B4332] truncate">{b.customerName}</p>
-                    <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
-                      <CodigoTour slug={b.tourSlug} className="text-[10px]" />
-                      <span className="truncate">{b.tourName}</span>
-                    </p>
+                    <div className="mt-0.5"><ToursDe x={b} /></div>
                   </div>
                   <span className="font-dm text-[10px] text-[#1B4332]/40 whitespace-nowrap">{grupoCorto(grupoDe(b as any))}</span>
                 </div>
@@ -206,10 +239,8 @@ export default function DashboardClient({
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <p className="font-dm text-sm font-medium text-[#1B4332] truncate">{q.customerName}</p>
-                      <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
-                        <CodigoTour slug={q.tourSlug} className="text-[10px]" />
-                        <span className="truncate">{q.tourName}</span>
-                      </p>
+                      <div className="mt-0.5"><ToursDe x={q} /></div>
+                      {marcasPerdido[q.id] && <div className="mt-1 flex min-w-0"><ChipPerdido marca={marcasPerdido[q.id]} /></div>}
                     </div>
                     <span className={`text-[9px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm whitespace-nowrap flex-shrink-0 ${q.status === "enviada" ? "bg-yellow-100 text-yellow-800" : "bg-gray-100 text-gray-600"}`}>
                       {q.status}
@@ -240,26 +271,30 @@ export default function DashboardClient({
           </div>
         ) : (
           <div className="divide-y divide-[#1B4332]/6">
-            {recentBookings.map(b => (
-              <div key={b.id} className="px-5 py-3 flex items-center gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-dm text-sm font-medium text-[#1B4332]">{b.customerName}</p>
-                    <span className={`text-[9px] tracking-[1px] uppercase px-1.5 py-0.5 rounded font-dm ${STATUS_STYLE[b.status] || "bg-gray-100 text-gray-600"}`}>
-                      {STATUS_LABEL[b.status] || b.status}
-                    </span>
+            {recentBookings.map(b => {
+              // La cancelada lo dice; las demás, cómo va su cobro (20 nov 2026).
+              const estado = ESTADO_RESERVA[b.status === "cancelled" ? "cancelada" : pagoReservas[b.id] ?? "sin-pago"];
+              return (
+                <div key={b.id} className="px-5 py-3 flex items-center gap-4">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="font-dm text-sm font-medium text-[#1B4332]">{b.customerName}</p>
+                      <span className={`text-[9px] tracking-[1px] uppercase px-1.5 py-0.5 rounded font-dm ${estado.cls}`}>
+                        {estado.label}
+                      </span>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-1 font-dm text-xs text-[#1B4332]/50">
+                      <ToursDe x={b} />
+                      <span>{fDate(b.tourDate)}</span>
+                    </div>
                   </div>
-                  <p className="font-dm text-xs text-[#1B4332]/50 truncate flex items-center gap-1.5">
-                    <CodigoTour slug={b.tourSlug} className="text-[10px]" />
-                    <span className="truncate">{b.tourName} · {fDate(b.tourDate)}</span>
-                  </p>
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-dm text-sm text-[#52B788] font-medium">{fmx(b.totalAmount)}</p>
+                    <p className="font-mono text-[9px] text-[#1B4332]">{b.confirmationNumber}</p>
+                  </div>
                 </div>
-                <div className="text-right flex-shrink-0">
-                  <p className="font-dm text-sm text-[#52B788] font-medium">{fmx(b.totalAmount)}</p>
-                  <p className="font-mono text-[9px] text-[#1B4332]">{b.confirmationNumber}</p>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

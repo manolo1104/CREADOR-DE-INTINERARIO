@@ -263,9 +263,12 @@ export async function registrarCobro(d: DatosCobro): Promise<ResultadoCobro> {
     });
   }
 
-  // Su lead (CRM) avanza según lo cobrado: Anticipo pagado o Confirmado. Aquí
-  // y no en cada ruta: por este punto pasan el panel, las ligas de pago, el
-  // webhook de Stripe y el /confirma (revisión del 4 nov 2026). No lanza.
+  // Su lead (CRM) avanza según lo cobrado: con cualquier pago, Confirmado (19
+  // nov 2026: «Anticipo pagado» se unió a Confirmado; el saldo se ve en su
+  // tarjeta y su ficha). Aquí y no en cada ruta: por este punto pasan el
+  // panel, las ligas de pago, el webhook de Stripe y el /confirma (revisión del
+  // 4 nov 2026). No manda correo: si falta la confirmación, la ficha del lead
+  // lo marca con su botón (`confirmacionReserva.ts`). No lanza.
   await import("./crmDatos").then(m => m.leadDesdeReserva(d.reservaId, `se registró un cobro de ${pesos(monto)}`, { revivir: true })).catch(() => {});
 
   // 🔴 Quedó pagada por este medio (5 nov 2026): sus ligas sin pagar —la del
@@ -407,8 +410,10 @@ export async function anularCobro(id: string, motivo: string, quien: string, act
   });
 
   const cobrado = antes.reservaId ? await sincronizarDeposito(antes.reservaId) : 0;
-  // Su lead regresa a la etapa que dice el dinero (p. ej. Confirmado → Anticipo pagado),
-  // también si la reserva ya estaba cancelada: cuenta lo que sigue vivo (5 nov 2026). No lanza.
+  // Su lead regresa a la etapa que dice el dinero (p. ej. si se anula el único
+  // cobro, de Confirmado a En seguimiento; desde el 19 nov 2026 un saldo
+  // pendiente ya no lo baja de Confirmado), también si la reserva ya estaba
+  // cancelada: cuenta lo que sigue vivo (5 nov 2026). No lanza.
   if (antes.reservaId) await import("./crmDatos").then(m => m.leadDesdeReserva(antes.reservaId!, `se anuló un cobro de ${pesos(antes.monto)}`)).catch(() => {});
 
   await registrarEnBitacora({

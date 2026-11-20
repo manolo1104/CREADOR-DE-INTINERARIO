@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
 import type { TourQuote } from "@prisma/client";
-import { X, BedDouble, Utensils, EyeOff, CalendarClock } from "lucide-react";
+import { X, BedDouble, Utensils, EyeOff, CalendarClock, XCircle } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
 import { TOURS_LISTA } from "@/lib/tours";
 import { grupoDe, grupoLargo, lineasDe, type LineaTour } from "@/lib/admin/reserva";
@@ -11,6 +11,7 @@ import { extrasDe, calcExtraLine, costoExtraLine, totalExtras, costoExtras } fro
 import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
 import { etiquetaVence, fechaLimite, recordadoPorWhatsapp } from "@/lib/vencimientoCotizacion";
 import { ymdMX } from "@/lib/dates";
+import type { MarcaPerdido } from "@/lib/cotizaciones/marcaPerdido";
 
 /**
  * La ficha completa de una cotización, sin abrir el editor.
@@ -27,15 +28,35 @@ const fmx   = (n: number) => `$${n.toLocaleString("es-MX")} MXN`;
 const fDate = (d: string) =>
   d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { weekday: "short", day: "2-digit", month: "short", year: "numeric" }) : "—";
 
+// Los mismos nombres y colores que la lista de Cotizaciones (`STATUS` de
+// CotizacionesClient). «Archivada» faltaba aquí y salía en inglés crudo.
 const STATUS_LABEL: Record<string, string> = {
-  borrador: "Borrador", enviada: "Enviada", aceptada: "Aceptada", expirada: "Vencida",
+  borrador: "Borrador", enviada: "Enviada", aceptada: "Aceptada", expirada: "Vencida", archivada: "Archivada",
 };
 const STATUS_STYLE: Record<string, string> = {
-  borrador: "bg-gray-100 text-gray-600",
-  enviada:  "bg-yellow-100 text-yellow-800",
-  aceptada: "bg-green-100 text-green-800",
-  expirada: "bg-red-100 text-red-700",
+  borrador:  "bg-gray-100 text-gray-600",
+  enviada:   "bg-yellow-100 text-yellow-800",
+  aceptada:  "bg-green-100 text-green-800",
+  expirada:  "bg-red-100 text-red-700",
+  archivada: "bg-gray-100 text-gray-400",
 };
+
+/**
+ * «Perdido · Precio» (19 nov 2026, pedido de Manolo): la cotización de un
+ * lead Perdido. Al pasar el cursor, el motivo completo y qué pasa con ella.
+ * Mismo color e ícono que la etapa Perdido de Leads (`leads/etapas.tsx`),
+ * para que se reconozca igual en todo el panel. La usa también la lista.
+ */
+export function ChipPerdido({ marca, className = "" }: { marca: MarcaPerdido | null | undefined; className?: string }) {
+  if (!marca) return null;
+  return (
+    <span title={marca.ayuda}
+      className={`inline-flex min-w-0 max-w-full items-center gap-1 rounded-full bg-[#FBE9E7] px-2 py-0.5 font-dm text-[11px] font-semibold text-[#B42318] ${className}`}>
+      <XCircle className="h-3 w-3 shrink-0" aria-hidden="true" />
+      <span className="truncate">{marca.texto}</span>
+    </span>
+  );
+}
 
 const VIGENCIA_LABEL: Record<string, string> = {
   "48h": "48 horas", "7dias": "7 días", "15dias": "15 días", "30dias": "30 días",
@@ -60,9 +81,11 @@ function Seccion({ titulo, children }: { titulo: string; children: React.ReactNo
 }
 
 export default function CotizacionDetalle({
-  cotizacion: q, onClose,
+  cotizacion: q, onClose, perdido = null,
 }: {
   cotizacion: TourQuote; onClose: () => void;
+  /** La marca de su lead si está Perdido (`marcaPerdido`); null si no. */
+  perdido?: MarcaPerdido | null;
 }) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -104,6 +127,7 @@ export default function CotizacionDetalle({
               <span className={`text-[10px] tracking-[1px] uppercase px-2 py-0.5 rounded font-dm ${STATUS_STYLE[q.status] || "bg-gray-100 text-gray-600"}`}>
                 {STATUS_LABEL[q.status] || q.status}
               </span>
+              <ChipPerdido marca={perdido} />
             </div>
             <p className="font-cormorant text-[#1B4332] text-2xl font-light mt-1">{q.customerName}</p>
           </div>
@@ -113,6 +137,12 @@ export default function CotizacionDetalle({
         </div>
 
         <div className="p-5 space-y-4">
+          {/* Lead Perdido (19 nov 2026): qué pasa con la cotización, dicho aquí y no solo al pasar el cursor (en el celular no hay cursor). */}
+          {perdido && (
+            <p role="note" className="rounded-sm border border-[#B42318]/20 bg-[#FBE9E7] px-3 py-2 text-[13px] font-dm text-[#7A1A12]">
+              {perdido.ayuda}
+            </p>
+          )}
           {/* Contacto y grupo */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Dato label="Correo">{q.customerEmail || <span className="text-[#1B4332]/30">Sin correo</span>}</Dato>

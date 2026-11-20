@@ -9,13 +9,14 @@ import { TOURS_LISTA } from "@/lib/tours";
 import { registrarEnBitacora } from "./bitacora";
 import { contactoPara, juntarContactos, leadCerradoReciente, registrarEtapa, sincronizarProximoPaso } from "./crmDatos";
 import { RESPONSABLE_OPERACION, tituloConsultaNueva } from "./automatizaciones";
-import { etiquetaEtapa } from "./crm";
+import { ETAPAS_ABIERTAS_BD, etiquetaEtapa, normalizarEtapa } from "./crm";
 import {
   completarOrigenWeb, esChatIndividual, origenDelPrimerMensaje, reintentoQueRevisaLead, salienteMarcaLeido, telefonoDeChat, textoDeOrigen, textoVisible, tipoDeMensaje,
   type EventoAck, type EventoConexion, type EventoMensaje, type EventoPuente,
 } from "./bandeja";
 
-const ABIERTAS = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
+/** Las etapas abiertas como están guardadas (con la clave vieja «anticipo», 19 nov 2026): la lista es una sola, la de `crm.ts`. */
+const ABIERTAS = ETAPAS_ABIERTAS_BD;
 const CLAVE_CONEXION = "whatsapp:conexion";
 /** Un envío que el puente tomó y no confirmó en este tiempo se da por fallido (sin reintentar solo: podría duplicarse). */
 const SIN_CONFIRMAR_MS = 3 * 60_000;
@@ -320,11 +321,13 @@ export async function listarConversaciones(opciones: { archivadas?: boolean } = 
   });
   const ids = convs.map(c => c.contactoId).filter((x): x is string => !!x);
   const ops = ids.length ? await prisma.oportunidad.findMany({ where: { contactoId: { in: ids } }, orderBy: { createdAt: "desc" }, select: { id: true, contactoId: true, etapa: true } }) : [];
-  // El lead abierto del contacto; si no hay, el último.
+  // El lead abierto del contacto; si no hay, el último. La clave vieja
+  // «anticipo» llega como «confirmado» (19 nov 2026).
   const leadDe = (contactoId: string | null) => {
     if (!contactoId) return null;
     const suyos = ops.filter(o => o.contactoId === contactoId);
-    return suyos.find(o => ABIERTAS.includes(o.etapa)) ?? suyos[0] ?? null;
+    const l = suyos.find(o => ABIERTAS.includes(o.etapa)) ?? suyos[0] ?? null;
+    return l ? { ...l, etapa: normalizarEtapa(l.etapa) } : null;
   };
   return convs.map(c => ({
     id: c.id, nombre: c.nombre, telefono: c.telefono, chatId: c.chatId, noLeidos: c.noLeidos, ultimoTexto: c.ultimoTexto, ultimoDe: c.ultimoDe,
@@ -354,7 +357,8 @@ export async function detalleConversacion(id: string) {
       estado: m.estado, error: m.error, fecha: m.fecha.toISOString(), importado: m.importado,
     })),
     lead: lead ? {
-      id: lead.id, etapa: lead.etapa, canal: lead.canal, tours: lead.tours, fechaViaje: lead.fechaViaje, pax: lead.pax, monto: lead.monto,
+      // La clave vieja «anticipo» llega como «confirmado» (19 nov 2026).
+      id: lead.id, etapa: normalizarEtapa(lead.etapa), canal: lead.canal, tours: lead.tours, fechaViaje: lead.fechaViaje, pax: lead.pax, monto: lead.monto,
       responsable: lead.responsable, proximoPaso: lead.proximoPaso, proximoPasoEn: lead.proximoPasoEn, nombre: lead.contacto.nombre,
       tareas: lead.tareas.map(t => ({ id: t.id, titulo: t.titulo, vence: t.vence, hora: t.hora, responsable: t.responsable })),
     } : null,

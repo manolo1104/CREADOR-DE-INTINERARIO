@@ -1,19 +1,43 @@
 // Las reglas del CRM (Fase 2 del rediseño, 3 nov 2026). Puro: lo usan las
 // APIs, las pantallas, el sembrado y las pruebas. Las etapas y los motivos
 // de pérdida son los del prompt; no se cambian sin anotarlo aquí.
+//
+// 19 nov 2026 (Manolo: «combina la de anticipo pagado con el de confirmado,
+// porque una vez que pagan se confirma el tour»): «Anticipo pagado» ya no es
+// etapa. Cualquier pago (Stripe, liga, transferencia o efectivo) deja el lead
+// en Confirmado, y lo que falta por cobrar se ve en la tarjeta y en la ficha.
+// La clave vieja «anticipo» se sigue LEYENDO como Confirmado (`normalizarEtapa`)
+// pero ya no se escribe nunca.
 
 export const ETAPAS = [
   { clave: "nuevo",       etiqueta: "Nuevo" },
   { clave: "calificado",  etiqueta: "Calificado" },
   { clave: "cotizado",    etiqueta: "Cotizado" },
   { clave: "seguimiento", etiqueta: "En seguimiento" },
-  { clave: "anticipo",    etiqueta: "Anticipo pagado" },
   { clave: "confirmado",  etiqueta: "Confirmado" },
   { clave: "operado",     etiqueta: "Operado" },
   { clave: "perdido",     etiqueta: "Perdido" },
 ] as const;
 
 export type Etapa = (typeof ETAPAS)[number]["clave"];
+
+/**
+ * Claves viejas que ya no son etapa y la etapa con que se leen (19 nov 2026).
+ * Los leads que la base todavía tenga en «anticipo» y las filas viejas del
+ * historial se ven, se cuentan y se mueven como Confirmado. El script
+ * `unir-anticipo-confirmado.ts` pasa los que queden; nada vuelve a escribirla.
+ */
+export const ETAPAS_LEGADO: Readonly<Record<string, Etapa>> = { anticipo: "confirmado" };
+
+/** La etapa con que se lee un valor guardado: una clave vieja, como la que la reemplazó; lo demás, igual. */
+export function normalizarEtapa(e: Etapa): Etapa;
+export function normalizarEtapa(e: string): string;
+export function normalizarEtapa(e: string): string {
+  return Object.prototype.hasOwnProperty.call(ETAPAS_LEGADO, e) ? ETAPAS_LEGADO[e] : e;
+}
+
+/** Las claves que esa etapa puede tener en la base: la suya y las viejas que se leen como ella (Confirmado y «anticipo»). */
+export const clavesEnBD = (e: string): string[] => [e, ...Object.keys(ETAPAS_LEGADO).filter(k => ETAPAS_LEGADO[k] === e)];
 
 /**
  * El `creadoPor` de los leads que sembró la importación inicial
@@ -29,22 +53,104 @@ export const CREADO_POR_IMPORTACION = "Importación inicial";
  */
 export const SIN_IMPORTADOS = { OR: [{ creadoPor: null }, { creadoPor: { not: CREADO_POR_IMPORTACION } }] };
 
-/** Las columnas del pipeline. Operado y Perdido van en vistas aparte. */
-export const ETAPAS_PIPELINE: Etapa[] = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
+/** Estados de una cotización que ya salió al cliente (un borrador nunca se mandó). */
+export const ESTADOS_COTIZACION_ENVIADA = ["enviada", "aceptada", "expirada"];
 
-export const esEtapa = (v: unknown): v is Etapa => ETAPAS.some(e => e.clave === v);
-export const etiquetaEtapa = (e: string) => ETAPAS.find(x => x.clave === e)?.etiqueta ?? e;
-/** El orden de las etapas (perdido al final, fuera del camino). */
-export const ordenEtapa = (e: string) => ETAPAS.findIndex(x => x.clave === e);
+/**
+ * Desde qué día TODA cotización que sale al cliente trae su fecha de envío
+ * (`enviadaEn`) en producción (revisión del 20 nov 2026). El lote 9 la empezó a
+ * guardar (escrito el 10 nov), pero llegó a producción con el push del 18 nov
+ * (deploy de Railway a las 22:12): hasta ahí ninguna cotización de producción
+ * la tiene, aunque haya salido. Desde este día, una sin `enviadaEn` NUNCA
+ * salió, aunque esté «Vencida» (un borrador marcado vencido a mano, o el del
+ * bot que se reemplazó) o «Aceptada» sin mandarse.
+ */
+export const ENVIO_SE_GUARDA_DESDE = "2026-11-19";
+/** `ENVIO_SE_GUARDA_DESDE` a las 00:00 de México, para los filtros de Prisma. */
+export const ENVIO_SE_GUARDA_DESDE_FECHA = new Date(`${ENVIO_SE_GUARDA_DESDE}T00:00:00-06:00`);
 
-/** Sube a `objetivo` solo si está antes en el camino; nunca baja ni revive una perdida. */
-export function subirA(actual: Etapa, objetivo: Etapa): Etapa {
-  if (actual === "perdido" || actual === "operado") return actual;
-  return ordenEtapa(objetivo) > ordenEtapa(actual) ? objetivo : actual;
+/**
+ * Filtro de Prisma: cotizaciones que SALIERON al cliente (19 nov 2026). Las que
+ * tienen fecha de envío (correo, WhatsApp o PDF) aunque sigan en borrador (el
+ * PDF) o ya estén archivadas, y las de ANTES de `ENVIO_SE_GUARDA_DESDE` sin esa
+ * fecha que quedaron enviadas, aceptadas o vencidas. 🔴 Sin ese límite (hasta el
+ * 20 nov), un borrador nuevo que nadie mandó y se marcó vencido contaba como
+ * cotización enviada en los KPIs y el reporte de los jueves. Es la misma regla
+ * que `cotizacionSalio`. Va solo: no lo juntes con otro `OR`.
+ */
+export const COTIZACION_QUE_SALIO = {
+  OR: [
+    { enviadaEn: { not: null } },
+    { enviadaEn: null, status: { in: ESTADOS_COTIZACION_ENVIADA }, createdAt: { lt: ENVIO_SE_GUARDA_DESDE_FECHA } },
+  ],
+};
+
+/** ¿La cotización salió al cliente? La regla de `COTIZACION_QUE_SALIO`, para lo que ya se leyó de la base. */
+export function cotizacionSalio(q: { enviadaEn?: Date | string | null; status: string; createdAt: Date | string }): boolean {
+  if (q.enviadaEn) return true;
+  return ESTADOS_COTIZACION_ENVIADA.includes(q.status) && new Date(q.createdAt).getTime() < ENVIO_SE_GUARDA_DESDE_FECHA.getTime();
 }
 
-/** Abierta = todavía se puede ganar o perder. */
-export const estaAbierta = (e: string) => (ETAPAS_PIPELINE as string[]).includes(e);
+/**
+ * Desde qué día el lead pasa a Cotizado al CREAR su cotización y no al mandarla
+ * (Manolo, 19 nov 2026). Desde ahí un paso a «cotizado» del historial ya no
+ * dice que la cotización salió: los KPIs (Leads cotizados, PDF a calificados,
+ * Embudo e Inicio) y el reporte de los jueves cuentan solo las que de verdad
+ * salieron (`enviadaEn`), y el «¿la vio?» arranca con el primer envío.
+ * 🔴 Tiene que ser un día en que cada envío ya guardaba su fecha en producción
+ * (`ENVIO_SE_GUARDA_DESDE`: el 19 nov; el lote 9 se escribió el 10 nov pero se
+ * subió el 18 en la noche) y no después del día en que se sube este cambio. Se
+ * dejó el día en que se escribió; no hace falta moverlo.
+ */
+export const COTIZADO_AL_CREAR_DESDE = "2026-11-19";
+
+/**
+ * Las etapas ABIERTAS (todavía se pueden ganar o perder), en el orden del
+ * camino. Operado y Perdido son las cerradas: van en el tablero
+ * (`COLUMNAS_TABLERO`) pero NUNCA aquí, porque `estaAbierta` sale de esta lista
+ * (juntar leads vacíos, la cotización nueva de un cliente que vuelve, «¿Consulta nueva?»).
+ */
+export const ETAPAS_PIPELINE: Etapa[] = ["nuevo", "calificado", "cotizado", "seguimiento", "confirmado"];
+
+/** Las columnas del tablero de Leads (19 nov 2026, «que aparezcan completas»): las abiertas y al final Operado y Perdido. */
+export const COLUMNAS_TABLERO: Etapa[] = [...ETAPAS_PIPELINE, "operado", "perdido"];
+
+/** Las abiertas como pueden estar guardadas (con la clave vieja «anticipo»): para los filtros `in` de Prisma. */
+export const ETAPAS_ABIERTAS_BD: string[] = ETAPAS_PIPELINE.flatMap(clavesEnBD);
+
+/**
+ * Las que faltan por cerrar: todavía sin dinero. Son el contador del menú y el
+ * «N por cerrar» del tablero. Confirmado ya pagó algo; si debe saldo, eso se
+ * ve en su tarjeta («Anticipo $X · falta $Y»), no aquí (19 nov 2026).
+ */
+export const ETAPAS_POR_CERRAR: Etapa[] = ["nuevo", "calificado", "cotizado", "seguimiento"];
+
+/** Días que se ven en las columnas Operado y Perdido, contados desde el día en que se cerró el lead (19 nov 2026); lo anterior va en «Ver todos». */
+export const DIAS_TABLERO_CERRADOS = 14;
+
+/** Días de leads cerrados que trae el tablero para «Ver todos» (4 meses), contados desde el día en que se cerraron. */
+export const DIAS_LISTA_CERRADOS = 120;
+
+export const esEtapa = (v: unknown): v is Etapa => ETAPAS.some(e => e.clave === v);
+/** El nombre de la etapa. La clave vieja «anticipo» dice «Confirmado» (19 nov 2026). */
+export const etiquetaEtapa = (e: string) => { const n = normalizarEtapa(e); return ETAPAS.find(x => x.clave === n)?.etiqueta ?? e; };
+/** El orden de las etapas (perdido al final, fuera del camino). La vieja «anticipo» va donde Confirmado. */
+export const ordenEtapa = (e: string) => ETAPAS.findIndex(x => x.clave === normalizarEtapa(e));
+
+/**
+ * Sube a `objetivo` solo si está antes en el camino; nunca baja ni revive una
+ * perdida. Un lead guardado con la clave vieja «anticipo» cuenta como
+ * Confirmado: una liga nueva (En seguimiento) ya no lo baja (19 nov 2026). Si
+ * no sube, devuelve la etapa tal como estaba: así no se reescribe nada.
+ */
+export function subirA(actual: Etapa, objetivo: Etapa): Etapa {
+  const a = normalizarEtapa(actual), o = normalizarEtapa(objetivo);
+  if (a === "perdido" || a === "operado") return actual;
+  return ordenEtapa(o) > ordenEtapa(a) ? o : actual;
+}
+
+/** Abierta = todavía se puede ganar o perder (la clave vieja «anticipo» también: es Confirmado). */
+export const estaAbierta = (e: string) => (ETAPAS_PIPELINE as string[]).includes(normalizarEtapa(e));
 
 export const MOTIVOS_PERDIDA = [
   { clave: "precio",            etiqueta: "Precio" },
@@ -116,25 +222,43 @@ export function etapaPorReglas(actual: Etapa, o: DatosCalificacion): Etapa {
 }
 
 /**
- * La etapa que pide una reserva enlazada, según lo cobrado (reglas del prompt:
- * «pago del anticipo → Anticipo pagado»). Sin cobro: En seguimiento; con parte
- * cobrada: Anticipo pagado; liquidada: Confirmado.
+ * La etapa que pide una reserva enlazada, según lo cobrado. Sin cobro: En
+ * seguimiento; con CUALQUIER cobro (el anticipo o todo, por Stripe, liga,
+ * transferencia o efectivo): Confirmado. Manolo, 19 nov 2026: «una vez que
+ * pagan se confirma el tour»; antes el pago parcial era «Anticipo pagado».
+ * El total ya no cambia la etapa (lo que falta se ve como saldo); el segundo
+ * parámetro se queda para no tocar a quien lo llama.
  */
-export function etapaPorCobro(cobrado: number, total: number): Etapa {
-  if (cobrado <= 0) return "seguimiento";
-  return total > 0 && cobrado >= total ? "confirmado" : "anticipo";
-}
-
-/** La etapa siguiente en el camino (null en Confirmado, Operado o Perdido). */
-export function etapaSiguiente(actual: string): Etapa | null {
-  const i = ETAPAS_PIPELINE.indexOf(actual as Etapa);
-  return i >= 0 && i < ETAPAS_PIPELINE.length - 1 ? ETAPAS_PIPELINE[i + 1] : actual === "confirmado" ? "operado" : null;
+export function etapaPorCobro(cobrado: number, _total?: number): Etapa {
+  return cobrado > 0 ? "confirmado" : "seguimiento";
 }
 
 /**
- * ¿Ya pasó el viaje? El último día de tour (de todas sus reservas vivas, o la
- * fecha del lead si no tiene reserva) es anterior a hoy. Con eso un lead con
- * Anticipo pagado o Confirmado pasa solo a Operado al día siguiente del tour.
+ * A qué etapa sube el lead una liga de pago (19 nov 2026, decisión de Manolo):
+ *  - pagada (cualquier monto) → Confirmado: «una vez que pagan se confirma el tour».
+ *  - creada por una persona (Cobros, la ficha) → En seguimiento: alguien le
+ *    mandó una liga y todavía no entra dinero.
+ *  - creada sola (`automatica`: la del botón del correo de la cotización, sus
+ *    recordatorios o las «una por persona» del bot) → Cotizado: es parte de
+ *    mandar la cotización. Antes subía a En seguimiento y se saltaba Cotizado.
+ */
+export function etapaPorLiga(evento: "creada" | "pagada", automatica: boolean): Etapa {
+  if (evento === "pagada") return "confirmado";
+  return automatica ? "cotizado" : "seguimiento";
+}
+
+/** La etapa siguiente en el camino (null en Operado o Perdido). Después de Confirmado (o la vieja «anticipo») sigue Operado. */
+export function etapaSiguiente(actual: string): Etapa | null {
+  const a = normalizarEtapa(actual);
+  const i = ETAPAS_PIPELINE.indexOf(a as Etapa);
+  return i >= 0 && i < ETAPAS_PIPELINE.length - 1 ? ETAPAS_PIPELINE[i + 1] : a === "confirmado" ? "operado" : null;
+}
+
+/**
+ * ¿Ya pasó el viaje? El último día de tour (ver `fechasDelViaje`) es anterior
+ * a hoy en México. Con eso un lead Confirmado pasa solo a Operado al día
+ * siguiente de su último tour: si fue el sábado, el domingo desde las 00:00
+ * (lo revisa el reloj del servidor cada 5 minutos, 19 nov 2026).
  */
 export function viajeYaPaso(fechas: (string | null | undefined)[], hoy: string): { paso: boolean; ultima: string | null } {
   const validas = fechas.filter((f): f is string => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f)).sort();
@@ -142,13 +266,18 @@ export function viajeYaPaso(fechas: (string | null | undefined)[], hoy: string):
   return { paso: !!ultima && ultima < hoy, ultima };
 }
 
-/** Etapas que pasan solas a Operado cuando el viaje ya pasó. Las anteriores no: sin pago registrado hay que revisarlas. */
-export const ETAPAS_QUE_SE_OPERAN: Etapa[] = ["anticipo", "confirmado"];
+/**
+ * Las que pasan solas a Operado cuando el viaje ya pasó: Confirmado (ya pagó
+ * algo) y su clave vieja «anticipo», tal como van al filtro `in` de Prisma
+ * (19 nov 2026). Las anteriores no: con una reserva sin pago registrado hay que
+ * revisarla a mano (la tarjeta lo avisa en rojo).
+ */
+export const ETAPAS_QUE_SE_OPERAN: string[] = clavesEnBD("confirmado");
 
 // ── El lead se mueve con los hechos (lote 2 de la auditoría, 5 nov 2026) ────
 
-/** Entre estas etapas el lead sube o baja según el dinero de sus reservas. */
-export const ETAPAS_DE_DINERO: Etapa[] = ["seguimiento", "anticipo", "confirmado"];
+/** Entre estas etapas el lead sube o baja según el dinero de sus reservas (la vieja «anticipo» cuenta como Confirmado). */
+export const ETAPAS_DE_DINERO: Etapa[] = ["seguimiento", "confirmado"];
 
 /** Lo que importa de una reserva VIVA (no cancelada) del lead. */
 export interface ReservaDelLead { cobrado: number; total: number; ultimoDia: string | null }
@@ -158,19 +287,22 @@ export interface ReservaDelLead { cobrado: number; total: number; ultimoDia: str
  * disparó el cambio (5 nov 2026). Antes cada camino hacía su cuenta y un pago
  * web, una cancelación o un cobro anulado dejaban el lead donde estaba.
  *  - Sin reservas vivas, el dinero no dice nada: se queda (su etapa pudo venir de una liga).
- *  - En Seguimiento, Anticipo o Confirmado manda lo cobrado: sube o baja.
+ *  - En Seguimiento o Confirmado manda lo cobrado: sube o baja (con algo
+ *    cobrado, Confirmado; sin nada, En seguimiento). La clave vieja «anticipo»
+ *    cuenta como Confirmado (19 nov 2026).
  *  - Antes (Nuevo, Calificado, Cotizado) solo sube.
  *  - Perdido vuelve solo con un hecho nuevo (`revivir`: reserva nueva, cobro, liga pagada).
  *  - Operado vuelve con un hecho nuevo y un viaje que todavía no pasa.
  */
 export function etapaPorHechos(h: { etapa: Etapa; reservas: ReservaDelLead[]; hoy: string; revivir: boolean }): Etapa {
   if (!h.reservas.length) return h.etapa;
+  const etapa = normalizarEtapa(h.etapa);
   const cobrado = h.reservas.reduce((t, r) => t + r.cobrado, 0);
   const total = h.reservas.reduce((t, r) => t + r.total, 0);
   const porCobro = etapaPorCobro(cobrado, total);
-  if (h.etapa === "perdido") return h.revivir ? porCobro : "perdido";
-  if (h.etapa === "operado") return h.revivir && h.reservas.some(r => !!r.ultimoDia && r.ultimoDia >= h.hoy) ? porCobro : "operado";
-  if (ETAPAS_DE_DINERO.includes(h.etapa)) return porCobro;
+  if (etapa === "perdido") return h.revivir ? porCobro : h.etapa;
+  if (etapa === "operado") return h.revivir && h.reservas.some(r => !!r.ultimoDia && r.ultimoDia >= h.hoy) ? porCobro : h.etapa;
+  if (ETAPAS_DE_DINERO.includes(etapa)) return porCobro;
   return subirA(h.etapa, porCobro);
 }
 
@@ -212,15 +344,22 @@ export function cerradoHaceMenosDe(cerradoEn: Date | string | null | undefined, 
 }
 
 /**
- * Las fechas que dicen si el viaje del lead ya pasó: las de sus reservas vivas
- * y las de sus cotizaciones vivas (una venta nueva cotizada sobre un lead
- * Confirmado ya no lo deja operar antes de tiempo, 5 nov 2026). Sin ninguna, la del lead.
+ * Las fechas que dicen si el viaje del lead ya pasó. Manolo, 19 nov 2026: «que
+ * pase a operado después de que pase su último tour».
+ *  - Con reservas vivas, SOLO los días de esas reservas: una cotización o un
+ *    borrador que se quedó (otra opción, otra fecha) ya no detiene Operado
+ *    (del 5 al 19 nov sí lo detenía).
+ *  - Sin reservas, las de sus cotizaciones vivas con fecha (p. ej. pagó la liga
+ *    y la reserva no se pudo crear); sin ninguna, la fecha del lead.
+ * Solo cuentan las fechas válidas (revisión del 5 nov 2026: una sin fecha
+ * dejaba al lead sin ninguna y ya nunca pasaba a Operado).
  */
 export function fechasDelViaje(reservas: (string | null | undefined)[], cotizacionesVivas: (string | null | undefined)[], fechaLead: string | null): (string | null | undefined)[] {
-  // Solo cuentan las cotizaciones con fecha (revisión del 5 nov 2026): una sin
-  // fecha dejaba al lead sin ninguna y ya nunca pasaba a Operado.
-  const deCotizaciones = cotizacionesVivas.filter(f => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f));
-  return reservas.length || deCotizaciones.length ? [...reservas, ...deCotizaciones] : [fechaLead];
+  const conFecha = (fs: (string | null | undefined)[]) => fs.filter(f => typeof f === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f));
+  const deReservas = conFecha(reservas);
+  if (deReservas.length) return deReservas;
+  const deCotizaciones = conFecha(cotizacionesVivas);
+  return deCotizaciones.length ? deCotizaciones : [fechaLead];
 }
 
 /** Lo que trae una captura de «Nuevo lead». */
@@ -282,7 +421,7 @@ export function leadVacio(l: { etapa: string; cotizaciones: number; reservas: nu
 
 export type ValidacionCambio = { ok: true } | { ok: false; error: string };
 
-/** Mover de etapa a mano: cualquiera puede, pero Perdido exige motivo. */
+/** Mover de etapa a mano: cualquiera puede, pero Perdido exige motivo. «Anticipo pagado» ya no existe (19 nov 2026): se rechaza. */
 export function validarCambioEtapa(hacia: unknown, motivo: string | null): ValidacionCambio {
   if (!esEtapa(hacia)) return { ok: false, error: "Esa etapa no existe." };
   if (hacia === "perdido" && !motivo) return { ok: false, error: "Para marcarlo perdido hay que decir el motivo." };
@@ -297,6 +436,39 @@ export function estadoFecha(fecha: string | null | undefined, hoy: string): Esta
   if (fecha < hoy) return "vencido";
   if (fecha === hoy) return "hoy";
   return "proximo";
+}
+
+/**
+ * ¿El lead acaba de pagar? Pasó de una etapa todavía sin dinero
+ * (`ETAPAS_POR_CERRAR`: Nuevo a En seguimiento) a Confirmado (revisión del 20
+ * nov 2026). También desde Perdido: uno que se daba por perdido y pagó su liga
+ * trae los mismos pendientes de venta. La clave vieja «anticipo» ya era
+ * Confirmado, y Operado → Confirmado es otro viaje: de ahí no cuenta.
+ */
+export function pasaAConfirmado(anterior: string, nueva: string): boolean {
+  const antes = normalizarEtapa(anterior);
+  return ((ETAPAS_POR_CERRAR as string[]).includes(antes) || antes === "perdido") && normalizarEtapa(nueva) === "confirmado";
+}
+
+/** Lo que hace falta saber de un seguimiento del lead para cerrarlo cuando paga. */
+export interface SeguimientoDelLead { estado: string; regla: string | null; vence: string }
+
+/**
+ * Los seguimientos que se cierran solos cuando el lead paga (revisión del 20
+ * nov 2026). Un cliente pagó y quedó Confirmado, pero su «Escribirle: ¿qué
+ * decidieron de la cotización?» del lun 16 seguía pendiente: salía en rojo
+ * bajo «✓ Pagado» en su tarjeta, arriba de su ficha y primero en «Seguimientos
+ * · lo más urgente». Al pasar a Confirmado (`pasaAConfirmado`) se cierran los
+ * pendientes que:
+ *  - no son de una regla (`regla` vacía: los que puso una persona). Los de las
+ *    reglas (saldo, liga, salida, la confirmación de la liga…) tienen su propio
+ *    cierre (`yaNoAplica`) y no se tocan;
+ *  - y ya estaban VENCIDOS (de antes de hoy, en México). Lo de hoy en adelante
+ *    puede ser un paso de la operación («mandarle la ubicación el viernes») y se queda.
+ */
+export function seguimientosQueCierraElPago<T extends SeguimientoDelLead>(anterior: string, nueva: string, tareas: T[], hoy: string): T[] {
+  if (!pasaAConfirmado(anterior, nueva)) return [];
+  return tareas.filter(t => t.estado === "pendiente" && !t.regla && /^\d{4}-\d{2}-\d{2}$/.test(t.vence) && estadoFecha(t.vence, hoy) === "vencido");
 }
 
 export interface TareaLigera { id: string; responsable: string; vence: string; estado: string; hora?: string | null }

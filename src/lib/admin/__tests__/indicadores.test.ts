@@ -4,7 +4,10 @@ import { seccionDePagina } from "../indicadores/secciones";
 import { estadoContraMeta, formatear, pct } from "../indicadores/estado";
 import { KPI, KPIS, OBJETIVOS } from "../indicadores/catalogo";
 import { calcularDemanda, type DatosDemanda } from "../indicadores/demanda";
-import { calificadosSinCotizar, leadReserva, pdfACalificados, seguimientoATiempo, type DatosComercial, type LeadCohorte } from "../indicadores/comercial";
+import {
+  COTIZADO_AL_CREAR_MS, calcularComercial, calificadosSinCotizar, cotizo, inicioDeSeguimiento, leadReserva, leadsCotizados, pasoDeEnvio, pdfACalificados, seguimientoATiempo,
+  type DatosComercial, type LeadCohorte,
+} from "../indicadores/comercial";
 import { pidioResena, resenaPedida } from "../indicadores/servicio";
 import { aTiempo, calcularOperacion, type DatosOperacion } from "../indicadores/operacion";
 import { clasificar, cobradoPorTour } from "../indicadores/producto";
@@ -159,6 +162,60 @@ describe("comercial: cohortes y seguimiento", () => {
     // Calificados sin cotización hoy: «b» lleva días en calificado; uno de hace 2 h todavía no cuenta.
     const reciente = { ...l("e", "calificado", [h("nuevo", "2026-11-04")]), ymd: "2026-11-04", historial: [{ nueva: "calificado", en: Date.parse("2026-11-04T16:00:00Z") }] };
     expect(calificadosSinCotizar(base([...leads, reciente])).valor).toBe(1);
+  });
+});
+
+describe("comercial desde el 19 nov 2026: el lead pasa a Cotizado al CREAR la cotización y los KPIs cuentan solo las que salieron", () => {
+  const HOY2 = "2026-12-20";
+  const h = (nueva: string, iso: string) => ({ nueva, en: Date.parse(iso) });
+  const l = (id: string, etapa: string, historial: { nueva: string; en: number }[], extra: Partial<LeadCohorte> = {}): LeadCohorte =>
+    ({ id, ymd: "2026-11-23", canal: "whatsapp", responsable: "Erick", etapa, historial, pagoEn: null, cotizacionEn: null, ...extra });
+  const base2 = (leads: LeadCohorte[]): DatosComercial => ({
+    leads, seguimiento: [], cotizaciones: [], revisiones: [], chats: [], reservas: [], saldos: [], perdidos: [], ahora: Date.parse(`${HOY2}T18:00:00Z`), hoy: HOY2,
+  });
+  const borrador = l("a", "cotizado", [h("nuevo", "2026-11-23T16:00:00Z"), h("cotizado", "2026-11-23T17:00:00Z")]);
+  const enviada = l("b", "cotizado", [h("nuevo", "2026-11-23T16:00:00Z"), h("cotizado", "2026-11-23T17:00:00Z")], { cotizacionEn: Date.parse("2026-11-24T17:00:00Z") });
+  const semana = periodoDe("semana", "2026-11-23", HOY2);
+
+  it("el corte es el 19 nov a las 00:00 de México", () => {
+    expect(COTIZADO_AL_CREAR_MS).toBe(Date.parse("2026-11-19T00:00:00-06:00"));
+    expect(pasoDeEnvio(h("cotizado", "2026-11-19T05:59:59Z"))).toBe(true);
+    expect(pasoDeEnvio(h("cotizado", "2026-11-19T06:00:00Z"))).toBe(false);
+    expect(pasoDeEnvio(h("seguimiento", "2026-11-25T06:00:00Z"))).toBe(true);
+  });
+  it("un borrador que nadie mandó NO es «cotizó»; mandado sí; los pasos de antes valen como siempre", () => {
+    expect(cotizo(borrador)).toBe(false);
+    expect(cotizo(enviada)).toBe(true);
+    // Antes del 19 nov el paso a «cotizado» era el envío (o el PDF).
+    expect(cotizo(l("c", "cotizado", [h("cotizado", "2026-11-18T17:00:00Z")], { ymd: "2026-11-18" }))).toBe(true);
+    // Los demás pasos no cambian: una liga que mandó una persona o una reserva (En seguimiento), un pago.
+    expect(cotizo(l("d", "seguimiento", [h("cotizado", "2026-11-23T17:00:00Z"), h("seguimiento", "2026-11-24T17:00:00Z")]))).toBe(true);
+    expect(cotizo({ ...borrador, pagoEn: Date.parse("2026-11-25T17:00:00Z") })).toBe(true);
+    // Sin historial se cree a su etapa de hoy, también con el corte.
+    expect(cotizo(l("e", "cotizado", []))).toBe(false);
+    expect(cotizo(l("f", "cotizado", [], { ymd: "2026-11-10" }))).toBe(true);
+  });
+  it("Leads cotizados, PDF a calificados y el Embudo: el borrador cuenta como calificado pero no como cotizado", () => {
+    expect(leadsCotizados(base2([borrador, enviada]), semana)).toMatchObject({ valor: 50, detalle: "1 de 2 leads" });
+    expect(pdfACalificados(base2([borrador, enviada]), semana)).toMatchObject({ valor: 50, detalle: "1 de 2 leads calificados" });
+    expect(calcularComercial(base2([borrador, enviada]), semana, [semana]).detalle.embudo.map(e => e.n)).toEqual([2, 1, 0]);
+  });
+  it("calificados sin cotización: el que solo tiene un borrador sin mandar SIGUE contando", () => {
+    const d = base2([
+      l("a", "cotizado", [h("nuevo", "2026-12-10T16:00:00Z"), h("calificado", "2026-12-10T16:30:00Z"), h("cotizado", "2026-12-10T17:00:00Z")], { ymd: "2026-12-10" }),
+      l("b", "cotizado", [h("nuevo", "2026-12-10T16:00:00Z"), h("cotizado", "2026-12-10T17:00:00Z")], { ymd: "2026-12-10", cotizacionEn: Date.parse("2026-12-11T17:00:00Z") }),
+      l("c", "cotizado", [h("cotizado", "2026-11-12T17:00:00Z")], { ymd: "2026-11-12" }), // de antes: su paso ya era el envío
+      l("e", "cotizado", [h("nuevo", "2026-12-20T16:00:00Z"), h("cotizado", "2026-12-20T17:00:00Z")], { ymd: "2026-12-20" }), // hace 1 h: todavía no
+      l("g", "calificado", [h("nuevo", "2026-12-10T16:00:00Z"), h("calificado", "2026-12-10T16:30:00Z")], { ymd: "2026-12-10" }),
+    ]);
+    expect(calificadosSinCotizar(d).valor).toBe(2);
+  });
+  it("seguimiento a tiempo: desde el primer envío (antes del 19 nov, desde el paso a «cotizado»)", () => {
+    const t = (iso: string) => Date.parse(iso);
+    expect(inicioDeSeguimiento([t("2026-11-23T17:00:00Z")], [t("2026-11-25T17:00:00Z")])).toBe(t("2026-11-25T17:00:00Z"));
+    expect(inicioDeSeguimiento([t("2026-11-23T17:00:00Z")], [])).toBeNull(); // solo borrador: no es un caso
+    expect(inicioDeSeguimiento([t("2026-11-23T17:00:00Z"), t("2026-11-12T17:00:00Z")], [])).toBe(t("2026-11-12T17:00:00Z"));
+    expect(inicioDeSeguimiento([], [t("2026-11-25T17:00:00Z")])).toBeNull();
   });
 });
 

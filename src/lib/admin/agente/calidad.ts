@@ -6,7 +6,7 @@ import { domingoDe, lunesDe } from "../corteSemanal";
 import { saldoPendiente, montoCobrado } from "../dinero";
 import { diasDeTourDe } from "../salidas";
 import { avanceChecklist, checklistDe } from "../checklistSalida";
-import { contarMotivos } from "../crm";
+import { COTIZACION_QUE_SALIO, contarMotivos } from "../crm";
 import { usuariosAdmin } from "../usuarios";
 import { registrarEnBitacora, type Actor } from "../bitacora";
 import { ahoraMX } from "../crm";
@@ -95,6 +95,12 @@ async function datosDeLaSemana(lunes: string) {
     prisma.propuestaAgente.findMany({ where: { estado: "rechazada", decididoEn: { gte: desde, lte: hasta } }, select: { motivo: true } }),
     prisma.tourBooking.findMany({ where: { createdAt: { gte: desde, lte: hasta }, status: { notIn: ["cancelled", "borrador"] } }, select: { confirmationNumber: true, totalAmount: true, depositoPagado: true, stripePaymentIntentId: true, createdAt: true } }),
   ]);
+  // Solo los que de verdad recibieron su cotización (19 nov 2026): desde ese día
+  // el lead pasa a Cotizado al CREARLA, y un borrador que nadie mandó no es un
+  // «cotizado sin seguimiento».
+  const conEnvio = cotizadosSinSeg.length
+    ? new Set((await prisma.tourQuote.findMany({ where: { oportunidadId: { in: cotizadosSinSeg.map(o => o.id) }, ...COTIZACION_QUE_SALIO }, select: { oportunidadId: true } })).map(q => q.oportunidadId))
+    : new Set<string | null>();
   const conteo = new Map<string, number>();
   for (const b of bitacora) conteo.set(`${b.nombre} ${b.accion} ${b.entidad}`, (conteo.get(`${b.nombre} ${b.accion} ${b.entidad}`) ?? 0) + 1);
   const saldos = reservas.filter(r => saldoPendiente(r) > 0 && (diasDeTourDe(r as never).map(d => d.fecha).sort().at(-1) ?? r.tourDate) < hoy);
@@ -105,7 +111,7 @@ async function datosDeLaSemana(lunes: string) {
     accionesDelEquipo: Array.from(conteo.entries()).sort((a, b) => b[1] - a[1]).slice(0, 25).map(([k, n]) => `${k}: ${n}`),
     ejemplosBitacora: bitacora.slice(0, 40).map(b => b.resumen.slice(0, 140)),
     saldosVencidos: saldos.map(r => `${r.confirmationNumber} (${r.tourDate}): $${saldoPendiente(r)}`),
-    cotizadosSinSeguimientoMasDe3Dias: cotizadosSinSeg.length,
+    cotizadosSinSeguimientoMasDe3Dias: cotizadosSinSeg.filter(o => conEnvio.has(o.id)).length,
     salidasConChecklistIncompleto: salidas.filter(s => { const a = avanceChecklist(checklistDe(s.tourSlug, s.checklist)); return a.hechos < a.total; }).map(s => `${s.clave} (${avanceChecklist(checklistDe(s.tourSlug, s.checklist)).hechos}/${avanceChecklist(checklistDe(s.tourSlug, s.checklist)).total})`),
     motivosDePerdida: contarMotivos(perdidos.map(p => p.motivoPerdida)).map(m => `${m.etiqueta}: ${m.n}`),
     propuestasDelAgenteRechazadas: rechazadas.map(r => r.motivo).filter(Boolean),

@@ -72,9 +72,13 @@ export async function POST(req: NextRequest) {
         + (sellado.evento ? ` · ${resumenEvento(sellado.evento)}` : ""),
     });
 
-    // Toda cotización nace con su lead en «Calificado» (3 nov 2026): el de esa
-    // persona si ya tenía uno abierto, o uno nuevo con estos datos.
-    const oportunidadId = await leadDesdeCotizacion(quote.id, "calificado", quien, `cotización ${quote.quoteNumber} creada`);
+    // Toda cotización nace con su lead (3 nov 2026): el de esa persona si ya
+    // tenía uno abierto, o uno nuevo con estos datos. Desde el 19 nov 2026 ese
+    // lead pasa a «Cotizado» al CREARLA (Manolo: «si a un lead se le crea una
+    // cotización que pase automáticamente a cotizado»); antes empezaba en
+    // Calificado. Solo sube (Nuevo o Calificado), nunca baja. Los KPIs siguen
+    // contando solo las cotizaciones que de verdad salieron al cliente.
+    const oportunidadId = await leadDesdeCotizacion(quote.id, "cotizado", quien, `cotización ${quote.quoteNumber} creada`);
 
     return NextResponse.json({ ok: true, id: quote.id, quoteNumber, oportunidadId, leadNuevo: !!destino?.nuevo });
   } catch (e: any) {

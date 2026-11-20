@@ -22,6 +22,24 @@ const QUOTE_FIELDS = [
   "lineItems", "packageItems", "extraItems", "status",
 ] as const;
 
+// 🔴 Ya no existe (19 nov 2026): otra pestaña o alguien más la eliminó. Antes
+// el borrado tronaba con «Error interno» (500) y el panel decía «No se pudo
+// eliminar» de algo que ya no estaba. Ahora es un 404 con estas palabras.
+const YA_NO_EXISTE = "Esa cotización ya no existe: alguien más la eliminó. Recarga la página.";
+
+/** P2025 de Prisma: el registro que se iba a cambiar o borrar ya no está. */
+const yaNoEstaba = (e: unknown) => (e as { code?: unknown })?.code === "P2025";
+
+/**
+ * Por qué no se elimina una cotización que ya es una reserva viva (19 nov
+ * 2026, igual que las reservas, que no se borran desde el 3 nov).
+ */
+const avisoEsReserva = (folio: string) =>
+  `Esta cotización ya es la reserva ${folio}: no se elimina. Si el cliente ya no va, cancela la reserva con su motivo en Reservas.`;
+
+/** Estados en que la cotización sigue viva: editarla lleva su lead a Cotizado. */
+const VIVAS_PARA_LEAD = ["borrador", "enviada"];
+
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const body = await req.json();
@@ -31,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       if (body[k] !== undefined) data[k] = body[k];
     }
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
-    if (!antes) return NextResponse.json({ error: "Esa cotización ya no existe." }, { status: 404 });
+    if (!antes) return NextResponse.json({ error: YA_NO_EXISTE }, { status: 404 });
     // Quien no ve costos no los cambia: cada extra conserva el que tenía (lote 8, 10 nov 2026).
     if (data.extraItems !== undefined && !(await sesionVeCostos(await sesionActual()))) {
       data.extraItems = conservarCostosExtras(data.extraItems, antes.extraItems, await leerPreciosExtras());
@@ -107,26 +125,53 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       });
     }
     // Su lead: si la cotización no tenía (las de antes del CRM), nace al
-    // editarla; si quedó «enviada», sube a Cotizado. Nunca baja una etapa.
-    // Si se editaron los datos (no solo el estado), lo que dice la cotización
-    // pasa al lead: total, fecha, personas, tours y contacto.
+    // editarla. Si sigue viva (borrador o enviada), sube a Cotizado: regla de
+    // Manolo del 19 nov 2026, «si a un lead se le crea una cotización, que
+    // pase a cotizado»; antes el borrador lo dejaba en Calificado. Vencida y
+    // archivada, como siempre. Nunca baja una etapa (`subirA`). Si se editaron
+    // los datos (no solo el estado), lo que dice la cotización pasa al lead:
+    // total, fecha, personas, tours y contacto.
     const editoDatos = ["totalAmount", "tourDate", "lineItems", "adults", "children", "customerName", "customerEmail", "customerPhone", "tourName"].some(k => data[k] !== undefined);
-    await leadDesdeCotizacion(quote.id, quote.status === "enviada" ? "cotizado" : "calificado",
+    await leadDesdeCotizacion(quote.id, VIVAS_PARA_LEAD.includes(quote.status) ? "cotizado" : "calificado",
       (await sesionActual())?.nombre ?? "Desconocido",
       regresada ? `cotización ${quote.quoteNumber} regresó a Enviada` : quote.status === "enviada" ? `cotización ${quote.quoteNumber} enviada` : `cotización ${quote.quoteNumber} editada`, editoDatos);
     // El estado y los `lineItems` como quedaron: el panel los pone en su lista (lote 4).
     return NextResponse.json({ ok: true, status: quote.status, lineItems: quote.lineItems });
   } catch (e: any) {
+    if (yaNoEstaba(e)) return NextResponse.json({ error: YA_NO_EXISTE }, { status: 404 });
     console.error("admin/cotizaciones PATCH:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
 }
 
+/**
+ * DELETE /api/admin/cotizaciones/:id          → «Marcar vencida» (status «expirada»)
+ * DELETE /api/admin/cotizaciones/:id?hard=1   → eliminarla de la base
+ *
+ * Contesta (19 nov 2026; lo leen la lista de Cotizaciones y la ficha del lead):
+ *  · 200 { ok: true, lead: "borrado" | "actualizado" | null, ligasApagadas, pagosSinReserva }
+ *  · 404 { error }: ya no existe (antes era un 500).
+ *  · 409 { error, reservaFolio }: con `hard=1`, ya es una reserva viva.
+ *  · 409 { error }: sin `hard=1`, una aceptada no se marca vencida.
+ *  · 500 { error }.
+ */
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   try {
     const { searchParams } = new URL(req.url);
     const borradoTotal = searchParams.get("hard") === "1";
     const antes = await prisma.tourQuote.findUnique({ where: { id: params.id } });
+    if (!antes) return NextResponse.json({ error: YA_NO_EXISTE }, { status: 404 });
+    // 🔴 La que ya es una reserva viva NO se elimina (19 nov 2026, decisión de
+    // Manolo, igual que las reservas): borrarla dejaba la reserva y su liga
+    // apuntando a una cotización que ya no existía, y el KPI «Cotización →
+    // reserva» la perdía. Si el cliente ya no va, se cancela la reserva con su
+    // motivo. Una aceptada cuya reserva se canceló sí se puede eliminar.
+    if (borradoTotal) {
+      const reserva = await reservaVivaDeCotizacion(antes);
+      if (reserva) {
+        return NextResponse.json({ error: avisoEsReserva(reserva.confirmationNumber), reservaFolio: reserva.confirmationNumber }, { status: 409 });
+      }
+    }
     let lead: "borrado" | "actualizado" | null = null;
     // 🔴 Sus ligas sin pagar se apagan (lote 3 de la auditoría, 5 nov 2026):
     // antes seguían vivas en el chat del cliente y, si las pagaba, el dinero
@@ -140,18 +185,18 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     if (borradoTotal) {
       await prisma.tourQuote.delete({ where: { id: params.id } });
       // Su lead: se va con ella si solo existía por ella; si no, se anota y se pone al día.
-      if (antes?.oportunidadId) lead = await leadTrasBorrarCotizacion(antes.oportunidadId, antes.quoteNumber, (await sesionActual())?.nombre ?? "Desconocido");
-      ligas = await apagarLigasDe({ cotizacionIds: [params.id] }, `se borró la cotización${antes ? ` ${antes.quoteNumber}` : ""}`);
+      if (antes.oportunidadId) lead = await leadTrasBorrarCotizacion(antes.oportunidadId, antes.quoteNumber, (await sesionActual())?.nombre ?? "Desconocido");
+      ligas = await apagarLigasDe({ cotizacionIds: [params.id] }, `se borró la cotización ${antes.quoteNumber}`);
       for (const l of pagosSueltos) {
         await crearSeguimientoUnico({
-          titulo: tituloLigaSinDestino({ tipo: "cotizacion-borrada" }, { titulo: l.titulo, cliente: l.cliente ?? antes?.customerName, monto: l.montoPagado ?? l.monto }),
+          titulo: tituloLigaSinDestino({ tipo: "cotizacion-borrada" }, { titulo: l.titulo, cliente: l.cliente ?? antes.customerName, monto: l.montoPagado ?? l.monto }),
           clave: `liga-sin-destino:${l.id}`, regla: "liga-sin-destino", creadaPor: "Cotizaciones",
         }).catch(e => console.error("seguimiento de liga pagada sin reserva:", (e as Error)?.message));
       }
     } else {
       // Una aceptada no se marca vencida (lote 4, 5 nov 2026): ya es venta.
       // El panel ya no ofrece el botón; esto frena una pestaña vieja.
-      if (antes?.status === "aceptada") {
+      if (antes.status === "aceptada") {
         const reserva = await reservaVivaDeCotizacion(antes);
         return NextResponse.json({ error: avisoSoloLectura(antes, reserva?.confirmationNumber ?? null) }, { status: 409 });
       }
@@ -162,14 +207,14 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     await registrarEnBitacora({
       accion:     borradoTotal ? "eliminó" : "modificó",
       entidad:    "cotización",
-      referencia: antes?.quoteNumber,
-      resumen:    antes
-        ? `Cotización ${antes.quoteNumber} — ${antes.customerName}, ${pesos(antes.totalAmount)}` +
-          (borradoTotal ? " (borrada de la base)" : " marcada como expirada")
-        : `Cotización ${params.id} (ya no estaba en la base)`,
+      referencia: antes.quoteNumber,
+      resumen:    `Cotización ${antes.quoteNumber} — ${antes.customerName}, ${pesos(antes.totalAmount)}` +
+        (borradoTotal ? " (borrada de la base)" : " marcada como expirada"),
     });
     return NextResponse.json({ ok: true, lead, ligasApagadas: ligas.apagadas, pagosSinReserva: pagosSueltos.length });
   } catch (e: any) {
+    // Alguien más la eliminó entre la lectura y el borrado: 404, no 500.
+    if (yaNoEstaba(e)) return NextResponse.json({ error: YA_NO_EXISTE }, { status: 404 });
     console.error("admin/cotizaciones DELETE:", e?.message);
     return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }

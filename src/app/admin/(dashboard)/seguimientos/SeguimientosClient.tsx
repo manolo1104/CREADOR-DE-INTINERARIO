@@ -92,6 +92,7 @@ export default function SeguimientosClient({ tareas: iniciales, responsables, qu
         <ul className="mt-2 space-y-1 pl-4">
           {REGLAS.map(r => <li key={r.clave} className="list-disc"><span className="font-medium text-[var(--panel-tinta)]">{r.etiqueta}:</span> {r.detalle}</li>)}
           <li className="list-disc">Los automáticos se cierran solos cuando su motivo desaparece (la liga se pagó, el saldo se cobró, el lead salió de Cotizado, la salida ya pasó…) y quedan como hechos por «Regla (ya no aplica)».</li>
+          <li className="list-disc">Cuando un lead paga y pasa a Confirmado, los seguimientos vencidos que puso una persona (los de antes de hoy) se cierran solos y quedan como hechos por «Regla (ya pagó)». Los de hoy en adelante se quedan.</li>
           <li className="list-disc">Cada mañana a las 7:30 llega por correo el resumen del día a cada quien.</li>
         </ul>
       </details>

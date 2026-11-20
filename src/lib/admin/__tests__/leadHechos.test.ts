@@ -2,10 +2,13 @@
 // Las reglas puras que usan el CRM y la Bandeja; lo que toca la base se prueba
 // aparte, contra la base local (auditoria/e2e/lote2-leads.ts).
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 import {
   avisoLeadExistente, canalTrasReserva, cerradoHaceMenosDe, completarLead, enLista, etapaPorHechos, fechasDelViaje,
-  leadVacio, loQueMandaLaCotizacion, montoPorHechos, viajeYaPaso, type DatosCaptura,
+  leadVacio, loQueMandaLaCotizacion, montoPorHechos, viajeYaPaso, type DatosCaptura, type Etapa,
 } from "../crm";
+import { ultimoDiaReserva } from "../confirmacionReserva";
 import { cotizacionViva } from "../resumenLead";
 import { completarOrigenWeb, esTextoDelSitio, reintentoQueRevisaLead, salienteMarcaLeido, textoDeOrigen } from "../bandeja";
 import { HECHA_POR_REGLA, tituloConsultaNueva, yaNoAplica } from "../automatizaciones";
@@ -15,29 +18,37 @@ const HOY = "2026-11-05";
 const r = (cobrado: number, total: number, ultimoDia: string | null = "2026-11-20") => ({ cobrado, total, ultimoDia });
 
 describe("la etapa que dicen las reservas vivas (etapaPorHechos)", () => {
-  it("pago web de alguien en Cotizado: pasa a Anticipo pagado (cobros#2, crm#1, reservas#7)", () => {
-    expect(etapaPorHechos({ etapa: "cotizado", reservas: [r(1500, 5000)], hoy: HOY, revivir: true })).toBe("anticipo");
+  // Lo que la base puede tener todavía: la clave vieja de «Anticipo pagado» (19 nov 2026).
+  const ANTICIPO = "anticipo" as string as Etapa;
+  it("pago web de alguien en Cotizado: con el anticipo ya es Confirmado (cobros#2, crm#1, reservas#7; 19 nov 2026)", () => {
+    expect(etapaPorHechos({ etapa: "cotizado", reservas: [r(1500, 5000)], hoy: HOY, revivir: true })).toBe("confirmado");
     expect(etapaPorHechos({ etapa: "nuevo", reservas: [r(5000, 5000)], hoy: HOY, revivir: true })).toBe("confirmado");
     // Antes del dinero solo sube: una reserva sin pago lo deja En seguimiento.
     expect(etapaPorHechos({ etapa: "calificado", reservas: [r(0, 5000)], hoy: HOY, revivir: false })).toBe("seguimiento");
   });
   it("cancelar una de dos reservas recalcula con lo que sigue vivo (reservas#6)", () => {
-    // HP-1 liquidada + HP-2 sin pago = Anticipo. Se cancela HP-2: queda solo la liquidada.
-    expect(etapaPorHechos({ etapa: "anticipo", reservas: [r(3200, 3200), r(0, 4500)], hoy: HOY, revivir: false })).toBe("anticipo");
-    expect(etapaPorHechos({ etapa: "anticipo", reservas: [r(3200, 3200)], hoy: HOY, revivir: false })).toBe("confirmado");
+    // HP-1 liquidada + HP-2 sin pago = Confirmado (ya entró dinero). Se cancela HP-2: sigue Confirmado.
+    expect(etapaPorHechos({ etapa: "confirmado", reservas: [r(3200, 3200), r(0, 4500)], hoy: HOY, revivir: false })).toBe("confirmado");
+    expect(etapaPorHechos({ etapa: "confirmado", reservas: [r(3200, 3200)], hoy: HOY, revivir: false })).toBe("confirmado");
     // Al revés: se cancela la pagada y queda la de $0 → En seguimiento (ya no se opera sola).
-    expect(etapaPorHechos({ etapa: "anticipo", reservas: [r(0, 4500)], hoy: HOY, revivir: false })).toBe("seguimiento");
+    expect(etapaPorHechos({ etapa: "confirmado", reservas: [r(0, 4500)], hoy: HOY, revivir: false })).toBe("seguimiento");
   });
-  it("sin reservas vivas el dinero no dice nada: se queda donde está", () => {
-    expect(etapaPorHechos({ etapa: "anticipo", reservas: [], hoy: HOY, revivir: true })).toBe("anticipo");
+  it("la clave vieja «anticipo» se mueve como Confirmado: con dinero queda Confirmado, sin dinero baja a En seguimiento", () => {
+    expect(etapaPorHechos({ etapa: ANTICIPO, reservas: [r(3200, 3200), r(0, 4500)], hoy: HOY, revivir: false })).toBe("confirmado");
+    expect(etapaPorHechos({ etapa: ANTICIPO, reservas: [r(1500, 5000)], hoy: HOY, revivir: true })).toBe("confirmado");
+    expect(etapaPorHechos({ etapa: ANTICIPO, reservas: [r(0, 4500)], hoy: HOY, revivir: false })).toBe("seguimiento");
+  });
+  it("sin reservas vivas el dinero no dice nada: se queda donde está (tal cual, aunque sea la clave vieja)", () => {
+    expect(etapaPorHechos({ etapa: "confirmado", reservas: [], hoy: HOY, revivir: true })).toBe("confirmado");
+    expect(etapaPorHechos({ etapa: ANTICIPO, reservas: [], hoy: HOY, revivir: true })).toBe("anticipo");
     expect(etapaPorHechos({ etapa: "seguimiento", reservas: [], hoy: HOY, revivir: false })).toBe("seguimiento");
   });
   it("Perdido vuelve solo con un hecho nuevo", () => {
-    expect(etapaPorHechos({ etapa: "perdido", reservas: [r(1500, 5000)], hoy: HOY, revivir: true })).toBe("anticipo");
+    expect(etapaPorHechos({ etapa: "perdido", reservas: [r(1500, 5000)], hoy: HOY, revivir: true })).toBe("confirmado");
     expect(etapaPorHechos({ etapa: "perdido", reservas: [r(1500, 5000)], hoy: HOY, revivir: false })).toBe("perdido");
   });
   it("Operado vuelve solo con un hecho nuevo Y un viaje que todavía no pasa (crm#6)", () => {
-    expect(etapaPorHechos({ etapa: "operado", reservas: [r(1000, 3000, "2026-12-15")], hoy: HOY, revivir: true })).toBe("anticipo");
+    expect(etapaPorHechos({ etapa: "operado", reservas: [r(1000, 3000, "2026-12-15")], hoy: HOY, revivir: true })).toBe("confirmado");
     // El saldo que se cobra después del viaje no lo saca de Operado.
     expect(etapaPorHechos({ etapa: "operado", reservas: [r(3000, 3000, "2026-11-01")], hoy: HOY, revivir: true })).toBe("operado");
     expect(etapaPorHechos({ etapa: "operado", reservas: [r(1000, 3000, "2026-12-15")], hoy: HOY, revivir: false })).toBe("operado");
@@ -82,18 +93,42 @@ describe("lead cerrado hace poco (cerradoHaceMenosDe, crm#4)", () => {
   });
 });
 
-describe("¿ya pasó el viaje? con cotizaciones vivas (fechasDelViaje, crm#6)", () => {
-  it("una venta nueva cotizada a futuro no deja operar el lead por la reserva vieja", () => {
-    expect(viajeYaPaso(fechasDelViaje(["2026-11-01"], ["2026-11-15"], null), HOY).paso).toBe(false);
+describe("¿ya pasó el viaje? (fechasDelViaje; 19 nov 2026: manda el último tour de sus reservas)", () => {
+  it("con reservas vivas mandan SOLO ellas: una cotización o un borrador que se quedó ya no detiene Operado", () => {
+    // Del 5 al 19 nov una cotización viva a futuro lo detenía (crm#6); Manolo: «que pase a operado después de que pase su último tour».
+    expect(viajeYaPaso(fechasDelViaje(["2026-11-01"], ["2026-11-15"], null), HOY).paso).toBe(true);
+    expect(fechasDelViaje(["2026-11-01"], ["", "2026-11-15"], "2026-11-03")).toEqual(["2026-11-01"]);
     expect(viajeYaPaso(fechasDelViaje(["2026-11-01"], [], null), HOY).paso).toBe(true);
+    // El ÚLTIMO día de sus reservas: una reserva que sigue a futuro lo detiene.
+    expect(viajeYaPaso(fechasDelViaje(["2026-11-01", "2026-11-08"], [], null), HOY).paso).toBe(false);
   });
-  it("sin reservas ni cotizaciones, la fecha del lead", () => {
+  it("sin reservas (p. ej. pagó la liga y la reserva no se creó), sus cotizaciones con fecha; sin nada, la fecha del lead", () => {
+    expect(fechasDelViaje([], ["2026-11-15"], "2026-11-03")).toEqual(["2026-11-15"]);
     expect(fechasDelViaje([], [], "2026-11-03")).toEqual(["2026-11-03"]);
   });
-  it("una cotización viva SIN fecha no le quita al lead su fecha (revisión: nunca pasaba a Operado)", () => {
+  it("una fecha vacía no le quita al lead su fecha (revisión: nunca pasaba a Operado)", () => {
     expect(fechasDelViaje([], ["", null], "2026-11-03")).toEqual(["2026-11-03"]);
     expect(viajeYaPaso(fechasDelViaje([], [""], "2026-11-03"), HOY).paso).toBe(true);
-    expect(fechasDelViaje(["2026-11-01"], ["", "2026-11-15"], "2026-11-03")).toEqual(["2026-11-01", "2026-11-15"]);
+    // Una reserva sin fecha válida cuenta como si no hubiera reserva.
+    expect(fechasDelViaje(["", null], ["2026-11-15"], "2026-11-03")).toEqual(["2026-11-15"]);
+  });
+  it("🔴 el viaje CDMX sale el viernes y regresa el domingo: pasa a Operado el lunes, no el sábado a media estancia (revisión del 20 nov 2026)", () => {
+    // La reserva guarda solo el viernes de salida (en la cabecera y en su renglón).
+    const cdmx = { tourDate: "2026-12-04", tourSlug: "viaje-cdmx-xilitla", lineItems: [{ _meta: true, numPersonas: 2 }, { tourSlug: "viaje-cdmx-xilitla", tourDate: "2026-12-04" }] };
+    const fechas = fechasDelViaje([ultimoDiaReserva(cdmx)], [], "2026-12-04");
+    expect(fechas).toEqual(["2026-12-06"]);
+    expect(viajeYaPaso(fechas, "2026-12-05").paso).toBe(false); // sábado, primer día en Xilitla
+    expect(viajeYaPaso(fechas, "2026-12-06").paso).toBe(false); // domingo, día del regreso
+    expect(viajeYaPaso(fechas, "2026-12-07")).toEqual({ paso: true, ultima: "2026-12-06" }); // lunes
+    // Un Operado que paga algo el sábado sigue «con viaje por delante» y vuelve a Confirmado.
+    expect(etapaPorHechos({ etapa: "operado", reservas: [r(1000, 3000, ultimoDiaReserva(cdmx))], hoy: "2026-12-05", revivir: true })).toBe("confirmado");
+    // Un tour de un día no cambia: el día siguiente ya pasó.
+    expect(ultimoDiaReserva({ tourDate: "2026-12-05", tourSlug: "expedicion-tamul", lineItems: [{ tourSlug: "expedicion-tamul", tourDate: "2026-12-05" }] })).toBe("2026-12-05");
+  });
+  it("Operado, la tarjeta y la ficha toman el último día con ultimoDiaReserva (el de la confirmación y la encuesta)", () => {
+    const crmDatos = readFileSync(fileURLToPath(new URL("../crmDatos.ts", import.meta.url)), "utf8");
+    expect(crmDatos).toMatch(/const ultimoDiaDe = \([^)]*\) => ultimoDiaReserva\(r\)/);
+    expect(crmDatos).not.toMatch(/lineasDe\(q as never\)\.map\(l => l\.tourDate\)/);
   });
 });
 
@@ -219,6 +254,11 @@ describe("seguimientos automáticos que ya no aplican (yaNoAplica, crm#7)", () =
     expect(yaNoAplica("liga-24h", { ligaEstado: "cancelado" }, HOY)).toBe(true);
     expect(yaNoAplica("liga-24h", { ligaEstado: null }, HOY)).toBe(true);
     expect(yaNoAplica("liga-24h", { ligaEstado: "activo" }, HOY)).toBe(false);
+  });
+  it("liga: con su lead Perdido ya no se le insiste, aunque la liga siga activa (19 nov 2026)", () => {
+    expect(yaNoAplica("liga-24h", { ligaEstado: "activo", etapaLead: "perdido" }, HOY)).toBe(true);
+    expect(yaNoAplica("liga-24h", { ligaEstado: "activo", etapaLead: "cotizado" }, HOY)).toBe(false);
+    expect(yaNoAplica("liga-24h", { ligaEstado: "activo", etapaLead: undefined }, HOY)).toBe(false);
   });
   it("saldo: cobrado o reserva cancelada se cierra", () => {
     expect(yaNoAplica("saldo-vencido", { saldo: 0 }, HOY)).toBe(true);

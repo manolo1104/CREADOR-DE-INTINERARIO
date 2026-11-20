@@ -32,6 +32,8 @@ import { registrarCobro, metodoValido, type MetodoCobro } from "@/lib/admin/cobr
 import { MAX_BYTES_EVIDENCIA, TIPOS_OK, tipoDeArchivo } from "@/lib/admin/evidencia";
 import { montoCobrado } from "@/lib/admin/kpis";
 import { registrarEnBitacora, pesos, BOT, type Actor } from "@/lib/admin/bitacora";
+import { correoUsable } from "@/lib/admin/confirmacionReserva";
+import { anotarConfirmacionEnviada } from "@/lib/admin/confirmacionReservaDatos";
 import { lugaresDePaquete, type LugaresPaquete } from "@/lib/cupoPaquete";
 import { cabeEnCupo, textoLugares } from "@/lib/cupoEvento";
 import { pedidosSinCupo, type SinCupo } from "@/lib/cupoTour";
@@ -648,7 +650,8 @@ export async function convertirCotizacionEnReserva(
   // 🔴 Primero el dinero, después el lead (5 nov 2026). Lo pagado con la liga
   // de la cotización se abona a su reserva (nueva o ya existente; cada liga
   // una sola vez) ANTES de mover el lead: al revés, la reserva en $0 lo bajaba
-  // de Anticipo a En seguimiento y el abono lo volvía a subir.
+  // de Anticipo (desde el 19 nov 2026, Confirmado: cualquier pago confirma) a
+  // En seguimiento y el abono lo volvía a subir.
   const cobradoAntes = montoCobrado(r.reserva);
   // Si el abono falla, ya no queda solo en el log (revisión del 5 nov 2026):
   // se dice y el lead no se mueve con la reserva en $0 (ver `trasAbonarLigas`).
@@ -686,12 +689,18 @@ export async function convertirCotizacionEnReserva(
 // ── Correo de confirmación ──────────────────────────────────────────────────
 
 /**
+ * Lo que contesta `enviarConfirmacionReserva`: con `enviadaEn` (ISO) cuando el
+ * correo salió, para que la ficha del lead diga cuándo (19 nov 2026).
+ */
+export type ResultadoConfirmacionReserva = ResultadoCorreoReserva & { enviadaEn?: string };
+
+/**
  * El correo de confirmación de una reserva: el cuerpo de
  * `/api/admin/reservas/[id]/send-email` movido aquí tal cual, para que el
  * cliente que confirma por WhatsApp reciba EL MISMO correo que se manda desde
  * el panel. Nunca lanza.
  */
-export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor): Promise<ResultadoCorreoReserva> {
+export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor): Promise<ResultadoConfirmacionReserva> {
   try {
     const b = await prisma.tourBooking.findUniqueOrThrow({ where: { id: bookingId } });
 
@@ -701,7 +710,8 @@ export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor
     if (sinEnvio) return { ok: false, emailEnviado: false, destinatario: null, motivo: "cancelada", error: sinEnvio };
 
     // No enviar a direcciones inválidas (p. ej. reservas recuperadas por webhook).
-    if (!b.customerEmail || !b.customerEmail.includes("@") || b.customerEmail.endsWith("@desconocido")) {
+    // La misma regla con la que la ficha del lead dice «sin correo».
+    if (!correoUsable(b.customerEmail)) {
       return { ok: false, emailEnviado: false, destinatario: null, motivo: "sin-correo", error: "Esta reserva no tiene un email válido del cliente." };
     }
 
@@ -748,15 +758,14 @@ export async function enviarConfirmacionReserva(bookingId: string, actor?: Actor
       htmlContent: html,
     });
 
-    await registrarEnBitacora({
-      accion:     "envió",
-      entidad:    "reserva",
-      referencia: b.confirmationNumber,
-      resumen:    `Correo de confirmación de ${b.confirmationNumber} a ${b.customerEmail} (${b.customerName})`,
-      actor,
+    // El renglón que lee la ficha del lead («Falta mandar la confirmación»): el
+    // MISMO que dejan el sitio, el webhook, el paquete y el viaje CDMX. Si la
+    // liga pagada había dejado «mándale la confirmación», se cierra (19 nov 2026).
+    const enviadaEn = await anotarConfirmacionEnviada({
+      reservaId: b.id, folio: b.confirmationNumber, destinatario: b.customerEmail, cliente: b.customerName, actor,
     });
 
-    return { ok: true, emailEnviado: true, destinatario: b.customerEmail };
+    return { ok: true, emailEnviado: true, destinatario: b.customerEmail, enviadaEn: enviadaEn.toISOString() };
   } catch (e: unknown) {
     return { ok: false, emailEnviado: false, destinatario: null, motivo: "error", error: e instanceof Error ? e.message : String(e) };
   }

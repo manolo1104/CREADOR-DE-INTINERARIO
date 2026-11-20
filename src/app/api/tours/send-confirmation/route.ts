@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revisarSobrecupo } from "@/lib/sobrecupo";
 import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
+import { anotarConfirmacionEnviada } from "@/lib/admin/confirmacionReservaDatos";
 import { stripe } from "@/lib/stripe";
 import { rateLimit } from "@/lib/rateLimit";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
@@ -299,6 +300,10 @@ export async function POST(req: NextRequest) {
         });
 
         actividad("📧  CORREO ENVIADO", nombreCorto(tourName), email, confirmationNumber);
+        // Antes solo quedaba en el log del servidor: la ficha del lead no podía
+        // saber si al cliente le llegó su confirmación (19 nov 2026). El mismo
+        // renglón que deja el botón del panel. No lanza.
+        await anotarConfirmacionEnviada({ folio: confirmationNumber, destinatario: email, cliente: customerName, actor: SISTEMA });
       } catch (e: any) {
         console.error("❌ Brevo email exception:", enmascararTexto(String(e?.message ?? "")));
       }

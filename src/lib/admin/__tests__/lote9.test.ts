@@ -207,6 +207,11 @@ describe("scorecard: margen del corte con meta y el estimado sin meta", () => {
     const k = Object.fromEntries(calcularScorecard({ ...entradaBase, corte: { ventas: 1000, utilidad: 300, cerrado: false } }).kpis.map(x => [x.clave, x]));
     expect([k.margen.valor, k.margen.estado.texto]).toEqual(["—", "Corte sin cerrar"]);
   });
+  it("sin cohorte, el último paso del embudo es dinero («Pagaron anticipo»), no la etapa vieja «Anticipo pagado» (19 nov 2026)", () => {
+    const s = calcularScorecard({ ...entradaBase, leadsNuevos: 10, cotizadosDelPanel: 6, reservasCreadas: 4, conAnticipo: 3 });
+    expect(s.embudo.map(p => p.etiqueta)).toEqual(["Leads", "Cotizados", "Reservaron", "Pagaron anticipo"]);
+    expect(s.embudo.map(p => p.n)).toEqual([10, 6, 4, 3]);
+  });
   it("las reseñas usan la fórmula de Experiencia", () => {
     const resenas: ValorKpi = { clave: "resenas", valor: 25, detalle: "2 de 8 reservas operadas", calidad: "exacto" };
     const k = Object.fromEntries(calcularScorecard({ ...entradaBase, resenas }).kpis.map(x => [x.clave, x]));

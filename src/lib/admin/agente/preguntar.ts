@@ -11,7 +11,7 @@ import { montoCobrado, saldoPendiente } from "../dinero";
 import { datosScorecard } from "../scorecardDatos";
 import { lunesDe } from "../corteSemanal";
 import { fechaLimite } from "../../vencimientoCotizacion";
-import { etiquetaEtapa } from "../crm";
+import { ETAPAS_ABIERTAS_BD, clavesEnBD, etiquetaEtapa, normalizarEtapa } from "../crm";
 import { abrirLlamada, anotarUso, ErrorAgente } from "./claude";
 import { MODELO_RESPONDER, type Uso } from "./costos";
 
@@ -29,7 +29,7 @@ const fecha = { type: "string", description: "YYYY-MM-DD" };
 const HERRAMIENTAS: Anthropic.Tool[] = [
   { name: "salidas", strict: true, description: "Salidas (tour + día) entre dos fechas: personas, reservas, guía y si van bajo el mínimo de 3. Máximo 92 días.", input_schema: obj({ desde: fecha, hasta: fecha }, ["desde", "hasta"]) },
   { name: "reservas", strict: true, description: "Reservas por fecha de tour entre dos fechas: cliente, tour, personas, total, cobrado, saldo, canal y estado. Máximo 92 días, 60 renglones.", input_schema: obj({ desde: fecha, hasta: fecha }, ["desde", "hasta"]) },
-  { name: "leads", strict: true, description: "Leads del CRM. etapa: nuevo, calificado, cotizado, seguimiento, anticipo, confirmado, operado, perdido o «abiertos». buscar: parte del nombre o vacío.", input_schema: obj({ etapa: { type: "string" }, buscar: { type: "string" } }, ["etapa", "buscar"]) },
+  { name: "leads", strict: true, description: "Leads del CRM. etapa: nuevo, calificado, cotizado, seguimiento, confirmado (ya pagó algo: anticipo o todo), operado, perdido o «abiertos». buscar: parte del nombre o vacío.", input_schema: obj({ etapa: { type: "string" }, buscar: { type: "string" } }, ["etapa", "buscar"]) },
   { name: "cotizaciones", strict: true, description: "Cotizaciones por estado (borrador, enviada, aceptada, expirada o «todas») con total, fecha del viaje y vencimiento. 40 renglones, las más recientes.", input_schema: obj({ estado: { type: "string" } }, ["estado"]) },
   { name: "scorecard", strict: true, description: "Los KPI de la semana (lunes YYYY-MM-DD de esa semana): embudo, ventas, personas por salida, margen, score y reseñas contra su meta.", input_schema: obj({ semana: fecha }, ["semana"]) },
 ];
@@ -47,9 +47,10 @@ async function ejecutar(nombre: string, i: Record<string, unknown>): Promise<unk
   if (nombre === "leads") {
     const etapa = String(i.etapa ?? "abiertos");
     const buscar = String(i.buscar ?? "").trim();
+    // Con la clave vieja «anticipo» (19 nov 2026: se unió a Confirmado): «confirmado» también la trae.
     const ls = await prisma.oportunidad.findMany({
       where: {
-        ...(etapa === "abiertos" ? { etapa: { in: ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"] } } : { etapa }),
+        ...(etapa === "abiertos" ? { etapa: { in: ETAPAS_ABIERTAS_BD } } : { etapa: { in: clavesEnBD(normalizarEtapa(etapa)) } }),
         ...(buscar ? { contacto: { nombre: { contains: buscar, mode: "insensitive" as const } } } : {}),
       },
       include: { contacto: { select: { nombre: true } } }, orderBy: { updatedAt: "desc" }, take: 40,

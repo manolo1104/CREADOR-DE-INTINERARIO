@@ -87,7 +87,8 @@ export function idiomaTourDeConversion(p: { elegido?: unknown; idiomaContacto?: 
  *    veces? (alguien lo capturó a mano antes de que Stripe avisara);
  *  · 🔴 el abono FALLÓ (revisión del lote 1, 5 nov 2026): el dinero está en
  *    Stripe pero no en la reserva. Antes solo quedaba en el log y el lead,
- *    movido con la reserva en $0, bajaba de Anticipo a En seguimiento. Ahora
+ *    movido con la reserva en $0, bajaba de Anticipo (desde el 19 nov 2026,
+ *    Confirmado) a En seguimiento. Ahora
  *    se dice (en el seguimiento de la liga y en el panel) y el lead no se mueve
  *    hasta que el cobro entre: la liga queda libre y «Convertir» la vuelve a
  *    abonar.
@@ -122,11 +123,22 @@ const MAX_TITULO_TAREA = 200;
  * El seguimiento que deja la liga pagada. Sin nada raro, el de siempre. Con
  * algo que no cuadró (vencida, sin lugar, otra reserva del mismo cliente…),
  * empieza con ⚠️ y lo dice en corto: el cliente ya pagó y una persona decide.
+ *
+ * `confirmacionEnviada` (19 nov 2026): la liga ya le mandó sola su correo de
+ * confirmación. Entonces ya no dice «Mándale la confirmación»: así se la
+ * mandaban otra vez desde el panel (y al equipo le llegaba en copia dos veces).
  */
-export function tituloTareaLigaPagada(p: { cliente: string; folio: string; monto: number; revisar: string[] }): string {
+export function tituloTareaLigaPagada(p: { cliente: string; folio: string; monto: number; revisar: string[]; confirmacionEnviada?: boolean }): string {
   const base = `Pagó la liga: ${p.cliente} ya tiene la reserva ${p.folio} (${pesos(p.monto)}).`;
-  if (!p.revisar.length) return `${base} Mándale la confirmación y revisa guía y recogida.`.slice(0, MAX_TITULO_TAREA);
-  const cabeza = `⚠️ ${base} Antes de confirmarle revisa: `;
+  if (!p.revisar.length) {
+    const sigue = p.confirmacionEnviada
+      ? "Su confirmación ya le llegó por correo: revisa guía y recogida."
+      : "Mándale la confirmación y revisa guía y recogida.";
+    return `${base} ${sigue}`.slice(0, MAX_TITULO_TAREA);
+  }
+  const cabeza = p.confirmacionEnviada
+    ? `⚠️ ${base} Su confirmación ya le llegó por correo, pero revisa: `
+    : `⚠️ ${base} Antes de confirmarle revisa: `;
   const unidos = p.revisar.join("; ");
   const lista = /[.?!]$/.test(unidos) ? unidos : `${unidos}.`;
   const cabe = MAX_TITULO_TAREA - cabeza.length;

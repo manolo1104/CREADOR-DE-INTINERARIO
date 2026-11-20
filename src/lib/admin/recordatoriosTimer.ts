@@ -3,19 +3,26 @@
 // tocan. El cron de GitHub es solo respaldo: se atrasa horas.
 import { enviarRecordatorios } from "./recordatorios";
 import { aplicarReglas, enviarResumenDiario } from "./automatizacionesDatos";
+import { operarViajesPasados } from "./crmDatos";
 import { enmascararTexto } from "@/lib/logger";
 
 /**
- * Una vuelta del reloj (Fase 3, 4 nov 2026): primero las reglas crean los
- * seguimientos que tocan, después sale el resumen de las 7:30 y al final los
- * recordatorios de lo que ya venció. Cada paso falla solo, sin tumbar al otro
- * (lote 9, 10 nov 2026: el último sí tumbaba la vuelta y el cron daba error).
+ * Una vuelta del reloj (Fase 3, 4 nov 2026). PRIMERO pasan a Operado los leads
+ * cuyo último tour ya pasó (19 nov 2026, Manolo: «si se operó el sábado, el
+ * domingo a las 12am ya tiene que aparecer en operado»): con el reloj cada
+ * 5 minutos, un tour del sábado queda en Operado hacia las 00:05 del domingo
+ * (hora de México) aunque nadie abra Leads, y las reglas de esa misma vuelta ya
+ * lo ven así. Después las reglas crean los seguimientos que tocan, sale el
+ * resumen de las 7:30 y al final los recordatorios de lo que ya venció. Cada
+ * paso falla solo, sin tumbar al otro (lote 9, 10 nov 2026: el último sí
+ * tumbaba la vuelta y el cron daba error).
  */
 export async function vueltaDeAvisos() {
+  const operados = await operarViajesPasados().catch(e => { console.error("operados:", (e as Error)?.message); return 0; });
   const reglas = await aplicarReglas().catch(e => { console.error("reglas:", (e as Error)?.message); return null; });
   const resumen = await enviarResumenDiario().catch(e => { console.error("resumen diario:", (e as Error)?.message); return null; });
   const avisos = await enviarRecordatorios().catch(e => { console.error("recordatorios:", (e as Error)?.message); return { tareas: 0, enviados: 0, errores: [String((e as Error)?.message ?? e)] }; });
-  return { reglas, resumen, avisos };
+  return { operados, reglas, resumen, avisos };
 }
 
 const CADA_MS = 5 * 60_000;
@@ -25,7 +32,8 @@ export function iniciarRecordatorios() {
   if (g.__recordatoriosHuasteca) return;
   const correr = () => {
     vueltaDeAvisos()
-      .then(({ reglas, resumen, avisos: r }) => {
+      .then(({ operados, reglas, resumen, avisos: r }) => {
+        if (operados) console.log(`🏁 Operados: ${operados} lead(s) pasaron a Operado (su último tour ya pasó)`);
         if (reglas?.creadas) console.log(`⚙️  Reglas: ${reglas.creadas} seguimiento(s) nuevo(s) ${JSON.stringify(reglas.porRegla)}`);
         if (reglas?.cerradas) console.log(`⚙️  Reglas: ${reglas.cerradas} seguimiento(s) cerrados porque ya no aplicaban`);
         if (resumen?.enviados || resumen?.errores.length) console.log(`☀️  Resumen diario: ${resumen.enviados} correo(s)${resumen.errores.length ? ` · errores: ${enmascararTexto(resumen.errores.join("; "))}` : ""}`);

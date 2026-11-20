@@ -23,6 +23,7 @@ import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/prisma";
 import { registrarCobroSilencioso } from "@/lib/admin/cobros";
 import { registrarEnBitacora, SISTEMA, pesos } from "@/lib/admin/bitacora";
+import { anotarConfirmacionEnviada } from "@/lib/admin/confirmacionReservaDatos";
 import { sendBrevoEmail } from "@/lib/brevo";
 import { buildAvisoPagoIncompletoHtml } from "@/lib/avisoCarritoGrande";
 import { buildTourEmailHtml } from "@/lib/tourEmail";
@@ -321,6 +322,11 @@ export async function recuperarPago(
             htmlContent: html,
           });
           actividad("📧  CORREO ENVIADO (recuperado)", nombreCorto(meta.tourName || ""), clienteEmail, confirmationNumber);
+          // El mismo renglón que el botón del panel: la ficha del lead ya sabe
+          // que le llegó (19 nov 2026). No lanza.
+          await anotarConfirmacionEnviada({
+            reservaId: creada.id, folio: confirmationNumber, destinatario: clienteEmail, cliente: creada.customerName, actor: SISTEMA,
+          });
         } catch (e) {
           logger.error("stripe_webhook_customer_email_failed", { reason: e instanceof Error ? e.message : "unknown" });
         }

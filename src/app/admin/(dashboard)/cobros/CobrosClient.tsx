@@ -4,6 +4,8 @@ import VerificarPagos from "./VerificarPagos";
 import { useEffect, useState } from "react";
 import { Link2, Copy, Check, Ban, ExternalLink, Loader2, MessageCircle, Search } from "lucide-react";
 import { CodigoTour } from "@/components/admin/CodigoTour";
+import { ChipPerdido } from "@/components/admin/CotizacionDetalle";
+import type { MarcaPerdido } from "@/lib/cotizaciones/marcaPerdido";
 
 interface ReservaConSaldo {
   id: string; folio: string; cliente: string; tour: string; tourSlug: string; fecha: string;
@@ -13,6 +15,8 @@ interface ReservaConSaldo {
 interface Cotizacion {
   id: string; folio: string; cliente: string; tour: string; tourSlug: string; fecha: string;
   total: number; estado: string; personas: number;
+  /** «Perdido · motivo» si su lead está Perdido (20 nov 2026): la liga se puede cobrar, pero ya dijo que no. */
+  perdido?: MarcaPerdido | null;
 }
 
 /** Para qué es el cobro. Cambia qué se busca, el monto sugerido y el título. */
@@ -336,6 +340,7 @@ export default function CobrosClient(
                         <span className="block text-[11px] font-dm text-[rgba(22,54,42,0.51)] truncate">
                           {c.folio} · <CodigoTour slug={c.tourSlug} className="text-[10px]" /> {nombreCorto(c.tour)}
                         </span>
+                        {c.perdido && <span className="mt-1 flex min-w-0"><ChipPerdido marca={c.perdido} /></span>}
                       </span>
                       <span className="panel-cifra text-sm font-dm text-[#16362a] flex-shrink-0">{fmx(c.total)}</span>
                     </button>
@@ -350,6 +355,7 @@ export default function CobrosClient(
                     <p className="text-[11px] font-dm text-[rgba(22,54,42,0.51)] truncate">
                       {cotizacion.folio} · <CodigoTour slug={cotizacion.tourSlug} className="text-[10px]" /> {nombreCorto(cotizacion.tour)} · total {fmx(cotizacion.total)}
                     </p>
+                    {cotizacion.perdido && <p className="mt-1 flex min-w-0"><ChipPerdido marca={cotizacion.perdido} /></p>}
                   </div>
                   <button onClick={() => { setCotizacionId(""); setMonto(""); }}
                     className="text-[11px] font-dm text-[rgba(22,54,42,0.51)] hover:text-[#16362a] panel-foco rounded-[7px] px-1">

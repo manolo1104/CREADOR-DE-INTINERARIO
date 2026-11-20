@@ -7,6 +7,7 @@
 // plantillas de seguimiento) espera la conexión con Meta (Fase 2.3). Mientras,
 // estas reglas le dejan la tarea a una persona.
 import { addDaysYMD, diffDiasYMD } from "@/lib/dates";
+import { esLigaAutomatica } from "./ligasReglas";
 
 /** Quién recibe lo que no tiene dueño: el operador. */
 export const RESPONSABLE_OPERACION = "Erick";
@@ -21,9 +22,9 @@ export const RESPONSABLE_CORTE = "Martín";
 export const RESPONSABLE_REVISION = "Manolo";
 
 export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] = [
-  { clave: "cotizado-24h", etiqueta: "Cotizado sin respuesta 24 h", detalle: "Lead en Cotizado desde hace 24 h y sin ningún seguimiento pendiente." },
+  { clave: "cotizado-24h", etiqueta: "Cotizado sin respuesta 24 h", detalle: "Su cotización salió hace 24 h, el lead sigue en Cotizado y no tiene ningún seguimiento pendiente (un borrador sin mandar no cuenta)." },
   { clave: "saldo-vencido", etiqueta: "Saldo vencido", detalle: "El tour ya pasó y la reserva tiene saldo sin registrar." },
-  { clave: "liga-24h", etiqueta: "Liga de pago sin pagar 24 h", detalle: "Se mandó una liga de pago hace 24 h y no se ha pagado." },
+  { clave: "liga-24h", etiqueta: "Liga de pago sin pagar 24 h", detalle: "Se mandó una liga de pago hace 24 h y no se ha pagado (no si su lead está Perdido: la liga sigue cobrando, pero no se le insiste; ni la que salió sola con la cotización mientras su lead sigue en Cotizado: ahí ya va «¿la vio?»)." },
   { clave: "salida-48h", etiqueta: "Confirmar salida (48 h)", detalle: "Pasado mañana sale un tour: confirmar a los clientes punto de encuentro, hora y qué llevar." },
   { clave: "agrupar-salidas", etiqueta: "Juntar salidas", detalle: "El mismo tour a 3 días o menos, una salida bajo el mínimo (el del tour si es mayor: rafting 5, rappel 4) y juntas caben: proponerle al grupo más chico cambiarse de fecha (un guía y una camioneta menos)." },
   // Lote 6 (10 nov 2026): el mínimo del tour y las salidas canceladas.
@@ -42,14 +43,24 @@ export const REGLAS: { clave: ReglaClave; etiqueta: string; detalle: string }[] 
 /** Quién «hace» un seguimiento automático que se cerró solo porque su motivo desapareció. */
 export const HECHA_POR_REGLA = "Regla (ya no aplica)";
 
+/**
+ * Quién «hace» un seguimiento vencido que puso una persona y se cerró solo
+ * porque el lead pagó (revisión del 20 nov 2026, `seguimientosQueCierraElPago`
+ * en `crm.ts`). Nadie lo hizo: los KPIs no lo cuentan como seguimiento hecho.
+ * El reloj nunca lo reabre: solo reabre los `HECHA_POR_REGLA` de sus reglas.
+ */
+export const HECHA_POR_PAGO = "Regla (ya pagó)";
+
 /** Lo que se sabe hoy del motivo de un seguimiento automático. `undefined` = no se pudo leer. */
 export interface HechosSeguimiento {
-  /** cotizado-24h y consulta-nueva: la etapa de su lead. */
+  /** cotizado-24h, consulta-nueva y liga-24h: la etapa de su lead. */
   etapaLead?: string | null;
   /** consulta-nueva: el contacto ya tiene un lead abierto (el mismo revivido u otro nuevo). */
   contactoConLeadAbierto?: boolean;
   /** liga-24h: activo | pagado | cancelado; null si la liga ya no existe. */
   ligaEstado?: string | null;
+  /** liga-24h: la liga salió sola con la cotización (`esLigaAutomatica`). */
+  ligaAutomatica?: boolean;
   /** saldo-vencido: lo que falta cobrar; null si la reserva ya no existe o se canceló. */
   saldo?: number | null;
   /** salida-48h, agrupar-salidas y minimo-7d: el día de la salida. */
@@ -80,7 +91,10 @@ export function yaNoAplica(regla: string | null, h: HechosSeguimiento, hoy: stri
   switch (regla) {
     case "cotizado-24h": return h.etapaLead !== undefined && h.etapaLead !== "cotizado";
     case "consulta-nueva": return h.contactoConLeadAbierto === true;
-    case "liga-24h": return h.ligaEstado !== undefined && h.ligaEstado !== "activo";
+    // Lead Perdido (19 nov 2026): ya no se le insiste con la liga. La liga no
+    // se apaga: si paga tarde, el pago revive el lead solo. La que salió sola
+    // con la cotización y su lead sigue en Cotizado: la cubre «¿la vio?» (20 nov 2026).
+    case "liga-24h": return (h.ligaEstado !== undefined && h.ligaEstado !== "activo") || h.etapaLead === "perdido" || ligaCubiertaPorCotizado(h.ligaAutomatica, h.etapaLead);
     case "saldo-vencido": return h.saldo !== undefined && !(h.saldo !== null && h.saldo > 0);
     case "salida-48h":
     case "agrupar-salidas":
@@ -117,11 +131,30 @@ export interface TareaPorRegla {
   salidaClave?: string | null;
 }
 
+/**
+ * Desde cuándo espera respuesta un lead en Cotizado (19 nov 2026): desde que su
+ * cotización SALIÓ, no desde que entró a la etapa. Desde ese día el lead pasa a
+ * Cotizado al CREAR la cotización, y a un borrador que nadie ha mandado no se
+ * le pregunta «¿la vio?».
+ *  - `entro`: cuándo pasó a Cotizado (ms).
+ *  - `envios`: cuándo salió cada cotización del lead (ms); 0 = salió antes de
+ *    que producción guardara esa fecha (las de antes del 19 nov, ver
+ *    `ENVIO_SE_GUARDA_DESDE` en `crm.ts`).
+ * El primer envío desde que entró; si todas salieron antes (alguien lo regresó
+ * a Cotizado a mano), desde que entró; sin ningún envío, null.
+ */
+export function esperaRespuestaDesde(entro: number, envios: number[]): number | null {
+  if (!envios.length) return null;
+  const despues = envios.filter(t => t >= entro).sort((a, b) => a - b)[0];
+  return despues ?? entro;
+}
+
 export interface LeadCotizado {
   id: string;
   responsable: string | null;
-  /** El cambio a Cotizado más reciente (id y cuándo). */
+  /** El cambio a Cotizado más reciente (su id va en la clave de la tarea). */
   cotizadoId: string;
+  /** Desde cuándo espera respuesta: el primer envío de su cotización (ver `esperaRespuestaDesde`). */
   cotizadoEn: Date;
   /** Seguimientos pendientes del lead. */
   pendientes: number;
@@ -133,7 +166,8 @@ export interface LeadCotizado {
 /**
  * Cotizado 24 h sin seguimiento → tarea para hoy (regla del prompt: «Cotizado
  * sin respuesta 24 h → tarea de seguimiento», y «ninguna cotización pasa del día
- * 3 sin seguimiento»). Si el viaje ya pasó, no hay nada que seguir.
+ * 3 sin seguimiento»). Las 24 h cuentan desde que la cotización salió (19 nov
+ * 2026, `esperaRespuestaDesde`). Si el viaje ya pasó, no hay nada que seguir.
  */
 export function reglaCotizado(leads: LeadCotizado[], ahora: Date, hoy: string, responsables: string[]): TareaPorRegla[] {
   return leads
@@ -180,11 +214,29 @@ export interface LigaActiva {
   creadaEn: Date;
   creadoPor: string | null;
   oportunidadId: string | null;
+  /** La etapa de su lead (ya normalizada: «anticipo» llega como «confirmado»), o null si no tiene lead. */
+  etapaLead?: string | null;
 }
 
-/** Liga sin pagar 24 h → tarea de recordarle al cliente con fecha límite. */
+/**
+ * ¿El recordatorio de esta liga ya lo cubre el «¿la vio?» de su cotización?
+ * (revisión del 20 nov 2026). Desde el 19 nov la liga que sale sola con la
+ * cotización deja el lead en Cotizado, y a las 24 h tocaban DOS tareas por la
+ * misma cotización: «¿la vio?» y «la liga no se ha pagado». Mientras el lead
+ * siga en Cotizado manda la primera; la de una persona (Cobros, la ficha) sigue igual.
+ */
+export function ligaCubiertaPorCotizado(automatica: boolean | null | undefined, etapaLead: string | null | undefined): boolean {
+  return automatica === true && etapaLead === "cotizado";
+}
+
+/**
+ * Liga sin pagar 24 h → tarea de recordarle al cliente con fecha límite. No si
+ * su lead está Perdido (19 nov 2026: la liga sigue cobrando, pero no se le
+ * insiste) ni si la cubre el «¿la vio?» (`ligaCubiertaPorCotizado`).
+ */
 export function reglaLiga(ligas: LigaActiva[], ahora: Date, hoy: string, responsables: string[]): TareaPorRegla[] {
   return ligas
+    .filter(l => l.etapaLead !== "perdido" && !ligaCubiertaPorCotizado(esLigaAutomatica(l.creadoPor), l.etapaLead))
     .filter(l => ahora.getTime() - l.creadaEn.getTime() >= 24 * 3600_000)
     .map(l => ({
       claveRegla: `liga-24h:${l.id}`,

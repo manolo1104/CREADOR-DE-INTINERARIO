@@ -18,6 +18,7 @@ import {
 import { actividad, logger } from "@/lib/logger";
 import { revisarReservaPosterior } from "@/lib/cotizaciones/estadoCotizacion";
 import { ligaParaCorreo } from "@/lib/cotizaciones/enviar";
+import { ETAPA_PERDIDO, esCotizacionPerdida, leadsDeCotizaciones } from "@/lib/cotizaciones/marcaPerdido";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -54,7 +55,15 @@ export const maxDuration = 60;
  * más reciente recibe pasos y «vence mañana». A las anteriores se les termina
  * el seguimiento SIN correo; su estado no cambia y se pueden seguir pagando.
  *
- * `?dry=1` enseña a quién le tocaría, sin enviar ni marcar nada.
+ * Lead PERDIDO (19 nov 2026, decisión de Manolo): sus cotizaciones se tratan
+ * como pausadas —ni pasos ni «vence mañana»— pero vencen en su fecha como
+ * cualquier otra, y siguen contando como la más reciente de su cliente (así no
+ * reviven los correos de una suya más vieja). Se mira la etapa del lead en cada corrida y NO se escribe en
+ * la cotización: si el lead regresa (un pago tardío de su liga, o lo mueven a
+ * mano), su seguimiento sigue solo. Ver `marcaPerdido.ts`.
+ *
+ * `?dry=1` enseña a quién le tocaría, sin enviar ni marcar nada (y, en
+ * `perdidasSinCorreo`, a quién ya no le escribe por su lead Perdido).
  * Protegido por Bearer <CRON_SECRET o BLOG_AGENT_SECRET>.
  */
 export async function POST(req: NextRequest) {
@@ -74,6 +83,8 @@ export async function POST(req: NextRequest) {
     orderBy: { createdAt: "asc" },
     take:    500,
   });
+  // Los leads en Perdido de estas cotizaciones, de una sola vez (19 nov 2026).
+  const perdidos = await leadsPerdidos(cotizaciones);
 
   let enviados = 0;
   let fallidos = 0;
@@ -86,12 +97,19 @@ export async function POST(req: NextRequest) {
   const destinatarios: { folio: string; email: string; paso: number | "vence" }[] = [];
   const vencidas: { folio: string; cliente: string; vencio: string }[] = [];
   const duplicadas: { folio: string; masReciente: string }[] = [];
+  // Las que hoy ya no reciben correo porque su lead está Perdido (para el `?dry=1` y el log).
+  const perdidas: string[] = [];
 
   // 🔴 Un cliente, UNA secuencia. Si cambió algo y la cotización anterior no
   // alcanzó a quedar reemplazada (o el equipo le mandó dos), le llegaban los
   // correos de las dos. De las VIVAS de cada cliente solo sigue la más
   // reciente; las que vencen en esta corrida no cuentan, para que una que hoy
   // pasa a Vencida no deje sin seguimiento a otra que sí vale.
+  // 🔴 Las de un lead Perdido SÍ cuentan (revisión del 20 nov 2026): ellas no
+  // reciben nada (van como pausadas, abajo), y si la más reciente del cliente es
+  // la de su lead Perdido, el cliente acaba de decir que no: sacarla de esta
+  // cuenta revivía los correos (y el «vence mañana») de una cotización suya más
+  // vieja que estaba callada. Si el lead regresa, la más reciente sigue sola.
   const anteriores = anterioresDelMismoCliente(
     cotizaciones
       .filter((q) => {
@@ -188,7 +206,10 @@ export async function POST(req: NextRequest) {
     }
     // Pausada: ya compró otra cosa, pidió la baja o se regresó a Enviada desde
     // el panel. No se le escribe nada —ni pasos ni «vence mañana»—, pero vence.
-    let pausada = meta.seqEstado === "pausada";
+    // Su lead está Perdido (19 nov 2026): igual, mientras siga Perdido. No se
+    // escribe «pausada» en la cotización: si el lead regresa, sigue sola.
+    const perdida = esCotizacionPerdida(q, perdidos);
+    let pausada = meta.seqEstado === "pausada" || perdida;
     if (reservo === "pausar") {
       pausada = true;
       // Se escribe una vez y solo sobre un seguimiento vivo: «terminado» y
@@ -211,7 +232,10 @@ export async function POST(req: NextRequest) {
       continue;
     }
 
-    if (pausada) continue;
+    if (pausada) {
+      if (perdida) perdidas.push(q.quoteNumber);
+      continue;
+    }
 
     // El mismo cliente tiene una más reciente: solo esa le escribe.
     if (await esAnterior(q, meta)) continue;
@@ -339,6 +363,7 @@ export async function POST(req: NextRequest) {
     vencidas.length ? `${vencidas.length} vencida(s)` : undefined,
     sinTiempo   ? `${sinTiempo} sin tiempo antes del tour` : undefined,
     duplicadas.length ? `${duplicadas.length} terminada(s) por duplicado` : undefined,
+    perdidas.length ? `${perdidas.length} sin correo por lead Perdido` : undefined,
     fallidos    ? `⚠️ ${fallidos} fallaron` : undefined,
   );
 
@@ -348,9 +373,22 @@ export async function POST(req: NextRequest) {
     vencidas: vencidas.length,
     // Las que se terminaron (o, en prueba, se terminarían) por tener una más reciente del mismo cliente.
     porDuplicado: duplicadas.length,
+    // Las que no recibieron nada porque su lead está Perdido (19 nov 2026).
+    porLeadPerdido: perdidas.length,
     revisadas: cotizaciones.length,
-    ...(dry ? { recibirian: destinatarios, vencerian: vencidas, duplicadas, aceptarian: aceptadas, pausarian: pausadas } : {}),
+    ...(dry ? { recibirian: destinatarios, vencerian: vencidas, duplicadas, aceptarian: aceptadas, pausarian: pausadas, perdidasSinCorreo: perdidas } : {}),
   });
+}
+
+/**
+ * Los leads en Perdido de estas cotizaciones, en una sola consulta (19 nov
+ * 2026). Las de antes del CRM no tienen lead: nunca cuentan como perdidas.
+ */
+async function leadsPerdidos(cotizaciones: { oportunidadId: string | null }[]): Promise<Set<string>> {
+  const ids = leadsDeCotizaciones(cotizaciones);
+  if (!ids.length) return new Set();
+  const ops = await prisma.oportunidad.findMany({ where: { id: { in: ids }, etapa: ETAPA_PERDIDO }, select: { id: true } });
+  return new Set(ops.map((o) => o.id));
 }
 
 /** El `_meta` de `packageItems` (el del precio y los datos del bot: waChatId, waTelefono). */

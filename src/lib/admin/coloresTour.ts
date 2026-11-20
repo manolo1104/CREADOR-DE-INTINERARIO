@@ -48,6 +48,11 @@ export const TOURS_COLOR: Record<string, { color: string; codigo: string }> = {
   "tour-sotano-de-las-golondrinas": { color: "#00a3a3", codigo: "GOL" },
   "olla-de-la-luz":                { color: "#cc77a4", codigo: "OLL" },
   "huasteca-instagrameable":       { color: "#ab73fd", codigo: "INS" },
+  // El viaje grupal CDMX–Xilitla no está en el catálogo de tours, pero se vende y
+  // se cotiza como uno (20 nov 2026): sin entrada salía en gris «OTR», igual que
+  // una salida a medida, y ahora que Inicio y Cotizaciones muestran solo badges
+  // no se distinguía. Café oscuro: lejos de los demás y del gris de «OTR».
+  "viaje-cdmx-xilitla":            { color: "#7c3f00", codigo: "CDX" },
 };
 
 /**
@@ -64,5 +69,6 @@ export function nombreDeTour(slug: string) {
   if (delCatalogo) return delCatalogo.nombre;
   // El slug reservado del panel para una salida a medida; el resto, legible.
   if (slug === "__personalizado") return "Salida a medida (escrita a mano)";
+  if (slug === "viaje-cdmx-xilitla") return "Viaje CDMX–Xilitla";
   return slug.replace(/^_+/, "").replace(/-/g, " ");
 }

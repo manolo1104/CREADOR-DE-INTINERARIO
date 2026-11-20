@@ -14,6 +14,7 @@ import { salidasEntre, type SalidaOperativa } from "./salidasDia";
 import { avanceChecklist } from "./checklistSalida";
 import { historialGoogle } from "./satisfaccion";
 import { etapaDe } from "@/lib/vencimientoCotizacion";
+import { ETAPA_PERDIDO, esCotizacionPerdida, leadsDeCotizaciones } from "@/lib/cotizaciones/marcaPerdido";
 import { calcularScorecard, numeroSemana, type Scorecard } from "./scorecard";
 import { calcularComercial, cargarComercial } from "./indicadores/comercial";
 import { periodoDe } from "./indicadores/periodo";
@@ -145,7 +146,14 @@ export async function datosScorecard(lunes: string): Promise<DatosScorecard> {
   if (sinResponder) pendientes.push({ tipo: "chats", tono: "problema", href: "/admin/bandeja", titulo: `${sinResponder} chat${sinResponder === 1 ? "" : "s"} sin responder hace más de 10 min`, detalle: "La meta es contestar el 90 % en 5 minutos" });
   const vencidas = vivas.filter(b => saldoPendiente(b) > 0 && ultimoDia(b) < hoy);
   if (vencidas.length) pendientes.push({ tipo: "saldos", tono: "problema", href: "/admin/cobros", titulo: `${vencidas.length} saldo${vencidas.length === 1 ? "" : "s"} vencido${vencidas.length === 1 ? "" : "s"}`, detalle: `$${vencidas.reduce((t, b) => t + saldoPendiente(b), 0).toLocaleString("es-MX")} de tours que ya pasaron: cobrar o registrar el cobro` });
-  const porVencer = enviadas.filter(q => etapaDe(q, hoy) === "por-vencer").length;
+  // Sin las de un lead Perdido (revisión del 20 nov 2026): como la franja «Por
+  // vencer» de Cotizaciones, que ya no las enseña. Antes Inicio pedía recordarle
+  // por WhatsApp a quien ya dijo que no, y la lista decía 0.
+  const idsEnviadas = leadsDeCotizaciones(enviadas);
+  const perdidos = new Set(idsEnviadas.length
+    ? (await prisma.oportunidad.findMany({ where: { id: { in: idsEnviadas }, etapa: ETAPA_PERDIDO }, select: { id: true } }).catch(() => [])).map(o => o.id)
+    : []);
+  const porVencer = enviadas.filter(q => etapaDe(q, hoy) === "por-vencer" && !esCotizacionPerdida(q, perdidos)).length;
   if (porVencer) pendientes.push({ tipo: "cotizaciones", tono: "atencion", href: "/admin/cotizaciones", titulo: `${porVencer} cotización${porVencer === 1 ? "" : "es"} por vencer`, detalle: "Recordar por WhatsApp antes de que venzan" });
   for (const s of salidasHoy) {
     const av = avanceChecklist(s.checklist);

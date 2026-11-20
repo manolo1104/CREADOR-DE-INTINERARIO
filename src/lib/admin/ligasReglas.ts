@@ -377,6 +377,19 @@ export const CREADOR_LIGA_COTIZACION = "Sistema (cotización)";
 export const CREADOR_LIGA_PARTES = "Sistema (por persona)";
 
 /**
+ * Las ligas que nacen SOLAS con la cotización (la del correo y sus
+ * recordatorios, y las «una por persona» del bot), no de una persona en Cobros.
+ * Dejan el lead en Cotizado (`etapaPorLiga`) y, mientras siga ahí, su recordatorio
+ * de 24 h lo cubre el «¿la vio?» de la cotización (`reglaLiga`, 20 nov 2026).
+ */
+export const LIGAS_AUTOMATICAS: readonly string[] = [CREADOR_LIGA_COTIZACION, CREADOR_LIGA_PARTES];
+
+/** ¿La creó el sistema con la cotización? (ver `LIGAS_AUTOMATICAS`). */
+export function esLigaAutomatica(creadoPor: string | null | undefined): boolean {
+  return !!creadoPor && LIGAS_AUTOMATICAS.includes(creadoPor);
+}
+
+/**
  * Reparte un monto en `partes` pesos enteros que suman exacto; lo que no se
  * divide parejo va en las primeras (1,000 / 3 → 334, 333, 333). Lanza si
  * alguna parte queda abajo del mínimo de Stripe.

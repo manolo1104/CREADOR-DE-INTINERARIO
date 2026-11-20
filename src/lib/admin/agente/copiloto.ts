@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { TOURS_LISTA } from "@/lib/tours";
 import { hoyMX } from "@/lib/dates";
 import { registrarEnBitacora, type Actor } from "../bitacora";
-import { etapaPorReglas, type Etapa } from "../crm";
+import { ETAPAS_ABIERTAS_BD, etapaPorReglas, normalizarEtapa, type Etapa } from "../crm";
 import { registrarEtapa, sincronizarProximoPaso } from "../crmDatos";
 import { fechaLimite } from "../../vencimientoCotizacion";
 import { usuariosAdmin } from "../usuarios";
@@ -21,7 +21,8 @@ import {
 } from "./copilotoReglas";
 
 const AGENTE: Actor = { usuario: "agente", nombre: "Agente", rol: "sistema" };
-const ABIERTAS = ["nuevo", "calificado", "cotizado", "seguimiento", "anticipo", "confirmado"];
+/** Las abiertas como están guardadas (con la clave vieja «anticipo», 19 nov 2026): la lista de `crm.ts`. */
+const ABIERTAS = ETAPAS_ABIERTAS_BD;
 const slugs = () => TOURS_LISTA.map(t => t.slug);
 
 async function mensajesDe(conversacionId: string) {
@@ -64,8 +65,15 @@ export async function extraerDeChat(conversacionId: string): Promise<{ cambios: 
   if (cambios.length) {
     const despues = { tours: data.tours ?? lead.tours, fechaViaje: data.fechaViaje ?? lead.fechaViaje, pax: data.pax ?? lead.pax };
     const etapa = etapaPorReglas(lead.etapa as Etapa, despues);
-    await prisma.oportunidad.update({ where: { id: lead.id }, data: { ...data, ...(etapa !== lead.etapa ? { etapa } : {}) } });
-    if (etapa !== lead.etapa) await registrarEtapa(lead.id, lead.etapa, etapa, "Agente: tour, fecha y personas del chat", "agente");
+    await prisma.oportunidad.update({ where: { id: lead.id }, data });
+    // 🔴 La etapa, solo si nadie la movió mientras el modelo leía el chat
+    // (revisión del 20 nov 2026): en esos segundos una cotización del bot pudo
+    // subirla a Cotizado, y escribir la que se calculó con la etapa vieja la
+    // regresaba a Calificado (sin «¿la vio?» y en la columna equivocada).
+    if (etapa !== lead.etapa) {
+      const r = await prisma.oportunidad.updateMany({ where: { id: lead.id, etapa: lead.etapa }, data: { etapa } });
+      if (r.count) await registrarEtapa(lead.id, lead.etapa, etapa, "Agente: tour, fecha y personas del chat", "agente");
+    }
     await prisma.notaOportunidad.create({ data: { oportunidadId: lead.id, autor: "Agente", texto: `Del chat de WhatsApp llené: ${cambios.join(", ")}.${e.resumen ? ` ${e.resumen}` : ""}`.slice(0, 2000) } });
     await registrarEnBitacora({ accion: "modificó", entidad: "lead", referencia: lead.contacto.nombre, resumen: `El agente llenó del chat: ${cambios.join(", ")}`, actor: AGENTE });
   }
@@ -157,7 +165,8 @@ export async function proponerRespuesta(conversacionId: string, quien: string) {
   const contexto = {
     operador,
     primerMensajeDelEquipo: !mensajes.some(m => m.direccion === "sale"),
-    lead: lead ? { etapa: lead.etapa, tours: lead.tours, fechaViaje: lead.fechaViaje, pax: lead.pax } : null,
+    // La clave vieja «anticipo» le llega al modelo como «confirmado» (19 nov 2026).
+    lead: lead ? { etapa: normalizarEtapa(lead.etapa), tours: lead.tours, fechaViaje: lead.fechaViaje, pax: lead.pax } : null,
     cotizaciones: cots.map(q => ({ folio: q.quoteNumber, total: q.totalAmount, fecha: q.tourDate, vence: fechaLimite(q), status: q.status })),
     catalogo: TOURS_LISTA.map(t => ({ slug: t.slug, nombre: t.nombre, precio: t.precio, incluye: t.incluye ?? [] })),
   };

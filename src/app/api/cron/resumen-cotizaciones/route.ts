@@ -6,6 +6,7 @@ import { diasParaVencer, fechaLimite, recordadoPorWhatsapp, urlRecordatorio } fr
 import { addDaysYMD, hoyMX, ymdMX } from "@/lib/dates";
 import { actividad, logger } from "@/lib/logger";
 import { metaCotizacion } from "@/lib/quoteFollowUp";
+import { ETAPA_PERDIDO, esCotizacionPerdida, leadsDeCotizaciones } from "@/lib/cotizaciones/marcaPerdido";
 import type { TourQuote } from "@prisma/client";
 
 /**
@@ -35,6 +36,11 @@ export const maxDuration = 60;
  * vencieron ayer y los borradores que nadie ha mandado. Va a los buzones de
  * `ADMIN_EMAIL_TOURS` (el gmail de Manolo y el del celular). Si no hay nada
  * pendiente, no se manda.
+ *
+ * Sin las de un lead Perdido (19 nov 2026, decisión de Manolo): el cliente ya
+ * dijo que no y el correo le ofrecía al equipo recordarle por WhatsApp. Se
+ * mira la etapa del lead en cada corrida (ver `marcaPerdido.ts`): si regresa,
+ * vuelve a salir. `porLeadPerdido` dice cuántas se quedaron fuera.
  *
  * Corre una vez al día desde GitHub Actions (`resumen-cotizaciones.yml`). El
  * reloj de GitHub se atrasa horas, por eso el correo no promete hora.
@@ -79,28 +85,44 @@ export async function POST(req: NextRequest) {
     };
   };
 
+  // Los leads en Perdido de todas estas cotizaciones, de una sola vez (19 nov 2026).
+  const perdidos = await leadsPerdidos([...vivas, ...vencidasRecientes, ...borradores]);
+  // Las que se quedan fuera por su lead Perdido y SÍ habrían salido en el correo.
+  const fueraPorPerdido: string[] = [];
+  const dePerdido = (q: TourQuote): boolean => {
+    if (!esCotizacionPerdida(q, perdidos)) return false;
+    fueraPorPerdido.push(q.quoteNumber);
+    return true;
+  };
+
   const resumen: Resumen = { vencenHoy: [], vencenManana: [], vencieronAyer: [], borradores: [] };
   for (const q of vivas) {
     if (yaNoCuenta(q)) continue;
     const vence = fechaLimite(q);
     if (!vence) continue;
     const dias = diasParaVencer(vence, hoy);
+    // Solo hoy, mañana y ayer entran al correo.
+    if (dias < -1 || dias > 1) continue;
+    if (dePerdido(q)) continue;
     if (dias === 0) resumen.vencenHoy.push(fila(q, vence));
     else if (dias === 1) resumen.vencenManana.push(fila(q, vence));
     // Venció ayer y el cron horario (que se atrasa) todavía no la pasa a Vencida.
-    else if (dias === -1) resumen.vencieronAyer.push(fila(q, null));
+    else resumen.vencieronAyer.push(fila(q, null));
   }
   for (const q of vencidasRecientes) {
     if (yaNoCuenta(q)) continue;
-    if (fechaLimite(q) === ayer) resumen.vencieronAyer.push(fila(q, null));
+    if (fechaLimite(q) !== ayer) continue;
+    if (dePerdido(q)) continue;
+    resumen.vencieronAyer.push(fila(q, null));
   }
-  resumen.borradores = borradores.filter((q) => !yaNoCuenta(q)).map((q) => fila(q, null));
+  resumen.borradores = borradores.filter((q) => !yaNoCuenta(q) && !dePerdido(q)).map((q) => fila(q, null));
 
   const cuenta = {
     vencenHoy:     resumen.vencenHoy.length,
     vencenManana:  resumen.vencenManana.length,
     vencieronAyer: resumen.vencieronAyer.length,
     borradores:    resumen.borradores.length,
+    porLeadPerdido: fueraPorPerdido.length,
   };
 
   if (!hayAlgo(resumen)) {
@@ -110,7 +132,13 @@ export async function POST(req: NextRequest) {
 
   const { subject, html } = buildResumenCotizacionesHtml(resumen);
   if (dry) {
-    return new NextResponse(html, { headers: { "Content-Type": "text/html; charset=utf-8", "X-Asunto": encodeURIComponent(subject) } });
+    return new NextResponse(html, {
+      headers: {
+        "Content-Type": "text/html; charset=utf-8", "X-Asunto": encodeURIComponent(subject),
+        // Para comparar el `?dry=1` de antes y después: cuáles dejó fuera su lead Perdido.
+        "X-Fuera-Por-Lead-Perdido": encodeURIComponent(fueraPorPerdido.join(",")) || "0",
+      },
+    });
   }
 
   const para = correosEquipo();
@@ -124,6 +152,17 @@ export async function POST(req: NextRequest) {
     logger.error("resumen_cotizaciones_failed", { reason: e instanceof Error ? e.message : "desconocido" });
     return NextResponse.json({ ok: false, error: "No se pudo mandar" }, { status: 500 });
   }
-  actividad("📋  RESUMEN COTIZACIONES", subject, `${para.length} buzón(es)`);
+  actividad("📋  RESUMEN COTIZACIONES", subject, `${para.length} buzón(es)`, fueraPorPerdido.length ? `${fueraPorPerdido.length} fuera por lead Perdido` : undefined);
   return NextResponse.json({ ok: true, enviado: true, ...cuenta });
+}
+
+/**
+ * Los leads en Perdido de estas cotizaciones, en una sola consulta (19 nov
+ * 2026). Las de antes del CRM no tienen lead: nunca cuentan como perdidas.
+ */
+async function leadsPerdidos(cotizaciones: { oportunidadId: string | null }[]): Promise<Set<string>> {
+  const ids = leadsDeCotizaciones(cotizaciones);
+  if (!ids.length) return new Set();
+  const ops = await prisma.oportunidad.findMany({ where: { id: { in: ids }, etapa: ETAPA_PERDIDO }, select: { id: true } });
+  return new Set(ops.map((o) => o.id));
 }

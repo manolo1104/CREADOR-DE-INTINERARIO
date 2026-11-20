@@ -4,11 +4,12 @@ import { montoCobrado, saldoPendiente } from "@/lib/admin/kpis";
 import { sesionActual } from "@/lib/admin/sesion";
 import { puedeVer } from "@/lib/admin/usuarios";
 import { permisosDeTodos } from "@/lib/admin/permisos";
-import DashboardClient from "./DashboardClient";
+import DashboardClient, { type PagoReserva } from "./DashboardClient";
 import { datosScorecard, type DatosScorecard } from "@/lib/admin/scorecardDatos";
 import { lunesDe } from "@/lib/admin/corteSemanal";
 import { MARGEN_DIAS, NO_CUENTAN } from "@/lib/cupoTour";
 import { primerDiaVivoEntre } from "@/lib/admin/salidas";
+import { leadsDeCotizaciones, marcaPerdido, type MarcaPerdido } from "@/lib/cotizaciones/marcaPerdido";
 
 export const dynamic = "force-dynamic";
 
@@ -60,6 +61,18 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
     // dijera siempre "5" aunque hubiera decenas abiertas.
     prisma.tourQuote.count({ where: { status: "enviada" } }),
   ]);
+  // La marca «Perdido · motivo» de las cotizaciones pendientes, como en la
+  // lista de Cotizaciones (revisión del 20 nov 2026): siguen enviadas y su liga
+  // cobra, pero su lead ya dijo que no.
+  const idsLeadsCot = leadsDeCotizaciones(pendingQuotes);
+  const leadsCot = idsLeadsCot.length
+    ? await prisma.oportunidad.findMany({ where: { id: { in: idsLeadsCot } }, select: { id: true, etapa: true, motivoPerdida: true } }).catch(() => [])
+    : [];
+  const marcasPerdido: Record<string, MarcaPerdido> = {};
+  for (const q of pendingQuotes) {
+    const marca = marcaPerdido(leadsCot.find(o => o.id === q.oportunidadId), q.status);
+    if (marca) marcasPerdido[q.id] = marca;
+  }
   const sinCanceladas = new Set(canceladas.map(c => c.clave));
   const todayBookings = cercanas.filter(b => primerDiaVivoEntre(b, todayStr, todayStr, sinCanceladas) !== null);
   // La fecha del recuadro es la de SU próximo tour en la semana (puede ser el 2.º del carrito).
@@ -73,13 +86,24 @@ export default async function AdminDashboard({ searchParams }: { searchParams: {
 
   const monthIngresos = monthBookings.reduce((s, b) => s + montoCobrado(b), 0);
   const pendingAmount = allPending.reduce((s, b) => s + saldoPendiente(b), 0);
+  // «Últimas reservas» dice cómo va el cobro de cada una (20 nov 2026): con
+  // cualquier pago la reserva queda «pending» (Confirmado) y salía «Pendiente»
+  // aunque ya hubiera anticipo. Lo decide la regla única de cobrado y saldo
+  // (`dinero.ts`, la de «Pendiente de cobro»); al navegador solo viaja la
+  // etiqueta, no los montos. Sin saldo es «Pagada» (también una de $0).
+  const pagoReservas: Record<string, PagoReserva> = {};
+  for (const b of recentBookings) {
+    pagoReservas[b.id] = saldoPendiente(b) <= 0 ? "pagada" : montoCobrado(b) > 0 ? "anticipo" : "sin-pago";
+  }
 
   return (
     <DashboardClient
       todayBookings={todayBookings}
       upcomingBookings={upcomingBookings}
       recentBookings={recentBookings}
+      pagoReservas={pagoReservas}
       pendingQuotes={pendingQuotes}
+      marcasPerdido={marcasPerdido}
       // Sin permiso de ver dinero, las cifras NO viajan al navegador: antes se
       // escondían en pantalla pero iban dentro de la página.
       monthIngresos={verDinero ? monthIngresos : 0}

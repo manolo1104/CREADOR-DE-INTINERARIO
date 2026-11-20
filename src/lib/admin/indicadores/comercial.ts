@@ -15,6 +15,13 @@
 //  · Fuera de la cohorte: los leads que nacieron de una reserva (no hubo lead
 //    antes de la compra) y los de la importación inicial.
 //  · «Cotización → reserva» cuenta desde que la cotización SALIÓ al cliente.
+//
+// 19 nov 2026 (Manolo): el lead pasa a Cotizado al CREAR su cotización, no al
+// mandarla. Para que los borradores no inflen los números, «Leads cotizados»,
+// «PDF a calificados», el Embudo (y con él Inicio), «Calificados sin
+// cotización» y «Seguimiento a tiempo» cuentan solo cotizaciones que de verdad
+// SALIERON (`enviadaEn`) desde `COTIZADO_AL_CREAR_DESDE`; lo de antes se mide
+// como siempre.
 
 import { prisma } from "@/lib/prisma";
 import { addDaysYMD, ymdMX } from "@/lib/dates";
@@ -22,21 +29,25 @@ import { ESTADOS_NO_SALIO, primerMensajeEn5, type MensajeLigero } from "@/lib/ad
 import { mensajesParaKpi } from "@/lib/admin/bandejaDatos";
 import { saldoPendiente } from "@/lib/admin/dinero";
 import { diasDeTourDe } from "@/lib/admin/salidas";
-import { CREADO_POR_IMPORTACION, contarMotivos } from "@/lib/admin/crm";
+import { COTIZACION_QUE_SALIO, COTIZADO_AL_CREAR_DESDE, CREADO_POR_IMPORTACION, ESTADOS_COTIZACION_ENVIADA, contarMotivos } from "@/lib/admin/crm";
 import { montoCobrado } from "@/lib/admin/dinero";
 import { leerOrigenWeb } from "@/lib/admin/origenWeb";
-import { HECHA_POR_REGLA } from "@/lib/admin/automatizaciones";
+import { HECHA_POR_PAGO, HECHA_POR_REGLA, esperaRespuestaDesde } from "@/lib/admin/automatizaciones";
 import { ETIQUETA_CANAL } from "@/lib/admin/analisisComun";
 import { SECCIONES, seccionDePagina } from "./secciones";
 import { cohorteMadura, finMX, inicioMX } from "./periodo";
 import { NO_CUENTAN, cuenta, enPeriodo, r1, serie, sinDato, tasa } from "./util";
 import type { Periodo, PuntoSerie, ValorKpi } from "./tipos";
 
-/** Cotización que sí salió al cliente (las de «borrador» nunca se mandaron). */
-export const ESTADOS_ENVIADA = ["enviada", "aceptada", "expirada"];
+/** Cotización que sí salió al cliente (las de «borrador» nunca se mandaron). La lista vive en `crm.ts`. */
+export const ESTADOS_ENVIADA = ESTADOS_COTIZACION_ENVIADA;
+// «anticipo» se queda A PROPÓSITO (19 nov 2026): ya no es etapa (se unió a
+// Confirmado), pero las filas viejas del historial la dicen y siguen siendo reserva.
 const ETAPAS_RESERVA = ["anticipo", "confirmado", "operado"];
 const ETAPAS_COTIZADO = ["cotizado", "seguimiento", ...ETAPAS_RESERVA];
 const ETAPAS_CALIFICADO = ["calificado", ...ETAPAS_COTIZADO];
+/** Desde aquí (ms, 00:00 de México) un paso a «cotizado» ya no dice que la cotización salió. */
+export const COTIZADO_AL_CREAR_MS = inicioMX(COTIZADO_AL_CREAR_DESDE).getTime();
 const H = 3_600_000;
 const DIA = 24 * H;
 /** Días que se espera a una cohorte después de que termina su periodo. */
@@ -48,7 +59,7 @@ export interface LeadCohorte {
   historial: { nueva: string; en: number }[];
   /** Cuándo entró el primer dinero a una reserva VIVA del lead (ms); null = ninguna reserva viva con dinero (lote 9). */
   pagoEn: number | null;
-  /** Cuándo salió al cliente su primera cotización (ms); null = ninguna salió. */
+  /** Cuándo salió al cliente su primera cotización (ms; correo, WhatsApp o PDF); null = ninguna salió. */
   cotizacionEn: number | null;
   /**
    * No entra a la cohorte (lote 9): «comprado» = nació de una reserva (no hubo
@@ -60,7 +71,7 @@ export interface LeadCohorte {
 }
 export interface CasoSeguimiento {
   leadId: string;
-  /** La primera vez que pasó a «cotizado» (ms). */
+  /** Desde cuándo necesitaba seguimiento (ms): ver `inicioDeSeguimiento`. */
   cotizadoEn: number;
   /** La primera vez que llegó a anticipo o más (ms), si llegó. */
   pagoEn: number | null;
@@ -113,13 +124,44 @@ export interface MedicionComercial { valores: ValorKpi[]; series: Record<string,
 /** Hasta cuándo (ms) cuenta lo que hicieron los leads de un periodo: 14 días después de que termina (lote 9). */
 export const cierreCohorte = (p: Pick<Periodo, "hasta">) => finMX(addDaysYMD(p.hasta, DIAS_COHORTE)).getTime();
 
-/** ¿Llegó a alguna de esas etapas a más tardar en `corte`? Sin historial, se cree a la etapa de hoy. */
-const llego = (l: LeadCohorte, etapas: string[], corte: number) =>
-  l.historial.length ? l.historial.some(h => etapas.includes(h.nueva) && h.en <= corte) : etapas.includes(l.etapa);
+type Paso = { nueva: string; en: number };
+
+/**
+ * ¿Llegó a alguna de esas etapas a más tardar en `corte`? Sin historial, se cree
+ * a la etapa de hoy desde el día en que entró. `cuenta` descarta pasos que no
+ * dicen lo que se mide (ver `pasoDeEnvio`).
+ */
+const llego = (l: LeadCohorte, etapas: string[], corte: number, cuenta: (h: Paso) => boolean = () => true) =>
+  l.historial.length
+    ? l.historial.some(h => etapas.includes(h.nueva) && h.en <= corte && cuenta(h))
+    : etapas.includes(l.etapa) && cuenta({ nueva: l.etapa, en: inicioMX(l.ymd).getTime() });
+/**
+ * ¿Ese paso dice que su cotización SALIÓ? (19 nov 2026) Hasta
+ * `COTIZADO_AL_CREAR_DESDE` el lead pasaba a «cotizado» al mandarla o bajar su
+ * PDF. Desde entonces pasa al CREARLA, y un borrador que nadie mandó no es
+ * «cotizó»: lo dice su envío (`cotizacionEn`). Los demás pasos no cambian.
+ */
+export const pasoDeEnvio = (h: Paso) => h.nueva !== "cotizado" || h.en < COTIZADO_AL_CREAR_MS;
 /** Reservó = una reserva viva con dinero cobrado, a más tardar en `corte` (lote 9: ya no basta la etapa). */
 export const reservo = (l: LeadCohorte, corte = Infinity) => l.pagoEn !== null && l.pagoEn <= corte;
+/** Cotizó = le SALIÓ una cotización (o reservó) a más tardar en `corte`; un borrador sin mandar no cuenta (19 nov 2026). */
 export const cotizo = (l: LeadCohorte, corte = Infinity) =>
-  llego(l, ETAPAS_COTIZADO, corte) || (l.cotizacionEn !== null && l.cotizacionEn <= corte) || reservo(l, corte);
+  llego(l, ETAPAS_COTIZADO, corte, pasoDeEnvio) || (l.cotizacionEn !== null && l.cotizacionEn <= corte) || reservo(l, corte);
+
+/**
+ * Desde cuándo un lead cotizado necesitaba seguimiento (KPI «Seguimiento a
+ * tiempo»). Su primer paso a «cotizado»: hasta `COTIZADO_AL_CREAR_DESDE` ese
+ * paso era el envío. Desde entonces el lead pasa a Cotizado al CREAR la
+ * cotización y cuenta su primer envío, con la misma regla que el «¿la vio?»
+ * (`esperaRespuestaDesde`; 0 = salió antes de que se guardara su fecha). Sin
+ * paso a «cotizado», o solo con borradores, null: no es un caso (19 nov 2026).
+ */
+export function inicioDeSeguimiento(pasosACotizado: number[], envios: number[]): number | null {
+  if (!pasosACotizado.length) return null;
+  const primero = Math.min(...pasosACotizado);
+  if (primero < COTIZADO_AL_CREAR_MS) return primero;
+  return esperaRespuestaDesde(primero, envios);
+}
 /** Los leads de la cohorte de un periodo: entraron en él y no nacieron comprados ni importados (lote 9). */
 export const cohorteDe = (leads: LeadCohorte[], p: Pick<Periodo, "desde" | "hasta">) => leads.filter(l => enPeriodo(l.ymd, p) && !l.fuera);
 
@@ -199,11 +241,17 @@ const calificadoDesde = (l: LeadCohorte) => l.historial.filter(h => h.nueva === 
 /** Días hacia atrás que mira «Calificados sin cotización». */
 export const DIAS_SIN_COTIZAR = 56;
 
-/** Hoy: leads de las últimas 8 semanas que siguen en «calificado» hace más de 24 h, sin cotización. La meta es 0. */
+/**
+ * Hoy: leads de las últimas 8 semanas calificados hace más de 24 h a los que no
+ * les ha salido ninguna cotización. La meta es 0. Desde el 19 nov 2026 el lead
+ * pasa a Cotizado al CREAR su cotización: el que solo tiene un borrador sin
+ * mandar sigue contando aquí (antes salía de la cuenta al crearlo).
+ */
 export function calificadosSinCotizar(d: Pick<DatosComercial, "leads" | "ahora" | "hoy">): ValorKpi {
   const desde = addDaysYMD(d.hoy, -DIAS_SIN_COTIZAR);
-  const ls = d.leads.filter(l => !l.fuera && l.ymd >= desde && l.etapa === "calificado" && l.cotizacionEn === null && calificadoDesde(l) <= d.ahora - DIA);
-  return { clave: "calificados-sin-cotizar", valor: ls.length, calidad: "exacto", detalle: `al día de hoy · leads de las últimas 8 semanas con más de 24 h en «Calificado»` };
+  const sinCotizacion = (l: LeadCohorte) => l.etapa === "calificado" || (l.etapa === "cotizado" && !cotizo(l));
+  const ls = d.leads.filter(l => !l.fuera && l.ymd >= desde && l.cotizacionEn === null && sinCotizacion(l) && calificadoDesde(l) <= d.ahora - DIA);
+  return { clave: "calificados-sin-cotizar", valor: ls.length, calidad: "exacto", detalle: `al día de hoy · leads de las últimas 8 semanas con más de 24 h calificados y sin cotización enviada` };
 }
 
 export function respuesta5(d: DatosComercial, p: Periodo): ValorKpi {
@@ -349,13 +397,17 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   const desde = periodos[0].desde, hasta = periodos[periodos.length - 1].hasta;
   const rango = { gte: inicioMX(desde), lte: finMX(hasta) };
 
-  const [ops, cotTrans, quotesLeidas, revisiones, chats, reservas, vivas, perdidos] = await Promise.all([
+  const [ops, cotTrans, enviadasSerie, quotesLeidas, revisiones, chats, reservas, vivas, perdidos] = await Promise.all([
     prisma.oportunidad.findMany({
       where: { createdAt: rango },
       select: { id: true, createdAt: true, canal: true, responsable: true, etapa: true, origenWeb: true, creadoPor: true, historial: { select: { nueva: true, createdAt: true } } },
     }).catch(() => []),
     // Las veces que un lead pasó a «cotizado» en la serie (para el seguimiento).
     prisma.etapaOportunidad.findMany({ where: { nueva: "cotizado", createdAt: rango }, select: { oportunidadId: true } }).catch(() => []),
+    // Y las cotizaciones que SALIERON en la serie (19 nov 2026): desde que el lead
+    // pasa a Cotizado al crearla, el seguimiento empieza con el envío, que puede
+    // caer en la serie aunque el paso a «cotizado» haya sido antes.
+    prisma.tourQuote.findMany({ where: { enviadaEn: rango, oportunidadId: { not: null } }, select: { oportunidadId: true } }).catch(() => []),
     // Las que SALIERON en la serie (lote 9): por su envío, no por el borrador.
     // Las de antes sin fecha de envío se buscan desde 60 días antes y abajo se
     // les estima la fecha.
@@ -380,8 +432,10 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
       where: { oportunidadId: { in: idsLeads } },
       select: { id: true, oportunidadId: true, status: true, createdAt: true, depositoPagado: true, stripePaymentIntentId: true, totalAmount: true },
     }) : Promise.resolve([]),
+    // Las que SALIERON: enviadas, o con fecha de envío aunque sigan en borrador
+    // (bajaron su PDF) o ya estén archivadas (19 nov 2026: antes solo por estado).
     idsLeads.length ? prisma.tourQuote.findMany({
-      where: { oportunidadId: { in: idsLeads }, status: { in: ESTADOS_ENVIADA } },
+      where: { oportunidadId: { in: idsLeads }, ...COTIZACION_QUE_SALIO },
       select: { oportunidadId: true, quoteNumber: true, createdAt: true, enviadaEn: true, lineItems: true },
     }) : Promise.resolve([]),
   ]);
@@ -411,13 +465,20 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   for (const q of cotLead) if (q.oportunidadId) menor(cotEnPor, q.oportunidadId, envioDe(q).en.getTime());
   const quotes = quotesLeidas.map(q => ({ ...q, envio: envioDe(q) })).filter(q => q.envio.en >= rango.gte && q.envio.en <= rango.lte);
 
-  // Seguimiento: los leads que pasaron a cotizado en la serie, con su historia completa.
-  const idsSeg = Array.from(new Set(cotTrans.map(t => t.oportunidadId)));
+  // Seguimiento: los leads que pasaron a cotizado o mandaron su cotización en
+  // la serie, con su historia completa.
+  const idsSeg = Array.from(new Set([...cotTrans.map(t => t.oportunidadId), ...enviadasSerie.map(q => q.oportunidadId).filter((x): x is string => !!x)]));
   const seg = idsSeg.length ? await prisma.oportunidad.findMany({
     where: { id: { in: idsSeg } },
-    // Un seguimiento que se cerró solo porque ya no aplicaba (5 nov 2026) no es
-    // un seguimiento que alguien hizo: no cuenta como «a tiempo».
-    select: { id: true, contactoId: true, historial: { select: { nueva: true, createdAt: true } }, tareas: { where: { hechaEn: { not: null }, OR: [{ hechaPor: null }, { hechaPor: { not: HECHA_POR_REGLA } }] }, select: { hechaEn: true } } },
+    // Un seguimiento que se cerró solo porque ya no aplicaba (5 nov 2026) o
+    // porque el lead pagó (20 nov 2026) no es un seguimiento que alguien hizo:
+    // no cuenta como «a tiempo».
+    select: { id: true, contactoId: true, historial: { select: { nueva: true, createdAt: true } }, tareas: { where: { hechaEn: { not: null }, OR: [{ hechaPor: null }, { hechaPor: { notIn: [HECHA_POR_REGLA, HECHA_POR_PAGO] } }] }, select: { hechaEn: true } } },
+  }).catch(() => []) : [];
+  // Cuándo salió cada cotización de esos leads (0 = salió antes de que se guardara la fecha).
+  const enviosSeg = idsSeg.length ? await prisma.tourQuote.findMany({
+    where: { oportunidadId: { in: idsSeg }, ...COTIZACION_QUE_SALIO },
+    select: { oportunidadId: true, enviadaEn: true },
   }).catch(() => []) : [];
   const contactos = Array.from(new Set(seg.map(o => o.contactoId)));
   const convs = contactos.length ? await prisma.conversacion.findMany({
@@ -434,8 +495,11 @@ export async function cargarComercial(periodos: Periodo[], hoy: string): Promise
   }
   const seguimiento: CasoSeguimiento[] = [];
   for (const o of seg) {
-    const cot = o.historial.filter(h => h.nueva === "cotizado").map(h => h.createdAt.getTime()).sort((a, b) => a - b)[0];
-    if (cot === undefined) continue;
+    const cot = inicioDeSeguimiento(
+      o.historial.filter(h => h.nueva === "cotizado").map(h => h.createdAt.getTime()),
+      enviosSeg.filter(q => q.oportunidadId === o.id).map(q => q.enviadaEn?.getTime() ?? 0),
+    );
+    if (cot === null) continue;
     const pago = o.historial.filter(h => ETAPAS_RESERVA.includes(h.nueva)).map(h => h.createdAt.getTime()).sort((a, b) => a - b)[0] ?? null;
     seguimiento.push({
       leadId: o.id, cotizadoEn: cot, pagoEn: pago, conChat: conChat.has(o.contactoId),

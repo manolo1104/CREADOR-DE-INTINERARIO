@@ -6,9 +6,11 @@ import {
   AlertTriangle, Archive, ArrowLeft, CalendarPlus, Check, CheckCheck, Clock, ExternalLink, FileText, Search, Send, Sparkles, UserCheck, UserX, Zap,
 } from "lucide-react";
 import type { ConversacionFila, DetalleConversacion, EstadoConexion } from "@/lib/admin/bandejaDatos";
-import { ETAPAS_PIPELINE, etiquetaEtapa } from "@/lib/admin/crm";
+import { COLUMNAS_TABLERO, etiquetaEtapa, type MotivoPerdida } from "@/lib/admin/crm";
 import { haceCuanto } from "@/lib/admin/bandeja";
-import { BadgesTour, ChipEtapa } from "../leads/etapas";
+import { hoyMX } from "@/lib/dates";
+import { BadgesTour, ChipEtapa, avisoAntesDeMover } from "../leads/etapas";
+import { DialogoPerdido } from "../leads/MotivoPerdida";
 import { botonPrimario, botonSecundario, canalCorto, fechaCortaM, fmx, inputCls, type TourOpcion } from "../leads/comun";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 
@@ -42,6 +44,8 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
   const [pidiendo, setPidiendo] = useState(false);
   const [motivoRechazo, setMotivoRechazo] = useState<string | null>(null);
   const [ahora, setAhora] = useState(() => new Date());
+  // El lead que se va a marcar Perdido (su cuadro pide el motivo).
+  const [perdiendo, setPerdiendo] = useState<{ id: string; nombre: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const cargar = useCallback(async () => {
@@ -140,6 +144,28 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
     const d = await r?.json().catch(() => null);
     if (!r?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo guardar", error: true }); return false; }
     playSuccess(); setMsj({ texto: ok }); await cargar(); return true;
+  }
+  /**
+   * «Mover a» con las siete etapas (19 nov 2026, Manolo: «que las etapas
+   * aparezcan completas, falta operado y perdido»). Pregunta lo mismo que el
+   * tablero y la ficha: Perdido pide su motivo; a Operado con el viaje todavía
+   * por delante, o reabrir uno cerrado, se confirma antes. La Bandeja no trae lo
+   * que debe el lead: aquí la pregunta de Operado va solo por la fecha del viaje.
+   */
+  function moverA(etapa: string) {
+    const actual = detalle?.lead;
+    if (!actual || etapa === actual.etapa) return;
+    if (etapa === "perdido") { playClick(); setPerdiendo({ id: actual.id, nombre: actual.nombre }); return; }
+    const aviso = avisoAntesDeMover({ nombre: actual.nombre, etapa: actual.etapa, ultimoDia: actual.fechaViaje }, etapa, hoyMX());
+    if (aviso && !window.confirm(aviso)) return;
+    void lead({ accion: "etapa", etapa }, `Ahora: ${etiquetaEtapa(etapa)}`);
+  }
+  /** Perdido con su motivo, al lead que estaba en pantalla al pedirlo (no al que traiga la recarga de cada 4 s). */
+  async function marcarPerdido(id: string, motivo: MotivoPerdida, motivoDetalle: string) {
+    const r = await fetch(`/api/admin/leads/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "etapa", etapa: "perdido", motivo, motivoDetalle }) }).catch(() => null);
+    const d = await r?.json().catch(() => null);
+    if (!r?.ok) { playError(); setMsj({ texto: d?.error || "No se pudo marcar perdido", error: true }); return; }
+    playSuccess(); setMsj({ texto: "Marcado como perdido" }); await cargar();
   }
   async function seguimientoManana() {
     if (!detalle?.lead) return;
@@ -330,11 +356,14 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
                 <p className="font-cormorant text-[22px] leading-tight text-[var(--panel-tinta)]">{l.nombre}</p>
                 <div className="mt-1 flex flex-wrap items-center gap-2"><ChipEtapa etapa={l.etapa} /><span className="text-[12px] font-dm text-[var(--panel-tinta-media)]">{canalCorto(l.canal)}</span></div>
               </div>
+              {/* Las siete etapas, también Operado y Perdido (19 nov 2026). */}
               <label className="block text-[11px] font-dm uppercase tracking-[0.12em] text-[var(--panel-tinta-suave)]">Mover a
-                <select value={ETAPAS_PIPELINE.includes(l.etapa as never) ? l.etapa : ""} onChange={e => void lead({ accion: "etapa", etapa: e.target.value }, `Ahora: ${etiquetaEtapa(e.target.value)}`)} className={`${inputCls} mt-1 normal-case tracking-normal`}>
-                  {!ETAPAS_PIPELINE.includes(l.etapa as never) && <option value="">{etiquetaEtapa(l.etapa)}</option>}
-                  {ETAPAS_PIPELINE.map(e => <option key={e} value={e}>{etiquetaEtapa(e)}</option>)}
+                <select value={(COLUMNAS_TABLERO as string[]).includes(l.etapa) ? l.etapa : ""} onChange={e => moverA(e.target.value)} className={`${inputCls} mt-1 normal-case tracking-normal`}>
+                  {!(COLUMNAS_TABLERO as string[]).includes(l.etapa) && <option value="">{etiquetaEtapa(l.etapa)}</option>}
+                  {COLUMNAS_TABLERO.map(e => <option key={e} value={e}>{etiquetaEtapa(e)}</option>)}
                 </select></label>
+              {/* En el celular el chat no se ve junto al lead: lo que pasó al moverlo se dice aquí. */}
+              {msj && <p role="status" className={`text-[12.5px] font-dm xl:hidden ${msj.error ? "text-[var(--panel-problema)]" : "text-[var(--panel-bien)]"}`}>{msj.texto}</p>}
               <dl className="space-y-1 text-[13px] font-dm">
                 <div className="flex justify-between gap-3"><dt className="text-[var(--panel-tinta-media)]">Tours</dt><dd className="text-right"><BadgesTour slugs={l.tours} nombres={Object.fromEntries(l.tours.map(t => [t, tourNombre(t)]))} /></dd></div>
                 <Dato k="Fecha" v={l.fechaViaje ? fechaCortaM(l.fechaViaje) ?? "—" : "—"} />
@@ -360,6 +389,10 @@ export default function BandejaClient({ inicial, chatInicial, rapidas: rapidasIn
           )}
         </aside>
       </div>
+      {perdiendo && (
+        <DialogoPerdido nombre={perdiendo.nombre} onCancelar={() => setPerdiendo(null)}
+          onConfirmar={(m, det) => { const p = perdiendo; setPerdiendo(null); void marcarPerdido(p.id, m, det); }} />
+      )}
     </div>
   );
 }

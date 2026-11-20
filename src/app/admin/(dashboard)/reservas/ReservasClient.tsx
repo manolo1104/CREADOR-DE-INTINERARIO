@@ -152,9 +152,11 @@ export default function ReservasClient(
 
   async function sendEmail(id: string) {
     setSending(id);
-    const r = await fetch(`/api/admin/reservas/${id}/send-email`, { method: "POST" });
-    const d = await r.json();
-    flash(r.ok ? "✅ Email enviado al cliente" : `❌ ${d.error || "Error"}`);
+    // Dice a qué correo salió (19 nov 2026); sin red o con un error que no es
+    // JSON, el botón ya no se queda trabado.
+    const r = await fetch(`/api/admin/reservas/${id}/send-email`, { method: "POST" }).catch(() => null);
+    const d = r ? await r.json().catch(() => ({})) : {};
+    flash(r?.ok ? `✅ Confirmación enviada ${d.destinatario ? `a ${d.destinatario}` : "al cliente"}` : `❌ ${d.error || "No se pudo enviar el email"}`);
     setSending(null);
   }
 

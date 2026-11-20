@@ -13,11 +13,12 @@ import { sugerenciasAgrupar } from "./agruparDatos";
 import { tituloAgrupar } from "./agrupar";
 import { sincronizarProximoPaso } from "./crmDatos";
 import { usuariosAdmin } from "./usuarios";
-import { ahoraMX, estaAbierta } from "./crm";
+import { ahoraMX, cotizacionSalio, estaAbierta, normalizarEtapa } from "./crm";
+import { esLigaAutomatica } from "./ligasReglas";
 import { correoDe } from "./recordatorios";
 import {
-  DIAS_AVISO_MINIMO, HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaMinimo, reglaRevisionJueves, reglaSaldo, reglaSalida, reglaToursSinCostos, yaNoAplica,
-  type HechosSeguimiento, type LineaResumen, type TareaPorRegla,
+  DIAS_AVISO_MINIMO, HECHA_POR_REGLA, RESPONSABLE_OPERACION, correoResumen, esperaRespuestaDesde, reglaCorteLunes, reglaCotizado, reglaLecturaGoogle, reglaLiga, reglaMinimo, reglaRevisionJueves, reglaSaldo, reglaSalida, reglaToursSinCostos, yaNoAplica,
+  type HechosSeguimiento, type LeadCotizado, type LineaResumen, type TareaPorRegla,
 } from "./automatizaciones";
 import { NO_CUENTAN } from "@/lib/cupoTour";
 import { salidaCancelada } from "./salidas";
@@ -86,11 +87,30 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
     salidasEntre(addDaysYMD(hoy, 1), addDaysYMD(hoy, DIAS_AVISO_MINIMO)),
   ]);
 
-  // El folio de la cotización vigente de cada lead cotizado, para el título.
+  // Las cotizaciones de cada lead cotizado: cuándo salió cada una y el folio
+  // para el título. Desde el 19 nov 2026 el lead pasa a Cotizado al CREAR la
+  // cotización: las 24 h del «¿la vio?» cuentan desde que SALIÓ, y un lead que
+  // solo tiene borradores sin mandar no lleva esa tarea (`esperaRespuestaDesde`).
   const cots = cotizados.length ? await prisma.tourQuote.findMany({
     where: { oportunidadId: { in: cotizados.map(c => c.id) } },
-    select: { oportunidadId: true, quoteNumber: true, updatedAt: true }, orderBy: { updatedAt: "desc" },
+    select: { oportunidadId: true, quoteNumber: true, updatedAt: true, enviadaEn: true, status: true, createdAt: true }, orderBy: { updatedAt: "desc" },
   }) : [];
+  // La misma regla que los KPIs (`COTIZACION_QUE_SALIO`): un borrador nuevo que
+  // nadie mandó y se marcó vencido no salió, y no pide «¿la vio?» (20 nov 2026).
+  const salio = (q: (typeof cots)[number]) => cotizacionSalio(q);
+  const leadsCotizados: LeadCotizado[] = cotizados.flatMap(c => {
+    const entro = c.historial[0];
+    if (!entro) return [];
+    const suyas = cots.filter(q => q.oportunidadId === c.id);
+    // Las que salieron sin fecha guardada (las de antes del 19 nov) cuentan como enviadas antes de entrar (0).
+    const desde = esperaRespuestaDesde(entro.createdAt.getTime(), suyas.filter(salio).map(q => q.enviadaEn?.getTime() ?? 0));
+    if (desde === null) return [];
+    return [{
+      id: c.id, responsable: c.responsable, cotizadoId: entro.id, cotizadoEn: new Date(desde),
+      pendientes: c._count.tareas, cliente: c.contacto.nombre, fechaViaje: c.fechaViaje,
+      folio: (suyas.find(salio) ?? suyas[0])?.quoteNumber ?? null,
+    }];
+  });
 
   // 🔴 Solo las ligas que todavía cobran algo vivo (lote 3, 5 nov 2026): la de
   // una cotización borrada o vencida, o de una reserva cancelada o ya pagada,
@@ -102,22 +122,31 @@ export async function tareasQueTocan(ahora: Date = new Date()): Promise<TareaPor
   // El lead de cada liga (por su cotización o su reserva).
   const cotsLiga = ligas.some(l => l.cotizacionId) ? await prisma.tourQuote.findMany({ where: { id: { in: ligas.map(l => l.cotizacionId).filter((x): x is string => !!x) } }, select: { id: true, oportunidadId: true } }) : [];
   const resLiga = ligas.some(l => l.reservaId) ? await prisma.tourBooking.findMany({ where: { id: { in: ligas.map(l => l.reservaId).filter((x): x is string => !!x) } }, select: { id: true, oportunidadId: true } }) : [];
+  const leadDeLiga = (l: (typeof ligas)[number]): string | null =>
+    (l.cotizacionId && cotsLiga.find(q => q.id === l.cotizacionId)?.oportunidadId) || (l.reservaId && resLiga.find(r => r.id === l.reservaId)?.oportunidadId) || null;
+  // La etapa del lead de cada liga (`reglaLiga`): a un lead Perdido ya no se le
+  // insiste (19 nov 2026; la liga no se apaga: si paga tarde, el pago revive el
+  // lead solo), y la que salió sola con la cotización de un lead que sigue en
+  // Cotizado la cubre el «¿la vio?» (20 nov 2026: salían las dos tareas juntas).
+  const idsLeadLiga = Array.from(new Set(ligas.map(leadDeLiga).filter((x): x is string => !!x)));
+  const etapaDeLead = new Map<string, string>(idsLeadLiga.length
+    ? (await prisma.oportunidad.findMany({ where: { id: { in: idsLeadLiga } }, select: { id: true, etapa: true } })).map((o): [string, string] => [o.id, normalizarEtapa(o.etapa)])
+    : []);
 
   return [
-    ...reglaCotizado(cotizados.filter(c => c.historial[0]).map(c => ({
-      id: c.id, responsable: c.responsable, cotizadoId: c.historial[0].id, cotizadoEn: c.historial[0].createdAt,
-      pendientes: c._count.tareas, cliente: c.contacto.nombre, fechaViaje: c.fechaViaje,
-      folio: cots.find(q => q.oportunidadId === c.id)?.quoteNumber ?? null,
-    })), ahora, hoy, responsables),
+    ...reglaCotizado(leadsCotizados, ahora, hoy, responsables),
     ...reglaSaldo(reservas.map(r => ({
       id: r.id, folio: r.confirmationNumber, cliente: r.customerName, oportunidadId: r.oportunidadId,
       ultimoDia: diasDeTourDe(r as never).map(d => d.fecha).sort().at(-1) ?? r.tourDate,
       saldo: saldoPendiente(r),
     })), hoy),
-    ...reglaLiga(ligas.map(l => ({
-      id: l.id, titulo: l.titulo, cliente: l.cliente, monto: l.monto, creadaEn: l.createdAt, creadoPor: l.creadoPor,
-      oportunidadId: (l.cotizacionId && cotsLiga.find(q => q.id === l.cotizacionId)?.oportunidadId) || (l.reservaId && resLiga.find(r => r.id === l.reservaId)?.oportunidadId) || null,
-    })), ahora, hoy, responsables),
+    ...reglaLiga(ligas.map(l => {
+      const oportunidadId = leadDeLiga(l);
+      return {
+        id: l.id, titulo: l.titulo, cliente: l.cliente, monto: l.monto, creadaEn: l.createdAt, creadoPor: l.creadoPor,
+        oportunidadId, etapaLead: oportunidadId ? etapaDeLead.get(oportunidadId) ?? null : null,
+      };
+    }), ahora, hoy, responsables),
     ...reglaSalida(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, reservas: s.pasajeros.length })), hoy),
     ...reglaMinimo(salidas.map(s => ({ clave: s.clave, fecha: s.fecha, tour: s.tourNombre, personas: s.personas, minimo: s.minimo, estado: s.registro.estado })), hoy),
     ...reglaLecturaGoogle(google.at(-1)?.fecha ?? null, hoy, lunes),
@@ -138,7 +167,9 @@ const objetoDe = (claveRegla: string | null) => (claveRegla ?? "").split(":").sl
 
 /**
  * Cierra los seguimientos automáticos cuyo motivo ya desapareció (5 nov 2026):
- * la liga ya se pagó o se canceló, el saldo ya se cobró, el lead salió de
+ * la liga ya se pagó o se canceló (o su lead se marcó Perdido, 19 nov 2026, o
+ * salió sola con la cotización y su lead sigue en Cotizado: la cubre «¿la vio?»,
+ * 20 nov 2026), el saldo ya se cobró, el lead salió de
  * Cotizado, la salida ya pasó, el corte ya se cerró, ya hay lectura de Google,
  * o quien volvió a escribir ya tiene un lead abierto. Quedan hechos por «Regla
  * (ya no aplica)», con su fecha. Devuelve cuántos cerró.
@@ -151,7 +182,8 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
   });
   if (!pendientes.length) return 0;
   const de = (regla: string) => pendientes.filter(t => t.regla === regla);
-  const idsLead = Array.from(new Set(pendientes.filter(t => (t.regla === "cotizado-24h" || t.regla === "consulta-nueva") && t.oportunidadId).map(t => t.oportunidadId!)));
+  // liga-24h también lee la etapa de su lead: con el lead Perdido se cierra (19 nov 2026).
+  const idsLead = Array.from(new Set(pendientes.filter(t => (t.regla === "cotizado-24h" || t.regla === "consulta-nueva" || t.regla === "liga-24h") && t.oportunidadId).map(t => t.oportunidadId!)));
   const idsLiga = de("liga-24h").map(t => objetoDe(t.claveRegla)).filter(Boolean);
   const idsReserva = de("saldo-vencido").map(t => objetoDe(t.claveRegla)).filter(Boolean);
   const semanas = de("corte-lunes").map(t => objetoDe(t.claveRegla)).filter(Boolean);
@@ -162,7 +194,7 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
   ]);
   const [leads, ligas, reservas, cortes, google] = await Promise.all([
     idsLead.length ? prisma.oportunidad.findMany({ where: { id: { in: idsLead } }, select: { id: true, etapa: true, contactoId: true } }) : [],
-    idsLiga.length ? prisma.linkPago.findMany({ where: { id: { in: idsLiga } }, select: { id: true, estado: true } }) : [],
+    idsLiga.length ? prisma.linkPago.findMany({ where: { id: { in: idsLiga } }, select: { id: true, estado: true, creadoPor: true } }) : [],
     idsReserva.length ? prisma.tourBooking.findMany({ where: { id: { in: idsReserva } } }) : [],
     semanas.length ? prisma.corteSemanal.findMany({ where: { semana: { in: semanas } }, select: { semana: true, estado: true } }) : [],
     de("lectura-google").length ? historialGoogle().then(h => h.at(-1)?.fecha ?? null).catch(() => undefined) : Promise.resolve(undefined),
@@ -176,7 +208,9 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
   const salidasMinimo = fechasMinimo.length
     ? await salidasEntre(fechasMinimo[0], fechasMinimo[fechasMinimo.length - 1], { conCanceladas: true }).catch(() => null)
     : [];
-  const contactos = Array.from(new Set(leads.map(l => l.contactoId)));
+  // Solo «¿Consulta nueva?» pregunta si el contacto ya tiene otro lead abierto.
+  const idsConsulta = new Set(de("consulta-nueva").map(t => t.oportunidadId));
+  const contactos = Array.from(new Set(leads.filter(l => idsConsulta.has(l.id)).map(l => l.contactoId)));
   const conAbierto = new Set(contactos.length
     ? (await prisma.oportunidad.findMany({ where: { contactoId: { in: contactos } }, select: { contactoId: true, etapa: true } })).filter(o => estaAbierta(o.etapa)).map(o => o.contactoId)
     : []);
@@ -185,9 +219,13 @@ export async function cerrarSeguimientosQueYaNoAplican(ahora: Date = new Date())
     switch (t.regla) {
       case "cotizado-24h": case "consulta-nueva": {
         const l = leads.find(x => x.id === t.oportunidadId);
-        return { etapaLead: l ? l.etapa : null, contactoConLeadAbierto: l ? conAbierto.has(l.contactoId) : undefined };
+        return { etapaLead: l ? normalizarEtapa(l.etapa) : null, contactoConLeadAbierto: l ? conAbierto.has(l.contactoId) : undefined };
       }
-      case "liga-24h": return { ligaEstado: ligas.find(x => x.id === objetoDe(t.claveRegla))?.estado ?? null };
+      case "liga-24h": {
+        const l = t.oportunidadId ? leads.find(x => x.id === t.oportunidadId) : undefined;
+        const liga = ligas.find(x => x.id === objetoDe(t.claveRegla));
+        return { ligaEstado: liga?.estado ?? null, ligaAutomatica: esLigaAutomatica(liga?.creadoPor), etapaLead: l ? normalizarEtapa(l.etapa) : undefined };
+      }
       case "saldo-vencido": {
         const r = reservas.find(x => x.id === objetoDe(t.claveRegla));
         return { saldo: !r || r.status === "cancelled" ? null : saldoPendiente(r) };

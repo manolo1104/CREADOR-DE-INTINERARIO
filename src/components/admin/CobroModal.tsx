@@ -271,6 +271,8 @@ export default function CobroModal({
                 <span className="normal-case tracking-normal text-[#1B4332]/35"> · anticipo acordado {fmx(anticipo)}</span>
               )}
             </label>
+            {/* `min-w-0`: sin él el campo no se encoge de su ancho natural y en el celular
+                empujaba «Todo» fuera del cuadro (revisión del 20 nov 2026). */}
             <div className="flex items-center gap-2">
               <span className="font-cormorant text-2xl text-[#1B4332]/50">$</span>
               <input
@@ -278,7 +280,7 @@ export default function CobroModal({
                 onChange={e => { setMonto(e.target.value); setMontoTocado(true); }}
                 inputMode="numeric"
                 placeholder="0"
-                className="panel-foco flex-1 min-h-[44px] border border-[#1B4332]/15 rounded-sm px-3 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
+                className="panel-foco flex-1 min-w-0 min-h-[44px] border border-[#1B4332]/15 rounded-sm px-3 text-base font-dm text-[#1B4332] focus:outline-none focus:border-[#1B4332]"
               />
               {anticipo > 0 && anticipo <= saldo && !sinDesglose && (
                 <button type="button" onClick={() => { playClick(); setMonto(String(anticipo)); setMontoTocado(true); }}

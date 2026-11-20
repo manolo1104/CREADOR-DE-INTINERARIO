@@ -3,42 +3,82 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Plus, Search, Phone } from "lucide-react";
+import { Check, FileText, Mail, Plus, Search, Phone } from "lucide-react";
 import {
-  DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, useDraggable, useDroppable, useSensor, useSensors,
-  type DragEndEvent, type DragStartEvent,
+  DndContext, DragOverlay, KeyboardSensor, MouseSensor, TouchSensor, pointerWithin, rectIntersection, useDraggable, useDroppable, useSensor, useSensors,
+  type CollisionDetection, type DragEndEvent, type DragStartEvent, type UniqueIdentifier,
 } from "@dnd-kit/core";
 import type { LeadTarjeta, TareaFila } from "@/lib/admin/crmDatos";
-import { ETAPAS_PIPELINE, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, ordenTareas, type Etapa, type MotivoPerdida } from "@/lib/admin/crm";
-import { addDaysYMD } from "@/lib/dates";
-import { BadgesTour, estiloEtapa } from "./etapas";
+import {
+  COLUMNAS_TABLERO, DIAS_TABLERO_CERRADOS, ETAPAS_POR_CERRAR, cerradoHaceMenosDe, contarMotivos, estadoFecha, etiquetaEtapa, etiquetaMotivoPerdida, ordenTareas,
+  type Etapa, type MotivoPerdida,
+} from "@/lib/admin/crm";
+import { conPeticionDelPanel, textoPeticion, type ResenaLead } from "@/lib/admin/resenaLead";
+import { diaCortoMX } from "@/lib/admin/confirmacionReserva";
+import { addDaysYMD, diffDiasYMD, ymdMX } from "@/lib/dates";
+import { BadgesTour, BotonPedirResena, avisoAntesDeMover, estiloEtapa } from "./etapas";
 import { etiquetaVence } from "@/lib/vencimientoCotizacion";
-import { COLOR_VENCE } from "./comun";
 import { FilaSeguimiento, cambiarSeguimiento, editarSeguimiento, type AccionSeguimiento, type EdicionSeguimiento } from "../seguimientos/FilaSeguimiento";
 import { ORIGENES_ELEGIBLES, mismoCanal } from "@/lib/origenReserva";
-import { colorDeTour, codigoDeTour } from "@/lib/admin/coloresTour";
 import { playClick, playError, playSuccess } from "@/lib/admin/sfx";
 import { EncabezadoPagina } from "@/components/admin/ui/EncabezadoPagina";
 import { EstadoVacio } from "@/components/admin/ui/EstadoVacio";
 import { FormNuevoLead } from "./FormNuevoLead";
 import { DialogoPerdido } from "./MotivoPerdida";
-import { COLOR_FECHA, botonPrimario, canalCorto, fechaCorta, fechaCortaM, fmx, inputCls, type TourOpcion } from "./comun";
+import { COLOR_FECHA, COLOR_VENCE, botonPrimario, canalCorto, fechaCorta, fechaCortaM, fmx, inputCls, type TourOpcion } from "./comun";
 
 // Los filtros van a lo ancho de su texto (no `inputCls`, que estira a todo el renglón).
 const filtroCls = "min-h-[44px] rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white px-3 text-[16px] font-dm text-[var(--panel-tinta)] panel-foco sm:text-[14px]";
 
 type Vista = "pipeline" | "perdido" | "operado";
+type PedirResena = (l: LeadTarjeta, r: ResenaLead, anotada: Promise<boolean>) => void;
+
+/** Operado y Perdido: las cerradas. Su columna enseña solo lo de los últimos días. */
+const CERRADAS: string[] = ["operado", "perdido"];
+const esCerrada = (e: string) => CERRADAS.includes(e);
+/** Cuántas tarjetas caben en una columna cerrada; las demás, en «Ver todos». */
+const TOPE_CERRADOS = 20;
+const SIN_RESENAS: Record<string, ResenaLead> = {};
+
+/** El id de un destino del arrastre (la columna, su pastilla de arriba o la barra de abajo) → su etapa. */
+function etapaDeDestino(id: UniqueIdentifier | undefined): Etapa | null {
+  const e = String(id ?? "").replace(/^(atajo|barra):/, "");
+  return (COLUMNAS_TABLERO as string[]).includes(e) ? (e as Etapa) : null;
+}
+
+// Manda lo que está bajo el dedo o el cursor: así sirven las pastillas y la
+// barra de abajo, que son chicas. Si no hay nada ahí (el hueco entre dos
+// columnas, o el teclado), la columna sobre la que más se encima la tarjeta.
+const deteccion: CollisionDetection = args => {
+  const bajo = pointerWithin(args);
+  return bajo.length ? bajo : rectIntersection(args);
+};
 
 /**
- * Leads (Fase 2): el pipeline de Nuevo a Confirmado. Las tarjetas se
- * arrastran entre columnas (o se mueven desde la ficha); soltar en «Perdido»
- * pide el motivo. Perdidos y Operados van en vistas aparte.
+ * «hoy», «ayer», «hace 5 días» (por día de México). El número y «días» van con
+ * espacio que no se parte (20 nov 2026: en la tarjeta salía «hace 9» arriba y
+ * «días» solo abajo).
  */
-export default function LeadsClient({ leads: iniciales, tareas = [], tours, responsables, quien, hoy }: {
+function haceDias(iso: string, hoy: string): string {
+  const d = diffDiasYMD(ymdMX(iso), hoy);
+  return d <= 0 ? "hoy" : d === 1 ? "ayer" : `hace ${d}\u00a0días`;
+}
+
+/**
+ * Leads: el tablero de Nuevo a Perdido. Las tarjetas se arrastran entre
+ * columnas (o se mueven desde la ficha); soltar en «Perdido» pide el motivo.
+ * 19 nov 2026 (Manolo: «que las etapas aparezcan completas, falta operado y
+ * perdido»): Operado y Perdido ya son columnas, con los que se cerraron en los
+ * últimos 14 días; los de antes, en «Ver todos».
+ */
+export default function LeadsClient({ leads: iniciales, tareas = [], tours, responsables, quien, hoy, resenas: resenasIniciales = SIN_RESENAS }: {
   leads: LeadTarjeta[]; tareas?: TareaFila[]; tours: TourOpcion[]; responsables: string[]; quien: string; hoy: string;
+  /** La reseña de Google de los Operado de su columna (`resenasDeLeads`). */
+  resenas?: Record<string, ResenaLead>;
 }) {
   const router = useRouter();
   const [leads, setLeads] = useState(iniciales);
+  const [resenas, setResenas] = useState(resenasIniciales);
   const [vista, setVista] = useState<Vista>("pipeline");
   const [q, setQ] = useState("");
   const [canal, setCanal] = useState("");
@@ -48,6 +88,7 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
   const [perdiendo, setPerdiendo] = useState<LeadTarjeta | null>(null);
   const [arrastrado, setArrastrado] = useState<LeadTarjeta | null>(null);
   const [msj, setMsj] = useState<{ texto: string; error?: boolean } | null>(null);
+  const [ahora] = useState(() => new Date());
   const recienArrastrado = useRef(0);
   const sensores = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 6 } }),
@@ -57,6 +98,8 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
   // Si llegan datos nuevos del servidor (router.refresh), mandan ellos.
   const [base, setBase] = useState(iniciales);
   if (base !== iniciales) { setBase(iniciales); setLeads(iniciales); }
+  const [baseResenas, setBaseResenas] = useState(resenasIniciales);
+  if (baseResenas !== resenasIniciales) { setBaseResenas(resenasIniciales); setResenas(resenasIniciales); }
 
   const filtrados = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -66,8 +109,13 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
       (!t || l.nombre.toLowerCase().includes(t) || (digitos.length >= 3 && (l.telefono ?? "").includes(digitos))));
   }, [leads, q, canal, tour, responsable]);
   const porEtapa = (e: string) => filtrados.filter(l => l.etapa === e);
+  // Operado y Perdido: los cerrados en los últimos 14 días, el más reciente arriba.
+  const enColumna = (e: string) => esCerrada(e)
+    ? porEtapa(e).filter(l => cerradoHaceMenosDe(l.cerradoEn, ahora, DIAS_TABLERO_CERRADOS)).sort((a, b) => (b.cerradoEn ?? "").localeCompare(a.cerradoEn ?? ""))
+    : porEtapa(e);
   const mes = hoy.slice(0, 7);
-  const motivosMes = contarMotivos(leads.filter(l => l.etapa === "perdido" && l.updatedAt.slice(0, 7) === mes).map(l => l.motivoPerdida));
+  // Por el día en que se perdió, en hora de México (antes `updatedAt`, que lo mueve cualquier cambio).
+  const motivosMes = contarMotivos(leads.filter(l => l.etapa === "perdido" && ymdMX(l.cerradoEn ?? l.updatedAt).slice(0, 7) === mes).map(l => l.motivoPerdida));
 
   // Una tarjeta que todavía se está guardando no se vuelve a mover, y si falla
   // solo ELLA regresa a su lugar (antes el respaldo deshacía también otra
@@ -77,7 +125,9 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
     if (guardando.current.has(l.id)) return;
     guardando.current.add(l.id);
     const previa = leads.find(x => x.id === l.id) ?? l;
-    setLeads(ls => ls.map(x => x.id === l.id ? { ...x, etapa, motivoPerdida: motivo ? (detalle ? `${motivo}: ${detalle}` : motivo) : null, updatedAt: new Date().toISOString() } : x));
+    // Al cerrarlo entra a su columna (que enseña lo cerrado en los últimos días); al reabrirlo, deja de estar cerrado.
+    const cerradoEn = esCerrada(etapa) ? new Date().toISOString() : null;
+    setLeads(ls => ls.map(x => x.id === l.id ? { ...x, etapa, cerradoEn, motivoPerdida: motivo ? (detalle ? `${motivo}: ${detalle}` : motivo) : null, updatedAt: new Date().toISOString() } : x));
     const r = await fetch(`/api/admin/leads/${l.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion: "etapa", etapa, motivo, motivoDetalle: detalle }) }).catch(() => null);
     const d = await r?.json().catch(() => null);
     guardando.current.delete(l.id);
@@ -90,17 +140,33 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
     setArrastrado(null);
     recienArrastrado.current = Date.now();
     const l = leads.find(x => x.id === e.active.id);
-    const hacia = e.over?.id as string | undefined;
+    const hacia = etapaDeDestino(e.over?.id);
     if (!l || !hacia || hacia === l.etapa) return;
     if (hacia === "perdido") { setPerdiendo(l); return; }
-    void mover(l, hacia as Etapa);
+    // A Operado antes del viaje o con saldo, o sacarlo de Operado o Perdido: se pregunta (19 nov 2026).
+    const aviso = avisoAntesDeMover(l, hacia, hoy);
+    if (aviso && !window.confirm(aviso)) return;
+    void mover(l, hacia);
   }
   const alEmpezar = (e: DragStartEvent) => { playClick(); setArrastrado(leads.find(x => x.id === e.active.id) ?? null); };
   const evitarClicTrasArrastre = (ev: React.MouseEvent) => { if (Date.now() - recienArrastrado.current < 300) ev.preventDefault(); };
 
-  // «Por cerrar» = lo mismo que cuenta el menú: abiertos que todavía no confirman.
-  const porCerrar = leads.filter(l => (ETAPAS_PIPELINE as string[]).includes(l.etapa) && l.etapa !== "confirmado").length;
+  // «Pedir reseña» de una tarjeta Operado: se ve pedida en el momento; si no se pudo anotar, vuelve el botón y se avisa.
+  const alPedirResena: PedirResena = (l, r, anotada) => {
+    playClick();
+    setResenas(m => ({ ...m, [l.id]: conPeticionDelPanel(r, new Date().toISOString(), quien) }));
+    void anotada.then(ok => {
+      if (ok) { setMsj({ texto: `Se abrió WhatsApp con el mensaje para ${l.nombre}: revísalo y mándalo.` }); return; }
+      playError();
+      setResenas(m => ({ ...m, [l.id]: r }));
+      setMsj({ texto: `Se abrió WhatsApp, pero no se pudo anotar que se le pidió la reseña a ${l.nombre}. Vuelve a intentarlo.`, error: true });
+    });
+  };
+
+  // «Por cerrar» = lo mismo que cuenta el menú: todavía sin dinero (Nuevo a En seguimiento).
+  const porCerrar = leads.filter(l => (ETAPAS_POR_CERRAR as string[]).includes(l.etapa)).length;
   const confirmados = leads.filter(l => l.etapa === "confirmado").length;
+  const conteos = Object.fromEntries(COLUMNAS_TABLERO.map(e => [e, enColumna(e).length]));
 
   return (
     <div className="mx-auto max-w-[1500px] p-4 pb-12 sm:p-6 md:p-8">
@@ -111,7 +177,7 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
         <div role="tablist" aria-label="Vista" className="flex rounded-[var(--panel-radio-sm)] border border-[var(--panel-borde)] bg-white p-0.5">
           {([["pipeline", "Pipeline"], ["perdido", "Perdidos"], ["operado", "Operados"]] as const).map(([v, t]) => (
             <button key={v} role="tab" aria-selected={vista === v} type="button" onClick={() => { playClick(); setVista(v); }}
-              className={`panel-foco min-h-[36px] rounded-[6px] px-3 text-[12.5px] font-dm font-medium ${vista === v ? "bg-[var(--panel-tinta)] text-white" : "text-[var(--panel-tinta-media)]"}`}>
+              className={`panel-foco min-h-[44px] rounded-[6px] px-3 text-[12.5px] font-dm font-medium ${vista === v ? "bg-[var(--panel-tinta)] text-white" : "text-[var(--panel-tinta-media)]"}`}>
               {t}{v !== "pipeline" && ` (${leads.filter(l => l.etapa === v).length})`}
             </button>
           ))}
@@ -137,14 +203,16 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
         leads.length === 0 ? (
           <EstadoVacio titulo="Todavía no hay leads" texto="Cada persona que escribe por WhatsApp, llama o llega al hotel es un lead. Captúralo con «Nuevo lead»: con tour, fecha y personas entra ya como Calificado." />
         ) : (
-          <DndContext sensors={sensores} onDragStart={alEmpezar} onDragEnd={alSoltar} onDragCancel={() => setArrastrado(null)}>
+          <DndContext sensors={sensores} collisionDetection={deteccion} onDragStart={alEmpezar} onDragEnd={alSoltar} onDragCancel={() => setArrastrado(null)}>
+            <AtajosEtapas conteos={conteos} arrastrando={!!arrastrado} />
             <div className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:px-0">
-              {ETAPAS_PIPELINE.map(e => (
-                <Columna key={e} etapa={e} leads={porEtapa(e)} hoy={hoy} onClicTarjeta={evitarClicTrasArrastre} />
+              {COLUMNAS_TABLERO.map(e => (
+                <Columna key={e} etapa={e} leads={enColumna(e)} todos={porEtapa(e).length} hoy={hoy} resenas={resenas}
+                  onClicTarjeta={evitarClicTrasArrastre} onPedirResena={alPedirResena} onVerTodos={() => { playClick(); setVista(e as Vista); }} />
               ))}
-              <ZonaPerdido activa={!!arrastrado} />
             </div>
-            <DragOverlay>{arrastrado ? <Tarjeta l={arrastrado} hoy={hoy} flotando /> : null}</DragOverlay>
+            {arrastrado && <BarraRapida />}
+            <DragOverlay>{arrastrado ? <Tarjeta l={arrastrado} hoy={hoy} resena={resenas[arrastrado.id]} flotando /> : null}</DragOverlay>
           </DndContext>
         )
       ) : (
@@ -162,7 +230,7 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
           {motivosMes.length === 0 ? <p className="mt-1 text-[13px] font-dm text-[var(--panel-tinta-media)]">Ningún lead perdido este mes.</p> : (
             <div className="mt-3 space-y-2">
               {motivosMes.map(m => (
-                <div key={m.clave} className="grid grid-cols-[170px_minmax(0,1fr)_32px] items-center gap-3 text-[13px] font-dm">
+                <div key={m.clave} className="grid grid-cols-[minmax(0,170px)_minmax(0,1fr)_32px] items-center gap-3 text-[13px] font-dm">
                   <span>{m.etiqueta}</span>
                   <div className="h-5 overflow-hidden rounded bg-[var(--panel-fondo-velo)]"><div className="h-5 rounded bg-[var(--panel-problema)]" style={{ width: `${(m.n / motivosMes[0].n) * 100}%` }} /></div>
                   <span className="panel-cifra text-right">{m.n}</span>
@@ -182,54 +250,119 @@ export default function LeadsClient({ leads: iniciales, tareas = [], tours, resp
   );
 }
 
-function Columna({ etapa, leads, hoy, onClicTarjeta }: { etapa: Etapa; leads: LeadTarjeta[]; hoy: string; onClicTarjeta: (e: React.MouseEvent) => void }) {
-  const { setNodeRef, isOver } = useDroppable({ id: etapa });
-  const total = leads.reduce((t, l) => t + (l.monto ?? 0), 0);
+/**
+ * Arriba del tablero, una pastilla por etapa con cuántos hay (19 nov 2026): con
+ * siete columnas no se ven todas, y en el celular menos. Un toque lleva a la
+ * columna; mientras se arrastra una tarjeta, soltarla en una pastilla la mueve
+ * a esa etapa. Se acomodan en varios renglones: no tapan nada a ningún ancho.
+ */
+function AtajosEtapas({ conteos, arrastrando }: { conteos: Record<string, number>; arrastrando: boolean }) {
   return (
-    <section ref={setNodeRef} aria-label={etiquetaEtapa(etapa)} style={{ borderTopColor: estiloEtapa(etapa).color, borderTopWidth: 3 }}
-      className={`flex w-[272px] shrink-0 snap-start flex-col rounded-[var(--panel-radio)] border p-2 transition-colors ${isOver ? "border-[var(--panel-acento)] bg-[var(--panel-bien-fondo)]" : "border-[var(--panel-borde)] bg-[var(--panel-fondo-velo)]"}`}>
-      <header className="flex items-baseline justify-between px-1.5 pb-2 pt-1">
-        <h2 className="flex items-center gap-1.5 text-[13px] font-dm font-semibold" style={{ color: estiloEtapa(etapa).color }}><IconoEtapa etapa={etapa} />{etiquetaEtapa(etapa)} <span className="font-normal text-[var(--panel-tinta-suave)]">{leads.length}</span></h2>
-        {total > 0 && <span className="panel-cifra text-[11.5px] font-dm text-[var(--panel-tinta-media)]">{fmx(total)}</span>}
+    <nav aria-label="Ir a una etapa" className="mb-3 flex flex-wrap gap-1.5">
+      {COLUMNAS_TABLERO.map(e => <Atajo key={e} etapa={e} n={conteos[e] ?? 0} arrastrando={arrastrando} />)}
+    </nav>
+  );
+}
+
+function Atajo({ etapa, n, arrastrando }: { etapa: Etapa; n: number; arrastrando: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `atajo:${etapa}` });
+  const s = estiloEtapa(etapa);
+  const Icono = s.icono;
+  const ir = () => { playClick(); document.getElementById(`columna-${etapa}`)?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" }); };
+  return (
+    <button ref={setNodeRef} type="button" onClick={ir} title={arrastrando ? `Suelta aquí para pasarlo a ${etiquetaEtapa(etapa)}` : `Ir a ${etiquetaEtapa(etapa)}`}
+      className={`panel-foco inline-flex min-h-[44px] items-center gap-1.5 rounded-full border px-3 text-[12.5px] font-dm font-semibold transition-colors ${arrastrando ? "border-dashed" : ""}`}
+      style={{ color: s.color, background: isOver ? s.fondo : "#fff", borderColor: arrastrando || isOver ? s.color : "var(--panel-borde)" }}>
+      <Icono className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />{etiquetaEtapa(etapa)}<span className="panel-cifra font-normal text-[var(--panel-tinta-suave)]">{n}</span>
+    </button>
+  );
+}
+
+/**
+ * Mientras se arrastra, abajo de la pantalla: Operado y Perdido, para soltar
+ * sin cruzar las siete columnas (19 nov 2026). Solo aparece con una tarjeta
+ * en la mano (nadie está leyendo en ese momento) y se quita al soltarla; la
+ * tarjeta que se arrastra va por encima de ella. Sin arrastre no tapa nada.
+ */
+function BarraRapida() {
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--panel-borde)] bg-white shadow-[var(--panel-sombra-lg)]">
+      <div className="mx-auto flex max-w-md gap-3 px-4 pt-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+        <DestinoRapido etapa="operado" />
+        <DestinoRapido etapa="perdido" />
+      </div>
+    </div>
+  );
+}
+
+function DestinoRapido({ etapa }: { etapa: Etapa }) {
+  const { setNodeRef, isOver } = useDroppable({ id: `barra:${etapa}` });
+  const s = estiloEtapa(etapa);
+  const Icono = s.icono;
+  return (
+    <div ref={setNodeRef} className="flex min-h-[56px] min-w-0 flex-1 items-center justify-center gap-2 rounded-[var(--panel-radio)] border-2 border-dashed px-3 text-center text-[13px] font-dm font-semibold transition-colors"
+      style={{ color: s.color, borderColor: s.color, background: isOver ? s.fondo : "#fff" }}>
+      <Icono className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="min-w-0">Soltar en {etiquetaEtapa(etapa)}</span>
+    </div>
+  );
+}
+
+function Columna({ etapa, leads, todos, hoy, resenas, onClicTarjeta, onPedirResena, onVerTodos }: {
+  etapa: Etapa; leads: LeadTarjeta[]; todos: number; hoy: string; resenas: Record<string, ResenaLead>;
+  onClicTarjeta: (e: React.MouseEvent) => void; onPedirResena: PedirResena; onVerTodos: () => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({ id: etapa });
+  const cerrada = esCerrada(etapa);
+  const visibles = cerrada ? leads.slice(0, TOPE_CERRADOS) : leads;
+  const total = visibles.reduce((t, l) => t + (l.monto ?? 0), 0);
+  const s = estiloEtapa(etapa);
+  return (
+    <section id={`columna-${etapa}`} ref={setNodeRef} aria-label={etiquetaEtapa(etapa)} style={{ borderTopColor: s.color, borderTopWidth: 3 }}
+      className={`flex ${cerrada ? "w-[252px]" : "w-[272px]"} shrink-0 snap-start scroll-ml-4 flex-col rounded-[var(--panel-radio)] border p-2 transition-colors sm:scroll-ml-0 ${isOver ? "border-[var(--panel-acento)] bg-[var(--panel-bien-fondo)]" : "border-[var(--panel-borde)] bg-[var(--panel-fondo-velo)]"}`}>
+      <header className="px-1.5 pb-2 pt-1">
+        <div className="flex items-baseline justify-between gap-2">
+          <h2 className="flex min-w-0 items-center gap-1.5 text-[13px] font-dm font-semibold" style={{ color: s.color }}><IconoEtapa etapa={etapa} />{etiquetaEtapa(etapa)} <span className="font-normal text-[var(--panel-tinta-suave)]">{leads.length}</span></h2>
+          {total > 0 && <span className="panel-cifra shrink-0 text-[11.5px] font-dm text-[var(--panel-tinta-media)]">{fmx(total)}</span>}
+        </div>
+        {cerrada && <p className="mt-0.5 text-[11.5px] font-dm text-[var(--panel-tinta-suave)]">Cerrados en los últimos {DIAS_TABLERO_CERRADOS} días</p>}
       </header>
       <div className="flex min-h-[120px] flex-col gap-2">
-        {leads.map(l => <TarjetaArrastrable key={l.id} l={l} hoy={hoy} onClic={onClicTarjeta} />)}
-        {leads.length === 0 && <p className="px-2 py-6 text-center text-[12px] font-dm text-[var(--panel-tinta-suave)]">Suelta aquí</p>}
+        {visibles.map(l => <TarjetaArrastrable key={l.id} l={l} hoy={hoy} resena={resenas[l.id]} onClic={onClicTarjeta} onPedirResena={onPedirResena} />)}
+        {leads.length === 0 && <p className="px-2 py-6 text-center text-[12px] font-dm text-[var(--panel-tinta-suave)]">{cerrada ? `Nadie en los últimos ${DIAS_TABLERO_CERRADOS} días. Suelta aquí.` : "Suelta aquí"}</p>}
       </div>
+      {cerrada && todos > 0 && (
+        <button type="button" onClick={onVerTodos}
+          className="panel-foco mt-2 inline-flex min-h-[44px] items-center justify-center rounded-[var(--panel-radio-sm)] px-2 text-center text-[12.5px] font-dm font-semibold text-[var(--panel-acento)] hover:underline">
+          {leads.length > visibles.length ? `+${leads.length - visibles.length} más · ` : ""}Ver todos ({todos})
+        </button>
+      )}
     </section>
   );
 }
 
 function IconoEtapa({ etapa }: { etapa: string }) {
   const Icono = estiloEtapa(etapa).icono;
-  return <Icono className="h-3.5 w-3.5" aria-hidden="true" />;
+  return <Icono className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />;
 }
 
-function ZonaPerdido({ activa }: { activa: boolean }) {
-  const { setNodeRef, isOver } = useDroppable({ id: "perdido" });
-  return (
-    <div ref={setNodeRef} aria-label="Marcar perdido"
-      className={`flex w-[160px] shrink-0 items-center justify-center rounded-[var(--panel-radio)] border-2 border-dashed p-3 text-center text-[12.5px] font-dm transition-opacity ${activa ? "opacity-100" : "opacity-40"} ${isOver ? "border-[var(--panel-problema)] bg-[var(--panel-problema-fondo)] text-[var(--panel-problema)]" : "border-[var(--panel-borde-fuerte)] text-[var(--panel-tinta-media)]"}`}>
-      Suelta aquí para marcar perdido
-    </div>
-  );
-}
-
-function TarjetaArrastrable({ l, hoy, onClic }: { l: LeadTarjeta; hoy: string; onClic: (e: React.MouseEvent) => void }) {
+function TarjetaArrastrable({ l, hoy, resena, onClic, onPedirResena }: { l: LeadTarjeta; hoy: string; resena?: ResenaLead; onClic: (e: React.MouseEvent) => void; onPedirResena: PedirResena }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: l.id });
   return (
     <div ref={setNodeRef} {...listeners} {...attributes} className={`touch-manipulation ${isDragging ? "opacity-30" : ""}`}>
-      <Tarjeta l={l} hoy={hoy} onClic={onClic} />
+      <Tarjeta l={l} hoy={hoy} resena={resena} onClic={onClic} onPedirResena={onPedirResena} />
     </div>
   );
 }
 
-function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; onClic?: (e: React.MouseEvent) => void; flotando?: boolean }) {
+function Tarjeta({ l, hoy, resena, onClic, onPedirResena, flotando }: {
+  l: LeadTarjeta; hoy: string; resena?: ResenaLead; onClic?: (e: React.MouseEvent) => void; onPedirResena?: PedirResena; flotando?: boolean;
+}) {
   const router = useRouter();
   const ef = estadoFecha(l.proximoPasoEn, hoy);
   // Toda la tarjeta abre la ficha (Manolo, 3 nov 2026), en cualquier etapa;
   // justo después de un arrastre no (onClic lo cancela).
   const abrir = (e: React.MouseEvent) => { onClic?.(e); if (!e.defaultPrevented && !flotando) router.push(`/admin/leads/${l.id}`); };
+  const finViaje = l.ultimoDia ?? l.fechaViaje;
   return (
     <article onClick={abrir} className={`panel-card cursor-pointer p-3 hover:shadow-[var(--panel-sombra)] ${flotando ? "rotate-1 shadow-[var(--panel-sombra-lg)]" : ""}`}>
       <div className="flex items-start justify-between gap-2">
@@ -247,49 +380,159 @@ function Tarjeta({ l, hoy, onClic, flotando }: { l: LeadTarjeta; hoy: string; on
         <span>{canalCorto(l.canal)}</span>
         {l.responsable && <span>· {l.responsable}</span>}
       </p>
-      {/* Antes de Anticipo pagado no se mueve solo: sin pago registrado hay que revisarlo (¿no llegó o no se anotó el cobro?). */}
-      {l.fechaViaje && l.fechaViaje < hoy && ["nuevo", "calificado", "cotizado", "seguimiento"].includes(l.etapa) && (
+      {/* Sin dinero no pasa sola a Operado: con el viaje ya pasado hay que revisarla (¿no llegó o no se anotó el cobro?). */}
+      {finViaje && finViaje < hoy && (ETAPAS_POR_CERRAR as string[]).includes(l.etapa) && (
         <p className="mt-1.5 text-[12px] font-dm font-semibold text-[var(--panel-problema)]">Ya pasó la fecha del viaje: ¿se operó o se perdió?</p>
       )}
-      {/* Con anticipo o ya confirmado manda la reserva: el estado de la cotización ya no dice nada. */}
-      {l.estadoCotizacion && l.estadoCotizacion !== "aceptada" && !["anticipo", "confirmado", "operado"].includes(l.etapa) && (
+      {/* Ya confirmado (pagó algo), operado o perdido: el estado de la cotización ya no dice nada. */}
+      {l.estadoCotizacion && l.estadoCotizacion !== "aceptada" && !["confirmado", "operado", "perdido"].includes(l.etapa) && (
         <p className={`mt-1.5 flex items-center gap-1 text-[12px] font-dm font-medium ${COLOR_VENCE[l.estadoCotizacion]}`}>
-          <FileText className="h-3 w-3" aria-hidden="true" />
+          <FileText className="h-3 w-3 shrink-0" aria-hidden="true" />
           {l.estadoCotizacion === "borrador" ? "Cotización sin enviar" : l.venceCotizacion ? `Cotización: ${etiquetaVence(l.venceCotizacion, hoy)}` : "Cotización enviada"}
+        </p>
+      )}
+      {l.etapa === "confirmado" && <DineroConfirmado cobrado={l.cobrado} saldo={l.saldo} />}
+      {l.etapa === "operado" && l.saldo > 0 && <p className="mt-1.5 text-[12px] font-dm font-semibold text-[var(--panel-problema)]">Falta cobrar {fmx(l.saldo)}</p>}
+      {/* La cola («· hace 9 días», «· lun 16 de nov») no se parte: si no cabe, baja entera (20 nov 2026). */}
+      {l.etapa === "perdido" && (
+        <p className="mt-1.5 break-words text-[12px] font-dm text-[var(--panel-problema)]">
+          <span className="font-semibold">{etiquetaMotivoPerdida(l.motivoPerdida) || "Sin motivo"}</span>
+          {l.cerradoEn ? <>{" "}<span className="whitespace-nowrap">· {haceDias(l.cerradoEn, hoy)}</span></> : null}
         </p>
       )}
       {(l.proximoPaso || l.proximoPasoEn) && (
         <p className={`mt-1.5 text-[12px] font-dm ${COLOR_FECHA[ef]}`}>
-          {ef === "vencido" ? "Vencido: " : ef === "hoy" ? "Hoy: " : "→ "}{l.proximoPaso ?? "Seguimiento"}{l.proximoPasoEn && ef !== "hoy" ? ` · ${fechaCorta(l.proximoPasoEn)}` : ""}
+          {ef === "vencido" ? "Vencido: " : ef === "hoy" ? "Hoy: " : "→ "}{l.proximoPaso ?? "Seguimiento"}
+          {l.proximoPasoEn && ef !== "hoy" ? <>{" "}<span className="whitespace-nowrap">· {fechaCorta(l.proximoPasoEn)}</span></> : null}
         </p>
       )}
-      {l.telefono && (
-        <a href={`https://wa.me/${l.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" onClick={e => { e.stopPropagation(); onClic?.(e); }}
-          className="panel-foco mt-1 inline-flex items-center gap-1 text-[11.5px] font-dm text-[#1f7a4d] hover:underline"><Phone className="h-3 w-3" aria-hidden="true" />WhatsApp</a>
+      {(l.telefono || (l.etapa === "operado" && resena)) && (
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {l.telefono && (
+            <a href={`https://wa.me/${l.telefono.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" onClick={e => { e.stopPropagation(); onClic?.(e); }}
+              className="panel-foco inline-flex min-h-[44px] items-center gap-1 text-[11.5px] font-dm text-[#1f7a4d] hover:underline"><Phone className="h-3 w-3" aria-hidden="true" />WhatsApp</a>
+          )}
+          {l.etapa === "operado" && resena && <ResenaEnTarjeta l={l} r={resena} onClic={onClic} onPedir={onPedirResena} />}
+        </div>
       )}
     </article>
   );
 }
 
-function ListaCerrados({ leads, vista }: { leads: LeadTarjeta[]; vista: "perdido" | "operado" }) {
-  if (leads.length === 0) return <EstadoVacio titulo={vista === "perdido" ? "Sin leads perdidos" : "Sin leads operados"} texto="Aquí aparecen los de los últimos 4 meses." />;
+/**
+ * Confirmado = ya pagó algo (19 nov 2026: «Anticipo pagado» se unió aquí). Lo
+ * que falta se ve en la tarjeta para que no se quede sin cobrar. Sin reservas
+ * ni dinero (20 nov 2026: la Familia Ledesma, que la migración dejó para
+ * revisar a mano) ya no se queda en blanco: «Sin cobro registrado», discreto.
+ */
+function DineroConfirmado({ cobrado, saldo }: { cobrado: number; saldo: number }) {
+  if (cobrado > 0 && saldo > 0) return <p className="mt-1.5 text-[12px] font-dm font-semibold text-[var(--panel-atencion)]">Anticipo {fmx(cobrado)} · falta {fmx(saldo)}</p>;
+  if (cobrado > 0) return <p className="mt-1.5 flex items-center gap-1 text-[12px] font-dm font-semibold text-[var(--panel-bien)]"><Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />Pagado</p>;
+  if (saldo > 0) return <p className="mt-1.5 text-[12px] font-dm font-semibold text-[var(--panel-problema)]">Sin cobro registrado · falta {fmx(saldo)}</p>;
+  return <p className="mt-1.5 text-[12px] font-dm text-[var(--panel-tinta-media)]">Sin cobro registrado</p>;
+}
+
+/**
+ * En la tarjeta Operado: «Pedir reseña» (abre WhatsApp con el mensaje listo) o
+ * cuándo ya se pidió por WhatsApp. Si ya le llegó el correo de la reseña, se ve
+ * junto al botón (revisión del 20 nov 2026); y si calificó bajo o ya se le
+ * preguntó «¿cómo les fue?», el toque lo pregunta antes (`preguntaAntesDePedir`).
+ */
+function ResenaEnTarjeta({ l, r, onClic, onPedir }: { l: LeadTarjeta; r: ResenaLead; onClic?: (e: React.MouseEvent) => void; onPedir?: PedirResena }) {
+  if (r.porWhatsapp) {
+    return (
+      <span title={textoPeticion(r.porWhatsapp)} className="inline-flex min-h-[44px] items-center gap-1 text-[11.5px] font-dm font-semibold text-[var(--panel-bien)]">
+        <Check className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />Reseña pedida · {diaCortoMX(r.porWhatsapp.en)}
+      </span>
+    );
+  }
+  const correo = r.porCorreo && (
+    <span title={textoPeticion(r.porCorreo)} className="inline-flex items-center gap-1 text-[11.5px] font-dm text-[var(--panel-tinta-media)]">
+      <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />Correo de reseña · {diaCortoMX(r.porCorreo.en)}
+    </span>
+  );
+  if (!r.waUrl) return <>{correo}<span className="inline-flex min-h-[44px] items-center text-[11.5px] font-dm text-[var(--panel-tinta-suave)]">Sin teléfono para la reseña</span></>;
   return (
-    <div className="panel-card overflow-x-auto">
-      <table className="panel-tabla w-full min-w-[640px] text-[13px] font-dm">
-        <thead><tr><th className="px-4 py-2 text-left">Cliente</th><th className="px-2 py-2 text-left">Tours</th><th className="px-2 py-2 text-left">Viaje</th><th className="px-2 py-2 text-right">Monto</th><th className="px-4 py-2 text-left">{vista === "perdido" ? "Motivo" : "Canal"}</th></tr></thead>
-        <tbody>
-          {leads.map(l => (
-            <tr key={l.id}>
-              <td className="px-4 py-2"><Link href={`/admin/leads/${l.id}`} className="panel-foco font-medium hover:underline">{l.nombre}</Link></td>
-              <td className="px-2 py-2"><BadgesTour slugs={l.tours} /></td>
-              <td className="px-2 py-2">{fechaCortaM(l.fechaViaje) || "—"}</td>
-              <td className="panel-cifra px-2 py-2 text-right">{l.monto ? fmx(l.monto) : "—"}</td>
-              <td className="px-4 py-2 text-[var(--panel-tinta-media)]">{vista === "perdido" ? etiquetaMotivoPerdida(l.motivoPerdida) : canalCorto(l.canal)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <>
+      <BotonPedirResena resena={r} texto="Pedir reseña" antes={onClic} onPedida={anotada => onPedir?.(l, r, anotada)}
+        className="panel-foco panel-pulsable inline-flex min-h-[44px] items-center gap-1.5 rounded-[var(--panel-radio-sm)] bg-[#1f7a4d] px-3 text-[12.5px] font-dm font-semibold text-white" />
+      {correo}
+    </>
+  );
+}
+
+/** Lo vendido de un Operado: lo cobrado más lo que falta de sus reservas vivas (lo mismo que dice su tarjeta); sin reservas, su monto. */
+const vendidoDe = (l: LeadTarjeta) => (l.cobrado + l.saldo) || (l.monto ?? 0);
+
+/**
+ * «Ver todos» de Perdidos y Operados (revisión del 20 nov 2026). En el celular
+ * y la tableta, una tarjeta por lead: la tabla de 720 px pedía deslizar de lado
+ * dentro de la tarjeta para ver el motivo y la fecha. La tabla, de `lg` para
+ * arriba: con el menú de la izquierda (desde `md`) antes no cabe.
+ * El monto solo en Operados: lo vendido y, si falta, lo que falta cobrar (lo de
+ * su tarjeta). En Perdidos no va: la tarjeta no trae el total de su cotización
+ * y la columna salía en «—» casi en todos.
+ */
+function ListaCerrados({ leads, vista }: { leads: LeadTarjeta[]; vista: "perdido" | "operado" }) {
+  if (leads.length === 0) return <EstadoVacio titulo={vista === "perdido" ? "Sin leads perdidos" : "Sin leads operados"} texto={`Aquí aparecen los de los últimos 4 meses, por el día en que se ${vista === "perdido" ? "perdieron" : "operaron"}.`} />;
+  const perdidos = vista === "perdido";
+  // El que se cerró más reciente, arriba.
+  const orden = [...leads].sort((a, b) => (b.cerradoEn ?? "").localeCompare(a.cerradoEn ?? ""));
+  const detalle = (l: LeadTarjeta) => perdidos ? (etiquetaMotivoPerdida(l.motivoPerdida) || "Sin motivo") : canalCorto(l.canal);
+  const cerrado = perdidos ? "Se perdió" : "Se operó";
+  return (
+    <>
+      <ul aria-label={perdidos ? "Leads perdidos" : "Leads operados"} className="panel-card divide-y divide-[var(--panel-borde)] overflow-hidden lg:hidden">
+        {orden.map(l => {
+          const vendido = perdidos ? 0 : vendidoDe(l);
+          return (
+            <li key={l.id}>
+              {/* El contorno del foco va por dentro: la lista recorta lo que sale de sus esquinas. */}
+              <Link href={`/admin/leads/${l.id}`} className="panel-foco block px-4 py-3 font-dm hover:bg-[var(--panel-fondo-velo)] focus-visible:-outline-offset-2">
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 break-words text-[14px] font-semibold text-[var(--panel-tinta)]">{l.nombre}</span>
+                  {vendido > 0 && <span className="panel-cifra shrink-0 text-[13px] font-semibold text-[var(--panel-tinta)]">{fmx(vendido)}</span>}
+                </span>
+                <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-[var(--panel-tinta-media)]">
+                  <BadgesTour slugs={l.tours} vacio="Sin tour" />
+                  <span className="whitespace-nowrap">Viaje {l.fechaViaje ? fechaCorta(l.fechaViaje) : "sin fecha"}</span>
+                </span>
+                <span className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[12.5px]">
+                  <span className="min-w-0 break-words text-[var(--panel-tinta)]">{detalle(l)}</span>
+                  <span className="whitespace-nowrap text-[var(--panel-tinta-media)]">{cerrado} {l.cerradoEn ? fechaCorta(ymdMX(l.cerradoEn)) : "—"}</span>
+                </span>
+                {!perdidos && l.saldo > 0 && <span className="mt-1 block text-[12.5px] font-semibold text-[var(--panel-problema)]">Falta cobrar {fmx(l.saldo)}</span>}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+      <div className="panel-card hidden overflow-x-auto lg:block">
+        <table className="panel-tabla w-full min-w-[720px] text-[13px] font-dm">
+          <thead><tr><th className="px-4 py-2 text-left">Cliente</th><th className="px-2 py-2 text-left">Tours</th><th className="px-2 py-2 text-left">Viaje</th>{!perdidos && <th className="px-2 py-2 text-right">Monto</th>}<th className="px-2 py-2 text-left">{perdidos ? "Motivo" : "Canal"}</th><th className="px-4 py-2 text-left">{cerrado}</th></tr></thead>
+          <tbody>
+            {orden.map(l => {
+              const vendido = perdidos ? 0 : vendidoDe(l);
+              return (
+                <tr key={l.id}>
+                  <td className="px-4 py-2"><Link href={`/admin/leads/${l.id}`} className="panel-foco font-medium hover:underline">{l.nombre}</Link></td>
+                  <td className="px-2 py-2"><BadgesTour slugs={l.tours} /></td>
+                  <td className="whitespace-nowrap px-2 py-2">{fechaCortaM(l.fechaViaje) || "—"}</td>
+                  {!perdidos && (
+                    <td className="panel-cifra whitespace-nowrap px-2 py-2 text-right">
+                      {vendido > 0 ? fmx(vendido) : "—"}
+                      {l.saldo > 0 && <span className="block text-[11.5px] font-semibold text-[var(--panel-problema)]">falta {fmx(l.saldo)}</span>}
+                    </td>
+                  )}
+                  <td className="px-2 py-2 text-[var(--panel-tinta-media)]">{detalle(l)}</td>
+                  <td className="whitespace-nowrap px-4 py-2 text-[var(--panel-tinta-media)]">{l.cerradoEn ? fechaCortaM(ymdMX(l.cerradoEn)) : "—"}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
