@@ -9,7 +9,7 @@
 // Manolo), en la portada y en /guia. Este correo seguía vendiéndola: botón
 // "Verla — $49 MXN" hacia una /guia que ya dice «Gratis», y describía la guía
 // de pago (itinerarios de 5 y 7 días, "precios de entrada actualizados") en
-// vez del PDF que se entrega: 13 páginas, UN itinerario de 5 días.
+// vez del PDF que se entrega: 19 páginas, UN itinerario de 5 días.
 
 import { TOURS_DB, etiquetaUnidad } from "./tours";
 import { ANTICIPO_PCT } from "./carrito";
@@ -166,7 +166,7 @@ export function buildItinerarioEmailHtml(email?: string): { subject: string; htm
       tabla(`
         <tr><td style="border:1px solid ${C.borde};background-color:${C.tarjeta};padding:22px;">
           ${titulo("La guía de la Huasteca, gratis", "0 0 10px 0")}
-          ${parrafo("Un itinerario de 5 días con la hora de mejor luz de cada lugar, cómo llegar sin tour, cuánto gastas al día si vas por tu cuenta, dónde dormir y el checklist de empaque. Es un PDF de 13 páginas y no cuesta nada: lo descargas en nuestro sitio con tu correo.", "0")}
+          ${parrafo("Un itinerario de 5 días con la hora de mejor luz de cada lugar, cómo llegar sin tour, cuánto gastas al día si vas por tu cuenta, dónde dormir y el checklist de empaque. Es un PDF de 19 páginas con fotos y no cuesta nada: lo descargas en nuestro sitio con tu correo.", "0")}
         </td></tr>`),
       boton(`${BASE}/guia`, "Descargar la guía gratis", "dorado"),
     ].join(""),

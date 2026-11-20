@@ -887,7 +887,7 @@ const ES: InfoPracticaContent = {
   guiaH2a: "Llévate la guía en ",
   guiaH2b: "PDF",
   guiaTexto:
-    "Un itinerario de 5 días con la hora de mejor luz de cada lugar, cómo llegar sin tour y cuánto gastas al día si vas por tu cuenta — en un PDF de 13 páginas que funciona sin internet. Gratis: solo te pedimos tu correo.",
+    "Un itinerario de 5 días con la hora de mejor luz de cada lugar, cómo llegar sin tour y cuánto gastas al día si vas por tu cuenta — en un PDF de 19 páginas que funciona sin internet. Gratis: solo te pedimos tu correo.",
   guiaItems: [
     "Itinerario de 5 días: Tamul y el Sótano, Xilitla y Las Pozas, el Meco, Minas Viejas y Micos, Puente de Dios y Tamasopo",
     "Por cada día: hora de mejor luz, duración y dificultad",

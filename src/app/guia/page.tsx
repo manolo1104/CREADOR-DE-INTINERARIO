@@ -11,7 +11,7 @@ import { MapPin, Calendar, DollarSign, Car, ClipboardList, Utensils, Zap, BedDou
  * 28 sep 2026). Antes se cobraba $49 con Stripe mientras la portada la
  * regalaba; ahora las dos usan `GuiaGratisForm` y entregan el mismo archivo.
  *
- * 🔴 Lo que se entrega es `public/guia-huasteca-potosina.pdf` (13 páginas, UN
+ * 🔴 Lo que se entrega es `public/guia-huasteca-potosina.pdf` (19 páginas desde el 20 nov 2026, UN
  * itinerario de 5 días). La lista de abajo describe ESE archivo, no la guía de
  * pago (`/api/pdf/guia`: 8 destinos, 3 itinerarios de 3/5/7 días, contactos por
  * municipio), que era lo que prometía esta página. Si cambia el PDF, cambia
@@ -24,14 +24,14 @@ import { MapPin, Calendar, DollarSign, Car, ClipboardList, Utensils, Zap, BedDou
  * propio PDF marca con «~».
  */
 const INCLUIDO: { Icon: LucideIcon; text: string }[] = [
-  { Icon: Calendar,      text: "Itinerario de 5 días: Tamul y el Sótano, Xilitla y Las Pozas, el Meco, Minas Viejas y Micos, Puente de Dios y Tamasopo" },
-  { Icon: MapPin,        text: "Por cada día: la hora de mejor luz, la duración de puerta a puerta y la dificultad" },
-  { Icon: DollarSign,    text: "Cuánto gastas al día si vas por tu cuenta (aproximado)" },
-  { Icon: Car,           text: "Cómo llegar a cada lugar sin tour, y a Ciudad Valles desde CDMX en avión, autobús o auto" },
-  { Icon: BedDouble,     text: "Mejor temporada del año y dónde dormir en tres niveles de precio" },
-  { Icon: ClipboardList, text: "Checklist de empaque: ropa, equipo y botiquín" },
-  { Icon: Utensils,      text: "Vocabulario huasteco y los platillos que hay que probar" },
-  { Icon: Zap,           text: "Notas del guía y lo que NO hacer en cada lugar" },
+  { Icon: DollarSign,    text: "Los 12 lugares imprescindibles con sus precios 2026, revisados el 20 de noviembre" },
+  { Icon: Calendar,      text: "Ruta de 5 días hora por hora: Tamul y las Huahuas, Xilitla y Las Pozas, El Meco, Minas Viejas y Micos, Tamasopo" },
+  { Icon: MapPin,        text: "Mapa con lo que se maneja desde Ciudad Valles a cada lugar" },
+  { Icon: Car,           text: "Qué cuesta y qué implica cada día por tu cuenta, y el tour que lo hace por ti" },
+  { Icon: BedDouble,     text: "El agua mes a mes y dónde dormir: Ciudad Valles o Xilitla" },
+  { Icon: ClipboardList, text: "Qué llevar y cuánto efectivo por día" },
+  { Icon: Zap,           text: "Lo que descubre quien va por su cuenta: canoa por embarcación, terracería, horarios de corte" },
+  { Icon: Utensils,      text: "Fotos reales de cada lugar" },
 ];
 
 // 🔴 Aquí vivían tres «testimonios» (Ana R., Carlos M., Familia Soto) que no
@@ -44,7 +44,7 @@ const INCLUIDO: { Icon: LucideIcon; text: string }[] = [
 const FAQS = [
   { q: "¿Cuánto cuesta?", a: "Nada. Es gratis: solo te pedimos tu correo. Sin pago y sin tarjeta." },
   { q: "¿Cómo me llega?", a: "Al instante: escribes tu correo y la descarga empieza sola en tu celular o computadora." },
-  { q: "¿En qué formato la recibo?", a: "En PDF, de 13 páginas. Lo abres en cualquier celular o computadora y lo guardas para consultarlo durante el viaje." },
+  { q: "¿En qué formato la recibo?", a: "En PDF, de 19 páginas con fotos. Lo abres en cualquier celular o computadora y lo guardas para consultarlo durante el viaje." },
   { q: "Nunca he ido a la Huasteca, ¿me sirve?", a: "Está hecha justo para eso. Te lleva de la mano desde cómo llegar y cuánto gastar hasta qué hacer cada día, con horarios y errores que debes evitar." },
 ];
 
@@ -59,7 +59,7 @@ export default function GuiaPage() {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Columna texto */}
           <div className="text-center md:text-left">
-            <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-5">✦ PDF gratis · 13 páginas · Edición 2026</p>
+            <p className="text-[10px] tracking-[5px] uppercase text-verde-vivo mb-5">✦ PDF gratis · 19 páginas · Edición 2026</p>
             <h1 className="font-cormorant font-light text-crema mb-4 leading-tight" style={{ fontSize: "clamp(38px,5.5vw,68px)" }}>
               Guía Huasteca Potosina<br />
               <em className="text-dorado">La guía que sí funciona</em>

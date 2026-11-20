@@ -10,7 +10,7 @@ import { ORG_REF } from "@/lib/jsonld";
 // Manolo), igual que en el inicio. Aquí se vendía a $49 con un «$199» tachado
 // y «sube pronto» sin fecha, mientras la portada la regalaba: el mismo producto
 // con dos precios. Se entrega el mismo PDF que en el inicio
-// (`/guia-huasteca-potosina.pdf`, 13 páginas, itinerario de 5 días), así que
+// (`/guia-huasteca-potosina.pdf`, 19 páginas desde el 20 nov 2026, ruta de 5 días), así que
 // todo lo que se describe aquí es lo que trae ESE archivo. /guia/descarga se
 // queda para quien la compró antes.
 // 🔴 Sin «costos por parada»: las entradas del PDF no cuadran con `DESTINOS_DB`
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
 const FAQS = [
   { q: "¿Cuánto cuesta?", a: "Nada. Es gratis: solo te pedimos tu correo. Sin pago y sin tarjeta." },
   { q: "¿Cómo me llega?", a: "Al instante: escribes tu correo y la descarga empieza sola en tu celular o computadora." },
-  { q: "¿En qué formato la recibo?", a: "En PDF, de 13 páginas. Lo abres en cualquier celular o computadora y lo guardas para consultarlo durante el viaje." },
+  { q: "¿En qué formato la recibo?", a: "En PDF, de 19 páginas con fotos. Lo abres en cualquier celular o computadora y lo guardas para consultarlo durante el viaje." },
   { q: "Nunca he ido a la Huasteca, ¿me sirve?", a: "Está hecha justo para eso. Te lleva de la mano desde cómo llegar y cuánto gastar hasta qué hacer cada día, con horarios y errores que debes evitar." },
 ];
 
@@ -64,7 +64,7 @@ const jsonLd = {
       "@type": "Product",
       name: "Guía de la Huasteca Potosina 2026",
       description:
-        "Guía de viaje de la Huasteca Potosina en PDF (13 páginas, edición 2026): itinerario de 5 días con horario de mejor luz, duración y dificultad de cada día, gasto aproximado si vas por tu cuenta, cómo llegar sin tour, mejor temporada, dónde dormir, checklist de empaque, vocabulario y comida huasteca.",
+        "Guía de viaje de la Huasteca Potosina en PDF (19 páginas con fotos, edición 2026: 12 lugares con precios revisados el 20 nov 2026): itinerario de 5 días con horario de mejor luz, duración y dificultad de cada día, gasto aproximado si vas por tu cuenta, cómo llegar sin tour, mejor temporada, dónde dormir, checklist de empaque, vocabulario y comida huasteca.",
       url: URL,
       image: OG,
       category: "Guía de viaje digital",
