@@ -17,7 +17,7 @@ export const NARRATIVA_DESTINO: Record<string, string> = {
     "Hay lugares que parecen el producto de un sueño particularmente vívido. Las Pozas de Edward James es uno de ellos: columnas de concreto que suben hacia ningún lado, escaleras que desafían la gravedad, flores de piedra de cuatro metros entre cascadas reales y helechos gigantes. El poeta excéntrico que las construyó nunca pretendió que tuvieran sentido. Ese es exactamente su poder.",
 
   "cascada-de-tamul":
-    "La Cascada de Tamul no te avisa cuándo aparece. Remas por el Cañón del Tampaón durante 30 minutos, con paredes de roca a cada lado y el silencio amplificado por el agua, y de repente el río dobla y ahí está: 105 metros de caída libre, tan ancha que no cabe en ninguna foto que hayas tomado antes. Es el tipo de lugar que te hace entender por qué la gente llora de emoción en los viajes.",
+    "La Cascada de Tamul no te avisa cuándo aparece. Remas por el Cañón del Tampaón entre una y dos horas, con paredes de roca a cada lado y el silencio amplificado por el agua, y de repente el río dobla y ahí está: 105 metros de caída libre, tan ancha que no cabe en ninguna foto que hayas tomado antes. Es el tipo de lugar que te hace entender por qué la gente llora de emoción en los viajes.",
 
   "sotano-de-las-golondrinas":
     "Las 5:45 AM en el borde del Sótano de las Golondrinas es una de las experiencias más extrañas que puede vivir un ser humano. Abajo: oscuridad absoluta a más de 370 metros. Luego empieza el sonido, antes de que veas nada. Después salen ellos: miles de vencejos en espiral ascendente, como un tornado de alas que dura veinte minutos. Y al atardecer, la segunda función: regresan al sótano. No es naturaleza. Es un ritual.",
@@ -219,6 +219,7 @@ export const GUIAS_BLOG_DESTINO: Record<string, GuiaDeDestino[]> = {
 
 export const COMBINACION_DESTINO: Record<string, { nombre: string; slug: string }[]> = {
   "cascada-de-tamul":             [{ nombre: "Sótano de las Huahuas",      slug: "sotano-de-las-huahuas"      }, { nombre: "Sótano de las Golondrinas",  slug: "sotano-de-las-golondrinas"  }],
+  "cueva-del-agua":               [{ nombre: "Cascada de Tamul",           slug: "cascada-de-tamul"           }, { nombre: "Sótano de las Huahuas",      slug: "sotano-de-las-huahuas"      }],
   "sotano-de-las-golondrinas":    [{ nombre: "Cascada de Tamul",           slug: "cascada-de-tamul"           }, { nombre: "Sótano de las Huahuas",      slug: "sotano-de-las-huahuas"      }],
   "sotano-de-las-huahuas":        [{ nombre: "Cascada de Tamul",           slug: "cascada-de-tamul"           }, { nombre: "Sótano de las Golondrinas",  slug: "sotano-de-las-golondrinas"  }],
   "las-pozas-jardin-surrealista": [{ nombre: "Nacimiento de Huichihuayán", slug: "nacimiento-huichihuayan"    }, { nombre: "Xilitla — Pueblo Mágico",    slug: "xilitla-pueblo-magico"       }],
@@ -283,76 +284,32 @@ export const COMBINACION_DESTINO: Record<string, { nombre: string; slug: string 
   "laguna-de-los-suspiros":       [{ nombre: "Zona Arqueológica Tamtoc",   slug: "zona-arqueologica-tamtoc"   }, { nombre: "Balneario Taninul",         slug: "balneario-taninul"           }],
 };
 
-// ── Reseñas mapeadas por destino ─────────────────────────────────────────────
-// Extraídas de TOUR_REVIEWS y asignadas al destino principal que mencionan.
-
-export interface DestinoReview {
-  nombre:    string;
-  ciudad:    string;
-  texto:     string;
-  rating:    number;
-  iniciales: string;
-  foto:      string;
-}
-
-export const REVIEWS_POR_DESTINO: Record<string, DestinoReview[]> = {
-  "cascada-de-tamul": [
-    { nombre: "Sandra Morales", ciudad: "Ciudad de México", rating: 5, iniciales: "SM", foto: "/imagenes/reviews/reviewer-1.jpg", texto: "Salimos muy temprano y valió cada minuto de sueño perdido. Ver a los pericos salir del sótano al amanecer es algo que no te puedo describir con palabras. El guía conocía cada rincón y nos llevó al mirador perfecto para la foto." },
-    { nombre: "Andrés Villanueva", ciudad: "Monterrey, NL", rating: 5, iniciales: "AV", foto: "/imagenes/reviews/reviewer-2.jpg", texto: "La canoa por el Cañón del Tampaón es surrealista. Las paredes de roca a los lados, el silencio, y de repente la cascada. Fui con mi pareja y fue el mejor día del viaje por mucho." },
-    { nombre: "Fernanda Ortiz", ciudad: "Guadalajara, JAL", rating: 5, iniciales: "FO", foto: "/imagenes/reviews/reviewer-4.jpg", texto: "La Cueva del Agua es de otro planeta. El agua turquesa, la luz entrando por la cueva… las fotos que nos mandaron al día siguiente eran increíbles. Ya convencí a mis amigas para venir el próximo año." },
-  ],
-  "sotano-de-las-golondrinas": [
-    { nombre: "Sandra Morales", ciudad: "Ciudad de México", rating: 5, iniciales: "SM", foto: "/imagenes/reviews/reviewer-1.jpg", texto: "Ver a los pericos salir del sótano al amanecer es algo que no te puedo describir con palabras. El guía conocía exactamente el ángulo perfecto para la foto. 10/10." },
-    { nombre: "Sofía R.", ciudad: "Monterrey", rating: 5, iniciales: "SR", foto: "/imagenes/reviews/reviewer-3.jpg", texto: "El sótano de las huahuas al amanecer es indescriptible. Miles de aves saliendo en espiral con el cielo anaranjado de fondo. ¡Vuelvo el año que viene!" },
-  ],
-  "sotano-de-las-huahuas": [
-    { nombre: "Carlos M.", ciudad: "CDMX", rating: 5, iniciales: "CM", foto: "/imagenes/reviews/reviewer-5.jpg", texto: "La Cascada de Tamul me dejó sin palabras. El mejor día de mi vida." },
-    { nombre: "Sofía R.", ciudad: "Monterrey", rating: 5, iniciales: "SR", foto: "/imagenes/reviews/reviewer-3.jpg", texto: "El sótano de las huahuas al amanecer es indescriptible. Miles de aves saliendo en espiral con el cielo anaranjado de fondo." },
-  ],
-  "las-pozas-jardin-surrealista": [
-    { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-17.jpg", texto: "Las Pozas de Edward James son otro mundo. Imposible de describir con palabras. Las esculturas entre la selva real crean algo que no existe en ningún otro lugar del planeta." },
-    { nombre: "Miguel T.", ciudad: "CDMX", rating: 5, iniciales: "MT", foto: "/imagenes/reviews/reviewer-22.jpg", texto: "El tour más único que he hecho en México. Los guías conocen cada rincón y te explican la historia de Edward James con un nivel de detalle que hace todo más mágico." },
-    { nombre: "Mariana Castro", ciudad: "Querétaro, QRO", rating: 5, iniciales: "MC", foto: "/imagenes/reviews/reviewer-16.jpg", texto: "Las Pozas de Edward James son lo más extraño y hermoso que he visto en México. Regresé al mes siguiente con mis papás. Los dos quedaron igual de impresionados." },
-  ],
-  "cascada-el-meco": [
-    { nombre: "Laura G.", ciudad: "Querétaro", rating: 5, iniciales: "LG", foto: "/imagenes/reviews/reviewer-18.jpg", texto: "Las fotos que saqué son las mejores de mi vida. El agua realmente es turquesa. Los guías saben exactamente cuándo ir para tener la luz perfecta." },
-    { nombre: "Javier S.", ciudad: "San Luis Potosí", rating: 5, iniciales: "JS", foto: "/imagenes/reviews/reviewer-23.jpg", texto: "Llegamos a la hora perfecta de luz. Los guías saben exactamente cuándo ir y el color del agua no necesita filtros. Es literalmente así." },
-  ],
-  "cascadas-minas-viejas": [
-    { nombre: "Patricia H.", ciudad: "Monterrey", rating: 5, iniciales: "PH", foto: "/imagenes/reviews/reviewer-11.jpg", texto: "El color del agua de Minas Viejas es imposible. Lo tienes que ver con tus propios ojos. Mis hijos no querían salirse." },
-    { nombre: "Roberto V.", ciudad: "CDMX", rating: 5, iniciales: "RV", foto: "/imagenes/reviews/reviewer-13.jpg", texto: "Todo perfectamente organizado para familias. Las terrazas de agua azul en cascada son algo que no olvidas fácilmente." },
-  ],
-  "puente-de-dios-tamasopo": [
-    { nombre: "Diego F.", ciudad: "Guadalajara", rating: 5, iniciales: "DF", foto: "/imagenes/reviews/reviewer-24.jpg", texto: "El Puente de Dios con la luz entrando por el arco es algo de otro mundo. Llegamos justo a las 11 AM como recomendaron los guías y el efecto de luz es real." },
-    { nombre: "Valeria C.", ciudad: "CDMX", rating: 5, iniciales: "VC", foto: "/imagenes/reviews/reviewer-19.jpg", texto: "Las Siete Cascadas en secuencia son increíbles. Fuimos cinco amigos y quedamos todos maravillados. El guía sabía exactamente el orden para aprovechar la luz." },
-  ],
-  "nacimiento-huichihuayan": [
-    { nombre: "Ana L.", ciudad: "Guadalajara", rating: 5, iniciales: "AL", foto: "/imagenes/reviews/reviewer-17.jpg", texto: "El Nacimiento de Huichihuayán es uno de los lugares más serenos que he visitado en México. El agua a 22°C todo el año y esa transparencia increíble. Lo combinamos con Las Pozas y fue el día perfecto." },
-  ],
-  "cascada-el-salto": [
-    { nombre: "Paola Mendoza", ciudad: "San Luis Potosí", rating: 5, iniciales: "PM", foto: "/imagenes/reviews/reviewer-6.jpg", texto: "La Cascada El Salto combinada con El Meco fue el mejor día del viaje. El agua es realmente turquesa — sin filtros. Los guías saben exactamente a qué hora llegar para la mejor luz." },
-    { nombre: "Tomás Ríos", ciudad: "Querétaro", rating: 5, iniciales: "TR", foto: "/imagenes/reviews/reviewer-8.jpg", texto: "Nadar en la base de la cascada es una experiencia que no se olvida. El sonido del agua golpeando la roca lo sientes en el pecho. Las pozas son cristalinas. Volveremos en septiembre para verla con más agua." },
-  ],
-  "nacimiento-tambaque": [
-    { nombre: "Claudia Espinoza", ciudad: "CDMX", rating: 5, iniciales: "CE", foto: "/imagenes/reviews/reviewer-9.jpg", texto: "Tambaque es exactamente lo que necesitaba. Sin ruido, sin multitudes, solo agua cristalina y árboles. La temperatura del agua sorprende un poco al principio pero te acostumbras rápido. El lugar más tranquilo de toda la Huasteca." },
-    { nombre: "Emilio V.", ciudad: "Monterrey", rating: 5, iniciales: "EV", foto: "/imagenes/reviews/reviewer-14.jpg", texto: "Un nacimiento de agua escondido entre tamarindos. El sendero de acceso ya es parte de la experiencia. Mi novia propuso matrimonio aquí — el lugar lo inspiró. 10/10." },
-  ],
-  "voladores-tamaleton": [
-    { nombre: "Beatriz Cruz", ciudad: "Guadalajara", rating: 5, iniciales: "BC", foto: "/imagenes/reviews/reviewer-20.jpg", texto: "Ver a los Voladores de Tamaletón en persona es algo completamente diferente a verlos en video. La combinación del ritual, la música y el mástil a 30 metros te deja sin palabras. El guía explicó cada detalle del significado sagrado. Emocionante." },
-    { nombre: "Ignacio Soto", ciudad: "CDMX", rating: 5, iniciales: "IS", foto: "/imagenes/reviews/reviewer-21.jpg", texto: "Un ritual de 2,000 años perfectamente preservado. Los danzantes bajan gigrando exactamente 52 vueltas. No esperaba que me impactara tanto — terminé con los ojos llorosos. Cultura viva que no se puede perder." },
-  ],
-  "xilitla-pueblo-magico": [
-    { nombre: "Renata Fuentes", ciudad: "Monterrey", rating: 5, iniciales: "RF", foto: "/imagenes/reviews/reviewer-25.jpg", texto: "Xilitla es mucho más que Las Pozas. El pueblo en sí tiene una magia especial: el café tostado en fogón, los artesanos Tének, la neblina por las mañanas. Nos quedamos 2 noches y regresamos convencidos de que se necesitan al menos 3." },
-    { nombre: "Héctor Ibarra", ciudad: "San Luis Potosí", rating: 5, iniciales: "HI", foto: "/imagenes/reviews/reviewer-26.jpg", texto: "Combinar Las Pozas con el centro de Xilitla es la experiencia completa. El museo Leonora Carrington vale el desvío solo. Los guías locales conocen rincones que no aparecen en ninguna guía de viaje." },
-  ],
-  "zona-arqueologica-tamtoc": [
-    { nombre: "Alejandro Mora", ciudad: "CDMX", rating: 5, iniciales: "AM", foto: "/imagenes/reviews/reviewer-27.jpg", texto: "Llegar a Tamtoc al amanecer, cuando la niebla cubre el río Tampaón al fondo, es una imagen que no olvidarás. El Monumento 32 te hace entender la escala de lo que aquí se construyó hace 2,000 años. Fue la visita más inesperadamente poderosa del viaje." },
-    { nombre: "Lucía Torres", ciudad: "Guadalajara", rating: 5, iniciales: "LT", foto: "/imagenes/reviews/reviewer-28.jpg", texto: "El guía de Tamtoc sabe hacer la historia arqueológica fascinante. No es solo ver piedras — es entender toda una civilización. La figura del Monumento 32 frente al horizonte es de las imágenes más impresionantes que he fotografiado." },
-  ],
-  "balneario-taninul": [
-    { nombre: "Sofía Peñaloza", ciudad: "Monterrey", rating: 5, iniciales: "SP", foto: "/imagenes/reviews/reviewer-29.jpg", texto: "Taninul es el cierre perfecto para un día de cascadas. Te sumerges en el agua caliente sulfurosa y el cansancio desaparece. A las 6 PM, con el sol bajando y casi sin gente, es el spa más hermoso que he visitado en mi vida." },
-    { nombre: "Marco Leal", ciudad: "Querétaro", rating: 5, iniciales: "ML", foto: "/imagenes/reviews/reviewer-30.jpg", texto: "Las aguas termales a 38°C son tan relajantes que casi no queremos salir. El lodo terapéutico es una experiencia única. Solo hay que recordar no llevar plata — el azufre la oscurece instantáneamente. El personal muy amable y las instalaciones bien cuidadas." },
-  ],
+// ── Reseñas REALES que mencionan el destino ──────────────────────────────────
+// 🔴 20 nov 2026 (auditoría de Destinos): aquí vivía `REVIEWS_POR_DESTINO`, 27
+// testimonios INVENTADOS («Sandra Morales, CDMX», con fotos de archivo
+// /imagenes/reviews/reviewer-N.jpg) que ni siquiera hablaban del lugar: la ficha
+// de Tamul citaba pericos del sótano y la Cueva del Agua. Google trata los
+// perfiles fabricados como engaño. Se borraron.
+//
+// Ahora la ficha solo cita reseñas REALES de Google (`resenasReales.ts`) cuyo
+// texto nombra el lugar, según estas expresiones. Sin coincidencia, la ficha no
+// enseña citas: solo la calificación real del negocio y el enlace al perfil.
+export const PALABRAS_RESENA_DESTINO: Record<string, RegExp> = {
+  "las-pozas-jardin-surrealista": /las pozas|jard[ií]n surrealista|edward james/i,
+  "olla-de-la-luz": /(olla|hoya) de la luz/i,
+  "cascada-de-tamul": /tamul/i,
+  "cueva-del-agua": /cueva del agua/i,
+  "sotano-de-las-golondrinas": /golondrinas/i,
+  "sotano-de-las-huahuas": /huahuas/i,
+  "puente-de-dios-tamasopo": /puente de dios/i,
+  "cascadas-de-micos": /micos/i,
+  "cascadas-minas-viejas": /minas viejas/i,
+  "cascada-el-meco": /\bmeco\b/i,
+  "laguna-media-luna": /media luna/i,
+  "zona-arqueologica-tamtoc": /tamtoc/i,
+  "rio-tampaon-rafting": /rafting|tampa[oó]n/i,
+  "xilitla-pueblo-magico": /xilitla/i,
+  "la-trinidad-xilitla": /la trinidad/i,
 };
 
 // 🔴 28 sep 2026 — aquí vivía `RATING_DESTINO`: 1,188 reseñas repartidas entre

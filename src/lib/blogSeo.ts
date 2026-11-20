@@ -287,11 +287,12 @@ const SALTO_MICOS = (() => {
   return a;
 })();
 
-// "Domingos gratis (mexicanos) · extranjeros ~$95" no se puede pegar tal cual
-// a media frase. Si la ficha cambia de forma, se usa su texto sin adaptar.
+// "Nacionales $80 · extranjeros $145 · domingo gratis…" (20 nov 2026, tarifas
+// INAH 2026) no se puede pegar tal cual a media frase. Si la ficha cambia de
+// forma, se usa su texto sin adaptar.
 const TAMTOC_ENTRADA = (() => {
-  const m = /gratis \(mexicanos\) · extranjeros (~?\$[\d,]+)/i.exec(D_TAMTOC.precio_entrada);
-  return m ? `gratis para mexicanos y de ${m[1]} MXN para extranjeros` : D_TAMTOC.precio_entrada;
+  const m = /Nacionales (\$[\d,]+) · extranjeros (\$[\d,]+)/i.exec(D_TAMTOC.precio_entrada);
+  return m ? `de ${m[1]} MXN para nacionales (gratis el domingo) y de ${m[2]} MXN para extranjeros` : D_TAMTOC.precio_entrada;
 })();
 
 // Ninguno ENTRA a Tambaque: `tourMapping` los tiene como "cerca".
@@ -2217,7 +2218,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
     // Era "Cascadas de Micos: Guía Completa 2026 | Huasteca Potosina".
     metaTitle: "Cascadas de Micos 2026: guía de saltos y cómo llegar",
     metaDescription:
-      `Guía de las Cascadas de Micos, a 20 min de Ciudad Valles: saltos, tirolesa y skybike, entrada ${D_MICOS.precio_entrada}, horario y el tour que suma Minas Viejas.`,
+      `Guía de las Cascadas de Micos, a 30 min de Ciudad Valles: saltos, tirolesa y skybike, entrada ${D_MICOS.precio_entrada}, horario y el tour que suma Minas Viejas.`,
     bloqueInicial: DATOS_MICOS,
     contentReplace: [
       {

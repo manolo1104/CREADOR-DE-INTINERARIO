@@ -16,13 +16,6 @@ export const VIAJE_SLUG = "viaje-cdmx-xilitla";
 export const VIAJE_NOMBRE = "Viaje CDMX–Xilitla";
 export const VIAJE_RUTA = `/${VIAJE_SLUG}`;
 /**
- * Alto de la franja del viaje bajo la del río (17 oct 2026). Aquí y no en el
- * componente: ese archivo es de cliente y una página de servidor que importa
- * una constante de un archivo «use client» recibe un objeto, no el número.
- */
-export const ALTO_BANDA_VIAJE = 30;
-
-/**
  * Lo que dura (Manolo, 16 oct 2026; antes eran 3 días y 2 noches con regreso el
  * lunes a las 5 pm, y eso costaba un día de trabajo): sale el VIERNES a la
  * medianoche, viaja de noche, son dos días allá —sábado y domingo— con UNA

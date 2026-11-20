@@ -20,20 +20,15 @@
      fichas de tour se comía 109 px de la foto o del video en el celular (94 en
      la computadora). Ahora cada pieza del menú tiene un alto FIJO desde el
      servidor y los heros arrancan justo debajo con `.hero-bajo-menu`.
-     · Franja del río (BandaRio): 2 renglones en el celular, 1 desde 640 px
-       (el `sm` de Tailwind). Incluye su raya de abajo.
-     · Franja del viaje (BandaViaje): 30 px. Su hueco en el flujo lo pone
-       `EspacioBandaViaje`, por eso los heros no la cuentan.
+     · 🔴 20 nov 2026: ya no hay franjas arriba del menú (Manolo quitó la del
+       río y la del viaje CDMX). El menú es solo su fila.
      · Fila del menú: 64 px + 1 de la raya de abajo del <nav>.
-     🔴 Si cambia el alto de una franja, se cambia AQUÍ y en su componente. */
-  --alto-banda-rio: 30px;
-  --alto-banda-viaje: 30px;
+     🔴 Si cambia el alto de la fila, se cambia AQUÍ. */
   --alto-fila-menu: 65px;
-  /* Lo que el menú tapa de la página: el río + la fila. La del viaje ya tiene
-     su hueco en el flujo, así que esto vale igual en las rutas sin ella. */
-  --menu-encima: calc(var(--alto-banda-rio) + var(--alto-fila-menu));
+  /* Lo que el menú tapa de la página. */
+  --menu-encima: var(--alto-fila-menu);
   /* El menú entero, de arriba a abajo (para los heros de pantalla completa). */
-  --menu-alto: calc(var(--menu-encima) + var(--alto-banda-viaje));
+  --menu-alto: var(--alto-fila-menu);
   /* Valores del servidor. Navbar.tsx los reescribe con lo que mide, que ahora
      es lo mismo: nada brinca al hidratar. `--navbar-offset` baja a 0 cuando el
      menú se esconde al bajar (lo siguen los subnavs pegajosos). */
@@ -49,24 +44,6 @@
      🔴 Si cambia el alto de la barra, se cambia AQUÍ. No lleva el margen de
      la barra de gestos del iPhone porque la barra tampoco lo lleva. */
   --alto-barra-reservar: 69px;
-}
-
-/* El río en el celular: el texto de siempre en dos renglones. */
-@media (max-width: 639.98px) {
-  :root {
-    --alto-banda-rio: 44px;
-  }
-}
-
-/* Rutas donde una franja no sale (el pago no lleva la del río; la página del
-   viaje no lleva la suya): su alto vale 0 para que `--menu-alto` y los valores
-   del servidor midan el menú real. Navegadores sin `:has()` ignoran la regla y
-   se quedan con los altos de arriba; el menú corrige al medirse. */
-:root:not(:has([data-banda-rio])) {
-  --alto-banda-rio: 0px;
-}
-:root:not(:has([data-banda-viaje])) {
-  --alto-banda-viaje: 0px;
 }
 
 /* Sticky subnavs that track navbar hide/show */
@@ -115,10 +92,7 @@ html {
   }
 
   /* Hero con foto o video (19 nov 2026): arranca justo donde termina el menú
-     fijo, así no se pierde nada de la imagen debajo de él. Solo baja lo que
-     tapan el río y la fila del menú: los 30 px de la franja del viaje ya los
-     mete `EspacioBandaViaje` en el flujo (y donde esa franja no sale, tampoco
-     sale su hueco). Los heros de pantalla completa restan `--menu-alto` de su
+     fijo, así no se pierde nada de la imagen debajo de él. Los heros de pantalla completa restan `--menu-alto` de su
      alto para seguir terminando en el borde de la pantalla. */
   .hero-bajo-menu {
     margin-top: var(--menu-encima);
@@ -1065,4 +1039,60 @@ html[data-checkout-cerrado] {
 }
 @media (prefers-reduced-motion: reduce) {
   .animate-centrado { animation: none; }
+}
+
+/* ── /destinos, pase de diseño (20 nov 2026) ─────────────────────────────
+   Curva fuerte de salida para lo que responde al dedo (desplegables, el
+   selector de días, botones): arranca rápido y frena suave. Nada pasa de
+   250 ms, y con «reducir movimiento» solo queda la opacidad. */
+:root {
+  --ease-out-fuerte: cubic-bezier(0.23, 1, 0.32, 1);
+}
+.tactil {
+  transition: transform 160ms var(--ease-out-fuerte), background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+.tactil:active {
+  transform: scale(0.97);
+}
+/* El desplegable de «Más filtros» crece desde su botón (arriba a la izquierda),
+   no desde el centro ni desde cero. */
+.desplegable {
+  transform-origin: top left;
+  transition: opacity 180ms var(--ease-out-fuerte), transform 180ms var(--ease-out-fuerte);
+}
+@starting-style {
+  .desplegable {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+/* El indicador del selector de días se desliza bajo la opción elegida. */
+.indicador-segmentado {
+  transition: transform 240ms var(--ease-out-fuerte);
+}
+/* Zoom de foto solo con ratón: en el teléfono el «hover» se dispara al tocar. */
+.zoom-foto {
+  transition: transform 500ms var(--ease-out-fuerte);
+}
+@media (hover: hover) and (pointer: fine) {
+  .group:hover .zoom-foto {
+    transform: scale(1.04);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tactil:active,
+  .group:hover .zoom-foto {
+    transform: none;
+  }
+  .indicador-segmentado {
+    transition: none;
+  }
+  .desplegable {
+    transition: opacity 120ms ease;
+  }
+  @starting-style {
+    .desplegable {
+      transform: none;
+    }
+  }
 }

@@ -5,8 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import {
-  Clock, Ticket, BarChart2, Calendar, Sun, CloudSun, MapPin,
-  AlertTriangle, Car, Backpack, Lightbulb, Map, Zap, Lock, Star, ExternalLink,
+  Clock, Calendar, Sun, CloudSun, MapPin, Backpack, Lightbulb, Map, Zap, Lock, Star,
 } from "lucide-react";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { buildDestinationJsonLd, getDestinoFaqs } from "@/lib/jsonld";
@@ -29,8 +28,15 @@ import {
   narrativaDestino,
   COMBINACION_DESTINO,
   GUIAS_BLOG_DESTINO,
-  REVIEWS_POR_DESTINO,
+  PALABRAS_RESENA_DESTINO,
 } from "@/lib/destinoData";
+import { guiaDe } from "@/lib/destinosGuia";
+import { atributosDe } from "@/lib/destinosAtributos";
+import { EstadoRioFicha } from "@/components/destinos/EstadoRioFicha";
+import {
+  MigasDestino, RespuestaRapida, CostosYTour, ComoLlegar, QueEsperarYSeguridad,
+  TemporadasServicios, CercaDeAqui, FuentesDestino,
+} from "./SeccionesGuia";
 import { resenasRealesPara, ROTULO_TRADUCCION } from "@/lib/i18n/resenasReales.en";
 import { asLocale, localePath, localeUrl, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
 import { localizeDestino, localizeTour } from "@/lib/i18n/localize";
@@ -168,10 +174,16 @@ function RejillaCercanos({ tours, locale, dd }: { tours: Tour[]; locale: Locale;
 
 export function Pagina({ params, locale }: Props & { locale: Locale }) {
   const dd = getDict(locale).destino;
-  const verTour = getDict(locale).tour.viewTour;
   const base = DESTINOS_DB.find((d) => d.slug === params.slug);
   if (!base) notFound();
   const destino = localizeDestino(base, locale);
+  const en = locale === "en";
+  const verTour = getDict(locale).tour.viewTour;
+  const money = (n: number) => `$${fmtNumber(n, locale)}`;
+  // La guía escrita a mano (solo los destinos más buscados, solo español) y los
+  // atributos prácticos (todos): ver `destinosGuia.ts` y `destinosAtributos.ts`.
+  const guia = guiaDe(base.slug);
+  const atr = atributosDe(base.slug);
 
   const jsonLd            = buildDestinationJsonLd(destino, locale);
   const faqs              = getDestinoFaqs(destino, locale);
@@ -185,76 +197,65 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
     .filter(Boolean)
     .map((tour) => localizeTour(tour!, locale));
   // Tours de la misma zona que NO lo visitan: se ofrecen como combinables para
-  // que los 26 destinos sin tour propio dejen de terminar en un CTA vacío.
+  // que los destinos sin tour propio no terminen en un CTA vacío.
   const toursCercanos     = toursCercaDe(destino.slug)
     .map((t) => TOURS_DB.find((tour) => tour.slug === t.slug))
     .filter(Boolean)
     .map((tour) => localizeTour(tour!, locale));
   const tourPrincipal     = toursCompletos[0];
   // La fila "Recogida" de los datos prácticos, armada desde `recogida` de los
-  // tours que SÍ visitan el destino (sin localizar: `resumenSalidas` traduce
-  // los nombres él mismo). 🔴 Antes era el texto fijo "Tu hospedaje en Xilitla
-  // o Ciudad Valles" en TODAS las fichas: falso en la Olla, La Trinidad y Las
-  // Pozas (solo Xilitla), en el RZR (base en Xilitla), en la Media Luna (se
-  // llega por cuenta propia) y en los destinos sin tour, donde nadie recoge.
-  // Sin tour propio la lista queda vacía y la fila no se pinta.
+  // tours que SÍ visitan el destino. Sin tour propio la lista queda vacía y la
+  // fila no se pinta.
   const toursBaseIncluyen = toursQueIncluyen(destino.slug)
     .map((t) => TOURS_DB.find((tour) => tour.slug === t.slug))
     .filter((t): t is Tour => !!t);
   const salidas           = resumenSalidas(toursBaseIncluyen, locale);
-  // "Recogida" solo si todos pasan por ti; si alguno es en la base o en el
-  // sitio, la fila es un punto de encuentro.
-  const etiquetaSalida    = toursBaseIncluyen.every((t) => partesRecogida(t, locale === "en").incluyeTraslado)
+  const etiquetaSalida    = toursBaseIncluyen.every((t) => partesRecogida(t, en).incluyeTraslado)
     ? dd.meetingPoint
-    : locale === "en" ? "Meeting point" : "Punto de encuentro";
-  // En inglés, su traducción (10 nov 2026; antes se escondía y la ficha EN
-  // quedaba en ~600 palabras). Si falta, sin narrativa: nunca el español.
+    : en ? "Meeting point" : "Punto de encuentro";
   const narrativa        = narrativaDestino(destino.slug, locale);
-  // El blog solo existe en español; en /en no se ofrece la guía a fondo.
-  // La guía del blog del lugar. En inglés solo si ya está traducida
-  // (`src/content/blog-en`, 10 nov 2026); si no, no se ofrece.
   const guiaEs           = blogDeDestino(destino.slug);
   const guiaEn           = guiaEs ? slugEnDe(guiaEs) : undefined;
-  const guiaHref         = locale === "en"
+  const guiaHref         = en
     ? (guiaEn ? urlBlogEn(guiaEn) : undefined)
     : (guiaEs ? `/blog/${guiaEs}` : undefined);
-  // Fase 3 SEO (10 nov 2026): donde la ficha es la dueña del nombre del lugar,
-  // sus artículos se enlazan con el ancla de SU intención, no con «Guía
-  // completa de…» (ver `GUIAS_BLOG_DESTINO`). Solo en español: el blog aún no
-  // está en inglés.
-  const guiasBlog        = locale === "en" ? undefined : GUIAS_BLOG_DESTINO[base.slug];
+  const guiasBlog        = en ? undefined : GUIAS_BLOG_DESTINO[base.slug];
   const combinaciones    = COMBINACION_DESTINO[destino.slug] ?? [];
-  const reviewsDestino   = REVIEWS_POR_DESTINO[destino.slug] ?? [];
-  // 🔴 En inglés NO se enseñan las de `REVIEWS_POR_DESTINO`: no están en el
-  // perfil de Google (ver `resenasReales.en.ts`) y traducirlas sería darles
-  // todavía más alcance. En su lugar van tres reseñas REALES del
-  // negocio, traducidas, rotuladas como traducción y con su original en
-  // español (`lang="es"`). Se pintan en las mismas fichas que en español —las
-  // que tienen bloque de opiniones— para que las dos versiones sigan iguales.
-  // Solo las que tienen traducción: ningún texto en español sin rotular en /en.
-  const resenasEn        = locale === "en" && reviewsDestino.length > 0
-    ? resenasRealesPara("en", 3).filter((r) => r.traducida)
+  // Reseñas REALES de Google que nombran el lugar (20 nov 2026: fuera los
+  // testimonios inventados de `REVIEWS_POR_DESTINO`). En inglés, traducidas y
+  // rotuladas; se busca el nombre en el ORIGINAL en español.
+  const palabras         = PALABRAS_RESENA_DESTINO[base.slug];
+  const resenasLugar     = palabras
+    ? resenasRealesPara(locale).filter((r) => palabras.test(r.original) && (!en || r.traducida))
     : [];
-  const hayResenas       = locale === "en" ? resenasEn.length > 0 : reviewsDestino.length > 0;
   const tourHref         = toursRelacionados[0] ? localePath(`/tours/${toursRelacionados[0].slug}`, locale) : undefined;
-  const money            = (n: number) => `$${fmtNumber(n, locale)}`;
   const comboName        = (slug: string, fallback: string) => {
     const b = DESTINOS_DB.find((d) => d.slug === slug);
     return b ? localizeDestino(b, locale).nombre : fallback;
   };
-  const waDestino = locale === "en"
+  const waDestino = en
     ? `Hi, I'd like information about visiting ${destino.nombre} in the Huasteca Potosina.`
     : WA_MESSAGES.destino(destino.nombre);
+  const waCorreccion = en
+    ? `Hi, I think some information on the ${destino.nombre} page has changed: `
+    : `Hola, creo que un dato de la ficha de ${destino.nombre} cambió: `;
 
-  // Los alt salían "{nombre} — foto 2", "foto 3"… en toda la galería: inútiles
-  // para Google Imágenes y para quien navega con lector de pantalla. Ahora se
-  // derivan del nombre del archivo cuando este describe la foto. Ver altImagenes.ts.
   const fotosGaleria = [destino.imagen_hero, ...destino.imagen_galeria].filter(Boolean);
   const altsGaleria  = altsGaleriaDestino(destino, fotosGaleria, locale);
   const allImages    = fotosGaleria.map((src, i) => ({ src, alt: altsGaleria[i] }));
 
   const mapsUrl  = `https://www.google.com/maps/search/${encodeURIComponent(destino.nombre + " " + destino.zona + " San Luis Potosí")}/@${destino.lat},${destino.lng},13z`;
   const embedUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${destino.lng - 0.08},${destino.lat - 0.06},${destino.lng + 0.08},${destino.lat + 0.06}&layer=mapnik&marker=${destino.lat},${destino.lng}`;
+
+  // El agua hoy: solo donde hay agua de por medio.
+  const conAgua = atr.nado !== "no" || atr.categorias.some((c) => c === "cascadas" || c === "pozas" || c === "aventura");
+  const recogidaTexto = salidas.length ? salidas.join(" · ") : undefined;
+  const comparable = tourPrincipal
+    ? { tour: tourPrincipal, precioTexto: precioConUnidad(tourPrincipal, locale), recogida: recogidaTexto }
+    : undefined;
+  const cercano = !tourPrincipal && toursCercanos[0]
+    ? { tour: toursCercanos[0], precioTexto: precioConUnidad(toursCercanos[0], locale) }
+    : undefined;
 
   return (
     <>
@@ -265,7 +266,6 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           destino:  base.slug,
           nombre:   base.nombre,
           zona:     base.zona,
-          // Para medir el puente: ¿los destinos con tour propio convierten más?
           tourSlug: tourPrincipal?.slug,
           conTour:  tourPrincipal ? "incluye" : toursCercanos.length ? "cerca" : "ninguno",
         }}
@@ -273,22 +273,14 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
       <main className="min-h-screen">
 
         {/* ── HERO ──
-            `hero-bajo-menu` (19 nov 2026, Manolo: «que el navbar no tape parte
-            de las fotos»): arranca justo debajo del menú fijo. Antes el menú se
-            comía la parte de arriba de la foto (en Tamul, la orilla de la
-            cascada) y el enlace «Todos los destinos» quedaba debajo de él. */}
+            `hero-bajo-menu`: arranca justo debajo del menú fijo. Desde el
+            20 nov 2026 lleva migas de pan VISIBLES (Inicio › Destinos ›
+            municipio › lugar) en lugar de «← Todos los destinos». */}
         <div className="hero-bajo-menu relative min-h-[60vh] flex flex-col justify-end overflow-hidden">
           {destino.imagen_hero ? (
             <>
-              {/* El mismo alt que su miniatura en la galería: la foto es la misma. */}
               <Image src={destino.imagen_hero} alt={altsGaleria[0]} fill priority className="object-cover" sizes="100vw" />
               <div className="absolute inset-0 bg-gradient-to-t from-negro via-negro/60 to-transparent" />
-              {/* Sombra ARRIBA (20 nov 2026): con la foto ya debajo del menú,
-                  «← Todos los destinos» quedó sobre el cielo y se leía a 1.5:1.
-                  Va debajo del texto (el contenido es `z-10`) y no recibe
-                  toques. Degradado escrito a mano por lo mismo que en
-                  /que-hacer-en-la-huasteca-potosina: una extensión de Chrome
-                  con Tailwind 4 anula el from/to de Tailwind 3. */}
               <div
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-x-0 top-0 h-40"
@@ -300,30 +292,16 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           )}
 
           <div className="relative z-10 px-6 md:px-20 py-14">
-            {/* 44 px de alto para el dedo (20 nov 2026) sin mover nada: el
-                renglón mide 15 px, así que los 29 de más se devuelven con los
-                márgenes (−14.5 arriba; 32 − 14.5 abajo) y la letra queda donde
-                estaba. */}
-            <Link href={localePath("/destinos", locale)} className="texto-sobre-foto flex w-fit min-h-[44px] items-center -mt-[14.5px] mb-[17.5px] text-[10px] tracking-[3px] uppercase text-verde-vivo hover:text-lima transition-colors">
-              {dd.allDestinations}
-            </Link>
+            <MigasDestino destino={destino} locale={locale} />
             <DestinoIcon name={destino.icon} className="w-12 h-12 text-crema/60 mb-4" />
             <h1 className="font-cormorant font-light text-crema mb-3 break-words max-w-full" style={{ fontSize: "clamp(34px,6vw,64px)" }}>
               {destino.nombre}
             </h1>
-            {/* 🔴 28 sep 2026 — aquí iban cinco estrellas con "4.7 · 161 reseñas
-                de Google" justo bajo el nombre del lugar: se leían como la nota
-                de Tamtoc o de Tamul en Maps (que es otra), en los 82 destinos,
-                incluso en los que ningún tour visita. Es la nota del NEGOCIO
-                (`src/lib/resenas.ts`) y ya no va en el héroe: solo abajo, en la
-                sección de opiniones, rotulada con el nombre de la operadora. */}
             <p className="texto-sobre-foto text-[10px] tracking-[3px] uppercase text-verde-vivo mb-4">{destino.zona} · {destino.tipo}</p>
-
             <p className="text-crema/75 max-w-2xl leading-relaxed text-base mb-5">{destino.descripcion}</p>
 
-            {/* Son los CTA más ALTOS de la página y eran `Link` pelones: por eso
-                DESTINO_TOUR_CLICK salía en 4 en nueve días y el salto
-                destino→tour parecía no existir. Con `TrackedLink` se mide. */}
+            {/* Un solo «Incluido en» arriba (la auditoría pidió quitar el
+                segundo): las píldoras de los tours que SÍ lo visitan. */}
             {toursRelacionados.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {toursRelacionados.map((t) => (
@@ -340,54 +318,21 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           </div>
         </div>
 
-        {/* ── BANDA DE PRODUCTO ──
-            🔴 10 oct 2026 — esta banda estaba DESPUÉS de la galería. El
-            comentario decía que ponía el producto «arriba del pliegue», pero la
-            galería es un bento de filas de 34vw: en Puente de Dios son ~240vw
-            de scroll antes del único botón que lleva a un tour. En 9 días de
-            Clarity, 186 sesiones vieron una ficha de destino y solo el 7,5 %
-            llegó a ver un tour; el título, que no es clicable, recibía clics
-            muertos. Va ANTES de la galería, pegada al héroe.
+        {/* ── 1. RESPUESTA RÁPIDA + EL AGUA HOY ── */}
+        <RespuestaRapida destino={destino} guia={guia} locale={locale} waMensaje={waCorreccion} />
+        {conAgua && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
+            <EstadoRioFicha en={en} destino={base.slug} />
+          </div>
+        )}
 
-            Y ahora también se pinta cuando NINGÚN tour visita el lugar
-            (23 de los 41 destinos): en esos casos se ofrece el tour de la misma
-            zona, que es lo que el bloque del final ya hacía donde nadie lo veía. */}
-        {(tourPrincipal ?? toursCercanos[0]) && (() => {
-          const t = tourPrincipal ?? toursCercanos[0];
-          const esCercano = !tourPrincipal;
-          return (
-            <section className="bg-verde-profundo border-y border-verde-vivo/20">
-              <div className="max-w-5xl mx-auto px-6 md:px-8 py-6 flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6">
-                <div className="flex-1 min-w-0">
-                  <p className="font-cormorant text-crema text-xl md:text-2xl leading-snug">
-                    {esCercano ? dd.nearbyIntro(destino.nombre) : dd.partOfTour(destino.nombre, t.nombre)}
-                  </p>
-                  <p className="font-dm text-crema/60 text-sm mt-1">
-                    {esCercano ? `${t.nombre} · ` : ""}
-                    {precioConUnidad(t, locale)}
-                    {t.precioUnidad === "vehiculo" || t.cancelacion ? "" : ` · ${dd.deposit30}`}
-                  </p>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <TrackedLink
-                    href={localePath(`/tours/${t.slug}`, locale)}
-                    event="DESTINO_TOUR_CLICK"
-                    data={{
-                      destino:  base.slug,
-                      tourSlug: t.slug,
-                      tour_name: t.nombre,
-                      amount:   t.precio,
-                      source:   esCercano ? "banda_destino_cerca" : "banda_destino",
-                    }}
-                    className="rounded-xl inline-flex items-center gap-2 bg-lima text-negro px-5 py-3 text-[11px] tracking-[2px] uppercase font-dm hover:bg-verde-vivo hover:text-crema transition-colors"
-                  >
-                    {dd.seeDepartures} →
-                  </TrackedLink>
-                </div>
-              </div>
-            </section>
-          );
-        })()}
+        {/* ── 2. COSTOS + POR TU CUENTA VS CON TOUR ──
+            Va ANTES de la galería por lo mismo que la vieja «banda de
+            producto» (10 oct 2026): la galería es un bento largo y el único
+            botón al tour quedaba muy abajo. Ahora ese botón vive en la
+            comparación honesta, que convierte mejor que esconder la opción
+            de ir por tu cuenta. */}
+        <CostosYTour destino={destino} guia={guia} locale={locale} comparable={comparable} cercano={cercano} />
 
         {(allImages.length > 1 || (!destino.imagen_hero && allImages.length > 0)) && (
           <DestinoGallery images={allImages} nombre={destino.nombre} />
@@ -401,8 +346,14 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           </div>
         )}
 
-        {locale !== "en" && (
-          <div className="max-w-4xl mx-auto px-6 pt-8 pb-2">
+        {/* ── 3. CÓMO LLEGAR, QUÉ ESPERAR, NIVEL Y SEGURIDAD ── */}
+        <ComoLlegar destino={destino} guia={guia} locale={locale} embedUrl={embedUrl} mapsUrl={mapsUrl} />
+        <QueEsperarYSeguridad destino={destino} guia={guia} locale={locale} />
+
+        {/* ── 4. TEMPORADAS, DATOS PRÁCTICOS, SERVICIOS ── */}
+        {guia && !en && <TemporadasServicios guia={guia} />}
+        {!en && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
             <MejorEpocaWidget
               temporada={destino.temporada_ideal}
               destinoNombre={destino.nombre}
@@ -411,77 +362,30 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           </div>
         )}
 
-        {/* Los lugares del viaje CDMX–Xilitla: la ficha del lugar es lo que lee
-            quien todavía no decide cómo llegar. */}
-        {DESTINOS_DEL_VIAJE_CDMX[destino.slug] && (
-          <div className="max-w-4xl mx-auto px-6 pt-12">
-            {locale === "en"
-              ? <TarjetaViajeCdmx origen={`destino-${destino.slug}-en`} locale="en" titulo="In Mexico City? It's on our weekend trip, all included" />
-              : <TarjetaViajeCdmx origen={`destino-${destino.slug}`} titulo={DESTINOS_DEL_VIAJE_CDMX[destino.slug]} />}
-          </div>
-        )}
-
-        {/* ── INFO GRID ── */}
-        <div className="max-w-4xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <h2 className="font-cormorant text-crema text-2xl mb-6">{dd.practicalData}</h2>
+        <div className="max-w-4xl mx-auto px-6 pb-14 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-1">
+            <h2 className="font-cormorant text-crema text-2xl mb-4">{dd.practicalData}</h2>
             {(
               [
-                { Icon: Clock,     label: dd.duration,     val: dd.hoursUnit(destino.duracion_hrs) },
-                { Icon: Ticket,    label: dd.entrance,     val: destino.precio_entrada },
-                { Icon: BarChart2, label: dd.difficulty,   val: dd.difficultyVal(destino.dificultad) },
-                { Icon: Clock,     label: dd.schedule,     val: destino.horario },
+                { Icon: Clock,     label: dd.schedule,     val: (!en && guia?.horario) || destino.horario },
                 { Icon: Calendar,  label: dd.daysOpen,     val: destino.dias_abierto },
                 { Icon: Sun,       label: dd.bestTime,     val: destino.mejor_hora },
                 { Icon: CloudSun,  label: dd.bestSeason,   val: destino.temporada_ideal },
                 { Icon: MapPin,    label: etiquetaSalida,  val: salidas },
               ] as { Icon: LucideIcon; label: string; val: string | string[] | undefined }[]
             ).filter(i => i.val?.length).map((item) => (
-              // 🔴 Opacidades solo de la escala de Tailwind (5, 10, 15…): con
-              // /6 u /8 la clase no se genera, el borde cae al gris #e5e7eb
-              // del reset (una raya clara sobre el verde) y el fondo no sale.
               <div key={item.label} className="flex gap-3 py-3 border-b border-white/5">
                 <item.Icon className="w-4 h-4 flex-shrink-0 text-verde-selva mt-0.5" />
                 <div>
                   <div className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-0.5">{item.label}</div>
-                  {/* Varias líneas cuando los tours del destino recogen distinto
-                      ("Expedición Tamul: …" / "Gruta de Xilo: …"). */}
                   {(Array.isArray(item.val) ? item.val : [item.val]).map((linea) => (
                     <div key={linea} className="text-sm text-crema">{linea}</div>
                   ))}
-                  {/* La entrada y la panga se leían como una contradicción con el
-                      "todo incluido" del tour. No lo son: este costo es para
-                      quien va por su cuenta. Decirlo aquí evita la duda y de
-                      paso enseña lo que el tour ya te ahorra. Sin la nota
-                      cuando la "entrada" ES nuestro tour (`entradaEsTour`).
-                      🔴 Ni cuando ningún tour visita el lugar: prometía "en
-                      nuestros tours ya va incluida" en la misma página que
-                      más abajo dice "no lo visitamos en un tour" (Tamtoc). */}
-                  {item.label === dd.entrance && !base.entradaEsTour && toursCompletos.length > 0 && (
-                    <div className="text-[11px] text-crema/45 font-dm mt-1 leading-relaxed">
-                      {locale === "en"
-                        ? "This is the cost if you come on your own. On our tours, admission is already included."
-                        : "Este es el costo si vienes por tu cuenta. En nuestros tours las entradas ya van incluidas."}
-                    </div>
-                  )}
                 </div>
               </div>
             ))}
           </div>
-
           <div className="space-y-6">
-            {destino.advertencias && (
-              <div className="rounded-r-xl border-l-2 border-terracota bg-terracota/10 p-4">
-                <p className="text-[10px] tracking-[2px] uppercase text-terracota mb-2 flex items-center gap-1.5"><AlertTriangle className="w-3 h-3" /> {dd.advertencias}</p>
-                <p className="text-sm text-crema/75">{destino.advertencias}</p>
-              </div>
-            )}
-            {destino.como_llegar && (
-              <div className="rounded-r-xl border-l-2 border-agua bg-agua/10 p-4">
-                <p className="text-[10px] tracking-[2px] uppercase text-agua mb-2 flex items-center gap-1.5"><Car className="w-3 h-3" /> {dd.comoLlegar}</p>
-                <p className="text-sm text-crema/75">{destino.como_llegar}</p>
-              </div>
-            )}
             {destino.que_llevar?.length > 0 && (
               <div>
                 <p className="text-[10px] tracking-[2px] uppercase text-crema/40 mb-3 flex items-center gap-1.5"><Backpack className="w-3 h-3" /> {dd.queLlevar}</p>
@@ -536,20 +440,80 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           </div>
         )}
 
-        {/* ── MAPA ── */}
-        <div className="max-w-4xl mx-auto px-6 pb-12">
-          <h2 className="font-cormorant text-crema text-xl mb-4 flex items-center gap-2">
-            <MapPin className="w-5 h-5 text-verde-selva" /> {dd.location}
-          </h2>
-          <div className="rounded-2xl relative overflow-hidden border border-white/10" style={{ height: "280px" }}>
-            <div className="absolute inset-0 bg-verde-profundo/30 animate-pulse" />
-            <iframe src={embedUrl} width="100%" height="280" style={{ border: 0, position: "relative", zIndex: 10 }} loading="lazy" title={`${dd.location}: ${destino.nombre}`} allowFullScreen={false} />
+        {/* ── 5. RESEÑAS Y PREGUNTAS ── */}
+        {/* ── RESEÑAS ── */}
+        {(resenasLugar.length > 0 || toursCompletos.length > 0) && (
+          <div className="max-w-4xl mx-auto px-6 pb-12">
+            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-5">
+              <h2 className="font-cormorant text-crema text-xl">
+                {dd.travelersSay}
+                {/* Aquí iba `dd.resenasEnEspanol` («In their own words
+                    (Spanish).»), que solo tenía texto en inglés. Ya no aplica:
+                    en /en cada tarjeta trae su traducción rotulada y el
+                    original a un clic. En español la cadena es vacía, así que
+                    quitarla no cambia nada allá. */}
+              </h2>
+              {/* La cifra es de la OPERADORA, no del lugar, y se dice con su
+                  nombre: junto al nombre del destino se leía como la nota de
+                  Maps de Tamtoc o de Tamul (`src/lib/resenas.ts` prohíbe
+                  atribuirla por destino). Enlaza al perfil donde se comprueba. */}
+              <a
+                href={GOOGLE_PERFIL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex flex-col items-start sm:items-end gap-1"
+              >
+                <span className="text-[9px] tracking-[2px] uppercase font-dm text-crema/45">
+                  {locale === "en" ? "Tours Huasteca Potosina rating" : "Calificación de Tours Huasteca Potosina"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</span>
+                  <span className="text-dorado font-dm text-sm font-medium group-hover:underline underline-offset-2">{resenasTexto(locale === "en")}</span>
+                </span>
+              </a>
+            </div>
+            {/* Solo reseñas REALES de Google que nombran el lugar
+                (`PALABRAS_RESENA_DESTINO`); en inglés, con su traducción
+                rotulada y el original a un clic. Sin coincidencia, no hay citas:
+                la calificación del negocio y el enlace al perfil. */}
+            {resenasLugar.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {resenasLugar.map((r) => (
+                  <div key={r.autor} className="rounded-xl border border-white/10 bg-negro/30 p-4">
+                    <div className="flex gap-0.5 mb-2">{[...Array(r.estrellas)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
+                    <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-2">&ldquo;{r.texto}&rdquo;</p>
+                    {r.traducida && (
+                      <>
+                        <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm mb-1">{ROTULO_TRADUCCION.traducida}</p>
+                        <details className="mb-3">
+                          <summary className="cursor-pointer text-[10px] font-dm text-verde-vivo hover:text-lima transition-colors">
+                            {ROTULO_TRADUCCION.verOriginal}
+                          </summary>
+                          <p lang="es" className="mt-2 text-crema/50 font-dm text-xs leading-relaxed italic">&ldquo;{r.original}&rdquo;</p>
+                        </details>
+                      </>
+                    )}
+                    <div className="flex items-center gap-2">
+                      <span aria-hidden="true" className="flex-shrink-0">
+                        <AvatarResena autor={r.autor} foto={r.foto} className="w-7 h-7" />
+                      </span>
+                      <div>
+                        <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.autor}</p>
+                        <p className="text-[9px] text-crema/35 font-dm">{locale === "en" ? `${r.fecha} · Google review` : `${r.fecha} · Reseña de Google`}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="font-dm text-sm text-crema/55">
+                {locale === "en"
+                  ? "We only quote real Google reviews that mention this place. Read all of them on our profile."
+                  : "Solo citamos reseñas reales de Google que mencionan este lugar. Léelas todas en nuestro perfil."}
+              </p>
+            )}
           </div>
-          <a href={mapsUrl} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 mt-2 text-[10px] tracking-[2px] uppercase font-dm text-verde-vivo hover:text-lima transition-colors">
-            <ExternalLink className="w-3 h-3" /> {dd.openInMaps}
-          </a>
-        </div>
+        )}
 
         {/* ── PREGUNTAS FRECUENTES ──
             Mismo contenido que el JSON-LD (getDestinoFaqs): Google exige que lo
@@ -616,87 +580,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           </div>
         )}
 
-        {/* ── RESEÑAS ── */}
-        {hayResenas && (
-          <div className="max-w-4xl mx-auto px-6 pb-12">
-            <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3 mb-5">
-              <h2 className="font-cormorant text-crema text-xl">
-                {dd.travelersSay}
-                {/* Aquí iba `dd.resenasEnEspanol` («In their own words
-                    (Spanish).»), que solo tenía texto en inglés. Ya no aplica:
-                    en /en cada tarjeta trae su traducción rotulada y el
-                    original a un clic. En español la cadena es vacía, así que
-                    quitarla no cambia nada allá. */}
-              </h2>
-              {/* La cifra es de la OPERADORA, no del lugar, y se dice con su
-                  nombre: junto al nombre del destino se leía como la nota de
-                  Maps de Tamtoc o de Tamul (`src/lib/resenas.ts` prohíbe
-                  atribuirla por destino). Enlaza al perfil donde se comprueba. */}
-              <a
-                href={GOOGLE_PERFIL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col items-start sm:items-end gap-1"
-              >
-                <span className="text-[9px] tracking-[2px] uppercase font-dm text-crema/45">
-                  {locale === "en" ? "Tours Huasteca Potosina rating" : "Calificación de Tours Huasteca Potosina"}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="flex gap-0.5">{[...Array(5)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</span>
-                  <span className="text-dorado font-dm text-sm font-medium group-hover:underline underline-offset-2">{resenasTexto(locale === "en")}</span>
-                </span>
-              </a>
-            </div>
-            {locale === "en" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {resenasEn.map((r) => (
-                  <div key={r.autor} className="rounded-xl border border-white/10 bg-negro/30 p-4">
-                    <div className="flex gap-0.5 mb-2">{[...Array(r.estrellas)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
-                    <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-2">&ldquo;{r.texto}&rdquo;</p>
-                    {/* Rotulada como traducción y con el texto literal de
-                        Google a un clic, como hace Google Maps. */}
-                    <p className="text-[9px] tracking-[1px] uppercase text-crema/35 font-dm mb-1">{ROTULO_TRADUCCION.traducida}</p>
-                    <details className="mb-3">
-                      <summary className="cursor-pointer text-[10px] font-dm text-verde-vivo hover:text-lima transition-colors">
-                        {ROTULO_TRADUCCION.verOriginal}
-                      </summary>
-                      <p lang="es" className="mt-2 text-crema/50 font-dm text-xs leading-relaxed italic">&ldquo;{r.original}&rdquo;</p>
-                    </details>
-                    <div className="flex items-center gap-2">
-                      {/* Foto de perfil de Google o su inicial. Decorativa: el
-                          nombre va justo al lado. */}
-                      <span aria-hidden="true" className="flex-shrink-0">
-                        <AvatarResena autor={r.autor} foto={r.foto} className="w-7 h-7" />
-                      </span>
-                      <div>
-                        <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.autor}</p>
-                        <p className="text-[9px] text-crema/35 font-dm">{r.recorrido ? `${r.fecha} · ${r.recorrido}` : r.fecha}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {reviewsDestino.map((r) => (
-                <div key={r.nombre} className="rounded-xl border border-white/10 bg-negro/30 p-4">
-                  <div className="flex gap-0.5 mb-2">{[...Array(r.rating)].map((_,i) => <Star key={i} className="w-3 h-3 fill-dorado text-dorado" />)}</div>
-                  <p className="text-crema/65 font-dm text-xs leading-relaxed italic mb-3">&ldquo;{r.texto}&rdquo;</p>
-                  <div className="flex items-center gap-2">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.foto} alt={r.nombre} width={28} height={28} loading="lazy" className="w-7 h-7 rounded-full object-cover flex-shrink-0" />
-                    <div>
-                      <p className="font-dm text-xs text-crema/80 font-medium leading-none">{r.nombre}</p>
-                      <p className="text-[9px] text-crema/35 font-dm">{r.ciudad}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            )}
-          </div>
-        )}
-
+        {/* ── 6. TOURS QUE LO INCLUYEN, CERCA DE AQUÍ, FUENTES, CORREO ── */}
         {/* ── TOURS RELACIONADOS ── */}
         {toursCompletos.length > 0 ? (
           <div className="bg-verde-selva/20 border-t border-verde-vivo/20 py-16 px-6">
@@ -842,6 +726,21 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             </p>
           </div>
         )}
+
+        {/* El viaje desde la CDMX: estaba arriba, antes de cualquier dato del
+            lugar; la auditoría lo bajó junto a los tours (20 nov 2026). */}
+        {DESTINOS_DEL_VIAJE_CDMX[destino.slug] && (
+          <div className="max-w-4xl mx-auto px-6 pt-12">
+            {en
+              ? <TarjetaViajeCdmx origen={`destino-${destino.slug}-en`} locale="en" titulo="In Mexico City? It's on our weekend trip, all included" />
+              : <TarjetaViajeCdmx origen={`destino-${destino.slug}`} titulo={DESTINOS_DEL_VIAJE_CDMX[destino.slug]} />}
+          </div>
+        )}
+
+        <div className="pt-14">
+          <CercaDeAqui destino={destino} locale={locale} />
+        </div>
+        {guia && !en && <FuentesDestino guia={guia} />}
 
         {/* ── CAPTURA DE CORREO ──
             Las páginas de destino son el grueso del tráfico orgánico y hasta

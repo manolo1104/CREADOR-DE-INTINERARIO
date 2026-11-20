@@ -7,7 +7,6 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { CookieBanner } from "@/components/CookieBanner";
 import { PopupXantolo } from "@/components/PopupXantolo";
 import { PopupViaje } from "@/components/viajeCdmx/PopupViaje";
-import { EspacioBandaViaje } from "@/components/viajeCdmx/BandaViaje";
 import { PresenceBeacon } from "@/components/PresenceBeacon";
 import { enPantallaDePago } from "@/lib/barrasFijas";
 
@@ -76,8 +75,6 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
       {!isAdmin && <ScrollProgressBar />}
       {!isAdmin && <PresenceBeacon />}
       {!isAdmin && <Navbar />}
-      {/* Los 30 px de la franja del viaje, en el flujo: así no tapa el arranque de ninguna página. */}
-      {!isAdmin && <EspacioBandaViaje />}
       {children}
       {!isAdmin && !isCheckout && <SiteFooter />}
       {/* Justo después del pie: además de la barra fija trae el hueco que

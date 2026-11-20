@@ -21,7 +21,7 @@ export const NARRATIVA_DESTINO_EN: Record<string, string> = {
     "Some places feel like the product of an especially vivid dream. Edward James's Las Pozas is one of them: concrete columns that rise toward nowhere, staircases that defy gravity, four-meter stone flowers among real waterfalls and giant ferns. The eccentric poet who built them never meant for them to make sense. That's exactly where their power lies.",
 
   "cascada-de-tamul":
-    "Tamul Waterfall (Cascada de Tamul) gives no warning before it appears. You paddle through the Cañón del Tampaón for 30 minutes, with rock walls on either side and the silence amplified by the water, and suddenly the river bends and there it is: a 105-meter free fall, so wide it won't fit in any photo you've ever taken. It's the kind of place that makes you understand why people cry with emotion when they travel.",
+    "Tamul Waterfall (Cascada de Tamul) gives no warning before it appears. You paddle through the Cañón del Tampaón for one to two hours, with rock walls on either side and the silence amplified by the water, and suddenly the river bends and there it is: a 105-meter free fall, so wide it won't fit in any photo you've ever taken. It's the kind of place that makes you understand why people cry with emotion when they travel.",
 
   "sotano-de-las-golondrinas":
     "5:45 AM at the edge of the Sótano de las Golondrinas (Cave of Swallows) is one of the strangest experiences a human being can have. Below: total darkness more than 370 meters down. Then the sound begins, before you see anything. Then they come out: thousands of swifts spiraling upward, like a tornado of wings that lasts twenty minutes. And at dusk comes the second show: they fly back into the abyss. This isn't nature. It's a ritual.",

@@ -5,6 +5,7 @@ import { TOURS_DB, etiquetaUnidad, type Tour } from "./tours";
 import { rangoGrupo } from "./catalogoResumen";
 import { localizeTour } from "./i18n/localize";
 import { localePath, localeUrl, type Locale } from "./i18n/config";
+import { guiaDe } from "./destinosGuia";
 
 const BASE_URL = "https://www.huasteca-potosina.com";
 
@@ -405,59 +406,101 @@ const PREGUNTA_PRECIO = {
 };
 
 /**
- * FAQs de un destino: primero las curadas a mano (`seo.faqPrincipales`) y luego
- * las prácticas generadas de sus datos reales (precio, cómo llegar, temporada,
- * duración, qué llevar), sin repetir preguntas.
+ * «Mañana» → «por la mañana» · «08:00–10:00» → «entre las 08:00 y las 10:00».
  *
- * Antes las curadas REEMPLAZABAN a las automáticas, así que las fichas mejor
- * trabajadas acababan publicando MENOS preguntas que las demás. Se usa tanto
- * para el JSON-LD como para la sección visible de la página (Google pide que el
- * contenido del schema se vea, y para los buscadores de IA es texto citable).
+ * 🔴 20 nov 2026 (auditoría de Destinos): la plantilla vieja pegaba el campo tal
+ * cual y publicaba en 41 fichas «La mejor hora del día para llegar es Mañana
+ * para aprovechar al máximo la experiencia»: texto que se lee generado sin
+ * revisión, justo lo que Google llama contenido a escala de poco esfuerzo.
+ */
+function cuandoLlegar(hora: string, en: boolean): string {
+  const h = hora.trim();
+  const rango = /^(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})$/.exec(h);
+  if (rango) return en ? `between ${rango[1]} and ${rango[2]}` : `entre las ${rango[1]} y las ${rango[2]}`;
+  const dos = /^(\d{1,2}:\d{2})\s*(?:o|or)\s*(\d{1,2}:\d{2})$/.exec(h);
+  if (dos) return en ? `at ${dos[1]} or at ${dos[2]}` : `a las ${dos[1]} o a las ${dos[2]}`;
+  const una = /^(\d{1,2}:\d{2})(?:\s*AM)?$/i.exec(h);
+  if (una) return en ? `at ${una[1]}` : `a las ${una[1]}`;
+  const es: Record<string, string> = {
+    "Mañana": "por la mañana",
+    "Media mañana": "a media mañana",
+    "Mañana temprana": "temprano por la mañana",
+    "Mañana o atardecer": "por la mañana o al atardecer",
+    "Amanecer (para la niebla)": "al amanecer, para ver la niebla",
+    "Tarde (luz dorada entre los árboles)": "por la tarde, cuando la luz dorada entra entre los árboles",
+  };
+  const ing: Record<string, string> = {
+    "Morning": "in the morning",
+    "Mid-morning": "mid-morning",
+    "Early morning": "early in the morning",
+    "Morning or sunset": "in the morning or at sunset",
+    "Sunrise (for the fog)": "at sunrise, to see the fog",
+    "Afternoon (golden light through the trees)": "in the afternoon, when golden light filters through the trees",
+  };
+  return (en ? ing[h] : es[h]) ?? (en ? `around ${h.toLowerCase()}` : `hacia ${h.toLowerCase()}`);
+}
+
+/**
+ * FAQs de un destino.
+ *
+ * · Con guía escrita a mano (`destinosGuia.ts`, solo español): SOLO esas. Están
+ *   revisadas con fuentes y fechadas; las curadas viejas de `seo.faqPrincipales`
+ *   y las automáticas podían contradecirlas (Tamul: «$220 + $300 panga»).
+ * · Sin guía: primero las curadas (`seo.faqPrincipales`) y luego las prácticas
+ *   que salen de sus datos (precio, cómo llegar, temporada, duración, qué
+ *   llevar), redactadas como frases normales y sin repetir preguntas.
+ *
+ * Se usa para el JSON-LD y para la sección visible (Google pide que lo marcado
+ * como FAQPage se vea, y los buscadores de IA citan este texto).
  */
 export function getDestinoFaqs(d: Destino, locale: Locale = "es"): DestinoFaq[] {
+  const guia = locale === "es" ? guiaDe(d.slug) : undefined;
+  if (guia?.faqs.length) return guia.faqs;
+
   const curadas: DestinoFaq[] = d.seo?.faqPrincipales?.length ? [...d.seo.faqPrincipales] : [];
   const precioCurado = curadas.some((f) => PREGUNTA_PRECIO[locale].test(f.pregunta));
   const precio = precioCurado ? [] : [faqPrecioDestino(d, locale)];
+  const en = locale === "en";
+  const llegar = cuandoLlegar(d.mejor_hora, en);
+  const lleva = d.que_llevar.join(", ");
 
-  const automaticas: DestinoFaq[] = locale === "en"
+  const automaticas: DestinoFaq[] = en
     ? [
         ...precio,
         {
           pregunta: `How do I get to ${d.nombre} from Ciudad Valles?`,
-          respuesta: `${d.como_llegar}. The destination is in ${d.zona}, San Luis Potosí, Mexico.`,
+          respuesta: `${d.nombre} is in ${d.zona}, San Luis Potosí. From Ciudad Valles: ${d.como_llegar.replace(/\.$/, "")}.`,
         },
         {
           pregunta: `What time of year is best to visit ${d.nombre}?`,
-          respuesta: `The best season to visit ${d.nombre} is ${d.temporada_ideal}. The best time of day to arrive is ${d.mejor_hora} to make the most of the experience.`,
+          respuesta: `The best season is ${d.temporada_ideal}. On the day, try to arrive ${llegar}.`,
         },
         {
-          pregunta: `How much time do you need to tour ${d.nombre}?`,
-          respuesta: `Plan about ${d.duracion_hrs} hours to enjoy ${d.nombre} at a relaxed pace. The site is open ${d.horario} (${d.dias_abierto}).`,
+          pregunta: `How much time do you need at ${d.nombre}?`,
+          respuesta: `Plan about ${d.duracion_hrs} hours. Hours: ${d.horario} (${d.dias_abierto}).`,
         },
         {
-          pregunta: `What should you bring to visit ${d.nombre}?`,
-          respuesta: `To visit ${d.nombre} we recommend bringing: ${d.que_llevar.join(", ")}. ${d.advertencias ? `Important: ${d.advertencias}` : ""}`.trim(),
+          pregunta: `What should I bring to ${d.nombre}?`,
+          respuesta: `Bring ${lleva}.${d.advertencias ? ` Keep in mind: ${d.advertencias}` : ""}`,
         },
       ]
     : [
         ...precio,
         {
           pregunta: `¿Cómo llegar a ${d.nombre} desde Ciudad Valles?`,
-          respuesta: `${d.como_llegar}. El destino se encuentra en ${d.zona}, San Luis Potosí, México.`,
+          respuesta: `${d.nombre} está en ${d.zona}, San Luis Potosí. Desde Ciudad Valles: ${d.como_llegar.replace(/\.$/, "")}.`,
         },
         {
-          pregunta: `¿En qué época del año es mejor visitar ${d.nombre}?`,
-          respuesta: `La temporada ideal para visitar ${d.nombre} es ${d.temporada_ideal}. La mejor hora del día para llegar es ${d.mejor_hora} para aprovechar al máximo la experiencia.`,
+          pregunta: `¿Cuál es la mejor época para visitar ${d.nombre}?`,
+          respuesta: `La mejor temporada es ${d.temporada_ideal}. Ese día, procura llegar ${llegar}.`,
         },
         {
-          pregunta: `¿Cuánto tiempo se necesita para recorrer ${d.nombre}?`,
-          respuesta: `Se recomienda destinar aproximadamente ${d.duracion_hrs} horas para recorrer ${d.nombre} con calma. El sitio abre ${d.horario} (${d.dias_abierto}).`,
+          pregunta: `¿Cuánto tiempo se necesita en ${d.nombre}?`,
+          respuesta: `Calcula unas ${d.duracion_hrs} horas. Horario: ${d.horario} (${d.dias_abierto}).`,
         },
         {
-          pregunta: `¿Qué llevar para visitar ${d.nombre}?`,
-          respuesta: `Para visitar ${d.nombre} se recomienda llevar: ${d.que_llevar.join(", ")}. ${
-            d.advertencias ? `Importante: ${d.advertencias}` : ""
-          }`.trim(),
+          pregunta: `¿Qué llevar a ${d.nombre}?`,
+          respuesta: `Lleva ${lleva}.${d.advertencias ? ` Toma en cuenta: ${d.advertencias}` : ""}`,
         },
       ];
 
@@ -543,7 +586,31 @@ export function buildDestinationJsonLd(d: Destino, locale: Locale = "es") {
           value: true,
         })),
         image: imagen ? `${BASE_URL}${imagen}` : undefined,
+        // Jerarquía geográfica (20 nov 2026, auditoría): lugar → municipio →
+        // la Huasteca Potosina, que es el índice /destinos.
+        containedInPlace: {
+          "@type": "AdministrativeArea",
+          name: d.zona,
+          containedInPlace: {
+            "@type": "TouristDestination",
+            name: "Huasteca Potosina",
+            url: `${BASE_URL}${localePath("/destinos", locale)}`,
+          },
+        },
       },
+      // La página misma, con la fecha REAL de revisión de su guía (solo las
+      // fichas con guía escrita a mano la tienen; las demás no inventan una).
+      ...(guiaDe(d.slug)
+        ? [{
+            "@type": "WebPage",
+            "@id": `${url}#pagina`,
+            url,
+            name: d.seo?.metaTitle ?? d.nombre,
+            inLanguage,
+            dateModified: guiaDe(d.slug)!.revisado,
+            about: { "@type": "TouristAttraction", name: d.nombre },
+          }]
+        : []),
       // 🔴 28 sep 2026 — retirado el aggregateRating de destinos.
       // `RATING_DESTINO` repartía 1,188 reseñas entre 20 destinos, con notas de
       // 4.5 a 4.7, todas inventadas: el negocio tiene 161 reseñas en Google y

@@ -43,6 +43,7 @@ const cerca = (t: { nombre: string; slug: string }): TourRef => ({ ...t, relacio
 export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
   // ── Aquismón ──────────────────────────────────────────────────────────────
   "cascada-de-tamul":               [T.tamul, T.rappel],
+  "cueva-del-agua":                 [T.tamul],
   "sotano-de-las-huahuas":          [T.tamul],
   // 🔴 Era [T.tamul]: la ficha decía que la Expedición Tamul lo visita y el bot
   // lo vendía dentro de Tamul (un operador llegó a cotizarlo). Del 17 sep al

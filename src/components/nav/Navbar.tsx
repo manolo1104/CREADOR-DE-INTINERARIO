@@ -6,8 +6,6 @@ import { usePathname } from "next/navigation";
 import { Globe, ChevronDown } from "lucide-react";
 import { asLocale, localePath, type Locale } from "@/lib/i18n/config";
 import { getDict } from "@/lib/i18n/messages";
-import { BandaRio } from "@/components/BandaRio";
-import { BandaViaje } from "@/components/viajeCdmx/BandaViaje";
 import PARES_BLOG from "@/content/blog-en/pares.json";
 
 // Páginas españolas que SÍ tienen pareja en /en (la misma que declara su
@@ -161,10 +159,6 @@ export default function Navbar() {
   const mobileOpenRef = useRef(false);
   const altoNavRef = useRef(0);
   const [altoNav, setAltoNav] = useState<number | null>(null);
-  // El panel de «Avísame cuando esté turquesa» flota debajo del menú
-  // (BandaRio): mientras esté abierto el menú no se esconde, o el panel se
-  // quedaría solo arriba de la pantalla.
-  const [panelRio, setPanelRio] = useState(false);
   useEffect(() => {
     mobileOpenRef.current = mobileOpen;
   }, [mobileOpen]);
@@ -194,7 +188,7 @@ export default function Navbar() {
       // si se escondiera antes, arriba de la foto quedaría una franja vacía
       // donde estaba el menú.
       const umbral = altoNavRef.current || navRef.current?.offsetHeight || 80;
-      if (currentY <= umbral || mobileOpen || panelRio) {
+      if (currentY <= umbral || mobileOpen) {
         setNavbarVisible(true);
       } else if (currentY > lastScrollY.current + 8) {
         setNavbarVisible(false);
@@ -205,7 +199,7 @@ export default function Navbar() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [mobileOpen, panelRio]);
+  }, [mobileOpen]);
 
   // Escondido: 0 (los subnavs pegajosos suben al borde). A la vista: lo medido;
   // sin medir todavía, el valor de globals.css.
@@ -276,11 +270,11 @@ export default function Navbar() {
 
       {/* `data-navbar-sitio`: el checkout cerrado lo esconde por CSS (globals.css). */}
       <nav ref={navRef} data-navbar-sitio className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-negro/95 backdrop-blur-md border-b border-white/8 ${scrolled || mobileOpen ? "shadow-lg" : ""} ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`}>
-        {/* Estado del río: dentro del contenedor fijo para esconderse con él.
-            Alto fijo desde el servidor (19 nov 2026, ver globals.css). */}
-        <BandaRio onPanelAbierto={setPanelRio} />
-        {/* El viaje desde CDMX, justo debajo (17 oct 2026). Su alto lo repone `EspacioBandaViaje`. */}
-        <BandaViaje />
+        {/* 🔴 20 nov 2026, Manolo: fuera las dos franjas de arriba (estado del
+            río y viaje desde CDMX) en TODAS las páginas. El estado del río se
+            mudó a las fichas de los destinos de río (`EstadoRioFicha`). Sin sus
+            `data-banda-*`, globals.css deja sus altos en 0 y el menú mide solo
+            su fila. */}
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href={lp("/")} className="flex-shrink-0 group" aria-label="Tours Huasteca Potosina">
             {/* eslint-disable-next-line @next/next/no-img-element */}

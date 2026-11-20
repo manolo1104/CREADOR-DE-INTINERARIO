@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { TOURS_DB } from "@/lib/tours";
 import { DESTINOS_DB } from "@/lib/destinos";
+import { guiaDe } from "@/lib/destinosGuia";
 import { prisma } from "@/lib/prisma";
 import { PAQUETES_DB, paginasDeEventoALaVenta } from "@/lib/paquetes";
 import { normalizaSlugBlog } from "@/lib/blogDestinoMap";
@@ -229,11 +230,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   );
 
+  // `lastmod` de cada ficha: la fecha REAL en que se revisó su guía
+  // (`destinosGuia.ts`), y si no tiene guía, la del catálogo (20 nov 2026).
   const destinoPages: MetadataRoute.Sitemap = DESTINOS_DB.flatMap((d) =>
     bilingual(`/destinos/${d.slug}`, {
       changeFrequency: "monthly",
       priority: 0.7,
-      ...CAT,
+      lastModified: guiaDe(d.slug)?.revisado ?? CATALOGO_ACTUALIZADO,
       images: d.imagen_hero ? [absImg(d.imagen_hero)] : undefined,
     }),
   );

@@ -126,7 +126,7 @@ function buildGuiaHtml(): string {
   <p>La gran mayoría de los sitios naturales, lanchas, guías y comedores en zona rural <strong>solo aceptan efectivo en pesos mexicanos</strong>. En Ciudad Valles hay cajeros automáticos — saca suficiente antes de salir. No hay cajeros en Tanchachín, en la entrada al Sótano de Golondrinas ni en muchas cascadas secundarias. Un estimado seguro: $1,500–2,500 MXN por persona por día de actividades intensas.</p>
 
   <h3>2. Los horarios del cartel mienten (a veces)</h3>
-  <p>Los horarios oficiales dicen "8:00–17:00" pero los lancheros de Tamul dejan de salir a las 2 PM, el Sótano de Golondrinas tiene su espectáculo de vencejos a las 5:45 AM y Las Pozas de Xilitla conviene recorrerlas antes de las 11:00. Esta guía tiene los horarios reales de cada destino.</p>
+  <p>Los horarios oficiales dicen "8:00–17:00" pero en Tamul conviene salir del embarcadero antes de las 11:00 (el paseo en canoa dura unas 3 horas), el Sótano de Golondrinas tiene su espectáculo de vencejos a las 5:45 AM y Las Pozas de Xilitla conviene recorrerlas antes de las 11:00. Esta guía tiene los horarios reales de cada destino.</p>
 
   <h3>3. El calor es literal — y en verano es extremo</h3>
   <p>De mayo a octubre las temperaturas en zona baja (Tamul, Micos, Taninul) pueden superar 40°C con humedad alta. No es "calorcito": es agotador si no estás preparado. Lleva agua abundante (mínimo 2L por persona por salida), sal en tabletas si eres propenso a calambres y planea las actividades de esfuerzo para temprano en la mañana.</p>
@@ -194,17 +194,17 @@ function buildGuiaHtml(): string {
         <div class="destino-zona">Aquismón · Aventura</div>
       </div>
     </div>
-    <p>La cascada más alta de San Luis Potosí — 105 metros de caída libre en agua que cambia de verde a turquesa según la temporada. El acceso no es por tierra: llegas remando 45 minutos por el río Tampaón en lancha (panga). El momento en que la cascada aparece doblando el río es uno de los más fotogénicos de la región.</p>
+    <p>La cascada más alta de San Luis Potosí — 105 metros de caída libre en agua que cambia de verde a turquesa según la temporada. El acceso no es por tierra: llegas remando de 1 a 2 horas por el río Tampaón en canoa. El momento en que la cascada aparece doblando el río es uno de los más fotogénicos de la región.</p>
     <div class="ficha">
-      <div class="ficha-item"><div class="ficha-label">Precio entrada</div><div class="ficha-val">$220 MXN + $300 panga/p</div></div>
-      <div class="ficha-item"><div class="ficha-label">Horario</div><div class="ficha-val">08:00–17:00 (lancheros hasta 14:00)</div></div>
+      <div class="ficha-item"><div class="ficha-label">Precio entrada</div><div class="ficha-val">Canoa ~$2,000 por embarcación (hasta 10) + embarcadero $10–$50 p/p</div></div>
+      <div class="ficha-item"><div class="ficha-label">Horario</div><div class="ficha-val">08:00–18:00 (sal antes de las 11:00)</div></div>
       <div class="ficha-item"><div class="ficha-label">Duración recomendada</div><div class="ficha-val">5 horas totales</div></div>
-      <div class="ficha-item"><div class="ficha-label">Mejor época</div><div class="ficha-val">Enero–Abril (agua turquesa)</div></div>
+      <div class="ficha-item"><div class="ficha-label">Mejor época</div><div class="ficha-val">Noviembre–Febrero (agua turquesa y cascada llena)</div></div>
       <div class="ficha-item"><div class="ficha-label">Dificultad</div><div class="ficha-val">Alta (remo + caminata)</div></div>
-      <div class="ficha-item"><div class="ficha-label">Desde Valles</div><div class="ficha-val">45 min → Tanchachín + lancha</div></div>
+      <div class="ficha-item"><div class="ficha-label">Desde Valles</div><div class="ficha-val">~1 h → La Morena o Tanchachín + canoa</div></div>
     </div>
-    <div class="advertencia">⚠️ Los lancheros dejan de salir a las 14:00. Si llegas tarde, no hay salida. Solo efectivo — no hay cajero en Tanchachín.</div>
-    <div class="consejo">💡 Tip insider: el turquesa más intenso es de marzo a mayo, que es también cuando más gente hay. De julio a octubre la cascada va a todo caudal, pero el agua puede bajar con sedimento.</div>
+    <div class="advertencia">⚠️ Sal del embarcadero antes de las 11:00: el paseo dura unas 3 horas. Solo efectivo — no hay cajero en los embarcaderos.</div>
+    <div class="consejo">💡 Tip: en abril y mayo la cascada puede quedarse casi sin agua por el estiaje (pasó en 2024, 2025 y 2026). De julio a octubre el agua baja café y Protección Civil cierra el río cuando crece.</div>
     <p><strong>Qué llevar:</strong> Chaleco salvavidas (lo incluye la lancha), aqua shoes o calzado cerrado que se moje, agua 2L mínimo, efectivo, protector solar biodegradable, chamarra ligera (el río tiene viento).</p>
   </div>
 
