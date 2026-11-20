@@ -78,6 +78,7 @@ const TABLA: Record<string, Exclude<EtiquetaTour, "medio-dia">[]> = {
   "travesia-del-cafe":              ["cascadas"],
   "gruta-de-xilo":                  ["cuevas", "arte"],
   "amanecer-de-nubes":              ["fotografia"],
+  "tour-sotano-de-las-golondrinas": ["fotografia"],
   "olla-de-la-luz":                 ["cascadas", "cuevas"],
   "huasteca-instagrameable":        ["fotografia", "cascadas", "arte"],
 };

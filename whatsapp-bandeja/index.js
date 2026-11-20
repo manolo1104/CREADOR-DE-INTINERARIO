@@ -45,8 +45,15 @@ if (TOKEN.length < 24) {
   process.exit(1);
 }
 
+// Qué versión de la librería quedó instalada en el build (package.json la fija: ver qrVigente).
+const VERSION_WWEBJS = (() => { try { return require("whatsapp-web.js/package.json").version; } catch { return "?"; } })();
+// Antes de rendirse o reiniciar, esperar: reintentar cada 30 s no ayuda y le toca la puerta a WhatsApp de más.
+const ESPERA_ANTES_DE_SALIR_MS = 2 * 60_000;
+
 const client = new Client({
   authStrategy: new LocalAuth({ clientId: "huasteca-bandeja", dataPath: SESION_DIR }),
+  // whatsapp-web.js espera 30 s a que cargue WhatsApp Web; en Railway a veces no alcanza (19 nov 2026).
+  authTimeoutMs: 120_000,
   webVersionCache: {
     type: "remote",
     remotePath: `https://raw.githubusercontent.com/wppconnect-team/wa-version/main/html/${WA_WEB_VERSION}.html`,
@@ -240,13 +247,36 @@ async function importarHistorial() {
 }
 
 // ── Conexión ─────────────────────────────────────────────────────────────────
+// 🔴 19 nov 2026: whatsapp-web.js 1.34.8 lee la «clave ADV» de WhatsApp Web UNA vez al arrancar y la pega
+// en todos los QR, pero WhatsApp Web la cambia en cada tanda de códigos (~3.5 min). Después de la primera
+// tanda todo QR salía inválido: el teléfono decía «no se pueden vincular dispositivos» y aquí llegaba
+// LOGOUT. El QR son 5 campos (ref, llave de ruido, llave de identidad, clave ADV, plataforma): se cambia
+// el 4.º por la clave del momento, como lo hacía 1.34.7. Si no se puede leer, va el de la librería.
+async function qrVigente(qr) {
+  const partes = String(qr || "").split(",");
+  if (partes.length !== 5) return qr;
+  const adv = await client.pupPage.evaluate(async () => {
+    const m = window.require && window.require("WAWebUserPrefsMultiDevice");
+    return m && typeof m.getADVSecretKey === "function" ? await m.getADVSecretKey() : null;
+  });
+  if (typeof adv !== "string" || !adv) return qr;
+  partes[3] = adv;
+  return partes.join(",");
+}
+
+let ultimaSenal = Date.now(); // último QR, autenticación o conexión: para saber si se repuso solo
 client.on("qr", async (qr) => {
+  ultimaSenal = Date.now();
+  let vigente = qr;
+  try { vigente = await qrVigente(qr); }
+  catch (e) { console.warn("⚠️ No pude leer la clave del QR (va el de la librería):", primeraLinea(e)); }
   console.log("📱 Hay un código QR para vincular: se ve en el panel, en Bandeja.");
-  try { conexion("qr", { qr: await QR.toDataURL(qr, { margin: 1, width: 320 }) }); }
+  try { conexion("qr", { qr: await QR.toDataURL(vigente, { margin: 1, width: 320 }) }); }
   catch (e) { console.error("❌ No pude armar la imagen del QR:", primeraLinea(e)); }
 });
-client.on("authenticated", () => console.log("🔐 Autenticado."));
+client.on("authenticated", () => { ultimaSenal = Date.now(); console.log("🔐 Autenticado."); });
 client.on("ready", async () => {
+  ultimaSenal = Date.now();
   listo = true;
   const numero = client.info && client.info.wid ? client.info.wid.user : null;
   console.log(`✅ Puente de la Bandeja conectado${numero ? ` (${numero})` : ""}.`);
@@ -258,16 +288,42 @@ client.on("disconnected", (r) => {
   listo = false;
   console.warn("⚠️ Desconectado:", r);
   conexion("desconectado", { detalle: String(r || "") });
-  // Railway lo vuelve a levantar: si la sesión murió, pedirá un QR nuevo.
-  setTimeout(() => process.exit(1), 3000);
+  // Tras un LOGOUT (vinculación fallida o sesión quitada desde el teléfono) la librería borra la sesión y
+  // vuelve a pedir QR sola. Antes se salía a los 3 s, a media limpieza, y el 19 nov el arranque siguiente se
+  // quedó trabado. Ahora: si en 2 min no hubo QR nuevo ni conexión, se cierra Chromium, se borra la sesión
+  // muerta y Railway lo levanta limpio.
+  const desde = Date.now();
+  setTimeout(async () => {
+    if (ultimaSenal > desde) return;
+    try { await Promise.race([client.destroy(), new Promise((r) => setTimeout(r, 15_000))]); } catch { /* ya estaba cerrado */ }
+    if (String(r) === "LOGOUT") {
+      try { fs.rmSync(path.join(SESION_DIR, "session-huasteca-bandeja"), { recursive: true, force: true }); }
+      catch (e) { console.error("❌ No pude borrar la sesión:", primeraLinea(e)); }
+    }
+    process.exit(1);
+  }, ESPERA_ANTES_DE_SALIR_MS);
 });
+
+// Si WhatsApp Web no carga (19 nov 2026: «Waiting failed: 30000ms exceeded» en cada arranque, cada 30 s),
+// avisar al panel y esperar antes de salir, en vez de tronar y reintentar de inmediato.
+function rendirse(motivo, e) {
+  console.error(`❌ ${motivo}:`, primeraLinea(e));
+  conexion("desconectado", { detalle: motivo });
+  setTimeout(() => process.exit(1), ESPERA_ANTES_DE_SALIR_MS);
+}
+process.on("unhandledRejection", (e) => rendirse("Error sin atender en WhatsApp Web", e));
 
 // Latido: el panel avisa si el puente deja de dar señales.
 setInterval(() => { if (listo) conexion("conectado", { numero: client.info && client.info.wid ? client.info.wid.user : null }); }, 5 * 60_000);
 
-console.log(`🚀 Puente de la Bandeja → ${PANEL}`);
+console.log(`🚀 Puente de la Bandeja → ${PANEL} (whatsapp-web.js ${VERSION_WWEBJS})`);
+// Chromium deja candados (Singleton*) en la sesión si el proceso muere de golpe; en un contenedor nuevo
+// pueden impedir que abra. Nadie más usa esta carpeta: se quitan antes de arrancar.
+for (const f of ["SingletonLock", "SingletonSocket", "SingletonCookie"]) {
+  try { fs.rmSync(path.join(SESION_DIR, "session-huasteca-bandeja", f), { force: true }); } catch { /* no estaba */ }
+}
 conexion("iniciando");
-client.initialize();
+client.initialize().catch((e) => rendirse("WhatsApp Web no arrancó", e));
 
 process.on("SIGTERM", async () => {
   await vaciar();

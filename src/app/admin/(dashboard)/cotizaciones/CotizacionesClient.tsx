@@ -277,7 +277,7 @@ export default function CotizacionesClient(
         delete up.precioPersona;
         up.tourName = t?.nombre || "";
         // Ruta Acuática: entra marcada Siete Cascadas (sin extra) y Erick cambia
-        // a Tamasopo (+$150 por persona) si el cliente la pide. Otro tour, sin elección.
+        // a Tamasopo (+$230 por persona) si el cliente la pide. Otro tour, sin elección.
         delete up.eleccion;
         const omision = eleccionPorOmision(String(val));
         if (omision) up.eleccion = omision;

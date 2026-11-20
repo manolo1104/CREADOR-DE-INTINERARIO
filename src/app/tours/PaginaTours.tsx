@@ -162,7 +162,8 @@ export function Pagina({ locale }: { locale: Locale }) {
   // se cobra (Tamul para dos: $3,600, no $8,500). Se calcula con la regla real
   // para que no vuelva a desfasarse.
   const privadoDesde = Math.min(
-    ...TOURS_DB.filter((t) => t.privateAvailable).map((t) => t.precio)
+    // Sin los de tarifa propia (Golondrinas): el «+ $250» no es su regla.
+    ...TOURS_DB.filter((t) => t.privateAvailable && !t.privadoPropio).map((t) => t.precio)
   ) + PRIVADO_EXTRA_POR_PERSONA;
 
   const faqs = getToursFaqs(locale);

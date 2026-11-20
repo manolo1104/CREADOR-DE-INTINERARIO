@@ -38,7 +38,8 @@ function listaY(items: string[], en: boolean): string {
  * fijos por día (el Edén) no caben en un paréntesis: se nombran sin detallar.
  */
 export function horaEnLista(t: Tour, en: boolean): string {
-  if (recogidaDeTour(t).horaTexto) return en ? "set times depending on the day" : "horario según el día";
+  const r = recogidaDeTour(t);
+  if (r.horaTexto && !r.horaTextoEsRecogida) return en ? "set times depending on the day" : "horario según el día";
   return salidaCorta(t, en) ?? "";
 }
 

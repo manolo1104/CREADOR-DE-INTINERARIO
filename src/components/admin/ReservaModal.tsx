@@ -51,7 +51,7 @@ export interface LineItem {
    * La opción elegida en un recorrido con `eleccion` (Ruta Acuática: «Hacienda
    * Los Gómez + Siete Cascadas» o «Cascadas de Tamasopo»). Se guarda el NOMBRE
    * en español, igual que en las reservas web, porque así lo pintan el correo,
-   * el PDF y el detalle. Tamasopo suma $150 por persona (`extraDeEleccion`).
+   * el PDF y el detalle. Tamasopo suma $230 por persona (`extraDeEleccion`).
    */
   eleccion?:     string;
 }

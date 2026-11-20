@@ -180,7 +180,7 @@ export async function Pagina({ locale }: { locale: Locale }) {
   const REGION_STATS = [
     { num: "105m",                   label: en ? "The tallest waterfall" : "La cascada más alta" },
     /* 🔴 Decía «333 m · Sótano más profundo». Esos 333 m son del Sótano de las
-       Golondrinas, que NO operamos (Golondrinas y Huahuas son sitios distintos;
+       Golondrinas, no del de las Huahuas (son sitios distintos;
        ver la nota de `temporada.ts`). El nuestro es el Sótano de las Huahuas y
        mide 478 m — la misma cifra que ya corrigieron las fichas el 28 sep. */
     { num: "478m",                   label: en ? "Our sinkhole, Las Huahuas" : "Sótano de las Huahuas" },

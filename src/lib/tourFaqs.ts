@@ -216,6 +216,43 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
       a: "Al inicio, cuando pasamos por ti a tu hospedaje, no en la entrada de la cueva: así haces la caminata por la selva ya con la lámpara encendida. El casco y la lámpara frontal van incluidos para cada persona y son de uso obligatorio.",
     },
   ],
+  // 🟢 19 nov 2026: datos de Manolo (ver el comentario del tour en tours.ts).
+  // 🔴 El privado ($2,100 para 1 + $1,000 por persona adicional) también vive
+  // en `privadoPropio`: si cambia, cambian los dos.
+  "tour-golondrinas": [
+    {
+      q: "¿Conviene ir al amanecer o al atardecer?",
+      a: "Las dos valen la pena y tú eliges al reservar. Al amanecer ves a las aves salir del sótano girando en espiral (salen hacia las 5:45 AM): pasamos por ti a las 4:00 AM y vuelves entre las 11:00 AM y las 12:00 PM. Al atardecer las ves regresar y bajar girando hacia la boca del sótano: pasamos por ti entre las 3:00 y las 4:00 PM y vuelves entre las 8:30 y las 9:00 PM.",
+    },
+    {
+      q: "¿Qué pasa si está nublado o llueve?",
+      a: "Si está nublado, hace mucho frío o llueve, las aves no salen y ese día el recorrido no se hace. Por lo mismo, las horas se pueden mover un poco según a qué hora estén saliendo las aves: lo confirmamos con la gente de allá antes de pasar por ti. Si lo cancelamos por clima, eliges entre el reembolso completo o cambiar la fecha sin costo.",
+    },
+    {
+      q: "¿Qué tan pesada es la bajada al sótano?",
+      a: "Son 568 escalones de bajada hasta el borde, y la subida de regreso es pesada: se hace a tu paso, sin prisa. Lleva calzado cómodo y cerrado. Si subir escaleras te cuesta mucho, dínoslo antes de reservar.",
+    },
+    {
+      q: "¿Me puedo asomar al sótano?",
+      a: "Sí, si quieres: te asomas al borde amarrado con cuerda mientras la gente de la comunidad te sostiene. Para eso el peso máximo es de 90 kg, y puede variar según quién te sostenga ese día, porque esa parte la maneja la comunidad.",
+    },
+    {
+      q: "¿De verdad son golondrinas?",
+      a: "No. A pesar del nombre, las aves del sótano son vencejos y cotorros. Viven dentro del abismo, salen al amanecer y regresan al atardecer.",
+    },
+    {
+      q: "¿Pueden ir niños o mascotas?",
+      a: "Niños sí, desde 3 años. Mascotas no: no se permiten de ningún tipo ni con ningún papel. Tampoco se permiten cámaras con flash.",
+    },
+    {
+      q: "¿Lo puedo hacer en privado?",
+      a: "Sí. En privado cuesta $2,100 MXN para una persona y $1,000 MXN por cada persona adicional: para 2 personas son $3,100 MXN. Compartido sale con mínimo 2 personas, a $900 MXN por persona. Los precios son saliendo de Xilitla.",
+    },
+    {
+      q: "¿Pasan por mí a Ciudad Valles?",
+      a: "Sí, pero el precio y las horas de la ficha son saliendo de Xilitla. Desde Ciudad Valles se suma el traslado y las horas de salida cambian: escríbenos por WhatsApp y te lo cotizamos.",
+    },
+  ],
   "tour-amanecer-nubes": [
     {
       q: "¿Dónde está el Cerro del Pilón?",

@@ -90,6 +90,13 @@ Momentos que vas a vivir:
 - El recorrido cierra en unos jacuzzis naturales de agua cristalina DENTRO de la cueva: un chapuzón nocturno que casi nadie puede contar.
 NOTA: Recorrido NOCTURNO de ~3 h, dificultad media. $900 MXN por persona. Incluye traslado redondo en RZR desde el hospedaje EN XILITLA, acceso, casco y lámpara por persona y guía acreditado NOM-09. Caminata de acceso corta pero de noche: no lo pongas como principal para familias con niños pequeños sin decirlo.`,
 
+  "tour-golondrinas": `
+Momentos que vas a vivir:
+- Bajas los 568 escalones hasta el borde del Sótano de las Golondrinas, un abismo de 376 metros de caída libre (hasta 512 de profundidad) en la sierra de Aquismón.
+- Al amanecer, más de mil aves —vencejos y cotorros, no golondrinas— salen del fondo girando en espiral hasta perderse sobre la selva; al atardecer regresan y bajan girando hacia el sótano. El cliente elige cuál ver.
+- Si quiere, se asoma al abismo amarrado con cuerda mientras la gente de la comunidad lo sostiene (peso máximo 90 kg, puede variar).
+NOTA: Dos horarios a elegir: AMANECER (recogida 4:00 AM, regreso 11:00 AM-12:00 PM) o ATARDECER (recogida 3:00-4:00 PM, regreso 8:30-9:00 PM); las horas se ajustan a la salida de las aves y se confirman con la comunidad. NO sale si está nublado, hace mucho frío o llueve (las aves no salen): si se cancela por clima, reembolso completo o cambio de fecha sin costo. $900 MXN por persona, mínimo 2; privado $2,100 MXN para 1 persona + $1,000 MXN por persona adicional. Precios y horas SALIENDO DE XILITLA: incluye traslado redondo desde el hospedaje en Xilitla, taquillas y guía; desde Ciudad Valles se suma el traslado, cambian las horas y se cotiza por WhatsApp. NO incluye alimentos. Desde 3 años; sin mascotas ni cámaras con flash. Dificultad media por la subida de los escalones. Ideal para naturaleza, aves y fotografía; NO es para quien no puede subir escaleras.`,
+
   "tour-amanecer-nubes": `
 Momentos que vas a vivir:
 - Sales de madrugada, mientras el resto de la Huasteca duerme, y subes en senderismo por el bosque de niebla de La Trinidad.

@@ -2491,13 +2491,32 @@ async function avisarPagoConLiga(chatId, s, d) {
 }
 
 // ── Eventos de conexión ───────────────────────────────────────
-client.on("qr", (qr) => {
+// 🔴 19 nov 2026 (lo mismo en whatsapp-bandeja/index.js): whatsapp-web.js 1.34.8 lee la «clave ADV» UNA
+// vez al arrancar y la pega en todos los QR, pero WhatsApp Web la cambia en cada tanda (~3.5 min): pasada la
+// primera tanda, el QR sale inválido y el teléfono dice «no se pueden vincular dispositivos». Se cambia el
+// 4.º de sus 5 campos por la clave del momento, como 1.34.7. Si no se puede leer, va el de la librería.
+async function qrVigente(qr) {
+  const partes = String(qr || "").split(",");
+  if (partes.length !== 5) return qr;
+  const adv = await client.pupPage.evaluate(async () => {
+    const m = window.require && window.require("WAWebUserPrefsMultiDevice");
+    return m && typeof m.getADVSecretKey === "function" ? await m.getADVSecretKey() : null;
+  });
+  if (typeof adv !== "string" || !adv) return qr;
+  partes[3] = adv;
+  return partes.join(",");
+}
+
+client.on("qr", async (qr) => {
+  let vigente = qr;
+  try { vigente = await qrVigente(qr); }
+  catch (e) { console.error("   no pude leer la clave del QR (va el de la librería):", (e && e.message) || e); }
   console.log("\n📱 Escanea este QR con el WhatsApp del negocio (Dispositivos vinculados):\n");
-  qrcode.generate(qr, { small: true });
+  qrcode.generate(vigente, { small: true });
   // El QR caduca en ~60 s y WhatsApp manda uno nuevo. Si se pide por `QR_OUT_FILE`,
   // se guarda tambien el texto crudo para poder pintarlo fuera de la terminal
   // (imagen, panel web, etc.) sin tener que leer el dibujo ASCII.
-  escribirEstadoQr(qr);
+  escribirEstadoQr(vigente);
 });
 
 /**

@@ -123,6 +123,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     "tour-travesia-cafe": 0,
     "tour-gruta-xilo":   0,
     "tour-amanecer-nubes": 0,
+    "tour-golondrinas":  0,
     "tour-olla-de-la-luz": 0,
     "tour-huasteca-instagrameable": 0,
   };
@@ -135,6 +136,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-buceo-media-luna"] += 1;
     scores["tour-amanecer-nubes"] += 3;   // amanecer sobre el mar de nubes
     scores["tour-olla-de-la-luz"] += 2;   // el haz de luz en la gruta
+    scores["tour-golondrinas"]  += 2;     // las aves saliendo del abismo
   }
   // Instagrameable solo entra con "Fotografía perfecta" dicho a propósito, no con
   // "Cascadas turquesas": es el único recorrido cuyo producto SON las fotos,
@@ -223,7 +225,9 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   if (destino.includes("RZR") || destino.includes("off-road") || destino.includes("Nanacatli")) scores["tour-rzr-xilitla"] += 4;
   if (destino.includes("Tamul"))                                  { scores["tour-tamul"] += 4; scores["tour-rappel-tamul"] += 3; }
   if (destino.includes("Tampaón") || destino.toLowerCase().includes("rafting")) scores["tour-rafting-tampaon"] += 4;
-  if (destino.includes("Huahuas") || destino.includes("Golondrinas")) scores["tour-tamul"] += 4;
+  // 19 nov 2026: Golondrinas ya tiene recorrido propio; Huahuas sigue dentro de Tamul.
+  if (destino.includes("Huahuas"))                                 scores["tour-tamul"] += 4;
+  if (destino.includes("Golondrinas") || destino.toLowerCase().includes("aves")) scores["tour-golondrinas"] += 4;
   if (destino.includes("Pozas") || destino.includes("Edward"))     scores["tour-edward-james"]+= 4;
   if (destino.includes("Meco"))                                    scores["tour-meco"]        += 4;
   if (destino.includes("Minas") || destino.includes("Micos"))      scores["tour-minas-micos"] += 4;

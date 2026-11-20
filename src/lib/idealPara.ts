@@ -63,6 +63,10 @@ export const IDEAL_PARA: Record<string, { es: string; en: string }> = {
     es: "Aventureros que quieren una noche distinta",
     en: "Adventurers who want a different kind of night",
   },
+  "tour-golondrinas": {
+    es: "Amantes de las aves y la naturaleza",
+    en: "Bird and nature lovers",
+  },
   "tour-amanecer-nubes": {
     es: "Fotógrafos y madrugadores",
     en: "Photographers and early risers",

@@ -483,7 +483,7 @@ export function useCarritoCheckout() {
     let nuevos = actualizarItem(uid, cambios);
     // La fecha mueve el precio: un recorrido hasta el 29 oct lleva la promo de
     // temporada baja y uno después no. Se vuelve a tarifar el renglón. La
-    // elección también: la Ruta Acuática a Tamasopo suma $150 por cabeza.
+    // elección también: la Ruta Acuática a Tamasopo suma $230 por cabeza.
     if (cambios.tourDate !== undefined || cambios.eleccion !== undefined) {
       const it = nuevos.find((x) => x.uid === uid);
       const retarifado = it ? retarifarItem(it) : it;

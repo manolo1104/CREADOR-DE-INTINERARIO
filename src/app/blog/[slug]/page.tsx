@@ -373,6 +373,8 @@ function inferTour(tags: string[], keyword: string) {
   // regla del lugar que mencionan.)
   if (/rafting|r[aá]pidos/.test(text))                        return TOURS_DB.find((t) => t.id === "tour-rafting-tampaon");
   if (/rzr|off.?road|todoterreno|nanacatli/.test(text))       return TOURS_DB.find((t) => t.id === "tour-rzr-xilitla");
+  // Golondrinas ANTES que Tamul: el comparativo «Golondrinas vs Huahuas» trae los dos.
+  if (/golondrinas/.test(text))                               return porSlug("tour-sotano-de-las-golondrinas");
   if (/tamul|tampaon|tampa[oó]n|s[oó]tano.*huah/.test(text)) return TOURS_DB.find((t) => t.id === "tour-tamul");
   // Los recorridos de Xilitla con nombre propio van ANTES de la regla genérica
   // /xilitla/: si no, un artículo del bosque de niebla o del café salía con la

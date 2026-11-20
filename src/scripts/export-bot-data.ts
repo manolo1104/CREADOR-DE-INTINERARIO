@@ -64,6 +64,7 @@ const NO_INCLUYE: Record<string, string[]> = {
   "eden-en-el-jardin": ["Alimentos y bebidas: empieza muy temprano y no lleva desayuno", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Propinas y gastos personales", "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte"],
   "gruta-de-xilo": ["Alimentos y bebidas: es un recorrido de noche y no lleva cena", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Ropa de cambio y calzado que se pueda mojar", "Propinas y gastos personales"],
   "amanecer-de-nubes": ["Alimentos: se sale de madrugada y no lleva desayuno", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Chamarra y calzado de montaña — arriba hace frío de verdad", "Propinas y gastos personales"],
+  "tour-sotano-de-las-golondrinas": ["Alimentos: no lleva desayuno ni comida", "Traslado desde Ciudad Valles: el precio es saliendo de Xilitla; desde Valles se suma el traslado y cambian las horas (lo cotiza el equipo)", "Propinas y gastos personales"],
   "olla-de-la-luz": ["Alimentos: conviene llevar agua y algo de comer para la caminata", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Calzado de senderismo y chamarra o impermeable", "Propinas y gastos personales"],
   "huasteca-instagrameable": ["Comida de mediodía: hay parada para comer y se paga en el lugar", "Fotógrafo aparte del guía: las fotos las toma el guía", "Dron y tripié: en Las Pozas están prohibidos", "Propinas y gastos personales"],
 };
@@ -96,6 +97,7 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "travesia-del-cafe": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla — el camino a la finca se hace en RZR. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
   "gruta-de-xilo": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla, y la recogida se hace EN EL RZR. Es un recorrido NOCTURNO. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
   "amanecer-de-nubes": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Se sale DE MADRUGADA para llegar a la cima antes del amanecer. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
+  "tour-sotano-de-las-golondrinas": { incluido: true, detalle: "SÍ incluye traslado redondo, pero el precio y las horas son SALIENDO DE XILITLA (pasamos por el cliente a su hospedaje en Xilitla). Desde Ciudad Valles también vamos, pero se suma el traslado y cambian las horas de salida: eso lo cotiza el equipo por WhatsApp (Manolo, 19 nov 2026)." },
   "olla-de-la-luz": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
   "huasteca-instagrameable": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. OJO con la hora: el Día 1 sale a las 6:00 AM y los Días 2 y 3 a las 8:00 AM." },
 };
@@ -119,6 +121,7 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   "travesia-del-cafe": { desayuno: false, comida: false, detalle: "NO incluye desayuno ni comida. Sí incluye la cata de café recién tostado como parte del recorrido." },
   "gruta-de-xilo": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Es un recorrido de noche de unas 3 horas." },
   "amanecer-de-nubes": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Al terminar, gente de la comunidad ofrece comida (costo aparte) y en La Trinidad hay un restaurante; si quiere algo en la cima, que lleve un snack." },
+  "tour-sotano-de-las-golondrinas": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento: se sale de madrugada (amanecer) o por la tarde (atardecer)." },
   "olla-de-la-luz": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Conviene que el cliente lleve agua y algo de comer para la caminata." },
   "huasteca-instagrameable": { desayuno: false, comida: false, detalle: "NO incluye alimentos. Hay una parada para comer durante el día y el cliente paga en el lugar." },
 };
@@ -147,6 +150,7 @@ const IDEAL_PARA: Record<string, string[]> = {
   "travesia-del-cafe": ["familias", "medio día", "el más económico", "cultura y sabor", "ritmo tranquilo"],
   "gruta-de-xilo": ["aventura", "cuevas", "recorrido de noche", "parejas", "el más económico"],
   "amanecer-de-nubes": ["senderismo", "amanecer", "montaña", "fotografía", "buena condición física"],
+  "tour-sotano-de-las-golondrinas": ["naturaleza", "aves", "fotografía", "madrugadores", "subir escaleras"],
   "olla-de-la-luz": ["senderismo", "bosque de niebla", "sótanos", "naturaleza", "fotografía"],
   "huasteca-instagrameable": ["fotografía", "creadores de contenido", "parejas", "grupo chico", "reels y redes"],
 };
@@ -543,8 +547,11 @@ const tours = TOURS_DB.map((t) => ({
   groupMax: t.groupMax,
   soloAdultos: Boolean(t.soloAdultos),
   privateAvailable: Boolean(t.privateAvailable),
-  // El privado es el precio normal MÁS un recargo por cabeza, no una tarifa aparte.
-  privateExtraPorPersona: t.privateAvailable ? PRIVADO_EXTRA_POR_PERSONA : null,
+  // El privado es el precio normal MÁS un recargo por cabeza, no una tarifa aparte…
+  privateExtraPorPersona: t.privateAvailable && !t.privadoPropio ? PRIVADO_EXTRA_POR_PERSONA : null,
+  // …salvo los de tarifa PROPIA (19 nov 2026, Golondrinas: $2,100 para 1 persona
+  // + $1,000 por cada adicional). `precio` es del grupo de `personas`.
+  privadoTarifa: t.privateAvailable && t.privadoPropio ? t.privadoPropio : null,
   tagline: t.tagline,
   // Del catálogo de LISTA: el de `TOURS_DB` resuelve `{precio}` con la promo de
   // hoy y contradecía a `precio`.

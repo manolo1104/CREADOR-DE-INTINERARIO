@@ -47,6 +47,7 @@ import {
   cargoVallesDe,
   tourDurTexto,
   PRIVADO_EXTRA_POR_PERSONA,
+  privadoDe,
   esPorPersona,
   etiquetaUnidad,
   fraseRecogida,
@@ -939,11 +940,20 @@ export function buildLlmsFullTxt(locale: Locale = "es", blog: BlogLlms[] = [], v
       en ? `Includes: ${incluyeDeTour(t, locale).join("; ")}.` : `Incluye: ${incluyeDeTour(t, locale).join("; ")}.`,
       en ? `Pickup: ${salidaDeTour(t, locale)}` : `Salida: ${salidaDeTour(t, locale)}`,
       t.cancelacion ? (en ? `Cancellation: ${t.cancelacion.en}` : `Cancelación: ${t.cancelacion.es}`) : null,
-      t.privateAvailable
-        ? en
+      (() => {
+        const p = privadoDe(t);
+        if (!p) return null;
+        // 19 nov 2026: tarifa propia del privado (Golondrinas), no la regla de + $250.
+        if (p.tipo === "propio") {
+          const extra = p.extraPorPersona === null ? null : mxn(p.extraPorPersona);
+          return en
+            ? `A private version is available: ${mxn(p.precio)} for ${p.personas} ${p.personas === 1 ? "person" : "people"}${extra ? `, plus ${extra} per additional person` : ""}.`
+            : `Versión privada disponible: ${mxn(p.precio)} para ${p.personas} ${p.personas === 1 ? "persona" : "personas"}${extra ? `, más ${extra} por cada persona adicional` : ""}.`;
+        }
+        return en
           ? `A private version is available: the regular price plus ${mxn(PRIVADO_EXTRA_POR_PERSONA)} per person.`
-          : `Versión privada disponible: el precio normal más ${mxn(PRIVADO_EXTRA_POR_PERSONA)} por persona.`
-        : null,
+          : `Versión privada disponible: el precio normal más ${mxn(PRIVADO_EXTRA_POR_PERSONA)} por persona.`;
+      })(),
     ]
       .filter(Boolean)
       .join("\n");

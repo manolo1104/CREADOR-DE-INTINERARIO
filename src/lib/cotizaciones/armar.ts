@@ -217,7 +217,7 @@ export function subtotalPanel(l: LineItem): number {
   // Lo que paga cada cabeza: lista menos el escalón del tamaño del grupo
   // (`escalaPersona`, desde 3 personas). TOURS_LISTA no lleva promo, así que
   // aquí siempre aplica la escalera, como en el editor del panel. Con el extra
-  // de la opción elegida (Ruta Acuática → Tamasopo, +$150), como `calcTourLine`.
+  // de la opción elegida (Ruta Acuática → Tamasopo, +$230), como `calcTourLine`.
   const porCabeza = precioPorCabeza(t, pagan) + extraDeEleccion(t, l.eleccion);
   const base = delGrupo !== null
     ? delGrupo

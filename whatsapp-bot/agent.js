@@ -1590,6 +1590,14 @@ async function ejecutarHerramienta(name, input, phone) {
         // 🔴 Leía `privateMinPrice`, que data.json nunca trajo: el bot ofrecía
         // el privado sin precio. Es el precio normal + este extra por persona.
         privadoDisponible: Boolean(t.privateAvailable),
+        // 19 nov 2026: privado con tarifa PROPIA (Golondrinas). No es «precio +
+        // extra por persona»: `precio` cubre a `personas` y cada persona de más
+        // suma `extraPorPersona`. Se cotiza igual que el otro privado: al equipo.
+        ...(t.privateAvailable && t.privadoTarifa
+          ? {
+              privadoTarifa: t.privadoTarifa,
+              privadoComoCotizar: "El privado NO se cotiza con crear_cotizacion ni con cotizar_paquete_personalizado (cobrarían la salida compartida). Su tarifa es PROPIA: privadoTarifa.precio cubre a privadoTarifa.personas, y cada persona de más suma privadoTarifa.extraPorPersona (si viene vacío, ese extra lo cotiza el equipo). Da ese precio de referencia y llama escalar_a_humano (otro, avisar, hoy) para que el equipo le mande la cotización del privado.",
+            } : {}),
         ...(t.privateAvailable && typeof t.privateExtraPorPersona === "number"
           ? {
               privadoExtraPorPersona: t.privateExtraPorPersona,

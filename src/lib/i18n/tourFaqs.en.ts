@@ -219,6 +219,40 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
       a: "At the start, when we pick you up at your lodging — not at the cave entrance — so you do the jungle walk with your lamp already on. A helmet and headlamp are included for each person, and wearing them is mandatory.",
     },
   ],
+  "tour-golondrinas": [
+    {
+      q: "Is it better to go at sunrise or at sunset?",
+      a: "Both are worth it, and you choose when you book. At sunrise you watch the birds spiral out of the sinkhole (they come out around 5:45 AM): we pick you up at 4:00 AM and you're back between 11:00 AM and 12:00 PM. At sunset you watch them come back and circle down into the mouth of the sinkhole: we pick you up between 3:00 and 4:00 PM and you're back between 8:30 and 9:00 PM.",
+    },
+    {
+      q: "What happens if it's cloudy or raining?",
+      a: "If it's cloudy, very cold or raining, the birds don't come out and the tour doesn't run that day. For the same reason, times can shift a little depending on when the birds are coming out: we check with the locals before picking you up. If we cancel because of the weather, you choose between a full refund or a free change of date.",
+    },
+    {
+      q: "How hard is the walk down to the sinkhole?",
+      a: "There are 568 steps down to the rim, and the climb back up is hard work: you take it at your own pace, no rush. Wear comfortable, closed-toe shoes. If climbing stairs is really hard for you, tell us before you book.",
+    },
+    {
+      q: "Can I look over the edge?",
+      a: "Yes, if you'd like: you lean over the rim roped in while people from the local community hold you. The maximum weight for that is 90 kg, and it may vary depending on who's holding the rope that day, because the community runs that part.",
+    },
+    {
+      q: "Are they really swallows?",
+      a: "No. Despite the name, the birds of the sinkhole are swifts and parakeets. They live inside the abyss, fly out at sunrise and come back at sunset.",
+    },
+    {
+      q: "Can children or pets come?",
+      a: "Children yes, from 3 years old. Pets no: none of any kind are allowed, whatever their papers. Flash photography isn't allowed either.",
+    },
+    {
+      q: "Can I book it as a private tour?",
+      a: "Yes. Private, it costs $2,100 MXN for one person and $1,000 MXN for each additional person: $3,100 MXN for 2 people. The shared tour runs with a minimum of 2 people, at $900 MXN per person. Prices are for departures from Xilitla.",
+    },
+    {
+      q: "Can you pick me up in Ciudad Valles?",
+      a: "Yes, but the price and times on this page are for departures from Xilitla. From Ciudad Valles the transfer is added and departure times change: message us on WhatsApp and we'll quote it.",
+    },
+  ],
   "tour-amanecer-nubes": [
     {
       q: "Where is Cerro del Pilón?",

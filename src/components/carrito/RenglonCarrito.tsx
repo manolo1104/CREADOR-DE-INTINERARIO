@@ -249,7 +249,7 @@ export function RenglonCarrito({ i, c }: { i: CarritoItem; c: CarritoCheckout })
                                     <span className="min-w-0">
                                       <span className="block font-dm text-[12px] text-negro/80 leading-snug">
                                         {o.nombre}
-                                        {/* Lo que suma la opción (Tamasopo, +$150 por persona): sale
+                                        {/* Lo que suma la opción (Tamasopo, +$230 por persona): sale
                                           del catálogo, no de un texto escrito a mano. */}
                                         {o.extraPorPersona ? (
                                           <span className="ml-1.5 font-medium text-terracota whitespace-nowrap">

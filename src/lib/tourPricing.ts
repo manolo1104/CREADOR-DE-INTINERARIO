@@ -462,7 +462,7 @@ export function tarifarRecorridos(items: unknown[], { zona }: { zona?: ZonaHospe
       pct:           100,
       addOns:        raw.addOns as { id: string; cantidad: number }[],
       tourDate:      String(raw.tourDate),
-      // La Ruta Acuática con Tamasopo cuesta $150 más por cabeza: el cargo lo
+      // La Ruta Acuática con Tamasopo cuesta $230 más por cabeza: el cargo lo
       // decide la opción, validada otra vez contra el catálogo.
       eleccion:      typeof raw.eleccion === "string" ? raw.eleccion : undefined,
     });

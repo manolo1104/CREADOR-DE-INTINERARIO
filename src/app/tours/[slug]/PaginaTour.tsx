@@ -6,7 +6,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Metadata } from "next";
 import {
-  TOURS_DB, tourDurRange, esPorPersona, PRIVADO_EXTRA_POR_PERSONA, precioTachado, promoDe, PROMO_TEMPORADA, recogidaDeTour,
+  TOURS_DB, tourDurRange, esPorPersona, PRIVADO_EXTRA_POR_PERSONA, privadoDe, precioTachado, promoDe, PROMO_TEMPORADA, recogidaDeTour,
   partesRecogida, fraseRecogida, salidaCorta, conDatos, etiquetaUnidad, rankTour, incluyeDeTour,
   type Tour, type PartesRecogida,
 } from "@/lib/tours";
@@ -535,7 +535,10 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   const climaPropio = tour.cancelacion
     ? tour.cancelacion[locale].split(/(?<=\.)\s+/).find((f) => /clima|weather/i.test(f)) ?? null
     : null;
-  const insigniaLluvia = !tour.cancelacion
+  // Golondrinas (19 nov 2026): su clima es propio — con lluvia NO sale.
+  const insigniaLluvia = tour.clima
+    ? { titulo: locale === "en" ? "Weather-dependent" : "Depende del clima", sub: tour.clima[locale] }
+    : !tour.cancelacion
     ? { titulo: t.rescheduleRain, sub: t.rescheduleRainSub }
     : climaPropio
       ? { titulo: locale === "en" ? "Weather rescheduling" : "Reprogramación por clima", sub: climaPropio }
@@ -968,6 +971,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
       : esGrupo
         ? `Hola, me interesa la experiencia "${tour.nombre}". ¿Qué fechas tienen disponibles?`
         : WA_MESSAGES.tour(tour.nombre, 2, 0, tour.precio * 2);
+  const privado = privadoDe(tour);
   const waPrivate = locale === "en"
     ? `Hi, I'd like a private "${tour.nombre}" tour for my group. What would the cost be?`
     : `Hola, me interesa hacer el tour "${tour.nombre}" de forma privada. ¿Cuál sería el costo?`;
@@ -1267,7 +1271,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                     {m.fotosExtra && m.fotosExtra.length > 0 && (
                       /* Las extras, en fila debajo de la principal y al mismo
                          ancho: se leen como «esto también», no como otra parada. */
-                      <div className="mt-2 grid grid-cols-2 gap-2 w-full max-w-[420px]">
+                      // De tres en tres (3 o 6: Golondrinas, el Sótano de las Huahuas) van en filas de tres.
+                      <div className={`mt-2 grid ${m.fotosExtra.length % 3 === 0 ? "grid-cols-3" : "grid-cols-2"} gap-2 w-full max-w-[420px]`}>
                         {m.fotosExtra.map((f) => (
                           <div key={f} className="relative aspect-[4/3] overflow-hidden rounded">
                             <Image
@@ -1275,7 +1280,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                               alt={altsGaleria.get(f) ?? `${m.momento} — ${tour.nombreCorto}`}
                               fill
                               className="object-cover"
-                              sizes="(min-width: 1024px) 206px, 50vw"
+                              sizes={m.fotosExtra!.length % 3 === 0 ? "(min-width: 1024px) 136px, 33vw" : "(min-width: 1024px) 206px, 50vw"}
                               loading="lazy"
                             />
                           </div>
@@ -1980,7 +1985,31 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                       <Lock className="w-3 h-3" aria-hidden="true" />
                       {locale === "en" ? "Private tour for your group" : "Tour privado para tu grupo"}
                     </span>
-                    {esPorPersona(tour) && (
+                    {/* 19 nov 2026: tarifa PROPIA del privado (Golondrinas: $2,100
+                        para 1 persona + $1,000 por cada adicional). No es la regla
+                        de «precio + $250 por persona». */}
+                    {privado?.tipo === "propio" && (
+                      <>
+                        <span className="block font-cormorant text-crema text-lg leading-tight mt-1">
+                          {money(privado.precio)}
+                          <span className="font-dm text-[11px] text-crema/50">
+                            {locale === "en"
+                              ? ` for ${privado.personas} ${privado.personas === 1 ? "person" : "people"}`
+                              : ` para ${privado.personas} ${privado.personas === 1 ? "persona" : "personas"}`}
+                          </span>
+                        </span>
+                        <span className="block text-[10px] font-dm text-crema/45 leading-tight">
+                          {privado.extraPorPersona !== null
+                            ? locale === "en"
+                              ? `Only your group · +${money(privado.extraPorPersona)} MXN per additional person`
+                              : `Solo tu grupo · +${money(privado.extraPorPersona)} MXN por persona adicional`
+                            : locale === "en"
+                              ? "Only your group · ask us about extra people"
+                              : "Solo tu grupo · pregúntanos por cada persona extra"}
+                        </span>
+                      </>
+                    )}
+                    {privado?.tipo === "regla" && esPorPersona(tour) && (
                       <>
                         <span className="block font-cormorant text-crema text-lg leading-tight mt-1">
                           {money(tour.precio + PRIVADO_EXTRA_POR_PERSONA)}
@@ -2168,6 +2197,13 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             slug: "gruta-de-xilo",
             msg: "Si ya vas a estar en Xilitla, súmale la Gruta de Xilo en otra fecha: es de noche, pasamos por ti a tu hospedaje y se entra con casco y lámpara frontal.",
             msgEn: "Already staying in Xilitla? Add the Xilo Cave on another date: it runs at night, we pick you up at your lodging and you go in with a helmet and headlamp.",
+          },
+          // 19 nov 2026: los dos sótanos son de Aquismón; la Expedición Tamul
+          // cierra en el de las Huahuas.
+          "tour-golondrinas": {
+            slug: "expedicion-tamul",
+            msg: "Combínalo con la Expedición Tamul en otro día de tu viaje: canoa hasta la cascada más alta de San Luis Potosí, y al atardecer el Sótano de las Huahuas, el otro gran sótano de las aves.",
+            msgEn: "Pair it with the Tamul Expedition on another day of your trip: canoe to the tallest waterfall in San Luis Potosí, and at sunset the Huahuas Sinkhole, the region's other great bird sinkhole.",
           },
           "tour-amanecer-nubes": {
             slug: "olla-de-la-luz",

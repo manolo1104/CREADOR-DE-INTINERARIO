@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-19T06:03:37.604Z",
+  "generatedAt": "2026-11-20T01:26:43.232Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -11,9 +11,9 @@
     ],
     "sitio": "https://www.huasteca-potosina.com",
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
-    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
-    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
+    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
     "rating": 4.7,
     "resenas": 169,
     "confianza": {
@@ -44,6 +44,7 @@
       "soloAdultos": false,
       "privateAvailable": false,
       "privateExtraPorPersona": null,
+      "privadoTarifa": null,
       "tagline": "Maneja tu propio todoterreno entre selva, ríos y barro — 4 rutas, de 2 a 5 horas",
       "pitch": "Maneja tu propio vehículo todoterreno por la selva húmeda de Xilitla: atraviesa el barro y elige entre 4 rutas — la Aldea Nanacatli (el pueblo de casitas de hongos), los miradores de la sierra, un nacimiento escondido en la selva (con kayak) o el bosque de niebla de La Trinidad. El precio es por vehículo (desde $1,600 MXN), no por persona.",
       "url": "https://www.huasteca-potosina.com/tours/rzr-xilitla",
@@ -288,6 +289,7 @@
       "soloAdultos": false,
       "privateAvailable": false,
       "privateExtraPorPersona": null,
+      "privadoTarifa": null,
       "tagline": "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
       "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
       "url": "https://www.huasteca-potosina.com/tours/rappel-tamul",
@@ -425,10 +427,11 @@
       "escalaPersona": null,
       "cancelacion": null,
       "groupMin": 5,
-      "groupMax": 8,
+      "groupMax": 12,
       "soloAdultos": false,
       "privateAvailable": false,
       "privateExtraPorPersona": null,
+      "privadoTarifa": null,
       "tagline": "14 km de rápidos entre las paredes del cañón, en uno de los ríos más escénicos de Norteamérica",
       "pitch": "Rema 14 kilómetros de rápidos Clase III sobre el agua turquesa del Río Tampaón, flanqueado por las paredes de un cañón imponente. Pasamos por ti a tu hospedaje en Ciudad Valles o Xilitla (traslado redondo), con equipo completo, guía certificado y comida incluida que eliges antes o después de la actividad. No necesitas experiencia ni saber nadar — hay rutas para principiantes y avanzados.",
       "url": "https://www.huasteca-potosina.com/tours/rafting-rio-tampaon",
@@ -606,6 +609,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Tres maravillas en un día: Tamul en canoa, el cenote de la Cueva del Agua y las Huahuas al atardecer",
       "pitch": "Navega en canoa por el Cañón del Tampaón hasta la Cascada de Tamul —la más alta de San Luis Potosí—, nada y échate clavados en el cenote de la Cueva del Agua al regreso, y cierra el día asomado al abismo del Sótano de las Huahuas al atardecer, cuando miles de aves vuelven y se lanzan en picada al fondo.",
       "url": "https://www.huasteca-potosina.com/tours/expedicion-tamul",
@@ -763,6 +767,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Arte, agua y misterio en un recorrido de contrastes únicos",
       "pitch": "El jardín escultórico más enigmático del mundo, las aguas cristalinas del Nacimiento de Huichihuayán, la penumbra viva de la Cueva de las Quilas y el Castillo de la Salud de Don Beto Ramón, el otro surrealismo de la Huasteca. Cultura y naturaleza que se funden en un solo día extraordinario.",
       "url": "https://www.huasteca-potosina.com/tours/ruta-surrealista-edward-james",
@@ -907,6 +912,7 @@
       "soloAdultos": false,
       "privateAvailable": false,
       "privateExtraPorPersona": null,
+      "privadoTarifa": null,
       "tagline": "El jardín de Edward James para ustedes solos, antes de que abra al público",
       "pitch": "Las Pozas sin nadie más: entras una hora antes de que abra, con guía propio y acceso a rincones cerrados al público. Tres horas en el jardín de Edward James a tu ritmo, incluidos los niveles altos del Palacio de Bambú y la Casa Estudio donde todavía se conserva un poema escrito de su puño y letra. Grupo de hasta 7 personas, tarifa del grupo completo.",
       "url": "https://www.huasteca-potosina.com/tours/eden-en-el-jardin",
@@ -1069,6 +1075,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Tres caídas de agua, tres emociones distintas",
       "pitch": "Recorre las pozas turquesa de la Cascada del Meco, asciende al mirador panorámico para una perspectiva que te dejará sin aliento y cierra el día ante la imponente Cascada del Salto. El recorrido más fotogénico y accesible de toda la región.",
       "url": "https://www.huasteca-potosina.com/tours/cascadas-del-meco",
@@ -1218,6 +1225,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Dos joyas naturales, un día perfecto para desconectar",
       "pitch": "Minas Viejas despliega sus terrazas de travertino color jade que parecen pintadas a mano; las Cascadas de Micos encadenan pozas turquesa entre la selva tropical. El tour ideal para quienes buscan belleza auténtica, aguas cristalinas y momentos de paz lejos del ruido.",
       "url": "https://www.huasteca-potosina.com/tours/paraiso-escalonado-minas-micos",
@@ -1268,7 +1276,7 @@
         {
           "hora": "3:00 PM",
           "momento": "Cascadas de Micos",
-          "texto": "Las pozas escalonadas de Micos, una detrás de otra. Es el tramo del día donde más se mete la gente al agua."
+          "texto": "Las pozas escalonadas de Micos, una detrás de otra. Es el tramo del día donde más se mete la gente al agua. El salto de cascadas solo se hace si agregaste a tu reserva el Salto de las 7 Cascadas, con un guía certificado en actividades extremas y rescate."
         },
         {
           "hora": "7:00–8:00 PM",
@@ -1360,14 +1368,15 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "El recorrido más refrescante y completo de la región",
-      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo (+$150 por persona). En un día da para uno de los dos, no para ambos.",
+      "pitch": "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo (+$230 por persona). En un día da para uno de los dos, no para ambos.",
       "url": "https://www.huasteca-potosina.com/tours/ruta-acuatica-puente-de-dios",
       "foto": "https://www.huasteca-potosina.com/imagenes/cascadas-de-tamasopo/gallery-3.jpg",
       "destinos": [
         "Puente de Dios",
         "A elegir: Hacienda Los Gómez + Siete Cascadas (mismo lugar)",
-        "A elegir: Cascadas de Tamasopo (+$150 por persona)"
+        "A elegir: Cascadas de Tamasopo (+$230 por persona)"
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -1492,6 +1501,7 @@
       "soloAdultos": false,
       "privateAvailable": false,
       "privateExtraPorPersona": null,
+      "privadoTarifa": null,
       "tagline": "El sabor de Xilitla, desde la mata hasta la taza",
       "pitch": "Súbete a un RZR y sube a los cafetales de Xilitla. Caminas entre las matas con quien las cosecha, ves cómo se despulpa, se seca y se tuesta el grano, y cierras con una cata de café recién tostado. Una experiencia de sabor y tradición, apta para toda la familia. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/travesia-del-cafe",
@@ -1610,6 +1620,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Novecientos metros bajo la sierra, de noche",
       "pitch": "Una caminata de 15 a 20 minutos por la selva te deja en la boca de la gruta, ya de noche. Adentro recorres unos 900 metros entre estalactitas y estalagmitas que tardaron millones de años en formarse, y el recorrido cierra en unos jacuzzis naturales de agua cristalina dentro de la cueva. Vas con casco, lámpara y guía acreditado. $900 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/gruta-de-xilo",
@@ -1754,6 +1765,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Llegar a la cima antes que el sol",
       "pitch": "Mientras el resto de la Huasteca duerme, tú vas subiendo. Senderismo de madrugada por el bosque de la Trinidad hasta la cima del Cerro del Pilón, para llegar justo cuando sale el sol, muchas veces por encima del mar de nubes que cubre la sierra. Entre 8 y 9 horas, con guía acreditado y traslado desde tu hospedaje. $1,700 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/amanecer-de-nubes",
@@ -1888,6 +1900,159 @@
       "flota": null
     },
     {
+      "id": "tour-golondrinas",
+      "slug": "tour-sotano-de-las-golondrinas",
+      "nombre": "Sótano de las Golondrinas — El Vuelo de las Aves al Amanecer o al Atardecer",
+      "tipo": "Naturaleza & Aves",
+      "dificultad": "media",
+      "duracionHrs": 8,
+      "duracionTexto": "5–8 h",
+      "precio": 900,
+      "precioLista": 900,
+      "promo": null,
+      "precioUnidad": "persona",
+      "tarifaGrupo": null,
+      "escalaPersona": null,
+      "cancelacion": null,
+      "groupMin": 2,
+      "groupMax": 12,
+      "soloAdultos": false,
+      "privateAvailable": true,
+      "privateExtraPorPersona": null,
+      "privadoTarifa": {
+        "personas": 1,
+        "precio": 2100,
+        "extraPorPersona": 1000
+      },
+      "tagline": "Un abismo de 376 metros y las aves que salen de él en espiral",
+      "pitch": "El Sótano de las Golondrinas es un abismo de 376 metros de caída libre en la sierra de Aquismón, y la casa de más de mil aves. Al amanecer salen de él girando en espiral; al atardecer regresan. Tú eliges cuál de los dos ver. Pasamos por ti a tu hospedaje en Xilitla, y la entrada y el guía van incluidos. $900 MXN por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/tour-sotano-de-las-golondrinas",
+      "foto": "https://www.huasteca-potosina.com/imagenes/sotano-de-las-golondrinas/hero.jpg",
+      "destinos": [
+        "Sótano de las Golondrinas, en la sierra de Aquismón",
+        "Los 568 escalones hasta el borde del sótano",
+        "El vuelo de las aves, al amanecer o al atardecer"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla",
+        "Taquillas (la entrada al sótano)",
+        "Guía durante todo el recorrido"
+      ],
+      "noIncluye": [
+        "Alimentos: no lleva desayuno ni comida",
+        "Traslado desde Ciudad Valles: el precio es saliendo de Xilitla; desde Valles se suma el traslado y cambian las horas (lo cotiza el equipo)",
+        "Propinas y gastos personales",
+        "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
+      ],
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla a las 4:00 AM al amanecer o 3:00–4:00 PM al atardecer. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
+      "recogidaTipo": "hospedaje-xilitla",
+      "horario": "Sale 4:00 AM al amanecer o 3:00–4:00 PM al atardecer y dura entre 5 y 8 horas; regresa aprox. 11:00 AM–12:00 PM al amanecer o 8:30–9:00 PM al atardecer. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "4:00 AM",
+          "momento": "Recogida",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla, todavía de noche. Lleva chamarra: a esa hora en la sierra hace frío. Si elegiste el atardecer, pasamos entre las 3:00 y las 4:00 PM."
+        },
+        {
+          "hora": "Antes del amanecer",
+          "momento": "Los 568 escalones",
+          "texto": "Bajas hasta el borde del sótano con tiempo de acomodarte antes de que salgan las aves."
+        },
+        {
+          "hora": "5:45 AM aprox.",
+          "momento": "Salen las aves",
+          "texto": "Primero se oyen. Luego salen del fondo girando en espiral, en grupos, hasta ganar altura y perderse sobre la selva. Al atardecer es al revés: regresan y bajan girando hacia el sótano."
+        },
+        {
+          "hora": "Ya con luz",
+          "momento": "Asomarte al abismo",
+          "texto": "Si quieres, te asomas al borde amarrado con cuerda mientras la gente de la comunidad te sostiene: 376 metros de caída libre bajo tus pies. Peso máximo 90 kg. Después, la subida de los 568 escalones, a tu paso."
+        },
+        {
+          "hora": "11:00 AM–12:00 PM",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje. Si elegiste el atardecer, vuelves entre las 8:30 y las 9:00 PM."
+        }
+      ],
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo, pero el precio y las horas son SALIENDO DE XILITLA (pasamos por el cliente a su hospedaje en Xilitla). Desde Ciudad Valles también vamos, pero se suma el traslado y cambian las horas de salida: eso lo cotiza el equipo por WhatsApp (Manolo, 19 nov 2026)."
+      },
+      "alimentos": {
+        "desayuno": false,
+        "comida": false,
+        "detalle": "NO incluye ningún alimento: se sale de madrugada (amanecer) o por la tarde (atardecer)."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
+      "incluyeSiempre": [
+        "Fotografías y video del recorrido que toma tu guía"
+      ],
+      "idealPara": [
+        "naturaleza",
+        "aves",
+        "fotografía",
+        "madrugadores",
+        "subir escaleras"
+      ],
+      "urgencia": "Al amanecer o al atardecer — se reserva con un día de anticipación",
+      "queLlevar": [
+        "Ropa cómoda",
+        "Calzado cómodo y cerrado: son 568 escalones de bajada y de subida",
+        "Chamarra y lámpara si vas al amanecer: se sale de noche y en la sierra hace frío",
+        "Cámara o celular sin flash: el flash no está permitido"
+      ],
+      "requisitos": [
+        "Tú eliges el horario: al amanecer (pasamos por ti a las 4:00 AM y vuelves entre las 11:00 AM y las 12:00 PM) o al atardecer (pasamos entre las 3:00 y las 4:00 PM y vuelves entre las 8:30 y las 9:00 PM). Son horas saliendo de Xilitla: desde Ciudad Valles cambian",
+        "Las horas se pueden mover según a qué hora estén saliendo las aves: lo confirmamos con la gente de allá antes de pasar por ti",
+        "Si está nublado, hace mucho frío o llueve, el recorrido no se hace porque las aves no salen; si lo cancelamos por clima, eliges reembolso completo o cambiar la fecha sin costo",
+        "Son 568 escalones para bajar al borde y la subida de regreso es pesada",
+        "Para asomarte al borde amarrado con cuerda, el peso máximo es de 90 kg (puede variar: esa parte la maneja la comunidad)",
+        "No se permiten mascotas de ningún tipo, ni con ningún papel",
+        "No se permiten cámaras con flash",
+        "Sale con mínimo 2 personas"
+      ],
+      "edadMinima": 3,
+      "edadNota": null,
+      "faqs": [
+        {
+          "q": "¿Conviene ir al amanecer o al atardecer?",
+          "a": "Las dos valen la pena y tú eliges al reservar. Al amanecer ves a las aves salir del sótano girando en espiral (salen hacia las 5:45 AM): pasamos por ti a las 4:00 AM y vuelves entre las 11:00 AM y las 12:00 PM. Al atardecer las ves regresar y bajar girando hacia la boca del sótano: pasamos por ti entre las 3:00 y las 4:00 PM y vuelves entre las 8:30 y las 9:00 PM."
+        },
+        {
+          "q": "¿Qué pasa si está nublado o llueve?",
+          "a": "Si está nublado, hace mucho frío o llueve, las aves no salen y ese día el recorrido no se hace. Por lo mismo, las horas se pueden mover un poco según a qué hora estén saliendo las aves: lo confirmamos con la gente de allá antes de pasar por ti. Si lo cancelamos por clima, eliges entre el reembolso completo o cambiar la fecha sin costo."
+        },
+        {
+          "q": "¿Qué tan pesada es la bajada al sótano?",
+          "a": "Son 568 escalones de bajada hasta el borde, y la subida de regreso es pesada: se hace a tu paso, sin prisa. Lleva calzado cómodo y cerrado. Si subir escaleras te cuesta mucho, dínoslo antes de reservar."
+        },
+        {
+          "q": "¿Me puedo asomar al sótano?",
+          "a": "Sí, si quieres: te asomas al borde amarrado con cuerda mientras la gente de la comunidad te sostiene. Para eso el peso máximo es de 90 kg, y puede variar según quién te sostenga ese día, porque esa parte la maneja la comunidad."
+        },
+        {
+          "q": "¿De verdad son golondrinas?",
+          "a": "No. A pesar del nombre, las aves del sótano son vencejos y cotorros. Viven dentro del abismo, salen al amanecer y regresan al atardecer."
+        },
+        {
+          "q": "¿Pueden ir niños o mascotas?",
+          "a": "Niños sí, desde 3 años. Mascotas no: no se permiten de ningún tipo ni con ningún papel. Tampoco se permiten cámaras con flash."
+        },
+        {
+          "q": "¿Lo puedo hacer en privado?",
+          "a": "Sí. En privado cuesta $2,100 MXN para una persona y $1,000 MXN por cada persona adicional: para 2 personas son $3,100 MXN. Compartido sale con mínimo 2 personas, a $900 MXN por persona. Los precios son saliendo de Xilitla."
+        },
+        {
+          "q": "¿Pasan por mí a Ciudad Valles?",
+          "a": "Sí, pero el precio y las horas de la ficha son saliendo de Xilitla. Desde Ciudad Valles se suma el traslado y las horas de salida cambian: escríbenos por WhatsApp y te lo cotizamos."
+        }
+      ],
+      "rutas": null,
+      "flota": null
+    },
+    {
       "id": "tour-olla-de-la-luz",
       "slug": "olla-de-la-luz",
       "nombre": "Olla de la Luz — El Sótano del Bosque de Niebla de Xilitla",
@@ -1907,6 +2072,7 @@
       "soloAdultos": false,
       "privateAvailable": true,
       "privateExtraPorPersona": 250,
+      "privadoTarifa": null,
       "tagline": "Un abismo donde la luz entra como cascada",
       "pitch": "A 14 km de Xilitla, en lo más alto de la comunidad de la Trinidad, se abre un sótano vertical de 193 metros de profundidad y 233 de diámetro, rodeado de bosque de niebla, pinos, cedros y orquídeas. Se llega caminando con guía entre bosque, llanos y miradores: la caminata es de 2 h 30 a 3 horas, unos 9 a 10 km. Entre 8 y 9 horas en total. $1,800 MXN por persona.",
       "url": "https://www.huasteca-potosina.com/tours/olla-de-la-luz",
@@ -4049,6 +4215,12 @@
         "slug": "expedicion-tamul"
       }
     ],
+    "sotano-de-las-golondrinas": [
+      {
+        "nombre": "Sótano de las Golondrinas",
+        "slug": "tour-sotano-de-las-golondrinas"
+      }
+    ],
     "rio-tampaon-rafting": [
       {
         "nombre": "Rafting en el Tampaón",
@@ -4408,7 +4580,7 @@
     ],
     "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
     "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (una parada camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de los otros tours. El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
-    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
+    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Sótano de las Golondrinas, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "hotelServicios": {
       "nombre": "Hotel Paraíso Encantado",
@@ -4430,8 +4602,8 @@
       "llegadaTemprano": "Si llegan antes del check-in (por ejemplo en el autobús de la mañana), se les da la habitación al llegar si ya está libre; si no, dejan las maletas en recepción (ahí quedan seguras) y esperan la camioneta del tour. Se registran solo con el nombre del titular de la reserva."
     },
     "mejorTemporada": "Se puede venir todo el año. Del 30 de octubre a mayo el agua baja clara; el turquesa más intenso es de marzo a mayo, y es cuando más gente hay. Junio es de transición: llegan las primeras lluvias. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; el rafting depende del nivel del río ese día y, si el río crece, se reprograma sin costo. Del 30 de octubre a diciembre es «la mejor temporada para venir» (aflojan las lluvias, el agua se aclara y todavía no llegan las multitudes de primavera), pero el turquesa más intenso es de marzo a mayo: no lo prometas para esas fechas.",
-    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM) y El Edén en el Jardín (horario según el día); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
-    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
+    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "cancelacionCompleta": [
       "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua.",
@@ -4754,7 +4926,7 @@
     {
       "tema": "donde-hospedarse",
       "titulo": "Dónde conviene hospedarse según sus tours",
-      "texto": "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió. En Xilitla o en Ciudad Valles, cualquiera le sirve: Rafting en el Río Tampaón, Expedición Tamul, Cascadas del Meco, Paraíso Escalonado y Ruta Acuática. En Xilitla va incluido; desde Ciudad Valles cuesta más: Ruta Surrealista (desde Ciudad Valles, +$400 por reserva, no por persona). Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz. Solo en Ciudad Valles: Rappel en la Cascada de Tamul. Recorrido en RZR por Xilitla: en nuestra base de Xilitla; llega por su cuenta. En corto: si alguno de sus tours recoge solo en Xilitla o empieza en nuestra base, le conviene Xilitla; con Rappel en la Cascada de Tamul, Ciudad Valles; si todos recogen en las dos, la que prefiera. En Xilitla está nuestro hotel, el Hotel Paraíso Encantado, a 5 minutos caminando de Las Pozas, con alberca, restaurante y estacionamiento gratis: ofrécelo como opción, no como requisito, y revisa disponibilidad antes de ofrecer un cuarto. Si prefiere otro, consulta «hoteles-alternativos»: también pasamos por él ahí. Un traslado entre Ciudad Valles y Xilitla (cambiar de zona, o ir desde Valles a un tour de solo Xilitla) NO va incluido salvo que una herramienta lo diga: nunca digas «sin costo», «gratis» ni «sin costo extra»; si lo pide, se cotiza con el equipo (escalar_a_humano: traslado_sin_tarifa, avisar). Contesta esto primero y pregúntale qué zona prefiere; en ese mensaje no cotices ni ofrezcas apartar.",
+      "texto": "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió. En Xilitla o en Ciudad Valles, cualquiera le sirve: Rafting en el Río Tampaón, Expedición Tamul, Cascadas del Meco, Paraíso Escalonado y Ruta Acuática. En Xilitla va incluido; desde Ciudad Valles cuesta más: Ruta Surrealista (desde Ciudad Valles, +$400 por reserva, no por persona). Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Sótano de las Golondrinas y Olla de la Luz. Solo en Ciudad Valles: Rappel en la Cascada de Tamul. Recorrido en RZR por Xilitla: en nuestra base de Xilitla; llega por su cuenta. En corto: si alguno de sus tours recoge solo en Xilitla o empieza en nuestra base, le conviene Xilitla; con Rappel en la Cascada de Tamul, Ciudad Valles; si todos recogen en las dos, la que prefiera. En Xilitla está nuestro hotel, el Hotel Paraíso Encantado, a 5 minutos caminando de Las Pozas, con alberca, restaurante y estacionamiento gratis: ofrécelo como opción, no como requisito, y revisa disponibilidad antes de ofrecer un cuarto. Si prefiere otro, consulta «hoteles-alternativos»: también pasamos por él ahí. Un traslado entre Ciudad Valles y Xilitla (cambiar de zona, o ir desde Valles a un tour de solo Xilitla) NO va incluido salvo que una herramienta lo diga: nunca digas «sin costo», «gratis» ni «sin costo extra»; si lo pide, se cotiza con el equipo (escalar_a_humano: traslado_sin_tarifa, avisar). Contesta esto primero y pregúntale qué zona prefiere; en ese mensaje no cotices ni ofrezcas apartar.",
       "claves": [
         "dónde hospedarnos",
         "dónde hospedarse",
@@ -4909,7 +5081,7 @@
     {
       "tema": "golondrinas",
       "titulo": "Sótano de las Golondrinas",
-      "texto": "Sí se puede ir con nosotros, pero no está en el catálogo: sale con grupo o como privado y el precio lo cotiza el equipo (fuera_catalogo, avisar). Dos horarios: de madrugada (salida 4 am; las aves salen hacia las 5:45 am) o al atardecer (salida 3–4 pm, para verlas entrar: más de mil cotorritos y vencejos girando hacia el sótano). Está en Aquismón, por carretera de mucha subida y curvas. Más datos en la ficha del destino `sotano-de-las-golondrinas`. Erick recomienda más el Sótano de las Huahuas, que va dentro de la Expedición Tamul: es más chico, pero el espectáculo se aprecia mejor.",
+      "texto": "YA está en el catálogo: recorrido `tour-sotano-de-las-golondrinas` (usa obtener_tour para el precio, el privado, los horarios y lo que incluye; no escribas cifras de memoria). Mínimo 2 personas; en privado tiene tarifa propia (precio para 1 persona + un monto por cada persona adicional, en obtener_tour). Precio y horas son SALIENDO DE XILITLA: incluye traslado redondo desde el hospedaje en Xilitla, taquillas y guía; no incluye alimentos. Desde Ciudad Valles se suma el traslado y cambian las horas de salida: eso lo cotiza el equipo por WhatsApp (traslado_sin_tarifa, avisar). Dos horarios que elige el cliente: al amanecer (recogida 4:00 am, las aves salen hacia las 5:45 am, regreso 11 am–12 pm) o al atardecer (recogida 3–4 pm, para verlas entrar: más de mil cotorritos y vencejos girando hacia el sótano; regreso 8:30–9 pm). Las horas se mueven según a qué hora salgan las aves: lo confirma el equipo con la gente de allá. NO sale si está nublado, hace mucho frío o llueve, porque las aves no salen: ahí aplica «si cancelamos nosotros» (reembolso completo o reagendar sin costo). Son 568 escalones de bajada y la subida es pesada. Para asomarse al borde amarrado con cuerda, peso máximo 90 kg (puede variar: lo maneja la comunidad). Desde 3 años. Sin mascotas de ningún tipo ni cámaras con flash. Está en Aquismón, por carretera de mucha subida y curvas. Si al cliente le da igual cuál sótano, Erick opina que el de las Huahuas (dentro de la Expedición Tamul) es más chico pero el espectáculo se aprecia mejor.",
       "claves": [
         "golondrinas",
         "sótano de las golondrinas",
@@ -5129,9 +5301,10 @@
         "¿Cuál es la diferencia entre Huahuas y Golondrinas?",
         "¿Qué sótano es mejor?"
       ],
-      "respuesta": "El Sótano de las Huahuas es más chico, pero el espectáculo de las aves entrando se aprecia mejor; la Expedición Tamul termina ahí al atardecer. El de las Golondrinas se ve de madrugada (salen las aves) o por la tarde (entran).",
+      "respuesta": "El Sótano de las Huahuas es más chico, pero el espectáculo de las aves entrando se aprecia mejor; la Expedición Tamul termina ahí al atardecer. El de las Golondrinas tiene su propio recorrido: se ve de madrugada (salen las aves) o por la tarde (entran).",
       "tours": [
-        "expedicion-tamul"
+        "expedicion-tamul",
+        "tour-sotano-de-las-golondrinas"
       ]
     },
     {
@@ -5142,14 +5315,10 @@
         "Quiero ver las golondrinas",
         "¿Tamul con Golondrinas en vez de Huahuas?"
       ],
-      "respuesta": "Sí se puede: al atardecer (salida 3–4 pm) para ver entrar a más de mil aves girando hacia el sótano, o de madrugada (salida 4 am) para verlas salir. Sale con grupo o como privado, y el precio te lo confirma el equipo. Si les da igual cuál, el Sótano de las Huahuas (dentro de la Expedición Tamul) es más chico pero el espectáculo se aprecia mejor. Ojo: la carretera a Golondrinas tiene mucha subida y curvas.",
+      "respuesta": "Sí, tenemos recorrido al Sótano de las Golondrinas (mínimo 2 personas), con traslado desde tu hospedaje en Xilitla, entrada y guía (el precio es saliendo de Xilitla; desde Ciudad Valles se suma el traslado, cambian las horas y te lo cotizamos). Eliges horario: de madrugada (pasamos a las 4 am) para ver salir a las aves, o al atardecer (pasamos entre 3 y 4 pm) para verlas entrar. Si está nublado, hace mucho frío o llueve no sale, porque las aves no salen; las horas se ajustan a la salida de las aves y te las confirmamos. También se puede en privado. Ojo: la carretera tiene mucha subida y curvas, y son 568 escalones de bajada.",
       "tours": [
-        "expedicion-tamul"
-      ],
-      "alEquipo": {
-        "motivo": "fuera_catalogo",
-        "modo": "avisar"
-      }
+        "tour-sotano-de-las-golondrinas"
+      ]
     },
     {
       "id": "kayak",

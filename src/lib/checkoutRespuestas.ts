@@ -120,9 +120,10 @@ export function respuestasRapidas(
   // Un recorrido con política propia dice lo que ESA política dice del clima
   // (ver la insignia de lluvia en `tours/[slug]`); si no dice nada, se calla.
   const lluvia: string[] = [];
-  if (recorridos.some(({ tour }) => !tour.cancelacion)) lluvia.push(m.lluviaGenerica);
+  // `clima` propio (Golondrinas: con lluvia no sale) gana a la regla general.
+  if (recorridos.some(({ tour }) => !tour.cancelacion && !tour.clima)) lluvia.push(m.lluviaGenerica);
   for (const { tour } of recorridos) {
-    const clima = tour.cancelacion ? climaDe(tour, locale) : null;
+    const clima = tour.clima?.[locale] ?? (tour.cancelacion ? climaDe(tour, locale) : null);
     if (clima) lluvia.push(conNombre(tour, clima));
   }
   if (lluvia.length) out.push({ id: "lluvia", pregunta: m.lluviaTitulo, respuesta: lluvia.join(" ") });

@@ -7,7 +7,7 @@
 // (traslado desde Valles, actividades opcionales) se quitan antes de comparar.
 //
 // Lote 9 (10 nov 2026): la lista lleva la OPCIÓN elegida (Ruta Acuática →
-// Tamasopo, +$150 por persona; sin ella salía «arriba de lista»), lo vendido es
+// Tamasopo, +$230 por persona; sin ella salía «arriba de lista»), lo vendido es
 // lo que de verdad se cobró del renglón (después de descuentos y del total
 // editado) y el descuento de una reserva se cuenta UNA vez: el código de
 // cumpleaños ya se guarda como su descuento y se sumaba dos veces.

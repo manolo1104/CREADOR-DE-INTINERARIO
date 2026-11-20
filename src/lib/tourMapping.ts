@@ -32,6 +32,7 @@ const T = {
   eden:       { nombre: "El Edén en el Jardín", slug: "eden-en-el-jardin" },
   xilo:       { nombre: "Gruta de Xilo",     slug: "gruta-de-xilo" },
   amanecer:   { nombre: "Amanecer de Nubes", slug: "amanecer-de-nubes" },
+  golondrinas:{ nombre: "Sótano de las Golondrinas", slug: "tour-sotano-de-las-golondrinas" },
   olla:       { nombre: "Olla de la Luz",    slug: "olla-de-la-luz" },
   cafe:       { nombre: "Travesía del Café", slug: "travesia-del-cafe" },
 } as const;
@@ -44,10 +45,10 @@ export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
   "cascada-de-tamul":               [T.tamul, T.rappel],
   "sotano-de-las-huahuas":          [T.tamul],
   // 🔴 Era [T.tamul]: la ficha decía que la Expedición Tamul lo visita y el bot
-  // lo vendía dentro de Tamul (un operador llegó a cotizarlo). Golondrinas NO se
-  // opera (decisión de la empresa, 17 sep 2026): queda como "cerca", y la web
-  // dice que no lo visitamos dentro de un tour pero que se puede combinar.
-  "sotano-de-las-golondrinas":      [cerca(T.tamul)],
+  // lo vendía dentro de Tamul (un operador llegó a cotizarlo). Del 17 sep al
+  // 19 nov 2026 Golondrinas no se operó y quedó como "cerca" de Tamul.
+  // 🟢 19 nov 2026 (Manolo): tiene recorrido propio. Tamul sigue sin visitarlo.
+  "sotano-de-las-golondrinas":      [T.golondrinas, cerca(T.tamul)],
   "rio-tampaon-rafting":            [T.rafting, T.rappel],
   "nacimiento-tambaque":            [cerca(T.tamul), cerca(T.rafting)],
   "cuevas-de-mantetzulel":          [cerca(T.tamul)],

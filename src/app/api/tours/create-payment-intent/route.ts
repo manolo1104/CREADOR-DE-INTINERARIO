@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
       pct:           tourDetails?.pct,
       addOns:        tourDetails?.addOns,
       tourDate:      tourDetails?.tourDate,
-      // Ruta Acuática: Tamasopo suma $150 por cabeza (se valida contra el catálogo).
+      // Ruta Acuática: Tamasopo suma $230 por cabeza (se valida contra el catálogo).
       eleccion:      typeof tourDetails?.eleccion === "string" ? tourDetails.eleccion : undefined,
     });
 

@@ -105,6 +105,9 @@ const TOUR_PROOF: Record<string, {
   "tour-amanecer-nubes": {
     reviews: [],
   },
+  "tour-golondrinas": {
+    reviews: [],
+  },
   "tour-olla-de-la-luz": {
     reviews: [],
   },
@@ -442,6 +445,7 @@ const LUGARES: { label: string; corto: string; img: string }[] = [
   { label: "Puente de Dios",                       corto: "Puente de Dios",     img: "/imagenes/puente-de-dios-tamasopo/hero-new.webp" },
   { label: "Minas Viejas",                         corto: "Minas Viejas",       img: "/imagenes/cascadas-minas-viejas/hero-new.jpg" },
   { label: "Sótano de las Huahuas",                corto: "Sótano de las Huahuas", img: "/imagenes/sotano-de-las-huahuas/hero.jpg" },
+  { label: "Sótano de las Golondrinas",            corto: "Sótano de las Golondrinas", img: "/imagenes/sotano-de-las-golondrinas/hero.jpg" },
   { label: "Olla de la Luz (bosque de niebla)",    corto: "Olla de la Luz",     img: "/imagenes/tours/olla-de-la-luz/hero.jpg" },
   { label: "Recorrido en RZR por Xilitla (off-road)", corto: "RZR por la sierra", img: "/imagenes/tours/rzr-xilitla/hero.jpg" },
   { label: "Gruta de Xilo (recorrido nocturno)",   corto: "Gruta de Xilo",      img: "/imagenes/tours/gruta-de-xilo/hero.jpg" },

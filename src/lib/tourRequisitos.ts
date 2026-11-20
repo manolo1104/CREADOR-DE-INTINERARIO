@@ -296,6 +296,37 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     edadNota: "Es una cueva de noche, con piso irregular y agua: cuéntanos las edades al reservar y lo valoramos juntos antes de apartar.",
   },
 
+  // 🟢 19 nov 2026: todo dictado por Manolo ese día, salvo los 568 escalones,
+  // la chamarra y la lámpara, que salen de la ficha del destino.
+  "tour-golondrinas": {
+    reemplazaBase: true,
+    noIncluye: [
+      "Alimentos: este recorrido no lleva desayuno ni comida",
+      "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
+      "Traslado desde Ciudad Valles: el precio es saliendo de Xilitla; desde Valles se suma el traslado (te lo cotizamos por WhatsApp)",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
+    ],
+    queLlevar: [
+      "Ropa cómoda",
+      "Calzado cómodo y cerrado: son 568 escalones de bajada y de subida",
+      "Chamarra y lámpara si vas al amanecer: se sale de noche y en la sierra hace frío",
+      "Cámara o celular sin flash: el flash no está permitido",
+    ],
+    requisitos: [
+      "Tú eliges el horario: al amanecer (pasamos por ti a las 4:00 AM y vuelves entre las 11:00 AM y las 12:00 PM) o al atardecer (pasamos entre las 3:00 y las 4:00 PM y vuelves entre las 8:30 y las 9:00 PM). Son horas saliendo de Xilitla: desde Ciudad Valles cambian",
+      "Las horas se pueden mover según a qué hora estén saliendo las aves: lo confirmamos con la gente de allá antes de pasar por ti",
+      "Si está nublado, hace mucho frío o llueve, el recorrido no se hace porque las aves no salen; si lo cancelamos por clima, eliges reembolso completo o cambiar la fecha sin costo",
+      "Son 568 escalones para bajar al borde y la subida de regreso es pesada",
+      "Para asomarte al borde amarrado con cuerda, el peso máximo es de 90 kg (puede variar: esa parte la maneja la comunidad)",
+      "No se permiten mascotas de ningún tipo, ni con ningún papel",
+      "No se permiten cámaras con flash",
+      "Sale con mínimo 2 personas",
+    ],
+    edadMinima: 3,
+  },
+
   "tour-amanecer-nubes": {
     reemplazaBase: true,
     noIncluye: [

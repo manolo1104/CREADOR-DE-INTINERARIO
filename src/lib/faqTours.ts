@@ -81,7 +81,9 @@ const yLista = (items: string[], locale: Locale) =>
  * Los que NO salen a diario: van con un horario que pone otro (`horaTexto`).
  * Hoy es solo el Edén, que sigue al jardín de Las Pozas y no abre los martes.
  */
-const SIN_SALIDA_DIARIA = TOURS_DB.filter((t) => recogidaDeTour(t).horaTexto);
+// Golondrinas (19 nov 2026) trae `horaTexto` pero SÍ sale a diario: su texto
+// es la hora de recogida (`horaTextoEsRecogida`), no un horario de un tercero.
+const SIN_SALIDA_DIARIA = TOURS_DB.filter((t) => recogidaDeTour(t).horaTexto && !recogidaDeTour(t).horaTextoEsRecogida);
 
 /**
  * "Salimos todos los días del año", con la salvedad sacada del catálogo.

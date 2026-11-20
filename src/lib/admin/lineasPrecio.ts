@@ -88,7 +88,7 @@ export function calcTourLine(l: LineItem): number {
   if (delGrupo !== null) return delGrupo + calcAddOnsLinea(l);
   // Lo que paga cada cabeza: el precio de lista menos el escalón que le toque
   // al tamaño del grupo (`escalaPersona`). Sin escalera, el precio de siempre.
-  // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$150) va dentro
+  // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$230) va dentro
   // del precio por cabeza, igual que en la web (`totalRecorrido`): los menores
   // pagan su 50 % también de él.
   const porCabeza = precioPorCabeza(t, pagan) + extraDeEleccion(t, l.eleccion);

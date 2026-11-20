@@ -21,8 +21,9 @@
  *  · Cada destino trae su `temporada_ideal` en `destinos.ts`, que es la que
  *    vale cuando se habla de ESE lugar.
  *
- * ⚠️ NO se habla del Sótano de las Golondrinas como algo que vendamos:
- * Golondrinas y Huahuas son sitios distintos y nosotros no operamos el primero.
+ * ⚠️ Golondrinas y Huahuas son sitios distintos. Del 17 sep al 19 nov 2026 no
+ * operamos Golondrinas; desde el 19 nov tiene recorrido propio
+ * (`tour-sotano-de-las-golondrinas`), que no sale con nublado, frío o lluvia.
  */
 
 export interface Temporada {

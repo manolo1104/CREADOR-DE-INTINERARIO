@@ -19,7 +19,7 @@ export interface TourEleccion {
     nota?: string;
     /**
      * MXN que esta opción le SUMA al precio por persona (Ruta Acuática:
-     * Tamasopo +$150, Manolo, 5 nov 2026). Se suma ANTES de los % de niños,
+     * Tamasopo +$150 el 5 nov 2026 y +$230 desde el 19 nov 2026, Manolo). Se suma ANTES de los % de niños,
      * así que un menor paga su parte del extra como paga su parte del tour.
      * Leerlo siempre con `extraDeEleccion`.
      */
@@ -275,6 +275,19 @@ export interface TourRecogida {
    */
   horaTexto?: { es: string; en: string };
   /**
+   * `horaTexto` ES la hora a la que pasamos por el cliente, no un horario que
+   * pone un tercero. Sin esto las frases decían «pasamos por ti a tiempo para
+   * su horario fijo (4:00 AM…)». Nació con el Sótano de las Golondrinas (19 nov
+   * 2026): dos recogidas, al amanecer o al atardecer, que elige el cliente.
+   */
+  horaTextoEsRecogida?: boolean;
+  /**
+   * La hora de regreso dicha tal cual, cuando no se deduce de una sola salida
+   * (Golondrinas: 11 AM–12 PM al amanecer, 8:30–9 PM al atardecer). Sin esto,
+   * con `horaTexto` el regreso se dice como «5–8 h después de empezar».
+   */
+  regresoTexto?: { es: string; en: string };
+  /**
    * Lo que se cobra de más, en MXN, si el cliente se hospeda en Ciudad Valles:
    * UNA vez por reserva, no por persona. Solo con `tipo: "hospedaje"`.
    *
@@ -414,6 +427,16 @@ export interface Tour {
    */
   cancelacion?:     { es: string; en: string };
   /**
+   * Qué pasa con el clima cuando NO es la regla general («operamos con lluvia;
+   * si el río no es seguro, eliges reembolso o cambio de fecha»). La
+   * cancelación del cliente sigue siendo la de siempre (48 h).
+   *
+   * 🟢 19 nov 2026, Golondrinas (Manolo): con nublado, mucho frío o lluvia NO
+   * sale, porque las aves no salen. Sin este campo, la insignia de la ficha y
+   * el «¿Y si llueve?» del carrito decían «operamos con lluvia».
+   */
+  clima?:           { es: string; en: string };
+  /**
    * Sello de exclusividad en el hero: este recorrido no se consigue con otra
    * operadora de la zona.
    *
@@ -491,6 +514,17 @@ export interface Tour {
    */
   groupMax:         number;
   privateAvailable: boolean;
+  /**
+   * Tarifa PROPIA del privado, cuando no sigue la regla general (precio normal
+   * + `PRIVADO_EXTRA_POR_PERSONA` por cabeza). `precio` es lo que paga el grupo
+   * de `personas`; cada persona de más suma `extraPorPersona`.
+   *
+   * 🟢 19 nov 2026 (Manolo): el Sótano de las Golondrinas en privado cuesta
+   * $2,100 para 1 persona y $1,000 por cada persona adicional (2 = $3,100).
+   * Sin `extraPorPersona`, las pantallas dicen «persona extra: pregúntanos».
+   * Leerlo siempre con `privadoDe()`: ahí vive la regla de los dos casos.
+   */
+  privadoPropio?:   { personas: number; precio: number; extraPorPersona?: number };
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
   soloAdultos?:     boolean;
   gallery:          GalleryImage[];
@@ -729,6 +763,8 @@ export function recogidaDeTour(t: Pick<Tour, "recogida">) {
     nota:       r?.nota,
     lugar:      r?.lugar,
     horaTexto:  r?.horaTexto,
+    horaTextoEsRecogida: Boolean(r?.horaTextoEsRecogida),
+    regresoTexto: r?.regresoTexto,
     cargoValles: r?.tipo === "hospedaje" ? Math.max(0, r.cargoValles ?? 0) : 0,
   };
 }
@@ -789,7 +825,8 @@ export function regresoDeTour(
   t: Pick<Tour, "recogida" | "duracionRango" | "rutas" | "duracion_hrs">,
   en: boolean,
 ): string {
-  const { horaInicio, ventanaHrs, horaTexto } = recogidaDeTour(t);
+  const { horaInicio, ventanaHrs, horaTexto, regresoTexto } = recogidaDeTour(t);
+  if (regresoTexto) return en ? regresoTexto.en : regresoTexto.es;
   const [durMin, durMax] = tourDurRange(t);
   // Con horarios fijos que cambian según el día no hay UNA hora de regreso:
   // se dice cuánto dura desde que empieza. Lo mismo cuando la ventana de
@@ -858,8 +895,11 @@ export function partesRecogida(t: Pick<Tour, "recogida">, en: boolean): PartesRe
   const hora = rec.tipo === "en-sitio"
     ? null
     : rec.horaTexto
+      // La hora ES la recogida (Golondrinas): se dice tal cual.
+      ? rec.horaTextoEsRecogida
+        ? (en ? `at ${rec.horaTexto.en}` : `a las ${rec.horaTexto.es}`)
       // Horario fijo que pone un tercero: pasamos por él a tiempo para esa hora.
-      ? (en ? `in time for its fixed start (${rec.horaTexto.en})` : `a tiempo para su horario fijo (${rec.horaTexto.es})`)
+        : (en ? `in time for its fixed start (${rec.horaTexto.en})` : `a tiempo para su horario fijo (${rec.horaTexto.es})`)
       : v.charAt(0).toLowerCase() + v.slice(1);
   const lugar =
     rec.tipo === "hospedaje"
@@ -1208,7 +1248,8 @@ const TOURS_RAW: Tour[] = [
     // mínimo: por la web se podía pagar un rafting para 2 y luego había que
     // llamar al cliente a reprogramar o devolverle el dinero.
     groupMin:         5,
-    groupMax:         8,
+    // 19 nov 2026 (Manolo): «sube la capacidad del rafting a 12 personas» (antes 8).
+    groupMax:         12,
     privateAvailable: false,
     nombre:           "Rafting en el Río Tampaón — Rápidos Clase III en Agua Turquesa",
     nombreCorto:      "Rafting en el Río Tampaón",
@@ -1349,18 +1390,27 @@ const TOURS_RAW: Tour[] = [
         texto: "Buffet de platillos huastecos en El Taco Loco, camino al río. Va incluido." },
       { hora: "11:00 AM", momento: "Canoa a Tamul",
         texto: "Antes de subir se firma la carta responsiva. Luego entras al Cañón del Tampaón en canoa: cerca de una hora de remo, en silencio, y al fondo una cascada de 105 metros que se siente en el pecho antes de verla.",
-        foto: "/imagenes/tours/tamul/canoa-tamul-al-fondo.jpg" },
+        // 19 nov 2026 (Manolo): la guerra de agua grande; las letras de La Morena y
+        // las canoas del embarcadero, chicas debajo.
+        foto: "/imagenes/tours/tamul/canoas-guerra-de-agua.jpg",
+        fotosExtra: ["/imagenes/tours/tamul/letras-la-morena-tamul.jpg", "/imagenes/tours/tamul/canoas-en-el-embarcadero.jpg"] },
       { hora: "12:30 PM", momento: "Fotos frente a la cascada",
         texto: "Bajas a las piedras del cañón, justo enfrente de la caída, y ahí se toma la foto que todos acaban enseñando al volver. Sin prisa: es el momento del día que más se repite en las cámaras.",
-        foto: "/imagenes/tours/tamul/grupo-frente-a-tamul.jpg" },
+        foto: "/imagenes/tours/tamul/viajera-frente-a-tamul.jpg",
+        fotosExtra: ["/imagenes/tours/tamul/grupo-selfie-frente-a-tamul.jpg", "/imagenes/cascada-de-tamul/chica-roca.jpg", "/imagenes/cascada-de-tamul/gallery-6.jpg"] },
       { hora: "1:30 PM", momento: "Cueva del Agua",
         texto: "De regreso bajas de la canoa y subes al cenote de la Cueva del Agua: haces de luz, agua turquesa, y aquí sí te metes —se nada y se echan clavados—. Arriba hay puestos con snacks y bebidas frías por si quieres un refrigerio. El momento favorito de casi todos.",
-        foto: "/imagenes/tours/tamul/cueva-del-agua-clavados.jpg" },
+        foto: "/imagenes/tours/tamul/cueva-del-agua-nadando.jpg",
+        fotosExtra: ["/imagenes/tours/tamul/cueva-del-agua-poza-azul.jpg", "/imagenes/tours/tamul/puente-colgante-cueva-del-agua.jpg"] },
       { hora: "3:00 PM", momento: "Comida y camino",
         texto: "La comida del día, ya saliendo de Tamul. No va incluida, así que eliges tú dónde y cuánto gastar. Después, el traslado al Sótano de las Huahuas." },
       { hora: "5:30 PM", momento: "Sótano de las Huahuas",
         texto: "Unos 20 minutos de caminata hasta el borde de un abismo de 478 metros. Ahí esperas el atardecer.",
-        foto: "/imagenes/tours/tamul/gallery-6.jpg" },
+        foto: "/imagenes/tours/tamul/aves-volviendo-al-sotano.jpg",
+        fotosExtra: [
+          "/imagenes/tours/tamul/escalones-de-piedra-en-la-selva.jpg", "/imagenes/tours/tamul/perico-verde-huahuas.jpg", "/imagenes/tours/tamul/vencejo-de-las-huahuas.jpg",
+          "/imagenes/tours/tamul/asomado-al-sotano-huahuas.jpg", "/imagenes/sotano-de-las-huahuas/borde.jpg", "/imagenes/sotano-de-las-huahuas/gallery-6.jpg",
+        ] },
       { hora: "6:00 PM", momento: "El espectáculo",
         texto: "Miles de aves —loros y vencejos— regresan y se dejan caer en espiral hasta desaparecer. Es el final del día y lo que todos acaban grabando.",
         foto: "/imagenes/sotano-de-las-huahuas/hero.jpg" },
@@ -1374,10 +1424,11 @@ const TOURS_RAW: Tour[] = [
     // tarjeta del tour (`collage[0]`). Antes era el grupo frente a Tamul (30 sep).
     imagen_hero: "/imagenes/tours/tamul/cascada-de-tamul-desde-el-rio.jpg",
     posicionHero: "50% 45%",
-    // 15 s con videos de ese mismo grupo: Tamul → cortina de agua → canoa →
-    // clavado → Cueva del Agua → grupo frente a Tamul (proyecto Remotion en
-    // ~/Desktop/HUASTECA-VIDEO-HERO, composición `TamulMovil`).
-    videoHeroMovil: "/videos/tours/expedicion-tamul-v1.mp4",
+    // 19 nov 2026 (Manolo): v2 con sus tomas de ~/Downloads/VIDEOS TOURS (tamul, pov, mixto y huahuas):
+    // río a Tamul → embarcadero → canoa en el cañón → grupo frente a la cascada → la brisa → el borde del
+    // sótano → las aves. Sin Cueva del Agua: ninguna toma era claramente de ahí. La v1 (videos reales del
+    // grupo del 30 sep, Remotion `TamulMovil` en ~/Desktop/HUASTECA-VIDEO-HERO) sigue en /videos/tours.
+    videoHeroMovil: "/videos/tours/expedicion-tamul-v2.mp4",
     logo: "/imagenes/tours/logos/expedicion-tamul-v3.webp",
     // La pareja frente a Tamul: la elige Manolo para la tarjeta grande de
     // «favoritos» en /tours (30 sep). La ficha conserva el grupo de portada.
@@ -1469,6 +1520,9 @@ const TOURS_RAW: Tour[] = [
       "Botiquín de primeros auxilios",
     ],
     imagen_hero: "/imagenes/tours/edward-james/hero.jpg",
+    // 19 nov 2026 (Manolo): video del hero en teléfono con sus tomas de ~/Downloads/VIDEOS TOURS,
+    // SOLO escenas de los destinos de este tour (los clips vienen mezclados). ~15 s, 720×1280, sin audio.
+    videoHeroMovil: "/videos/tours/ruta-surrealista-edward-james-v1.mp4",
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (desde Valles, $400 más por reserva), en unidad con aire acondicionado." },
@@ -1640,6 +1694,10 @@ const TOURS_RAW: Tour[] = [
     // cálida, que es además la promesa del recorrido (el jardín vacío al
     // amanecer). Comprobado en el navegador, no en el diff.
     imagen_hero: "/imagenes/las-pozas-jardin-surrealista/hero.jpg",
+    // 19 nov 2026 (Manolo): video del hero en teléfono, hecho con su toma de
+    // Higgsfield hf_20261112_213821 (puerta de luna, arcos, escalera de caracol,
+    // la poza y el arco al atardecer). 14 s, 720×1280, sin audio.
+    videoHeroMovil: "/videos/tours/eden-en-el-jardin-v1.mp4",
     itinerario: [
       { hora: "7:00–8:00 AM", momento: "Recogida en Xilitla",
         texto: "Pasamos por ti a tu hospedaje. La hora exacta la fija el jardín y te la confirmamos al apartar la fecha." },
@@ -1722,6 +1780,9 @@ const TOURS_RAW: Tour[] = [
       "Recorrido en canoa frente a la Cascada del Meco",
     ],
     imagen_hero: "/imagenes/cascada-el-meco/hero.jpg",
+    // 19 nov 2026 (Manolo): video del hero en teléfono con sus tomas de ~/Downloads/VIDEOS TOURS,
+    // SOLO escenas de los destinos de este tour (los clips vienen mezclados). ~15 s, 720×1280, sin audio.
+    videoHeroMovil: "/videos/tours/cascadas-del-meco-v1.mp4",
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
@@ -1837,6 +1898,9 @@ const TOURS_RAW: Tour[] = [
       },
     ],
     imagen_hero: "/imagenes/cascadas-minas-viejas/hero-new.jpg",
+    // 19 nov 2026 (Manolo): video del hero en teléfono con sus tomas de ~/Downloads/VIDEOS TOURS,
+    // SOLO escenas de los destinos de este tour (los clips vienen mezclados). ~15 s, 720×1280, sin audio.
+    videoHeroMovil: "/videos/tours/paraiso-escalonado-minas-micos-v1.mp4",
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
@@ -1848,8 +1912,11 @@ const TOURS_RAW: Tour[] = [
       { hora: "1:00 PM", momento: "Comida",
         texto: "La comida del día. No va incluida, así que eliges tú dónde y cuánto gastar." },
       { hora: "3:00 PM", momento: "Cascadas de Micos",
-        texto: "Las pozas escalonadas de Micos, una detrás de otra. Es el tramo del día donde más se mete la gente al agua.",
-        foto: "/imagenes/cascadas-minas-viejas/gallery-new-9.jpg" },
+        texto: "Las pozas escalonadas de Micos, una detrás de otra. Es el tramo del día donde más se mete la gente al agua. El salto de cascadas solo se hace si agregaste a tu reserva el Salto de las 7 Cascadas, con un guía certificado en actividades extremas y rescate.",
+        foto: "/imagenes/cascadas-minas-viejas/gallery-new-9.jpg",
+        // 19 nov 2026 (Manolo): una del paraíso escalonado y una del salto de cascadas.
+        // (cascadas-de-micos/gallery-2 NO: es la misma toma de dron que gallery-new-9, la principal).
+        fotosExtra: ["/imagenes/cascadas-minas-viejas/gallery-new-8.jpg", "/imagenes/cascadas-minas-viejas/gallery-new-5.jpg"] },
       { hora: "7:00–8:00 PM", momento: "Regreso",
         texto: "Te dejamos en tu hospedaje." },
     ],
@@ -1905,16 +1972,17 @@ const TOURS_RAW: Tour[] = [
     // escasez inventada. Como en el Rappel, la urgencia no dice cuántos quedan.
     urgencia:         "El más completo — se aparta con anticipación",
     descripcion:
-      "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo (+$150 por persona). En un día da para uno de los dos, no para ambos.",
+      "Atraviesa la cueva natural del Puente de Dios con el río fluyendo a tus pies. Después eliges: Hacienda Los Gómez con las Siete Cascadas —están en el mismo lugar y se ven las dos—, o las pozas cristalinas de las Cascadas de Tamasopo (+$230 por persona). En un día da para uno de los dos, no para ambos.",
     descripcionLarga:
-      "El Puente de Dios es un arco de roca natural de 15 metros de altura por donde el río fluye, y hay un momento cada día —entre las 11 y las 13 horas— cuando la luz del sol entra perpendicular y convierte el agua en cristal líquido. Nosotros llegamos a esa hora. Siempre.\n\nEntrar al Puente de Dios es una experiencia sensorial completa: el sonido del agua amplificado por la cueva, el frío del interior, la luz que entra por el arco como un faro natural, la textura de la piedra bajo los pies. No es solo una foto. Es un momento que se graba en la memoria.\n\nLa segunda mitad del día la eliges tú, y te lo decimos claro porque el tiempo no da para las dos: o la Hacienda Los Gómez con las Siete Cascadas —que están en el mismo sitio, así que ahí se ven las dos cosas—, o las Cascadas de Tamasopo, que suman $150 por persona. Si es tu primera vez en la Huasteca, la mayoría se va por las Siete Cascadas; Tamasopo es la opción de quien busca pozas más abiertas para nadar con calma.\n\nSea cual sea, lo decides al reservar y nosotros armamos el día alrededor de esa elección, con la seguridad de que cada paso lo guía alguien que conoce estos ríos de memoria.",
+      "El Puente de Dios es un arco de roca natural de 15 metros de altura por donde el río fluye, y hay un momento cada día —entre las 11 y las 13 horas— cuando la luz del sol entra perpendicular y convierte el agua en cristal líquido. Nosotros llegamos a esa hora. Siempre.\n\nEntrar al Puente de Dios es una experiencia sensorial completa: el sonido del agua amplificado por la cueva, el frío del interior, la luz que entra por el arco como un faro natural, la textura de la piedra bajo los pies. No es solo una foto. Es un momento que se graba en la memoria.\n\nLa segunda mitad del día la eliges tú, y te lo decimos claro porque el tiempo no da para las dos: o la Hacienda Los Gómez con las Siete Cascadas —que están en el mismo sitio, así que ahí se ven las dos cosas—, o las Cascadas de Tamasopo, que suman $230 por persona. Si es tu primera vez en la Huasteca, la mayoría se va por las Siete Cascadas; Tamasopo es la opción de quien busca pozas más abiertas para nadar con calma.\n\nSea cual sea, lo decides al reservar y nosotros armamos el día alrededor de esa elección, con la seguridad de que cada paso lo guía alguien que conoce estos ríos de memoria.",
     eleccion: {
       titulo: "El día no da para las dos. ¿Cuál prefieres?",
       opciones: [
         { id: "siete-cascadas", nombre: "Hacienda Los Gómez + Siete Cascadas", nota: "Están en el mismo lugar, así que ves las dos. La opción de la mayoría." },
-        // +$150 por persona (Manolo, 5 nov 2026): la entrada de Tamasopo cuesta
+        // +$230 por persona desde el 19 nov 2026 (Manolo: «sube el precio de la
+        // elección de Cascadas de Tamasopo a 230»; antes +$150, 5 nov 2026). La entrada de Tamasopo cuesta
         // más (ver la tarifa del proveedor en `admin/proveedor.ts`).
-        { id: "tamasopo",       nombre: "Cascadas de Tamasopo",                nota: "Pozas más abiertas, para nadar con calma.", extraPorPersona: 150 },
+        { id: "tamasopo",       nombre: "Cascadas de Tamasopo",                nota: "Pozas más abiertas, para nadar con calma.", extraPorPersona: 230 },
       ],
     },
     // El día NO da para todo: Puente de Dios va siempre y después se elige.
@@ -1923,7 +1991,7 @@ const TOURS_RAW: Tour[] = [
     destinos: [
       "Puente de Dios",
       "A elegir: Hacienda Los Gómez + Siete Cascadas (mismo lugar)",
-      "A elegir: Cascadas de Tamasopo (+$150 por persona)",
+      "A elegir: Cascadas de Tamasopo (+$230 por persona)",
     ],
     incluye: [
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, en unidad cómoda con aire acondicionado",
@@ -1934,6 +2002,9 @@ const TOURS_RAW: Tour[] = [
       "Botiquín de primeros auxilios",
     ],
     imagen_hero: "/imagenes/puente-de-dios-tamasopo/hero-new.webp",
+    // 19 nov 2026 (Manolo): video del hero en teléfono con sus tomas de ~/Downloads/VIDEOS TOURS,
+    // SOLO escenas de los destinos de este tour (los clips vienen mezclados). ~15 s, 720×1280, sin audio.
+    videoHeroMovil: "/videos/tours/ruta-acuatica-puente-de-dios-v2.mp4",
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
         texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles, en unidad con aire acondicionado." },
@@ -2382,6 +2453,160 @@ const TOURS_RAW: Tour[] = [
     ],
   },
 
+  // 🟢 19 nov 2026 (Manolo): el Sótano de las Golondrinas ENTRA al catálogo.
+  // Hasta hoy no se operaba (decisión del 17 sep 2026) y el bot lo cotizaba
+  // aparte. Todos los datos son de Manolo ese día: $900 por persona SALIENDO
+  // DE XILITLA (desde Valles se suma el traslado, cambian las horas y se cotiza
+  // por WhatsApp), privado $2,100 para 1 persona + $1,000 por cada persona
+  // adicional, mínimo 2 sin máximo, incluye transporte + taquillas + guía,
+  // desde 3 años, 90 kg para asomarse amarrado al borde, sin mascotas ni flash,
+  // y no sale si está nublado, hace mucho frío o llueve (las aves no salen).
+  // Los dos horarios y sus regresos también los dio él; las horas se mueven
+  // según a qué hora salgan las aves, y eso se checa con la gente de allá.
+  // Lo demás (376 m, 568 escalones, vencejos y cotorros) es de la ficha del
+  // destino `sotano-de-las-golondrinas` y de lo que contó Erick.
+  {
+    id:               "tour-golondrinas",
+    slug:             "tour-sotano-de-las-golondrinas",
+    categoria:        "ecoturismo",
+    icon:             "Bird",
+    tipo:             "Naturaleza & Aves",
+    dificultad:       "media",
+    // Amanecer: 4:00 AM → 11:00 AM–12:00 PM (7–8 h). Atardecer: 3:00–4:00 PM →
+    // 8:30–9:00 PM (5 h, redondeado). De ahí el 5–8.
+    duracion_hrs:     8,
+    duracionRango:    [5, 8],
+    recogida: {
+      // Los precios son saliendo de Xilitla (Manolo). Desde Ciudad Valles se
+      // suma el traslado y las horas cambian: se cotiza por WhatsApp.
+      tipo:       "hospedaje-xilitla",
+      // Dos horarios que elige el cliente (`eleccion`). `horaTexto` gana en
+      // todo lo que se pinta, y con él el regreso se dice como «5–8 h después
+      // de empezar» en vez de sumarle 8 h a las 4:00 AM.
+      horaInicio: 4,
+      ventanaHrs: 0,
+      horaTexto: {
+        es: "4:00 AM al amanecer o 3:00–4:00 PM al atardecer",
+        en: "4:00 AM for sunrise or 3:00–4:00 PM for sunset",
+      },
+      horaTextoEsRecogida: true,
+      regresoTexto: {
+        es: "11:00 AM–12:00 PM al amanecer o 8:30–9:00 PM al atardecer",
+        en: "11:00 AM–12:00 PM for sunrise or 8:30–9:00 PM for sunset",
+      },
+      nota: {
+        es: "¿Te hospedas en Ciudad Valles? El precio y las horas son saliendo de Xilitla. Desde Valles también vamos por ti: se suma el traslado y las horas de salida cambian. Escríbenos por WhatsApp y te lo cotizamos.",
+        en: "Staying in Ciudad Valles? Price and times are for departures from Xilitla. We can pick you up in Valles too: the transfer is added and departure times change. Message us on WhatsApp and we'll quote it.",
+      },
+    },
+    // Recorrido nuevo: sin reseñas propias (`reviewCount: 0` apaga la
+    // calificación del JSON-LD y el bloque de opiniones).
+    reviewCount:      0,
+    groupMin:         2,
+    // «No hay máximo, entre más mejor» (Manolo). En línea se aparta hasta el
+    // cupo diario de 12 (ver `groupMax`); un grupo más grande lo arma el equipo.
+    groupMax:         12,
+    privateAvailable: true,
+    privadoPropio:    { personas: 1, precio: 2100, extraPorPersona: 1000 },
+    clima: {
+      es: "Si está nublado, hace mucho frío o llueve, no sale: las aves no salen. Si lo cancelamos por clima, eliges reembolso completo o cambio de fecha sin costo.",
+      en: "If it's cloudy, very cold or raining, it doesn't run: the birds don't come out. If we cancel because of the weather, you choose a full refund or a free change of date.",
+    },
+    nombre:           "Sótano de las Golondrinas — El Vuelo de las Aves al Amanecer o al Atardecer",
+    nombreCorto:      "Sótano de las Golondrinas",
+    articulo:         "el",
+    // 🔴 La ficha del DESTINO es la dueña de «sótano de las golondrinas» a secas
+    // (entrada, horario, cómo llegar). Esta va por la búsqueda con intención de
+    // comprar: «tour sótano de las golondrinas». Cabeza ≤ 46 caracteres.
+    seo: {
+      titulo: {
+        es: "Tour al Sótano de las Golondrinas, Aquismón",
+        en: "Cave of Swallows Tour, Aquismón",
+      },
+      descripcion: {
+        es: "Tour al Sótano de las Golondrinas desde Xilitla: el vuelo de las aves al amanecer o al atardecer, con traslado, entrada y guía. {precio} por persona.",
+        en: "Cave of Swallows tour from Xilitla: watch the birds spiral out at sunrise or return at sunset. Transfer, entry and guide included; {precio} per person.",
+      },
+      alias: ["Tour a las Golondrinas", "Sótano de las Golondrinas al amanecer"],
+    },
+    tagline:          "Un abismo de 376 metros y las aves que salen de él en espiral",
+    precio:           900,
+    precioUnidad:     "persona",
+    urgencia:         "Al amanecer o al atardecer — se reserva con un día de anticipación",
+    descripcion:
+      "El Sótano de las Golondrinas es un abismo de 376 metros de caída libre en la sierra de Aquismón, y la casa de más de mil aves. Al amanecer salen de él girando en espiral; al atardecer regresan. Tú eliges cuál de los dos ver. Pasamos por ti a tu hospedaje en Xilitla, y la entrada y el guía van incluidos. {precio} por persona.",
+    descripcionLarga:
+      "Hay un agujero en la sierra de Aquismón donde cabría la Torre Latinoamericana con espacio de sobra: 376 metros de caída libre y hasta 512 de profundidad, con un fondo del tamaño de tres campos de fútbol. Es el Sótano de las Golondrinas, y lo que la gente viene a ver no es el hueco sino a quienes viven en él. Por cierto: no son golondrinas, son vencejos y cotorros.\n\nEl espectáculo es doble y tú eliges cuál ver. Al amanecer, las aves salen del fondo girando en espiral, en grupos, hasta ganar altura y perderse sobre la selva: para eso pasamos por ti a las 4:00 AM y estás de vuelta entre las 11:00 AM y las 12:00 PM. Al atardecer pasa al revés: regresan y bajan girando hacia la boca del sótano. Para ese pasamos por ti entre las 3:00 y las 4:00 PM, y vuelves entre las 8:30 y las 9:00 PM.\n\nDesde la entrada son 568 escalones de bajada hasta el borde, y la subida de regreso es pesada: se hace a tu paso. Ya en el borde, si quieres, te puedes asomar al abismo amarrado con cuerda, mientras la gente de la comunidad te sostiene; para eso el peso máximo es de 90 kg, y puede variar según quién te sostenga ese día.\n\nUna cosa importante: las aves dependen del clima. Si está nublado, hace mucho frío o llueve, no salen, y ese día el recorrido no se hace. Por lo mismo, las horas se pueden mover un poco según a qué hora estén saliendo las aves: lo confirmamos con la gente de allá antes de pasar por ti. Si lo cancelamos por clima, eliges entre el reembolso completo o cambiar la fecha sin costo.\n\nIncluye el traslado redondo desde tu hospedaje en Xilitla, las taquillas y el guía; el precio y las horas son saliendo de Xilitla. Si te hospedas en Ciudad Valles también vamos por ti: se suma el traslado, las horas de salida cambian y te lo cotizamos por WhatsApp. Pueden ir niños desde 3 años. Lleva ropa y calzado cómodos, y chamarra si vas de madrugada. No se permiten mascotas de ningún tipo, ni cámaras con flash. Sale con mínimo 2 personas, y también lo puedes hacer en privado, solo para tu grupo.",
+    destinos: [
+      "Sótano de las Golondrinas, en la sierra de Aquismón",
+      "Los 568 escalones hasta el borde del sótano",
+      "El vuelo de las aves, al amanecer o al atardecer",
+    ],
+    incluye: [
+      // "Traslado redondo" y no "Transporte": la meta descripción y el bot
+      // buscan la palabra "traslado" para decir que el recorrido lo lleva.
+      "Traslado redondo desde tu hospedaje en Xilitla",
+      "Taquillas (la entrada al sótano)",
+      "Guía durante todo el recorrido",
+    ],
+    eleccion: {
+      titulo: "¿Amanecer o atardecer?",
+      opciones: [
+        { id: "amanecer",  nombre: "Al amanecer: ver salir a las aves",  nota: "Pasamos por ti a las 4:00 AM y vuelves entre las 11:00 AM y las 12:00 PM." },
+        { id: "atardecer", nombre: "Al atardecer: verlas regresar",       nota: "Pasamos por ti entre las 3:00 y las 4:00 PM y vuelves entre las 8:30 y las 9:00 PM." },
+      ],
+    },
+    // 🟡 Fotos PROVISIONALES: las de la ficha del destino (sin las que traen
+    // marca de agua ni las del rappel al fondo, que no es esta visita). Cambiar
+    // por las de Manolo en cuanto las mande.
+    imagen_hero: "/imagenes/sotano-de-las-golondrinas/hero.jpg",
+    // 19 nov 2026 (Manolo): video del hero en teléfono con sus dos tomas de
+    // Higgsfield (hf_20261113_093702 y _104701): caminata con lámparas, la boca
+    // del sótano, el grupo en el borde y las aves saliendo. 14 s, sin audio.
+    videoHeroMovil: "/videos/tours/tour-sotano-de-las-golondrinas-v1.mp4",
+    // Solo las horas que dio Manolo (4:00 AM, regreso 11–12) y la de las aves
+    // de la ficha del destino (5:45). Lo demás va sin hora inventada.
+    itinerario: [
+      { hora: "4:00 AM", momento: "Recogida",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla, todavía de noche. Lleva chamarra: a esa hora en la sierra hace frío. Si elegiste el atardecer, pasamos entre las 3:00 y las 4:00 PM." },
+      { hora: "Antes del amanecer", momento: "Los 568 escalones",
+        texto: "Bajas hasta el borde del sótano con tiempo de acomodarte antes de que salgan las aves.",
+        foto: "/imagenes/tours/tour-sotano-de-las-golondrinas/escaleras.webp" },
+      { hora: "5:45 AM aprox.", momento: "Salen las aves",
+        texto: "Primero se oyen. Luego salen del fondo girando en espiral, en grupos, hasta ganar altura y perderse sobre la selva. Al atardecer es al revés: regresan y bajan girando hacia el sótano.",
+        foto: "/imagenes/sotano-de-las-golondrinas/hero.jpg",
+        // 19 nov 2026 (Manolo): el vencejo, el cotorro y el cielo lleno de aves.
+        fotosExtra: ["/imagenes/tours/tour-sotano-de-las-golondrinas/vencejo.jpg", "/imagenes/tours/tour-sotano-de-las-golondrinas/cotorro.jpg", "/imagenes/tours/tour-sotano-de-las-golondrinas/aves-en-el-cielo.jpg"] },
+      { hora: "Ya con luz", momento: "Asomarte al abismo",
+        texto: "Si quieres, te asomas al borde amarrado con cuerda mientras la gente de la comunidad te sostiene: 376 metros de caída libre bajo tus pies. Peso máximo 90 kg. Después, la subida de los 568 escalones, a tu paso.",
+        foto: "/imagenes/sotano-de-las-golondrinas/gallery-4.jpg" },
+      { hora: "11:00 AM–12:00 PM", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje. Si elegiste el atardecer, vuelves entre las 8:30 y las 9:00 PM." },
+    ],
+    collage: [
+      "/imagenes/sotano-de-las-golondrinas/gallery-12.jpg",
+      "/imagenes/sotano-de-las-golondrinas/borde.jpg",
+      "/imagenes/sotano-de-las-golondrinas/hero.jpg",
+    ],
+    imagenes: [
+      "/imagenes/sotano-de-las-golondrinas/hero.jpg",
+      "/imagenes/sotano-de-las-golondrinas/gallery-7.webp",
+    ],
+    gallery: [
+      { src: "/imagenes/sotano-de-las-golondrinas/hero.jpg",       alt: "Aves saliendo en grupo de la boca del Sótano de las Golondrinas, entre la vegetación de la sierra de Aquismón" },
+      { src: "/imagenes/sotano-de-las-golondrinas/gallery-12.jpg", alt: "El abismo del Sótano de las Golondrinas visto desde el borde, con la pared de roca cayendo entre la selva" },
+      { src: "/imagenes/sotano-de-las-golondrinas/gallery-7.webp", alt: "La pared del Sótano de las Golondrinas con la primera luz dorada del día sobre la selva" },
+      { src: "/imagenes/sotano-de-las-golondrinas/borde.jpg",      alt: "Las rocas del borde y la boca oscura del Sótano de las Golondrinas, en Aquismón" },
+      { src: "/imagenes/sotano-de-las-golondrinas/aerea.jpg",      alt: "Vista aérea del Sótano de las Golondrinas abierto en medio de la selva de la Huasteca Potosina" },
+      // 19 nov 2026: las fotos que Manolo puso en el itinerario; aquí dan su alt.
+      { src: "/imagenes/sotano-de-las-golondrinas/gallery-4.jpg", alt: "Visitante amarrada con cuerda asomándose al abismo del Sótano de las Golondrinas desde las rocas del borde", hasRealPeople: true },
+      { src: "/imagenes/tours/tour-sotano-de-las-golondrinas/aves-en-el-cielo.jpg", alt: "Cientos de aves del sótano llenando el cielo sobre la sierra de Aquismón" },
+      { src: "/imagenes/tours/tour-sotano-de-las-golondrinas/vencejo.jpg",          alt: "Un vencejo de cerca, sostenido en una mano: una de las aves que viven en el sótano" },
+      { src: "/imagenes/tours/tour-sotano-de-las-golondrinas/cotorro.jpg",          alt: "Un cotorro verde posado en una rama: los cotorros también viven en el sótano" },
+      { src: "/imagenes/tours/tour-sotano-de-las-golondrinas/escaleras.webp",       alt: "Escalinata de piedra con barandal de madera entre la selva, camino al borde del Sótano de las Golondrinas" },
+    ],
+  },
+
   {
     id:               "tour-olla-de-la-luz",
     slug:             "olla-de-la-luz",
@@ -2807,6 +3032,28 @@ export function tourPorNombre(
  * ($8,500) era más del doble de lo que realmente cuesta ($3,600).
  */
 export const PRIVADO_EXTRA_POR_PERSONA = 250;
+
+/**
+ * Cómo se cobra el privado de un recorrido, en un solo sitio:
+ *   · `regla`  — el precio normal + `PRIVADO_EXTRA_POR_PERSONA` por cabeza.
+ *   · `propio` — tarifa propia del grupo (`privadoPropio`): `precio` para
+ *     `personas`, y `extraPorPersona` (o `null` si aún no hay cifra) por cada
+ *     persona de más.
+ * `null` si el recorrido no se ofrece en privado.
+ */
+export function privadoDe(
+  t: Pick<Tour, "privateAvailable" | "privadoPropio" | "precio">,
+):
+  | { tipo: "regla"; porPersona: number; extra: number }
+  | { tipo: "propio"; personas: number; precio: number; extraPorPersona: number | null }
+  | null {
+  if (!t.privateAvailable) return null;
+  if (t.privadoPropio) {
+    const { personas, precio, extraPorPersona } = t.privadoPropio;
+    return { tipo: "propio", personas, precio, extraPorPersona: extraPorPersona ?? null };
+  }
+  return { tipo: "regla", porPersona: t.precio + PRIVADO_EXTRA_POR_PERSONA, extra: PRIVADO_EXTRA_POR_PERSONA };
+}
 
 export const GRUPO_MAX = Math.max(...TOURS_DB.map((t) => t.groupMax));
 

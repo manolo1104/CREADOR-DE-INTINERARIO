@@ -114,6 +114,9 @@ const ES = {
     grupoHasta: (n: number) => `Hasta ${n} personas`,
     privadoGrupo: "Ya es privado: la tarifa es del grupo completo",
     privadoSi: (extra: string) => `Disponible: precio del recorrido + ${extra} por persona`,
+    privadoPropio: (precio: string, personas: number, extra: string | null) =>
+      `Disponible: ${precio} para ${personas} ${personas === 1 ? "persona" : "personas"}` +
+      (extra ? ` + ${extra} por persona adicional` : " (persona extra: pregúntanos)"),
     privadoNo: "No disponible",
     edadMinima: (n: number) => `Desde ${n} años`,
     edadSoloAdultos: (n: number) => `Desde ${n} años, sin tarifa de niño`,
@@ -275,6 +278,9 @@ const EN: ComparadorUI = {
     // «MXN» detrás de cada importe en inglés: llegan a secas (`dinero()`), y
     // «$250» solo se lee en dólares (auditoría del 10 nov 2026).
     privadoSi: (extra: string) => `Available: tour price + ${extra} MXN per person`,
+    privadoPropio: (precio: string, personas: number, extra: string | null) =>
+      `Available: ${precio} MXN for ${personas} ${personas === 1 ? "person" : "people"}` +
+      (extra ? ` + ${extra} MXN per additional person` : " (ask us about extra people)"),
     privadoNo: "Not available",
     edadMinima: (n: number) => `Ages ${n}+`,
     edadSoloAdultos: (n: number) => `Ages ${n}+, no child rate`,

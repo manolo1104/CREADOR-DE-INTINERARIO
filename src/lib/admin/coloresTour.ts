@@ -45,6 +45,7 @@ export const TOURS_COLOR: Record<string, { color: string; codigo: string }> = {
   "travesia-del-cafe":             { color: "#3b6209", codigo: "CAF" },
   "gruta-de-xilo":                 { color: "#612db6", codigo: "GRU" },
   "amanecer-de-nubes":             { color: "#fb2af4", codigo: "AMA" },
+  "tour-sotano-de-las-golondrinas": { color: "#00a3a3", codigo: "GOL" },
   "olla-de-la-luz":                { color: "#cc77a4", codigo: "OLL" },
   "huasteca-instagrameable":       { color: "#ab73fd", codigo: "INS" },
 };

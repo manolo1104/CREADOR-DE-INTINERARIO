@@ -9,7 +9,7 @@
  *   `calcular_precio`, la cotización). Aquí no va ningún precio de tour: solo
  *   cifras fijas confirmadas (tope de OXXO, seguro opcional, la regla del Jardín
  *   para el guía en inglés, la entrada a la Aldea, el taxi).
- * - Lo que NO está en el catálogo (Golondrinas, kayak, desayuno huasteco, solo
+ * - Lo que NO está en el catálogo (kayak, desayuno huasteco, solo
  *   guía, Tamul sin sótano, tubing, privado para una persona, traslados de ida):
  *   el bot lo explica con lo que contó Erick y el equipo cotiza (`alEquipo`).
  * - Una sola marca (Huasteca Potosina Tours), sin descuentos de cierre, mismo
@@ -138,14 +138,15 @@ export const RESPUESTAS_EQUIPO: RespuestaEquipo[] = [
   {
     id: "huahuas-vs-golondrinas", tema: "tours",
     preguntas: ["¿Cuál es la diferencia entre Huahuas y Golondrinas?", "¿Qué sótano es mejor?"],
-    respuesta: "El Sótano de las Huahuas es más chico, pero el espectáculo de las aves entrando se aprecia mejor; la Expedición Tamul termina ahí al atardecer. El de las Golondrinas se ve de madrugada (salen las aves) o por la tarde (entran).",
-    tours: ["expedicion-tamul"],
+    respuesta: "El Sótano de las Huahuas es más chico, pero el espectáculo de las aves entrando se aprecia mejor; la Expedición Tamul termina ahí al atardecer. El de las Golondrinas tiene su propio recorrido: se ve de madrugada (salen las aves) o por la tarde (entran).",
+    tours: ["expedicion-tamul", "tour-sotano-de-las-golondrinas"],
   },
   {
     id: "golondrinas", tema: "tours",
     preguntas: ["¿Van al Sótano de las Golondrinas?", "Quiero ver las golondrinas", "¿Tamul con Golondrinas en vez de Huahuas?"],
-    respuesta: "Sí se puede: al atardecer (salida 3–4 pm) para ver entrar a más de mil aves girando hacia el sótano, o de madrugada (salida 4 am) para verlas salir. Sale con grupo o como privado, y el precio te lo confirma el equipo. Si les da igual cuál, el Sótano de las Huahuas (dentro de la Expedición Tamul) es más chico pero el espectáculo se aprecia mejor. Ojo: la carretera a Golondrinas tiene mucha subida y curvas.",
-    tours: ["expedicion-tamul"], alEquipo: fuera,
+    // 19 nov 2026: ya es recorrido del catálogo; antes lo cotizaba el equipo.
+    respuesta: "Sí, tenemos recorrido al Sótano de las Golondrinas (mínimo 2 personas), con traslado desde tu hospedaje en Xilitla, entrada y guía (el precio es saliendo de Xilitla; desde Ciudad Valles se suma el traslado, cambian las horas y te lo cotizamos). Eliges horario: de madrugada (pasamos a las 4 am) para ver salir a las aves, o al atardecer (pasamos entre 3 y 4 pm) para verlas entrar. Si está nublado, hace mucho frío o llueve no sale, porque las aves no salen; las horas se ajustan a la salida de las aves y te las confirmamos. También se puede en privado. Ojo: la carretera tiene mucha subida y curvas, y son 568 escalones de bajada.",
+    tours: ["tour-sotano-de-las-golondrinas"],
   },
   {
     id: "kayak", tema: "tours",

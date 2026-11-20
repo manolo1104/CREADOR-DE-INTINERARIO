@@ -128,7 +128,10 @@ const diasDeTour = (p: Paquete) => p.itinerario.filter((d) => d.tipo !== "salida
 // así: es el precio normal del recorrido MÁS $250 por persona. Para Tamul con
 // dos personas son $3,600, no $8,500 — el sitio anunciaba más del doble. El
 // campo se eliminó del catálogo; aquí se calcula con la regla de verdad.
-const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable);
+// 19 nov 2026: los de tarifa PROPIA (Golondrinas) quedan fuera: esta página
+// explica la regla de «+ $250 por persona» y su «desde», que a ellos no aplica.
+// Su privado lo dicen su ficha y sus preguntas frecuentes.
+const PRIVADOS = TOURS_DB.filter((t) => t.privateAvailable && !t.privadoPropio);
 const PRIVADO_EXTRA = `$${PRIVADO_EXTRA_POR_PERSONA.toLocaleString("es-MX")}`;
 // Cuántos son, dicho en cada idioma. Era una constante de módulo escrita solo
 // en español y se colaba tal cual dentro de la respuesta inglesa ("5 de

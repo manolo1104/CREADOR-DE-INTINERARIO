@@ -123,7 +123,7 @@ describe("precios con la opción elegida y descuentos reales", () => {
   it("🔴 Ruta Acuática con Tamasopo cobrada a lista ya NO sale «arriba de lista»", () => {
     const linea = { tourSlug: ACU.slug, tourName: ACU.nombre, tourDate: fecha, adults: 2, childrenMid: 0, childrenSmall: 0, eleccion: "tamasopo" };
     const conTamasopo = listaDeRenglon(ACU, linea);
-    expect(conTamasopo - listaDeRenglon(ACU, { ...linea, eleccion: "siete-cascadas" })).toBe(300);
+    expect(conTamasopo - listaDeRenglon(ACU, { ...linea, eleccion: "siete-cascadas" })).toBe(460); // +$230 × 2 (19 nov 2026; antes +$150)
     const r = precioDeReserva(reserva([{ ...linea, subtotal: conTamasopo }], { totalAmount: conTamasopo }));
     const p = periodoDe("mes", fecha, HOY);
     expect(val(calcularPrecio({ lineas: r.lineas, reservas: [r.reserva], perdidos: [], cotizaciones: [] }, p, [p]).valores, "realizacion-precio").valor).toBe(100);

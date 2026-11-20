@@ -14,7 +14,7 @@
 import {
   TOURS_DB, TOUR_CATEGORIAS, TOURS_RANKING, rankTour, tourDurRange, etiquetaUnidad, esPorPersona,
   precioTachado, promoDe, salidaCorta, regresoDeTour, recogidaDeTour, partesRecogida, incluyeDeTour,
-  claveIncluye, PRIVADO_EXTRA_POR_PERSONA, GRUPO_MAX, PROMO_TEMPORADA, type Tour,
+  claveIncluye, PRIVADO_EXTRA_POR_PERSONA, privadoDe, GRUPO_MAX, PROMO_TEMPORADA, type Tour,
 } from "./tours";
 import { minimoPersonas } from "./tourBooking";
 import { TOUR_REQUISITOS, noIncluyeDe } from "./tourRequisitos";
@@ -274,7 +274,8 @@ function tablaRecorridos(tours: Tour[], locale: Locale, ui: ComparadorUI) {
 
   const salida = tours.map((t) => {
     const s = salidaCorta(t, en);
-    if (recogidaDeTour(t).horaTexto && s) return texto(ui.valores.horarioFijo(sinRaya(s)));
+    const r = recogidaDeTour(t);
+    if (r.horaTexto && !r.horaTextoEsRecogida && s) return texto(ui.valores.horarioFijo(sinRaya(s)));
     return texto(s ? sinRaya(s) : b.carrito.horaExacta);
   });
 
@@ -294,13 +295,16 @@ function tablaRecorridos(tours: Tour[], locale: Locale, ui: ComparadorUI) {
     return texto(min > 1 ? ui.valores.grupoRango(min, t.groupMax) : ui.valores.grupoHasta(t.groupMax));
   });
 
-  const privado = tours.map((t) =>
-    t.tarifaGrupo?.length
-      ? texto(ui.valores.privadoGrupo)
-      : t.privateAvailable
-        ? texto(ui.valores.privadoSi(dinero(PRIVADO_EXTRA_POR_PERSONA)))
-        : texto(ui.valores.privadoNo),
-  );
+  const privado = tours.map((t) => {
+    if (t.tarifaGrupo?.length) return texto(ui.valores.privadoGrupo);
+    const p = privadoDe(t);
+    if (!p) return texto(ui.valores.privadoNo);
+    // 19 nov 2026: tarifa propia (Golondrinas), no la regla de + $250.
+    if (p.tipo === "propio") {
+      return texto(ui.valores.privadoPropio(dinero(p.precio), p.personas, p.extraPorPersona === null ? null : dinero(p.extraPorPersona)));
+    }
+    return texto(ui.valores.privadoSi(dinero(PRIVADO_EXTRA_POR_PERSONA)));
+  });
 
   const incluye = comunYPropio(loc.map((t) => incluyeDeTour(t, locale).map(sinRaya)));
   const conOpcionales = loc.some((t) => t.addOns?.length);

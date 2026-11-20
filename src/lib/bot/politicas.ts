@@ -407,9 +407,12 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "golondrinas",
     titulo: "Sótano de las Golondrinas",
     texto:
-      "Sí se puede ir con nosotros, pero no está en el catálogo: sale con grupo o como privado y el precio lo cotiza el equipo (fuera_catalogo, avisar). " +
-      "Dos horarios: de madrugada (salida 4 am; las aves salen hacia las 5:45 am) o al atardecer (salida 3–4 pm, para verlas entrar: más de mil cotorritos y vencejos girando hacia el sótano). Está en Aquismón, por carretera de mucha subida y curvas. Más datos en la ficha del destino `sotano-de-las-golondrinas`. " +
-      "Erick recomienda más el Sótano de las Huahuas, que va dentro de la Expedición Tamul: es más chico, pero el espectáculo se aprecia mejor.",
+      // 19 nov 2026 (Manolo): entra al catálogo con recorrido propio.
+      "YA está en el catálogo: recorrido `tour-sotano-de-las-golondrinas` (usa obtener_tour para el precio, el privado, los horarios y lo que incluye; no escribas cifras de memoria). Mínimo 2 personas; en privado tiene tarifa propia (precio para 1 persona + un monto por cada persona adicional, en obtener_tour). Precio y horas son SALIENDO DE XILITLA: incluye traslado redondo desde el hospedaje en Xilitla, taquillas y guía; no incluye alimentos. Desde Ciudad Valles se suma el traslado y cambian las horas de salida: eso lo cotiza el equipo por WhatsApp (traslado_sin_tarifa, avisar). " +
+      "Dos horarios que elige el cliente: al amanecer (recogida 4:00 am, las aves salen hacia las 5:45 am, regreso 11 am–12 pm) o al atardecer (recogida 3–4 pm, para verlas entrar: más de mil cotorritos y vencejos girando hacia el sótano; regreso 8:30–9 pm). Las horas se mueven según a qué hora salgan las aves: lo confirma el equipo con la gente de allá. " +
+      "NO sale si está nublado, hace mucho frío o llueve, porque las aves no salen: ahí aplica «si cancelamos nosotros» (reembolso completo o reagendar sin costo). " +
+      "Son 568 escalones de bajada y la subida es pesada. Para asomarse al borde amarrado con cuerda, peso máximo 90 kg (puede variar: lo maneja la comunidad). Desde 3 años. Sin mascotas de ningún tipo ni cámaras con flash. Está en Aquismón, por carretera de mucha subida y curvas. " +
+      "Si al cliente le da igual cuál sótano, Erick opina que el de las Huahuas (dentro de la Expedición Tamul) es más chico pero el espectáculo se aprecia mejor.",
     claves: ["golondrinas", "sótano de las golondrinas", "vencejos", "aves", "cotorros", "swallows", "cave of swallows"],
   },
   {

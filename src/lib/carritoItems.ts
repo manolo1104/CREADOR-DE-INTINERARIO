@@ -91,7 +91,7 @@ export function retarifarItem<T extends Omit<CarritoItem, "uid">>(i: T): T {
   if (i.unidades) return i;
   const t = TOURS_DB.find((x) => x.slug === i.tourSlug);
   if (!t) return i;
-  // Con la opción elegida: la Ruta Acuática a Tamasopo suma $150 por cabeza.
+  // Con la opción elegida: la Ruta Acuática a Tamasopo suma $230 por cabeza.
   const base = totalRecorrido(tourEnFecha(t, i.tourDate), i.adults, i.childrenMid ?? 0, i.childrenSmall ?? 0, 0, i.eleccion);
   const extras = (i.addOns ?? []).reduce((s, a) => {
     const cat = t.addOns?.find((x) => x.id === a.id);

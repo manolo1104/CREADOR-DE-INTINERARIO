@@ -158,7 +158,7 @@ export function totalRecorrido(
   childrenMid = 0,
   childrenSmall = 0,
   promoDiscount = 0,
-  /** La opción elegida (id o nombre en español); la de Tamasopo suma $150 por cabeza. */
+  /** La opción elegida (id o nombre en español); la de Tamasopo suma $230 por cabeza. */
   eleccion?: string | null,
   /**
    * Bebés de 0 a 3 años. En la tarifa por GRUPO (el Edén) cuentan como persona
@@ -175,7 +175,7 @@ export function totalRecorrido(
   // gratis y no entran (17 nov 2026)— y después cada quien paga lo suyo sobre
   // ESE precio: el adulto completo y el niño de 4 a 7 el 50 % (el tramo viejo
   // de 6 a 10 al 70 % solo existe en registros anteriores).
-  // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$150) va DENTRO
+  // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$230) va DENTRO
   // del precio por cabeza: el menor paga su 50 % también de él.
   const porCabeza = precioPorCabeza(tour, adults + childrenMid + childrenSmall) + extraDeEleccion(tour, eleccion);
   return calcTourTotal(porCabeza, adults, childrenMid, childrenSmall, promoDiscount).total;

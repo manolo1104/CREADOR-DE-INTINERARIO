@@ -256,6 +256,7 @@ function mesAnio(iso: string): string {
 const TAMUL        = tour("expedicion-tamul");
 const RAPPEL       = tour("rappel-tamul");
 const GRUTA        = tour("gruta-de-xilo");
+const GOLONDRINAS  = tour("tour-sotano-de-las-golondrinas");
 const ESCALONADO   = tour("paraiso-escalonado-minas-micos");
 const ACUATICA     = tour("ruta-acuatica-puente-de-dios");
 const RAFTING      = tour("rafting-rio-tampaon");
@@ -971,13 +972,13 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
           `Con nosotros, el ${SALTO_MICOS.nombre} se suma al <a href="/tours/${ESCALONADO.slug}">${ESCALONADO.nombreCorto}</a> por ${dinero(SALTO_MICOS.precio)} por persona.</li>`,
       },
       {
-        // "Desde $250 con guía comunitario": la ficha dice $100. Y no lo
-        // operamos, igual que en el artículo de octubre.
+        // "Desde $250 con guía comunitario": la ficha dice $100. Desde el
+        // 19 nov 2026 sí lo operamos: la línea ofrece nuestro recorrido.
         from:
           '<li><strong>Sótano de las Golondrinas:</strong> acceso con guía comunitario desde $250 MXN. El espectáculo del vuelo de los vencejos al amanecer es absolutamente gratuito en términos emocionales. <a href="/destinos/sotano-de-las-golondrinas">Conoce más sobre este destino único</a>.</li>',
         to:
           `<li><strong>Sótano de las Golondrinas:</strong> la entrada cuesta ${D_GOLONDRINAS.precio_entrada}. El espectáculo del vuelo de los vencejos al amanecer es absolutamente gratuito en términos emocionales. ` +
-          `No va en nuestros recorridos (la ${TAMUL.nombreCorto} cierra en el Sótano de las Huahuas), pero puedes <a href="/destinos/sotano-de-las-golondrinas">conocer más sobre este destino único</a>.</li>`,
+          `Con nosotros va en el <a href="/tours/${GOLONDRINAS.slug}">tour al ${GOLONDRINAS.nombreCorto}</a>, al amanecer o al atardecer, por ${dinero(GOLONDRINAS.precio)} por persona; y aquí puedes <a href="/destinos/sotano-de-las-golondrinas">conocer más sobre este destino único</a>.</li>`,
       },
       {
         // La fecha de `actualizado`: la línea de Las Pozas cambió el 19 oct 2026.
@@ -2351,7 +2352,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from:
           "El acceso con guía comunitario cuesta desde <strong>$250 MXN</strong> por persona. Los tours con transporte, entrada, guía y alimentos oscilan entre <strong>$100 y $1,500 MXN</strong> por persona según el nivel de servicio.",
         to:
-          `La entrada cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona. No va en nuestros recorridos: la <a href="/tours/${TAMUL.slug}">${TAMUL.nombreCorto}</a> cierra en el Sótano de las Huahuas.`,
+          `La entrada cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona. Con nosotros lo haces en el <a href="/tours/${GOLONDRINAS.slug}">tour al ${GOLONDRINAS.nombreCorto}</a>, saliendo de Xilitla: traslado, entrada y guía por ${dinero(GOLONDRINAS.precio)} por persona.`,
       },
       {
         from:
@@ -2359,9 +2360,9 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: `La entrada cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona.`,
       },
     ],
-    // No operamos Golondrinas (ver `temporada.ts`): la tarjeta ofrece el tour
-    // que sí va al sótano vecino, el de las Huahuas, como ya dice el texto.
-    tours: [TAMUL.slug],
+    // 19 nov 2026: Golondrinas ya tiene recorrido propio (antes la tarjeta
+    // ofrecía la Expedición Tamul, que va al sótano vecino de las Huahuas).
+    tours: [GOLONDRINAS.slug],
     actualizado: HOY_F3,
   },
 
@@ -2372,7 +2373,7 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         from:
           'el acceso con guía comunitario cuesta desde <strong>$250 MXN por persona</strong>, y los tours con transporte, guía y alimentos oscilan entre <strong>$100 y $1,500 MXN</strong> según el nivel de servicio. <a href="https://www.huasteca-potosina.com/tours" title="tours sótano de las golondrinas Huasteca Potosina">reserva el tour a sótano de las golondrinas</a> con anticipación, especialmente en temporada alta.',
         to:
-          `la entrada al sótano de las golondrinas cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona. No va en nuestros recorridos: la <a href="/tours/${TAMUL.slug}">${TAMUL.nombreCorto}</a> cierra en el Sótano de las Huahuas.`,
+          `la entrada al sótano de las golondrinas cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona. Con nosotros va en el <a href="/tours/${GOLONDRINAS.slug}">tour al ${GOLONDRINAS.nombreCorto}</a> (${dinero(GOLONDRINAS.precio)} por persona), y la <a href="/tours/${TAMUL.slug}">${TAMUL.nombreCorto}</a> cierra en el Sótano de las Huahuas.`,
       },
       {
         from:
@@ -2385,14 +2386,15 @@ const BLOG_SEO: Record<string, BlogSeoOverride> = {
         to: `La entrada al Sótano de las Golondrinas cuesta <strong>${D_GOLONDRINAS.precio_entrada}</strong> por persona.`,
       },
       {
-        // Mandaba a "tours de sótano de las golondrinas" que no tenemos.
+        // Mandaba a "tours de sótano de las golondrinas" que no teníamos; desde
+        // el 19 nov 2026 sí: va a nuestro recorrido.
         from:
           'es más práctico contratar <a href="https://www.huasteca-potosina.com/tours">tours de sótano de las golondrinas</a> que incluyan logística completa desde tu punto de origen.',
-        to: "conviene llegar la noche anterior: el ejido permite acampar con autorización previa.",
+        to: `es más práctico ir en nuestro <a href="/tours/${GOLONDRINAS.slug}">tour al ${GOLONDRINAS.nombreCorto}</a>, que pasa por ti a tu hospedaje en Xilitla.`,
       },
       alDia("agosto de 2026"),
     ],
-    tours: [TAMUL.slug],
+    tours: [GOLONDRINAS.slug, TAMUL.slug],
     actualizado: HOY,
   },
 

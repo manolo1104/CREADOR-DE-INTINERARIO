@@ -448,7 +448,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       { momento: "Breakfast", texto: "A buffet of regional Huasteca dishes and stews at El Taco Loco, on the way to the sites. It's included." },
       { momento: "Minas Viejas Waterfalls", texto: "A triple drop over jade-coloured pools, with a wooden bridge to cross them. There are life vests for everyone and the water sits between 18 and 22 °C: refreshing, not freezing." },
       { momento: "Lunch", texto: "The midday meal. It isn't included, so you choose where and how much to spend." },
-      { momento: "Micos Waterfalls", texto: "The stepped pools of Micos, one after another. This is the stretch of the day where most people end up in the water." },
+      { momento: "Micos Waterfalls", texto: "The stepped pools of Micos, one after another. This is the stretch of the day where most people end up in the water. The waterfall jump only happens if you added The 7 Waterfalls Jump to your booking, with a guide certified in extreme sports and rescue." },
       { momento: "Return", texto: "We drop you back at your lodging." },
     ],
     addOns: [
@@ -516,13 +516,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Water Adventure",
     urgencia: "Our most complete tour — book ahead",
     descripcion:
-      "Pass through the natural cave of Puente de Dios with the river flowing at your feet. Then you choose: Los Gómez Hacienda with the Seven Waterfalls — they're in the same spot, so you see both — or the crystal-clear pools of the Tamasopo Waterfalls (+$150 MXN per person). One day is enough for one of the two, not for both.",
+      "Pass through the natural cave of Puente de Dios with the river flowing at your feet. Then you choose: Los Gómez Hacienda with the Seven Waterfalls — they're in the same spot, so you see both — or the crystal-clear pools of the Tamasopo Waterfalls (+$230 MXN per person). One day is enough for one of the two, not for both.",
     descripcionLarga:
-      "Puente de Dios (\"God's Bridge\") is a natural rock arch 15 meters high through which the river flows, and there's a moment each day — between 11 AM and 1 PM — when the sunlight enters perpendicular and turns the water into liquid crystal. We arrive at that hour. Always.\n\nEntering Puente de Dios is a full sensory experience: the sound of the water amplified by the cave, the chill of the interior, the light pouring through the arch like a natural beacon, the texture of the stone underfoot. It's not just a photo. It's a moment that etches itself into memory.\n\nYou choose the second half of the day, and we tell you plainly because there isn't time for both: either Los Gómez Hacienda with the Seven Waterfalls — they're on the same grounds, so you see both there — or the Tamasopo Waterfalls, which add $150 MXN per person. If it's your first time in the Huasteca, most people go for the Seven Waterfalls; Tamasopo is the choice for those looking for more open pools to swim in at a relaxed pace.\n\nWhichever it is, you decide when you book and we plan the day around that choice, with the assurance that every step is led by someone who knows these rivers by heart.",
+      "Puente de Dios (\"God's Bridge\") is a natural rock arch 15 meters high through which the river flows, and there's a moment each day — between 11 AM and 1 PM — when the sunlight enters perpendicular and turns the water into liquid crystal. We arrive at that hour. Always.\n\nEntering Puente de Dios is a full sensory experience: the sound of the water amplified by the cave, the chill of the interior, the light pouring through the arch like a natural beacon, the texture of the stone underfoot. It's not just a photo. It's a moment that etches itself into memory.\n\nYou choose the second half of the day, and we tell you plainly because there isn't time for both: either Los Gómez Hacienda with the Seven Waterfalls — they're on the same grounds, so you see both there — or the Tamasopo Waterfalls, which add $230 MXN per person. If it's your first time in the Huasteca, most people go for the Seven Waterfalls; Tamasopo is the choice for those looking for more open pools to swim in at a relaxed pace.\n\nWhichever it is, you decide when you book and we plan the day around that choice, with the assurance that every step is led by someone who knows these rivers by heart.",
     destinos: [
       "Puente de Dios",
       "Your choice: Los Gómez Hacienda + Seven Waterfalls (same spot)",
-      "Your choice: Tamasopo Waterfalls (+$150 MXN per person)",
+      "Your choice: Tamasopo Waterfalls (+$230 MXN per person)",
     ],
     incluye: [
       "Round-trip transport from your lodging in Xilitla or Ciudad Valles, in a comfortable air-conditioned vehicle",
@@ -677,6 +677,54 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Couple in helmets crouching between two stone columns formed drip by drip inside the cave",
       "Guide and visitor standing on a flowstone in the water, at the far end of Xilo Cave",
       "Couple on a rock in one of the natural crystal-clear jacuzzis at the end of the route",
+    ],
+  },
+
+  "tour-sotano-de-las-golondrinas": {
+    itinerario: [
+      { momento: "Pickup", texto: "We pick you up at your lodging in Xilitla while it's still dark. Bring a jacket: up in the mountains it's cold at that hour. If you chose sunset, we come by between 3:00 and 4:00 PM." },
+      { momento: "The 568 steps", texto: "You walk down to the rim of the sinkhole with time to settle in before the birds come out." },
+      { momento: "The birds come out", texto: "First you hear them. Then they rise from the bottom spiralling in flocks until they gain height and disappear over the forest. At sunset it's the other way round: they come back and circle down into the sinkhole." },
+      { momento: "Looking into the abyss", texto: "If you like, you can lean over the edge roped in, while people from the local community hold you: 376 metres of free fall beneath your feet. Maximum weight 90 kg. Then the climb back up the 568 steps, at your own pace." },
+      { momento: "Return", texto: "Back to your lodging. If you chose sunset, you're back between 8:30 and 9:00 PM." },
+    ],
+    nombre: "Cave of Swallows — The Birds' Flight at Sunrise or Sunset",
+    nombreCorto: "Cave of Swallows",
+    tagline: "A 376-metre abyss and the birds that spiral out of it",
+    tipo: "Nature & Birds",
+    urgencia: "At sunrise or sunset — book at least one day ahead",
+    descripcion:
+      "The Sótano de las Golondrinas (Cave of Swallows) is an abyss with a 376-metre free fall in the mountains of Aquismón, and home to more than a thousand birds. At sunrise they spiral out of it; at sunset they come back. You choose which one to see. We pick you up at your lodging in Xilitla, and entry and guide are included. {precio} per person.",
+    descripcionLarga:
+      "There is a hole in the mountains of Aquismón that could swallow Mexico City's Torre Latinoamericana with room to spare: a 376-metre free fall and up to 512 metres deep, with a floor the size of three football pitches. It's the Sótano de las Golondrinas — the Cave of Swallows — and what people come to see isn't the hole but those who live in it. By the way: they aren't swallows, they're swifts and parakeets.\n\nThe show happens twice a day and you choose which one to see. At sunrise, the birds rise from the bottom spiralling in flocks until they gain height and disappear over the forest: for that one we pick you up at 4:00 AM and you're back between 11:00 AM and 12:00 PM. At sunset it's the reverse: they return and circle down into the mouth of the sinkhole. For that one we pick you up between 3:00 and 4:00 PM, and you're back between 8:30 and 9:00 PM.\n\nFrom the entrance there are 568 steps down to the rim, and the climb back up is hard work: you take it at your own pace. At the rim, if you like, you can lean over the abyss roped in while people from the local community hold you; the maximum weight for that is 90 kg, and it may vary depending on who's holding the rope that day.\n\nOne important thing: the birds depend on the weather. If it's cloudy, very cold or raining, they don't come out, and the tour doesn't run that day. For the same reason, times can shift a little depending on when the birds are coming out: we check with the locals before picking you up. If we cancel because of the weather, you choose between a full refund or a free change of date.\n\nIncludes the round-trip transfer from your lodging in Xilitla, entry tickets and the guide; price and times are for departures from Xilitla. If you're staying in Ciudad Valles we can pick you up too: the transfer is added, departure times change, and we quote it on WhatsApp. Children from 3 years old are welcome. Wear comfortable clothes and shoes, and bring a jacket for the early start. No pets of any kind are allowed, and no flash photography. It runs with a minimum of 2 people, and you can also book it as a private tour, just for your group.",
+    destinos: [
+      "Sótano de las Golondrinas, in the mountains of Aquismón",
+      "The 568 steps down to the rim",
+      "The birds' flight, at sunrise or sunset",
+    ],
+    incluye: [
+      "Round-trip transfer from your lodging in Xilitla",
+      "Entry tickets to the sinkhole",
+      "Guide for the whole tour",
+    ],
+    eleccion: {
+      titulo: "Sunrise or sunset?",
+      opciones: [
+        { nombre: "At sunrise: watch the birds come out", nota: "We pick you up at 4:00 AM and you're back between 11:00 AM and 12:00 PM." },
+        { nombre: "At sunset: watch them come back", nota: "We pick you up between 3:00 and 4:00 PM and you're back between 8:30 and 9:00 PM." },
+      ],
+    },
+    gallery: [
+      "Birds flying out in flocks from the mouth of the Cave of Swallows, among the vegetation of the Aquismón mountains",
+      "The Cave of Swallows abyss seen from the rim, with the rock wall dropping away into the forest",
+      "The wall of the Cave of Swallows in the first golden light of the day, above the forest",
+      "The rocks of the rim and the dark mouth of the Cave of Swallows, in Aquismón",
+      "Aerial view of the Cave of Swallows opening in the middle of the Huasteca Potosina forest",
+      "Visitor roped in, leaning over the abyss of the Cave of Swallows from the rocks on the rim",
+      "Hundreds of the sinkhole's birds filling the sky over the Aquismón mountains",
+      "A close-up of a swift held in a hand: one of the birds that live in the sinkhole",
+      "A green parakeet perched on a branch: parakeets live in the sinkhole too",
+      "Stone staircase with a wooden handrail through the forest, on the way to the rim of the Cave of Swallows",
     ],
   },
 
