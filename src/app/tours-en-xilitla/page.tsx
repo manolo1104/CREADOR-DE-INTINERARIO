@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { TarjetaViajeCdmx } from "@/components/viajeCdmx/TarjetaViajeCdmx";
 import Link from "next/link";
 import { headers } from "next/headers";
-import { tourDurTexto, esPorPersona } from "@/lib/tours";
+import { TOURS_DB, tourDurTexto, esPorPersona, recogidaDeTour, ciudadUnicaDeRecogida, rankTour } from "@/lib/tours";
 import { PAQUETES_DB, precioVisible } from "@/lib/paquetes";
 import { DESTINOS_DB } from "@/lib/destinos";
 import { waLink } from "@/lib/whatsapp";
@@ -76,6 +76,11 @@ export default function ToursEnXilitlaPage() {
   // Los paquetes salen todos de aquí: el hotel está en Xilitla.
   const paquetes = [...PAQUETES_DB].sort((a, b) => a.dias - b.dias).map((p) => localizePaquete(p, locale));
   const toursXi = TOURS_XI.map((x) => localizeTour(x, locale));
+  // Los que pasan por ti en Xilitla Y en Valles (y no están arriba).
+  const otrosDesdeXi = TOURS_DB
+    .filter((x) => !TOURS_XI.includes(x) && recogidaDeTour(x).tipo === "hospedaje" && ciudadUnicaDeRecogida(x) !== "Ciudad Valles")
+    .sort((a, b) => rankTour(a.slug) - rankTour(b.slug))
+    .map((x) => localizeTour(x, locale));
 
   const schema = {
     "@context": "https://schema.org",
@@ -239,6 +244,36 @@ export default function ToursEnXilitlaPage() {
             <p className="text-crema/45 font-dm text-xs mt-4">
               {t.soloXiNota}
             </p>
+          )}
+
+          {/* 27 nov 2026 (Manolo): «que quede claro que las salidas son de
+              Ciudad Valles y Xilitla». Arriba van los que son de Xilitla; estos
+              también salen de aquí y van al resto de la Huasteca (Tamul, los
+              sótanos, las cascadas). Lista corta: la ficha de cada uno lo cuenta. */}
+          {otrosDesdeXi.length > 0 && (
+            <div className="mt-12">
+              <h3 className="font-cormorant font-light text-crema text-2xl mb-2">
+                {en ? "Also departing from Xilitla, to the rest of the Huasteca" : "También salen de Xilitla, al resto de la Huasteca"}
+              </h3>
+              <p className="font-dm text-sm text-crema/55 leading-relaxed max-w-2xl mb-5">
+                {en
+                  ? "We pick you up at your lodging in Xilitla (or in Ciudad Valles, if you stay there)."
+                  : "Pasamos por ti a tu hospedaje en Xilitla (o en Ciudad Valles, si te quedas allá)."}
+              </p>
+              <ul className="grid sm:grid-cols-2 gap-x-8 gap-y-2">
+                {otrosDesdeXi.map((x) => (
+                  <li key={x.slug}>
+                    <Link
+                      href={localePath(`/tours/${x.slug}`, locale)}
+                      className="flex items-baseline justify-between gap-3 border-b border-white/8 py-2 font-dm text-sm text-crema/80 hover:text-dorado transition-colors"
+                    >
+                      <span>{x.nombreCorto}</span>
+                      <span className="text-dorado whitespace-nowrap">{money(x.precio)} <span className="text-crema/40 text-xs">{t.unidad(x)}</span></span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
           )}
         </div>
       </section>

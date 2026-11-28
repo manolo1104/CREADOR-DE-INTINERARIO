@@ -81,6 +81,9 @@ const TABLA: Record<string, Exclude<EtiquetaTour, "medio-dia">[]> = {
   "tour-sotano-de-las-golondrinas": ["fotografia"],
   "olla-de-la-luz":                 ["cascadas", "cuevas"],
   "huasteca-instagrameable":        ["fotografia", "cascadas", "arte"],
+  "rappel-sotano-del-cepillo":        ["cuevas"],
+  "rappel-sotano-de-las-huahuas":     ["cuevas"],
+  "rappel-sotano-de-las-golondrinas": ["cuevas"],
 };
 
 /** Hasta cuántas horas cuenta como «medio día». */

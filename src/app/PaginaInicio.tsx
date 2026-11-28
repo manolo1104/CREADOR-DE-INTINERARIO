@@ -49,13 +49,15 @@ export function metadataPagina(locale: Locale): Metadata {
   // potosina»). Si los dos títulos vuelven a empezar igual, Google alterna
   // entre ellos y ninguno sube: el de aquí arranca con la región, no con «Tours».
   const title = locale === "en"
-    ? "Huasteca Potosina Tours — Mexico's Waterfall Country"
-    : "Huasteca Potosina: Cascadas, Guía y Tours desde Xilitla";
+    // 27 nov 2026 (Manolo): las salidas son de Ciudad Valles Y de Xilitla, y
+    // tiene que quedar claro en todo el sitio, empezando por aquí.
+    ? "Huasteca Potosina Tours from Ciudad Valles & Xilitla"
+    : "Huasteca Potosina: Tours desde Ciudad Valles y Xilitla";
   const nTours = TOURS_DB.length;
   const desde = `$${Math.min(...TOURS_DB.map((t) => t.precio)).toLocaleString("es-MX")}`;
   const description = locale === "en"
-    ? `Guided tours from Xilitla, with our own hotel and restaurant. ${nTours} tours with NOM-09 certified guides, from ${desde} MXN. 30% deposit holds your spot. Free cancellation.`
-    : `La Huasteca Potosina desde Xilitla: Tamul, Las Pozas, cascadas, cuándo ir y cómo llegar. ${nTours} tours con guía local desde ${desde}; apartas con el 30 %.`;
+    ? `${nTours} guided tours departing from Ciudad Valles and Xilitla, from ${desde} MXN: Tamul, Las Pozas, waterfalls and sinkholes. NOM-09 certified guides.`
+    : `Tours con salida desde Ciudad Valles y Xilitla: Tamul, Las Pozas, cascadas y sótanos. ${nTours} recorridos con guía local desde ${desde}; apartas con el 30 %.`;
   return {
     title,
     description,
@@ -407,9 +409,10 @@ export async function Pagina({ locale }: { locale: Locale }) {
             className="mt-5 max-w-xl font-dm leading-snug text-crema/85 drop-shadow"
             style={{ fontSize: "clamp(15px,1.8vw,18px)" }}
           >
+            {/* 27 nov 2026 (Manolo): las dos ciudades de salida van primero. */}
             {en
-              ? "Local operator in Xilitla: the hotel, the restaurant and the guides are ours, and we run departures from Ciudad Valles too."
-              : "Operadora local en Xilitla: el hotel, el restaurante y los guías son nuestros, y también salimos desde Ciudad Valles."}
+              ? "Tours departing from Ciudad Valles and Xilitla. A local operator: the hotel, the restaurant and the guides are ours."
+              : "Tours con salida desde Ciudad Valles y Xilitla. Somos operadora local: el hotel, el restaurante y los guías son nuestros."}
           </p>
 
           {/* ── EL BUSCADOR ──
@@ -577,9 +580,9 @@ export async function Pagina({ locale }: { locale: Locale }) {
                     );
                   })}
                 </ul>
-                {/* 17 nov 2026: el seguro solo va incluido en rafting, rappel y RZR. */}
+                {/* 17 nov 2026: el seguro solo va incluido en rafting, RZR y el rappel en Tamul. */}
                 <p className="mb-4 font-dm text-sm leading-relaxed text-negro/65">
-                  <strong className="text-negro/85">Traveler insurance</strong>, except on adventure tours (rafting, rappel and RZR), which include it. On the rest it&apos;s optional: MXN $80 per person (just ask when you book).
+                  <strong className="text-negro/85">Traveler insurance</strong>, except on adventure tours (rafting, RZR and the Tamul rappel), which include it. On the rest it&apos;s optional: MXN $80 per person (just ask when you book).
                 </p>
                 <p className="font-dm text-sm leading-relaxed text-negro/65">
                   <strong className="text-negro/85">Flights</strong>, any meals not listed on your itinerary{TOURS_DB.length > nConTraslado ? <>, and getting to the meeting point on the {TOURS_DB.length - nConTraslado} tours that don&apos;t pick you up</> : null}. That&apos;s the whole list.

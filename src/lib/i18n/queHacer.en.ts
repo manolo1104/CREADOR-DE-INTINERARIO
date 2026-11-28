@@ -589,7 +589,7 @@ export function getQueHacer(locale: Locale): QueHacerContent {
         },
         {
           q: "How much do these activities cost?",
-          a: `Guided day tours range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person.${NO_POR_PERSONA.length ? ` Some aren't priced per head: ${listaEn(NO_POR_PERSONA.map((t) => `${nombreEn(t)} (${etiquetaUnidad(t, true)})`))}.` : ""} All include the photos and video your guide takes, and adventure tours (rafting, rappel and RZR) also include traveler insurance; on the others it's optional: MXN $80 per person. Each tour's page details what else is included. Our pricing page has the full list.`,
+          a: `Guided day tours range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person.${NO_POR_PERSONA.length ? ` Some aren't priced per head: ${listaEn(NO_POR_PERSONA.map((t) => `${nombreEn(t)} (${etiquetaUnidad(t, true)})`))}.` : ""} All include the photos and video your guide takes, and adventure tours (rafting, RZR and the Tamul rappel) also include traveler insurance; on the others it's optional: MXN $80 per person. Each tour's page details what else is included. Our pricing page has the full list.`,
         },
         {
           q: "Can I visit the Huasteca on my own, without a tour?",
@@ -666,7 +666,7 @@ export function getQueHacer(locale: Locale): QueHacerContent {
       },
       {
         q: "¿Cuánto cuesta hacer estas actividades?",
-        a: `Los recorridos guiados de un día van de ${money(rango.min)} a ${money(rango.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${listaEs(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen las fotos y el video que toma tu guía, y los tours de aventura (rafting, rappel y RZR) también el seguro de viajero; en los demás es opcional: $80 por persona. La ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
+        a: `Los recorridos guiados de un día van de ${money(rango.min)} a ${money(rango.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${listaEs(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen las fotos y el video que toma tu guía, y los tours de aventura (rafting, RZR y el rappel en Tamul) también el seguro de viajero; en los demás es opcional: $80 por persona. La ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
       },
       {
         q: "¿Puedo visitar la Huasteca por mi cuenta, sin tour?",

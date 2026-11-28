@@ -22,6 +22,8 @@ import { getTourFaqs } from "@/lib/i18n/tourFaqs.en";
 import { TourGallery } from "@/components/TourGallery";
 import { HeroTourMedia } from "@/components/HeroTourMedia";
 import { TourDeparture, ciudadUnicaDeRecogida } from "@/components/TourDeparture";
+import { CompararRappeles } from "@/components/CompararRappeles";
+import { RAPPELES_IDS } from "@/lib/rappeles";
 import { IconoInstagram } from "@/components/IconoInstagram";
 import { SelloGarantia } from "@/components/SelloGarantia";
 import { ItinerarioLinea } from "@/components/ItinerarioLinea";
@@ -40,7 +42,7 @@ import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { ReservaDirecto } from "@/components/ReservaDirecto";
 import { BloqueCasaPropia } from "@/components/BloqueCasaPropia";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
-import { guiasDeTour, ACUATICOS_ECOTURISMO } from "@/lib/guias";
+import { guiasDeTour, ACUATICOS_ECOTURISMO, RAPPELES_SOTANOS, CONSTANCIA_DC3 } from "@/lib/guias";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
@@ -306,6 +308,7 @@ function construirDescripcion(
   aval: AvalGuia,
   conSeguro: boolean,
   locale: Locale,
+  ciudadRecogida: "Xilitla" | "Ciudad Valles" | null = null,
 ): string {
   const en = locale === "en";
   const s1 = en
@@ -316,7 +319,7 @@ function construirDescripcion(
   // fragmento de Google era decir algo que TOURS_DB no respalda.
   const guiaDe = (a: AvalGuia) => (a ? (en ? "certified guide" : `guía ${a}`) : en ? "guide" : "guía");
   const guia = guiaDe(aval);
-  // 🔴 17 nov 2026: el seguro solo va incluido en rafting, rappel y RZR. En
+  // 🔴 17 nov 2026: el seguro solo va incluido en rafting, RZR y el rappel en Tamul. En
   // los demás la meta prometía "seguro incluido" y es opcional ($80 por
   // persona), así que solo se nombra donde el `incluye` del tour lo trae.
   const cola = (g: string) => conSeguro
@@ -330,6 +333,33 @@ function construirDescripcion(
     : pieza(en ? "Gear" : "Equipo");
 
   const candidatas: string[] = [];
+  // 27 nov 2026 (Manolo): «que quede claro en toda la página que las salidas
+  // son de Ciudad Valles y Xilitla». En los que recogen en las dos ciudades la
+  // segunda frase lo dice; si no cabe, se queda la versión sin ciudades.
+  if (recogida.tipo === "hospedaje") {
+    const desde = ciudadRecogida === "Ciudad Valles"
+      ? (en ? "Transport from Ciudad Valles" : "Traslado desde Ciudad Valles")
+      : ciudadRecogida === "Xilitla"
+        ? (en ? "Transport from Xilitla" : "Traslado desde Xilitla")
+        : (en ? "Pickup in Ciudad Valles or Xilitla" : "Salida desde Ciudad Valles o Xilitla");
+    const desdeCorto = ciudadRecogida === "Ciudad Valles"
+      ? (en ? "From Valles" : "Desde Valles")
+      : ciudadRecogida
+        ? desde
+        : (en ? "Pickup in Valles or Xilitla" : "Salida de Valles o Xilitla");
+    if (recogida.cargoValles) {
+      // Desde Valles cuesta más (Ruta Surrealista): se dice de dónde sale sin
+      // meter el traslado en «incluidos».
+      for (const g of aval ? [guia, guiaDe(null)] : [guia]) {
+        candidatas.push(en ? `Departs from Xilitla or Ciudad Valles; ${cola(g)}` : `Sale de Xilitla o Ciudad Valles; ${cola(g)}`);
+      }
+    } else {
+      for (const d of [desde, desdeCorto]) {
+        candidatas.push(pieza(d));
+        if (aval) candidatas.push(conSeguro ? `${d}, ${cola(guiaDe(null))}` : (en ? `${d} and guide included.` : `${d} y guía incluidos.`));
+      }
+    }
+  }
   if (recogida.valles) {
     const rec = en ? "Pickup in Xilitla" : "Recogida en Xilitla";
     // Un horario que cambia según el día (el Edén) no cabe en una meta.
@@ -418,6 +448,7 @@ export function metadataPagina({ params }: Props, locale: Locale): Metadata {
         avalDelGuia(base),
         base.incluye.some((x) => /seguro/i.test(x)),
         locale,
+        ciudadUnicaDeRecogida(base),
       );
   return {
     title,
@@ -456,7 +487,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   // 🔴 Lo que se le ENSEÑA al cliente como "qué incluye" (la lista visible y
   // la pregunta frecuente, que viaja al JSON-LD) pasa por `incluyeDeTour`, que
   // suma las fotos de `INCLUYE_SIEMPRE` (el seguro ya no: desde el 17 nov
-  // 2026 solo lo traen rafting, rappel y RZR en su propio `incluye`). Con
+  // 2026 solo lo traen rafting, RZR y el rappel en Tamul en su propio `incluye`). Con
   // `tour.incluye` a pelo, la lista callaba lo que el párrafo citable
   // de esta misma ficha promete. En inglés recibe el tour ya localizado.
   // Las expresiones de más abajo que DETECTAN piezas (desayuno, entradas,
@@ -667,7 +698,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   else if (/gu[ií]a[^|]*acreditad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified guide" : "el guía acreditado");
   else if (/instructor certificad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified PADI instructor" : "el instructor certificado PADI");
   else if (/gu[ií]a/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the guide" : "el guía");
-  // El seguro solo va en los tours de aventura (rafting, rappel y RZR), que lo
+  // El seguro solo va en los tours de aventura (rafting, RZR y el rappel en Tamul), que lo
   // traen en su `incluye`; en los demás es opcional y se dice aparte.
   const conSeguro = /seguro/.test(incluyeBase);
   if (conSeguro) piezasIncluidas.push(locale === "en" ? "traveler insurance" : "el seguro de viajero");
@@ -677,7 +708,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   const fraseIncluye = (locale === "en"
     ? `The price includes ${listaIncluida}.`
     : `El precio incluye ${listaIncluida}.`)
-    + (conSeguro ? "" : locale === "en"
+    + (conSeguro || base.sinSeguro ? "" : locale === "en"
       ? " Traveler insurance is optional: MXN $80 per person (just ask when you book)."
       : " El seguro de viajero es opcional: $80 por persona (pídelo al reservar).");
 
@@ -1048,6 +1079,12 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               {tour.exclusivo[locale]}
             </span>
           )}
+          {tour.distincion && (
+            <span className="bg-dorado text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-3 py-1.5 rounded-full flex items-center gap-1.5">
+              <Award className="w-3 h-3" aria-hidden="true" />
+              {tour.distincion[locale]}
+            </span>
+          )}
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 px-6 pb-10 max-w-4xl">
@@ -1368,6 +1405,9 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             })()}
           </section>
 
+          {/* ── LOS 4 RAPPELES LADO A LADO (27 nov 2026) ── */}
+          {RAPPELES_IDS.includes(base.id) && <CompararRappeles locale={locale} actualId={base.id} />}
+
           {/* ── RUTAS Y PRECIOS POR VEHÍCULO (solo tours cobrados por vehículo, ej. RZR) ── */}
           {tour.rutas && tour.flota && (
             <section>
@@ -1483,6 +1523,21 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             <section>
               <h2 className="font-cormorant text-crema text-2xl mb-5">{t.images}</h2>
               <TourGallery images={tour.gallery} tourName={tour.nombre} />
+              {/* Crédito de las fotos libres de terceros (27 nov 2026): lo
+                  exige su licencia (CC BY-SA, Arte Libre). */}
+              {tour.creditosFotos && tour.creditosFotos.length > 0 && (
+                <p className="mt-3 text-[11px] text-crema/45 font-dm">
+                  {locale === "en" ? "Third-party photos: " : "Fotos de terceros: "}
+                  {tour.creditosFotos.map((c, i) => (
+                    <span key={c.src}>
+                      {i > 0 && " · "}
+                      <a href={c.fuenteUrl} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-crema/70">{c.autor}</a>
+                      {" / "}
+                      <a href={c.licenciaUrl} target="_blank" rel="noopener noreferrer license" className="underline underline-offset-2 hover:text-crema/70">{c.licencia}</a>
+                    </span>
+                  ))}
+                </p>
+              )}
             </section>
           )}
 
@@ -1668,6 +1723,28 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                   </figure>
                 ))}
               </div>
+            </section>
+          )}
+
+          {/* ── QUIÉN TE BAJA (rappeles en sótanos, 27 nov 2026) ──
+              Mientras el instructor no mande nombre y foto (`INSTRUCTORES_RAPPEL`
+              vacío), solo se dice su constancia DC-3, que es lo que Manolo
+              confirmó. En cuanto se llene, sale la tarjeta de arriba y esta no. */}
+          {guiasDeTour(tour.slug).length === 0 && RAPPELES_SOTANOS.includes(tour.slug) && (
+            <section aria-labelledby="instructor-tour">
+              <h2 id="instructor-tour" className="font-cormorant text-crema text-2xl mb-2">
+                {locale === "en" ? "Who takes you down" : "Quién te baja"}
+              </h2>
+              <p className="text-sm text-crema/65 font-dm leading-relaxed max-w-prose">
+                {locale === "en"
+                  ? "A vertical-work instructor rigs the ropes and checks your gear before every descent."
+                  : "Un instructor de trabajos verticales arma las cuerdas y revisa tu equipo antes de cada descenso."}
+              </p>
+              <ul className="mt-3.5 flex flex-wrap gap-1.5">
+                <li className="rounded-full border border-dorado/40 text-dorado/90 text-[11px] font-dm tracking-wide px-2.5 py-1">
+                  {locale === "en" ? CONSTANCIA_DC3.en : CONSTANCIA_DC3.es}
+                </li>
+              </ul>
             </section>
           )}
 
@@ -2188,6 +2265,33 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
               </>
             )}
           </p>
+          {/* Fuentes de los datos y fecha de revisión (27 nov 2026): un dato
+              con su fuente y una fecha visible es lo que los asistentes de IA
+              prefieren citar. Solo si el tour los trae. */}
+          {base.fuentes && base.fuentes.length > 0 && (
+            <div className="mt-10">
+              <h3 className="font-dm text-[10px] tracking-[3px] uppercase text-verde-selva mb-3">
+                {locale === "en" ? "Sources for the figures" : "Fuentes de los datos"}
+              </h3>
+              <ul className="space-y-1.5">
+                {base.fuentes.map((f) => (
+                  <li key={f.url + f.dato.es} className="font-dm text-xs text-negro/60 leading-relaxed">
+                    {locale === "en" ? f.dato.en : f.dato.es}:{" "}
+                    <a href={f.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-2 hover:text-negro/80">{f.fuente}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {base.revisado && (
+            <p className="font-dm text-xs text-negro/45 mt-6">
+              {locale === "en" ? "Information reviewed on " : "Información revisada el "}
+              <time dateTime={base.revisado}>
+                {new Date(`${base.revisado}T12:00:00`).toLocaleDateString(locale === "en" ? "en-US" : "es-MX", { day: "numeric", month: "long", year: "numeric" })}
+              </time>
+              .
+            </p>
+          )}
         </div>
       </section>
 
@@ -2204,6 +2308,10 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           "tour-minas-micos": { slug: "cascadas-del-meco",               msg: "Combínalo con Cascada El Meco — aguas turquesas reales con luz perfecta. Dos días, dos experiencias únicas." },
           "tour-puente-dios": { slug: "paraiso-escalonado-minas-micos",  msg: "Combínalo con Minas + Micos al día siguiente — más cascadas, más pozas, la ruta de aguas completa." },
           "tour-rafting-tampaon": { slug: "rappel-tamul",  msg: "Combínalo con el Rappel en Tamul — dos días de adrenalina en el mismo cañón: un día remando los rápidos y otro descendiendo frente a la cascada más alta de San Luis Potosí." },
+          // 27 nov 2026: los rappeles en sótanos se encadenan de menor a mayor.
+          "tour-rappel-cepillo": { slug: "rappel-sotano-de-las-huahuas", msg: "¿Te quedó gusto? En otro día de tu viaje, baja al Sótano de las Huahuas: 478 metros de abismo y un fondo verde que casi nadie pisa.", msgEn: "Hungry for more? On another day of your trip, go down the Huahuas sinkhole: a 478-meter abyss with a green floor almost nobody walks on." },
+          "tour-rappel-huahuas": { slug: "rappel-sotano-de-las-golondrinas", msg: "El siguiente nivel: el Sótano de las Golondrinas, 376 metros de caída libre, el segundo tiro más profundo de México.", msgEn: "The next level: the Cave of Swallows, a 376-meter free fall and the second-deepest drop in Mexico." },
+          "tour-rappel-golondrinas": { slug: "tour-sotano-de-las-golondrinas", msg: "Ve el sótano también desde arriba: en otro día de tu viaje, mira a las aves salir en espiral al amanecer.", msgEn: "See the sinkhole from above too: on another day of your trip, watch the birds spiral out at sunrise." },
           "tour-rappel-tamul": { slug: "rafting-rio-tampaon", msg: "Combínalo con el Rafting en el Tampaón — después de descender la pared, domina los rápidos del mismo río. El fin de semana de adrenalina completo." },
           // Los cuatro de Xilitla: todos recogen en el mismo pueblo, así que se
           // combinan con lo que queda cerca, en otro día del viaje.

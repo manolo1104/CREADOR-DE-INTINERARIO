@@ -44,7 +44,7 @@ const TOUR_PROOF: Record<string, {
   "tour-rappel-tamul": {
     reviews: [
       { name: "Diego S.",   city: "Querétaro", text: "Nunca había hecho rappel y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo." },
-      { name: "Mariana C.", city: "CDMX",      text: "La experiencia más adrenalínica de mi vida. El video con dron que te dan al final lo he visto como veinte veces." },
+      { name: "Mariana C.", city: "CDMX",      text: "La experiencia más adrenalínica de mi vida. El video que te toma el guía lo he visto como veinte veces." },
     ],
   },
   "tour-rafting-tampaon": {
@@ -114,6 +114,9 @@ const TOUR_PROOF: Record<string, {
   "tour-huasteca-instagrameable": {
     reviews: [],
   },
+  "tour-rappel-cepillo":     { reviews: [] },
+  "tour-rappel-huahuas":     { reviews: [] },
+  "tour-rappel-golondrinas": { reviews: [] },
 };
 
 // ── Wizard data ──────────────────────────────────────────────────────────────

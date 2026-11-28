@@ -169,7 +169,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       { momento: "Pickup", texto: "We pick you up at your lodging and head out to the Río Tampaón landing." },
       { momento: "Río Tampaón landing", texto: "You reach the river and meet the mountain guides who will rappel down with you. Whatever doesn't go down the wall stays here." },
       { momento: "Gear and briefing", texto: "Harness, helmet and gloves, and the descent technique practised on dry ground before you look over the edge. No experience needed: your first rappel is fully guided." },
-      { momento: "The descent", texto: "You come down the canyon wall with Tamul Waterfall in front of you, the tallest in San Luis Potosí. The drone films from the air and the action cameras from your helmet." },
+      { momento: "The descent", texto: "You come down the canyon wall with Tamul Waterfall in front of you, the tallest in San Luis Potosí. Your guide takes photos and video as you go." },
       { momento: "Facing the curtain of water", texto: "The stretch where the wall turns into a carpet of vegetation and the sound of the water drowns out everything else." },
       { momento: "The canyon from below", texto: "Back on solid ground, the turquoise river and the wall you just came down look like a different place." },
       { momento: "Return", texto: "Back to your lodging." },
@@ -180,22 +180,20 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Extreme Adventure",
     urgencia: "Small group for safety — book ahead",
     descripcion:
-      "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides and the aerial drone photography that proves you really did it. The most extreme experience in the Huasteca Potosina, and suitable too for people who have never rappelled before.",
+      "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides, and the photos and video your guide takes so you can tell the story. The most extreme experience in the Huasteca Potosina, and suitable too for people who have never rappelled before.",
     descripcionLarga:
-      "There are few places in the world where you can hang from a rope facing a 344-foot (105 m) waterfall. Tamul Waterfall — 344 feet (105 m) of water plunging into the Tampaón River — is the backdrop of this experience, and the moment you peer over the canyon edge you understand why everyone who does it can't stop talking about it.\n\nWe pick you up in Ciudad Valles and start at the river dock, where we hand you the full gear and our high-mountain guides give you a technique briefing. No prior experience needed: the first descent is guided step by step and most of our visitors had never touched a rope before. All you need is the will to do it.\n\nOnce secured to the harness, you begin to descend the limestone wall draped in vegetation, with the waterfall beside you spraying cool mist over you and the river's turquoise water waiting below. The sound is deafening, the scenery unreal, and for those minutes nothing else in the world exists. Our photographer follows you from the air with a drone and from the ground, so every second is captured in photo and video — included in your booking at no extra cost.\n\nThe activity lasts 3 to 5 hours depending on the group and the weather. The price includes the transfer from Ciudad Valles, all the safety gear, the drone video and the action-camera photos; meals are not included. If you're after the story you'll tell for the rest of your life, it starts here.",
+      "There are few places in the world where you can hang from a rope facing a 344-foot (105 m) waterfall. Tamul Waterfall — 344 feet (105 m) of water plunging into the Tampaón River — is the backdrop of this experience, and the moment you peer over the canyon edge you understand why everyone who does it can't stop talking about it.\n\nWe pick you up at your lodging in Ciudad Valles or Xilitla and start at the river dock, where we hand you the full gear and our high-mountain guides give you a technique briefing. No prior experience needed: the first descent is guided step by step and most of our visitors had never touched a rope before. All you need is the will to do it.\n\nOnce secured to the harness, you begin to descend the limestone wall draped in vegetation, with the waterfall beside you spraying cool mist over you and the river's turquoise water waiting below. The sound is deafening, the scenery unreal, and for those minutes nothing else in the world exists. Your guide takes photos and video of your descent, included in your booking at no extra cost.\n\nThe activity lasts 3 to 5 hours depending on the group and the weather. The price includes the transfer from your lodging in Ciudad Valles or Xilitla, all the safety gear, and the photos and video your guide takes; meals are not included. If you're after the story you'll tell for the rest of your life, it starts here.",
     destinos: [
       "Tampaón River dock (start of the descent)",
       "Rappel wall facing Tamul Waterfall",
       "Tampaón River canyon",
     ],
     incluye: [
-      "Transfer from Ciudad Valles",
+      "Round-trip transfer from your lodging in Xilitla or Ciudad Valles",
       "Full rappel and safety gear (harness, helmet, gloves and professional ropes)",
       "Certified high-mountain guides",
       "Briefing and descent technique — beginner-friendly",
       "Traveler insurance for every participant",
-      "Drone video of the descent",
-      "Action-camera photos",
     ],
     gallery: [
       "Rappeller with a helmet camera smiling mid-wall in the canyon, with Tamul Waterfall plunging in the background — Huasteca Potosina",
@@ -205,6 +203,134 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Wide view of the rappel descent over the imposing Tamul Waterfall — the tallest in San Luis Potosí",
       "Rappeller seen from behind descending the Tampaón canyon wall beside the curtain of Tamul",
       "Woman in a helmet smiling and giving a thumbs up while rappelling, with birds flying in front of Tamul Waterfall",
+      "Tamul Waterfall from the air: the river drops over the canyon rim between jungle and mist",
+      "Tamul Waterfall at the end of the Tampaón canyon, with the turquoise river between rock walls",
+    ],
+  },
+
+  // 27 nov 2026: los tres rappeles en sótanos (ver el comentario en tours.ts).
+  "rappel-sotano-del-cepillo": {
+    nombre: "El Cepillo Sinkhole Rappel — 120+ Meters Down into the Aquismón Sierra",
+    nombreCorto: "El Cepillo Sinkhole Rappel",
+    tagline: "One rope, one shaft of light and 120+ meters to the bottom",
+    tipo: "Sinkhole Rappel",
+    urgencia: "Small group for safety — runs from 2 people",
+    descripcion:
+      "Rappel more than 120 meters into El Cepillo sinkhole, in the Aquismón sierra, following the shaft of light from the mouth down to a pool and rock formations at the bottom. Pickup at your lodging in Xilitla or Ciudad Valles, breakfast, safety gear and a safety briefing included. {precio} per person.",
+    descripcionLarga:
+      "El Cepillo sinkhole — locals in Aquismón also call it El Eterno — is a vertical shaft that opens in the middle of the sierra. From the mouth you can't see the bottom: you see the light falling in a single beam and fading away below. The first drop is more than 120 meters, and that's the way down.\n\nThe day starts early: we pick you up at your lodging in Xilitla or Ciudad Valles, have breakfast on the way and drive up into the sierra. At the mouth of the sinkhole the instructor hands you the gear, fits it and gives you the safety briefing: how to descend, how to brake and what to do at each step. No previous experience needed.\n\nThen comes the part you'll always tell: you leave the edge and start down hanging from the rope, rock wall on one side and the beam of light on the other. Down below wait a pool of water and rock formations — stalactites and stalagmites — that almost nobody gets to see. Your guide takes photos and video during the day.\n\nOpen to ages 8 and up, weighing up to 100 kg, and it runs from 2 people. Includes the round-trip transfer from your lodging in Xilitla or Ciudad Valles, breakfast, the safety gear and the briefing.",
+    destinos: [
+      "El Cepillo sinkhole (El Eterno), in the Aquismón sierra",
+      "Rappel descent of more than 120 meters",
+      "The bottom: a pool of water and rock formations",
+    ],
+    incluye: [
+      "Round-trip transfer from your lodging in Xilitla or Ciudad Valles",
+      "Breakfast",
+      "Safety gear for the descent",
+      "Safety briefing before you go down — no experience needed",
+      "Instructor with a DC-3 certificate in work at height (NOM-009-STPS-2011)",
+    ],
+    itinerario: [
+      { momento: "Pickup and breakfast", texto: "We pick you up at your lodging in Xilitla or Ciudad Valles. Breakfast is included, on the way to the sierra." },
+      { momento: "Gear and briefing", texto: "The instructor fits your gear and explains how to descend and how to brake. No experience needed: you practise before looking over the edge." },
+      { momento: "120+ meters of rope", texto: "You leave the edge and go down hanging, rock wall on one side and the beam of light on the other." },
+      { momento: "The pool and the formations", texto: "A pool of water, stalactites and stalagmites, lit by the light coming down from the mouth." },
+      { momento: "Return", texto: "Back to your lodging." },
+    ],
+    gallery: [
+      "Two rappellers hanging from the rope inside the beam of light that enters El Cepillo sinkhole, in Aquismón",
+      "Two people rappelling down the wall of El Cepillo sinkhole, with light and dust floating around them",
+      "The bottom of El Cepillo sinkhole: a green pool and rock formations, with a person in helmet and harness",
+      "A beam of light enters through the mouth of El Cepillo sinkhole and falls on the rocks below",
+    ],
+  },
+
+  "rappel-sotano-de-las-huahuas": {
+    nombre: "Huahuas Sinkhole Rappel — To the Bottom of a 478-Meter Abyss",
+    nombreCorto: "Huahuas Sinkhole Rappel",
+    tagline: "One of Mexico's deepest abysses, seen from the inside",
+    tipo: "Sinkhole Rappel",
+    urgencia: "Small group for safety — runs from 2 people",
+    descripcion:
+      "The Huahuas sinkhole is 478 meters deep, one of the deepest abysses in Mexico. You rappel with a vertical-work instructor to a green bottom almost nobody reaches. Pickup at your lodging in Xilitla or Ciudad Valles, breakfast, safety gear and a safety briefing included. {precio} per person.",
+    descripcionLarga:
+      "In the Aquismón sierra, near San Isidro Tampaxal, the ground opens into a hole 478 meters deep: the Huahuas sinkhole, one of the deepest abysses in Mexico and a state Natural Monument. The name comes from Tének: «huahua» is what locals call the green parakeets that live on its walls alongside the swifts. Visitors look in from the viewpoint. You're going down.\n\nWe pick you up early at your lodging in Xilitla or Ciudad Valles and have breakfast on the way. At the sinkhole, the instructor hands you the gear, fits it and gives you the safety briefing. No previous experience needed, but you do need the will and decent fitness: it's a long day in the sierra.\n\nThe descent is what stays with you: you leave the edge and the mouth gets smaller above you, the walls covered in green and the birds' calls bouncing off the rock. Down below is another world: moss, house-sized boulders and the light coming in through the slit of the mouth. Your guide takes photos and video during the day.\n\nOpen to ages 8 and up, weighing up to 100 kg, and it runs from 2 people. Includes the round-trip transfer from your lodging in Xilitla or Ciudad Valles, breakfast, the safety gear and the briefing.",
+    destinos: [
+      "Huahuas sinkhole, in the Aquismón sierra",
+      "Rappel descent into the 478-meter abyss",
+      "The bottom of the sinkhole, among moss and boulders",
+    ],
+    incluye: [
+      "Round-trip transfer from your lodging in Xilitla or Ciudad Valles",
+      "Breakfast",
+      "Safety gear for the descent",
+      "Safety briefing before you go down — no experience needed",
+      "Instructor with a DC-3 certificate in work at height (NOM-009-STPS-2011)",
+    ],
+    itinerario: [
+      { momento: "Pickup and breakfast", texto: "We pick you up at your lodging in Xilitla or Ciudad Valles. Breakfast is included, on the way to the sierra." },
+      { momento: "Gear and briefing", texto: "The instructor fits your gear and explains how to descend and how to brake before you look over the edge." },
+      { momento: "Inside the abyss", texto: "The mouth gets smaller above you, with green walls and birds crossing the void." },
+      { momento: "Another world", texto: "Moss, huge boulders and the light coming in through the slit of the mouth." },
+      { momento: "Return", texto: "Back to your lodging." },
+    ],
+    gallery: [
+      "Woman rappelling down the wall of the Huahuas sinkhole, with the mouth of the abyss above",
+      "The slit of light of the Huahuas sinkhole mouth seen from the moss-covered bottom",
+      "A person with arms raised as a flock of birds flies out of the mouth of the Huahuas sinkhole",
+      "A smiling rappeller in a helmet starting the descent from the rim of the Huahuas sinkhole",
+      "Group celebrating with arms raised at the bottom of the Huahuas sinkhole, among moss and rock",
+      "The green bottom of the Huahuas sinkhole with the slit of light of the mouth far above",
+      "Silhouettes of the group against the light at the bottom of the Huahuas sinkhole",
+      "Two rappellers going down inside the beam of light entering the Huahuas sinkhole",
+      "The white rocks of the rim and the dark mouth of the Huahuas sinkhole, in the forest",
+      "The Huahuas abyss seen from the rim, its wall covered in green and plants at the edge",
+    ],
+  },
+
+  "rappel-sotano-de-las-golondrinas": {
+    nombre: "Cave of Swallows Rappel — 376 Meters of Free Fall",
+    nombreCorto: "Cave of Swallows Rappel",
+    tagline: "Mexico's second-deepest drop, hanging from a rope",
+    tipo: "Sinkhole Rappel",
+    urgencia: "Confirmed with the community — runs from 2 people",
+    descripcion:
+      "The Cave of Swallows (Sótano de las Golondrinas) has a 376-meter free fall: the second-deepest drop in Mexico. You go down hanging from a rope, with a vertical-work instructor, to a floor the size of three football fields. Pickup at your lodging in Xilitla or Ciudad Valles, breakfast, safety gear and a safety briefing included. {precio} per person.",
+    descripcionLarga:
+      "The Latin American Tower in Mexico City would fit inside the Cave of Swallows with room to spare: a 376-meter free fall, the second-deepest drop in Mexico, with a floor the size of three football fields. It's a state Natural Monument looked after by the community of Unión de Guadalupe. It's famous for its birds — swifts and parakeets, not swallows — that spiral out every morning. What almost nobody does is go down.\n\nWe pick you up early at your lodging in Xilitla or Ciudad Valles and have breakfast on the way. Descents happen once the birds have left, so as not to disturb them: meanwhile, the instructor hands you the gear, fits it and gives you the safety briefing. No previous experience needed, but you do need the will and decent fitness: it's a long day.\n\nAnd then, the void. You leave the rocky rim and the jungle and start down hanging free, no wall nearby, with light pouring in through the mouth and mist drifting beneath your feet. It's a long descent, the kind where the silence weighs on you. The floor below is a world of its own, and from there the mouth looks like a window in the sky. Your guide takes photos and video during the day.\n\nOpen to ages 8 and up, weighing up to 100 kg, and it runs from 2 people. Descents depend on the community and the birds: they close during nesting season, so when you book we confirm your date is open. Includes the round-trip transfer from your lodging in Xilitla or Ciudad Valles, breakfast, the safety gear and the briefing.",
+    destinos: [
+      "Cave of Swallows (Sótano de las Golondrinas), in the Aquismón sierra",
+      "A 376-meter free-fall descent",
+      "The floor of the sinkhole, the size of three football fields",
+    ],
+    incluye: [
+      "Round-trip transfer from your lodging in Xilitla or Ciudad Valles",
+      "Breakfast",
+      "Safety gear for the descent",
+      "Safety briefing before you go down — no experience needed",
+      "Instructor with a DC-3 certificate in work at height (NOM-009-STPS-2011)",
+    ],
+    itinerario: [
+      { momento: "Pickup and breakfast", texto: "We pick you up at your lodging in Xilitla or Ciudad Valles. Breakfast is included, on the way to the sierra." },
+      { momento: "Gear and briefing", texto: "Descents start once the birds have left the sinkhole. Meanwhile, the instructor fits your gear and explains how to descend." },
+      { momento: "376 meters of free fall", texto: "No wall nearby: just the rope, the light from the mouth and the mist drifting beneath you." },
+      { momento: "The window in the sky", texto: "From the floor, the mouth of the sinkhole looks like a window in the sky." },
+      { momento: "Return", texto: "Back to your lodging." },
+    ],
+    gallery: [
+      "Rappellers hanging from a rope in the huge cavern of the Cave of Swallows, with a tiny person on the mossy floor",
+      "A rappeller descending inside the beam of light that enters through the round mouth of the Cave of Swallows",
+      "A group resting on the floor of the Cave of Swallows while two rappellers descend below the bright mouth",
+      "Silhouette of a rappeller with arms spread below the mouth of the Cave of Swallows",
+      "Rappeller in a helmet and red suit entering the mouth of the Cave of Swallows",
+      "Two visitors tied with rope peering into the abyss of the Cave of Swallows from the rocks of the rim",
+      "Silhouette of a rappeller hanging below the mouth of the Cave of Swallows, seen from the floor",
+      "Rappeller with arms spread in the free fall of the Cave of Swallows",
+      "A person on the green, mossy floor of the Cave of Swallows, looking up at the mouth",
+      "Traveler in helmet and harness sitting on the moss at the bottom of the Cave of Swallows, with the bright mouth above",
+      "The abyss of the Cave of Swallows seen from the rim, with the rock wall dropping into the jungle",
+      "A tiny rappeller hanging from the rope below the mouth of the Cave of Swallows, seen from the floor",
     ],
   },
 
@@ -718,7 +844,6 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Birds flying out in flocks from the mouth of the Cave of Swallows, among the vegetation of the Aquismón mountains",
       "The Cave of Swallows abyss seen from the rim, with the rock wall dropping away into the forest",
       "The wall of the Cave of Swallows in the first golden light of the day, above the forest",
-      "The rocks of the rim and the dark mouth of the Cave of Swallows, in Aquismón",
       "Aerial view of the Cave of Swallows opening in the middle of the Huasteca Potosina forest",
       "Visitor roped in, leaning over the abyss of the Cave of Swallows from the rocks on the rim",
       "Hundreds of the sinkhole's birds filling the sky over the Aquismón mountains",

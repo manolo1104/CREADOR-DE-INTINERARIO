@@ -701,7 +701,7 @@ const ES: InfoPracticaContent = {
       items: [
         "INE o pasaporte vigente",
         "Efectivo en pesos mexicanos (ver sección Presupuesto)",
-        "Seguro de viajero: incluido en rafting, rappel y RZR; en los demás tours es opcional ($80 por persona, al reservar)",
+        "Seguro de viajero: incluido en rafting, RZR y el rappel en Tamul; en los demás tours es opcional ($80 por persona, al reservar)",
         "Reservaciones descargadas en el celular (sin internet en cascadas)",
         "Número de emergencias guardado: ver sección Seguridad",
       ],
@@ -1330,7 +1330,7 @@ const EN: InfoPracticaContent = {
       items: [
         "Valid ID or passport",
         "Cash in Mexican pesos (see the Budget section)",
-        "Traveler insurance: included on rafting, rappel and RZR; optional on the other tours (MXN $80 per person, when you book)",
+        "Traveler insurance: included on rafting, RZR and the Tamul rappel; optional on the other tours (MXN $80 per person, when you book)",
         "Bookings downloaded on your phone (no internet at the waterfalls)",
         "Emergency numbers saved: see the Safety section",
       ],

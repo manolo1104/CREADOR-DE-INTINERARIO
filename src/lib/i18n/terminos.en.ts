@@ -94,7 +94,7 @@ function enLista(nombres: string[], locale: Locale): string {
  * (salía "12" y el catálogo llega a 14) y las excepciones de cancelación y de
  * precio de niños de los recorridos que no se cobran por persona (el Edén,
  * por grupo, y el RZR, por vehículo).
- * 17 nov 2026: el seguro de viajero solo va incluido en rafting, rappel y RZR
+ * 17 nov 2026: el seguro de viajero solo va incluido en rafting, RZR y el rappel en Tamul
  * (en los demás, opcional a $80 por persona) y la nueva escala de niños
  * (3 o menos gratis, 4 a 7 el 50 %, 8 en adelante adulto).
  */
@@ -228,7 +228,7 @@ function construir(locale: Locale): TerminosContent {
         {
           h2: "6. Seguridad y seguro",
           bloques: [
-            { p: ["Operamos con guías certificados NOM-09-TUR y equipo de seguridad revisado. Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero durante la actividad contratada; en los demás es opcional y cuesta $80 por persona, que se piden al reservar. El seguro tiene las coberturas y los límites que fija la póliza vigente, no sustituye a un seguro de gastos médicos personal y no cubre condiciones preexistentes ni conductas contrarias a las instrucciones del guía."] },
+            { p: ["Operamos con guías certificados NOM-09-TUR y equipo de seguridad revisado. Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero durante la actividad contratada; en los demás es opcional y cuesta $80 por persona, que se piden al reservar. El seguro tiene las coberturas y los límites que fija la póliza vigente, no sustituye a un seguro de gastos médicos personal y no cubre condiciones preexistentes ni conductas contrarias a las instrucciones del guía."] },
             { p: ["El turismo de aventura implica riesgos inherentes que no se pueden eliminar por completo. Al participar los reconoces y los aceptas. Nuestra responsabilidad se limita al valor de los servicios contratados y no cubre gastos derivados de tu traslado a la región, hospedaje ajeno al paquete, ni daños que resulten de incumplir las instrucciones de seguridad."] },
           ],
         },
@@ -402,7 +402,7 @@ function construir(locale: Locale): TerminosContent {
       {
         h2: "6. Safety and insurance",
         bloques: [
-          { p: ["We operate with NOM-09-TUR certified guides and inspected safety equipment. Adventure tours (rafting, rappel and RZR) include traveler insurance during the activity booked; on the others it's optional and costs MXN $80 per person, requested when you book. The insurance carries the coverage and limits set by the policy in force; it does not replace your own health insurance and does not cover pre-existing conditions or conduct contrary to the guide's instructions."] },
+          { p: ["We operate with NOM-09-TUR certified guides and inspected safety equipment. Adventure tours (rafting, RZR and the Tamul rappel) include traveler insurance during the activity booked; on the others it's optional and costs MXN $80 per person, requested when you book. The insurance carries the coverage and limits set by the policy in force; it does not replace your own health insurance and does not cover pre-existing conditions or conduct contrary to the guide's instructions."] },
           { p: ["Adventure tourism involves inherent risks that cannot be completely eliminated. By taking part, you acknowledge and accept them. Our liability is limited to the value of the services booked and does not cover costs arising from your travel to the region, lodging not included in the package, or damages resulting from failure to follow the safety instructions."] },
         ],
       },

@@ -11,7 +11,7 @@ import { Metadata } from "next";
 // `GuideProfile` ya no se importan: el cuerpo resultante ordena por
 // `rankTour` y agrupa por `TOUR_CATEGORIAS`, y no queda ninguna referencia a
 // ellos (verificado con grep antes de quitarlos).
-import { TOURS_DB, TOUR_CATEGORIAS, TOURS_RANKING, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado, promoDe, esPorPersona, partesRecogida, recogidaDeTour } from "@/lib/tours";
+import { TOURS_DB, TOUR_CATEGORIAS, TOURS_RANKING, rankTour, tourCollage, tourDurTexto, tourDurRange, etiquetaUnidad, precioTachado, promoDe, esPorPersona, partesRecogida, recogidaDeTour, textoSalida } from "@/lib/tours";
 import { excepcionesSalida } from "@/lib/recogidaTexto";
 import { incluyeDesayuno, notaCargoValles, rangoPorPersona, recogenEnValles } from "@/lib/catalogoResumen";
 import { TourCarrusel } from "@/components/TourCarrusel";
@@ -19,7 +19,7 @@ import { IconoInstagram } from "@/components/IconoInstagram";
 import { SelloGarantia } from "@/components/SelloGarantia";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
 import type { LucideIcon } from "lucide-react";
-import { Award, Bus, Calendar, Camera, CheckCircle2, Clock, MessageCircle, Star, Users } from "lucide-react";
+import { Award, Bus, Calendar, Camera, CheckCircle2, Clock, MapPin, MessageCircle, Star, Users } from "lucide-react";
 import { FloatingLeaves } from "@/components/FloatingLeaves";
 import { PageViewTracker } from "@/components/PageViewTracker";
 import { asLocale, localePath, buildAlternates, SITE } from "@/lib/i18n/config";
@@ -63,8 +63,8 @@ export function metadataPagina(locale: Locale): Metadata {
   const nTraslado = TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length;
   const nDesayuno = TOURS_DB.filter(incluyeDesayuno).length;
   const description = en
-    ? `${nTours} guided day tours from ${desdeTxt} MXN: waterfalls, caves, rafting, Las Pozas. ${nTraslado} include hotel pickup, ${nDesayuno} breakfast. A 30% deposit holds your spot.`
-    : `${nTours} tours guiados desde ${desdeTxt}: ${nTraslado} pasan por tu hospedaje y ${nDesayuno} incluyen desayuno. Apartas con el 30 % y liquidas el resto el día del tour.`;
+    ? `${nTours} guided day tours from ${desdeTxt} MXN, departing from Ciudad Valles and Xilitla: waterfalls, sinkholes, rafting, Las Pozas. ${nTraslado} include hotel pickup.`
+    : `${nTours} tours guiados desde ${desdeTxt}, con salida desde Ciudad Valles y Xilitla: ${nTraslado} pasan por tu hospedaje y ${nDesayuno} incluyen desayuno. Apartas con el 30 %.`;
   return {
     title,
     description,
@@ -285,8 +285,8 @@ export function Pagina({ locale }: { locale: Locale }) {
         </h1>
         <p className="text-crema/80 font-dm text-sm max-w-lg mx-auto leading-relaxed mb-3">
           {en
-            ? `${tours.length} tours designed to experience the Huasteca Potosina worry-free, with a guide on every trip: ${TOURS_DB.filter((t) => partesRecogida(t, true).incluyeTraslado).length} include pickup at your lodging and ${TOURS_DB.filter(incluyeDesayuno).length} include breakfast.`
-            : `${tours.length} tours diseñados para vivir la Huasteca Potosina sin preocupaciones, con guía en cada recorrido: ${TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length} pasan por ti a tu hospedaje y ${TOURS_DB.filter(incluyeDesayuno).length} incluyen desayuno.`}
+            ? `${tours.length} tours departing from Ciudad Valles and Xilitla, with a guide on every trip: ${TOURS_DB.filter((t) => partesRecogida(t, true).incluyeTraslado).length} include pickup at your lodging and ${TOURS_DB.filter(incluyeDesayuno).length} include breakfast.`
+            : `${tours.length} tours con salida desde Ciudad Valles y Xilitla, con guía en cada recorrido: ${TOURS_DB.filter((t) => partesRecogida(t, false).incluyeTraslado).length} pasan por ti a tu hospedaje y ${TOURS_DB.filter(incluyeDesayuno).length} incluyen desayuno.`}
         </p>
         {/* El precio, la duración y el punto de salida vivían SOLO dentro de
             insignias de Tailwind: un "$1,550" suelto en un <span> no se puede
@@ -372,19 +372,17 @@ export function Pagina({ locale }: { locale: Locale }) {
                       {en ? "Most booked" : "El más reservado"}
                     </p>
                   )}
-                  {/* Panel de vidrio: sobre agua turquesa o follaje claro, el
-                      precio en texto suelto no se leía (queja de Manolo, 29
-                      sep). Blur + borde 1px + brillo interior, con respaldo
-                      sólido para quien apaga la transparencia. */}
-                  <div className="rounded-xl absolute inset-x-3 bottom-3 border border-white/15 bg-negro/45 backdrop-blur-md p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] supports-[not(backdrop-filter:blur(0))]:bg-negro/80">
-                    <p className="font-cormorant text-crema text-2xl leading-tight">{t.nombreCorto}</p>
-                    <p className="mt-1.5 font-dm text-xs text-crema/85">
-                      {precioTachado(t) && (
-                        <span className="mr-1.5 text-crema/50 line-through">{money(precioTachado(t)!)}{en ? " MXN" : ""}</span>
-                      )}
-                      <span className="text-dorado font-medium text-sm">{money(t.precio)}</span> MXN {etiquetaUnidad(t, en)} · {tourDurTexto(t, en ? " hours" : " horas")}
-                    </p>
-                  </div>
+                </div>
+                {/* 27 nov 2026 (Manolo): el nombre y el precio van DEBAJO de la
+                    foto, no en un panel de vidrio encima; la foto queda libre. */}
+                <div className="pt-3">
+                  <p className="font-cormorant text-crema text-2xl leading-tight group-hover:text-dorado transition-colors duration-200">{t.nombreCorto}</p>
+                  <p className="mt-1 font-dm text-xs text-crema/75">
+                    {precioTachado(t) && (
+                      <span className="mr-1.5 text-crema/45 line-through">{money(precioTachado(t)!)}{en ? " MXN" : ""}</span>
+                    )}
+                    <span className="text-dorado font-medium text-sm">{money(t.precio)}</span> MXN {etiquetaUnidad(t, en)} · {tourDurTexto(t, en ? " hours" : " horas")}
+                  </p>
                 </div>
               </Link>
             );
@@ -512,7 +510,8 @@ export function Pagina({ locale }: { locale: Locale }) {
                   href={lp(`/tours/${tour.slug}`)}
                   sizes="(min-width: 1024px) 45vw, 100vw"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-negro/85 via-negro/10 to-negro/35 pointer-events-none" />
+                {/* 27 nov 2026 (Manolo): la foto va limpia, sin el degradado
+                    negro ni la duración encima; la duración bajó al cuerpo. */}
                 <span className={`absolute top-3 left-3 z-10 text-[9px] tracking-[1px] uppercase border px-2.5 py-1 rounded-full font-dm bg-negro/60 backdrop-blur-sm ${DIFICULTAD_STYLE[tour.dificultad]}`}>
                   {en ? DIF_LABEL_EN[tour.dificultad] : tour.dificultad}
                 </span>
@@ -523,9 +522,6 @@ export function Pagina({ locale }: { locale: Locale }) {
                     {en ? "Daily departures" : "Salidas todos los días"}
                   </span>
                 )}
-                <span className="absolute bottom-3 left-3 z-10 bg-negro/70 backdrop-blur-sm text-crema/85 text-[9px] font-dm tracking-[1px] px-2.5 py-1 rounded-full">
-                  {tourDurTexto(tour, en ? " hours" : " horas")}
-                </span>
                 {/* El sello de la Garantía Huasteca, solo en los recorridos
                     que lo llevan. Sustituye al emblema que dibujaba el lugar:
                     aquél repetía lo que la foto ya decía, éste dice algo que la
@@ -545,6 +541,8 @@ export function Pagina({ locale }: { locale: Locale }) {
                 <p className="text-[9px] tracking-[2px] uppercase text-verde-vivo font-dm mb-2 flex items-center gap-1.5">
                   {tour.icon === "Instagram" && <IconoInstagram size={12} />}
                   {tour.tipo}
+                  <span className="text-crema/30" aria-hidden="true">·</span>
+                  <span className="text-crema/55 normal-case tracking-[1px] text-[10px]">{tourDurTexto(tour, en ? " hours" : " horas")}</span>
                 </p>
                 {/* El nombre del tour se ve SIEMPRE, tenga logotipo o no: el
                     logo va sobre la foto y el nombre completo es lo que dice a
@@ -590,6 +588,12 @@ export function Pagina({ locale }: { locale: Locale }) {
                     <span className="text-verde-vivo/70 font-medium">{en ? "Daily departures" : "Salidas diarias"}</span>
                   )}
                 </div>
+
+                {/* De dónde sale (Manolo, 27 nov 2026: que se vea en todo el sitio). */}
+                <p className="-mt-2 mb-5 flex items-center gap-1.5 text-[12px] text-crema/75 font-dm">
+                  <MapPin className="w-3.5 h-3.5 text-verde-vivo flex-shrink-0" aria-hidden="true" />
+                  {textoSalida(tour, en)}
+                </p>
 
                 <div className="mb-5">
                   <p className="text-[9px] tracking-[1.5px] uppercase text-crema/35 font-dm mb-1">{en ? "from" : "desde"}</p>

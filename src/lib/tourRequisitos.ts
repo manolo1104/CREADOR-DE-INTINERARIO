@@ -46,7 +46,7 @@ export interface TourRequisitos {
 export const NO_INCLUYE_BASE = [
   "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
   "Comidas y cenas fuera del desayuno",
-  // 17 nov 2026 (Manolo): el seguro solo va incluido en rafting, rappel y RZR,
+  // 17 nov 2026 (Manolo): el seguro solo va incluido en rafting, RZR y el rappel en Tamul,
   // y los tres reemplazan esta base. En los demás es opcional.
   "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
   "Propinas (opcionales, siempre agradecidas)",
@@ -86,11 +86,11 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
   },
 
   "tour-rappel-tamul": {
-    // Su `incluye` y su descripción dicen que el traslado desde Ciudad Valles
-    // SÍ va incluido; lo que no va son los alimentos.
+    // El traslado desde Ciudad Valles o Xilitla SÍ va incluido (27 nov 2026);
+    // lo que no va son los alimentos.
     noIncluye: [
       "Alimentos: este recorrido no lleva desayuno ni comida incluidos",
-      "Traslado hasta Ciudad Valles, que es de donde sale la unidad",
+      "Cómo llegar hasta Ciudad Valles o Xilitla, que es de donde sale la unidad",
       "Propinas y gastos personales",
     ],
     reemplazaBase: true,
@@ -102,10 +102,87 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     ],
     requisitos: [
       "No se necesita experiencia previa: el primer descenso es 100 % guiado por guías de alta montaña",
-      "Las fotos y el video con dron van incluidos, sin costo extra",
+      "Las fotos y el video que te toma tu guía van incluidos, sin costo extra",
     ],
     edadMinima: 8,
     edadNota: "Si viajas con menores, cuéntanos su edad y complexión al reservar: confirmamos contigo que el descenso sea apto.",
+  },
+
+// 🟢 27 nov 2026: los tres rappeles en sótanos. Edad, peso, mínimo e incluye
+  // son de Manolo; el resto, de las fichas de tours.ts.
+  "tour-rappel-cepillo": {
+    reemplazaBase: true,
+    noIncluye: [
+      "Comida y cena: va incluido el desayuno",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
+    ],
+    queLlevar: [
+      "Ropa deportiva cómoda y que se pueda ensuciar",
+      "Calzado cerrado con suela firme",
+      "Agua y algo de comer para el día",
+      "Una muda de ropa para el regreso",
+      "Nosotros ponemos el equipo de seguridad",
+    ],
+    requisitos: [
+      "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
+      "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
+      "Es un día completo en la sierra de Aquismón: el descenso es de más de 120 metros",
+      "Sale con mínimo 2 personas",
+    ],
+    edadMinima: 8,
+  },
+
+  "tour-rappel-huahuas": {
+    reemplazaBase: true,
+    noIncluye: [
+      "Comida y cena: va incluido el desayuno",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
+    ],
+    queLlevar: [
+      "Ropa deportiva cómoda y que se pueda ensuciar",
+      "Calzado cerrado con suela firme",
+      "Agua y algo de comer para el día",
+      "Una muda de ropa para el regreso",
+      "Nosotros ponemos el equipo de seguridad",
+    ],
+    requisitos: [
+      "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
+      "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
+      "Es un día largo en la sierra: conviene buena condición física",
+      "El sótano es Monumento Natural: se respetan las reglas de la comunidad (sin drones, sin basura y en silencio cerca de las aves)",
+      "Sale con mínimo 2 personas",
+    ],
+    edadMinima: 8,
+  },
+
+  "tour-rappel-golondrinas": {
+    reemplazaBase: true,
+    noIncluye: [
+      "Comida y cena: va incluido el desayuno",
+      "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
+      "Propinas (opcionales, siempre agradecidas)",
+      "Souvenirs y gastos personales",
+    ],
+    queLlevar: [
+      "Ropa deportiva cómoda y que se pueda ensuciar",
+      "Calzado cerrado con suela firme",
+      "Agua y algo de comer para el día",
+      "Una muda de ropa para el regreso",
+      "Nosotros ponemos el equipo de seguridad",
+    ],
+    requisitos: [
+      "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
+      "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
+      "Es un día largo y el descenso es de 376 metros en caída libre: conviene buena condición física",
+      "Se baja solo cuando las aves ya salieron y la comunidad lo permite; en temporada de anidación se cierra, así que al reservar confirmamos que tu fecha esté abierta",
+      "El sótano es Monumento Natural: sin drones, sin basura y en silencio cerca de las aves",
+      "Sale con mínimo 2 personas",
+    ],
+    edadMinima: 8,
   },
 
   "tour-rafting-tampaon": {

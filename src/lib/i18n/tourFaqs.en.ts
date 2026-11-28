@@ -110,11 +110,11 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "Is transport included?",
-      a: "Yes — the transfer from Ciudad Valles is included, and from there we head to the river landing. Meals are the one thing the price doesn't cover.",
+      a: "Yes — the round-trip transfer from your lodging in Ciudad Valles or Xilitla is included, and from there we head to the river landing. Meals are the one thing the price doesn't cover.",
     },
     {
       q: "Do photos and video cost extra?",
-      a: "No, they're included. We document the whole descent with photography and drone video at no additional cost.",
+      a: "No, they're included: your guide takes photos and video of your descent at no additional cost. There's no drone or separate photographer anymore.",
     },
     {
       q: "What gear do I need to bring?",
@@ -123,6 +123,76 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     {
       q: "How long does it take?",
       a: "Between 3 and 5 hours, depending on group size and weather conditions.",
+    },
+  ],
+  "tour-rappel-cepillo": [
+    {
+      q: "Do I need rappelling experience?",
+      a: "No. Before going down, the instructor fits your gear and gives you the safety briefing: how to descend, how to brake and what to do at every step. The instructor holds a DC-3 certificate in work at height and rope access (Mexican standard NOM-009-STPS-2011).",
+    },
+    {
+      q: "Is there an age or weight limit?",
+      a: "Yes: ages 8 and up, and up to 100 kg per person. Tell us each person's age and weight when you book.",
+    },
+    {
+      q: "What's included?",
+      a: "Round-trip transfer from your lodging in Xilitla or Ciudad Valles, breakfast, safety gear, the briefing and the instructor. Your guide takes photos and video during the day. Lunch and dinner aren't included.",
+    },
+    {
+      q: "What's the minimum group size?",
+      a: "Two people: with two, the departure runs.",
+    },
+    {
+      q: "How deep is El Cepillo sinkhole?",
+      a: "Its first drop is more than 120 meters, according to the Mexican cavers' cave registry. At the bottom there's a pool of water and rock formations: stalactites and stalagmites.",
+    },
+  ],
+  "tour-rappel-huahuas": [
+    {
+      q: "Do I need rappelling experience?",
+      a: "No. Before going down, the instructor fits your gear and gives you the safety briefing: how to descend, how to brake and what to do at every step. The instructor holds a DC-3 certificate in work at height and rope access (Mexican standard NOM-009-STPS-2011).",
+    },
+    {
+      q: "Is there an age or weight limit?",
+      a: "Yes: ages 8 and up, and up to 100 kg per person. Tell us each person's age and weight when you book.",
+    },
+    {
+      q: "What's included?",
+      a: "Round-trip transfer from your lodging in Xilitla or Ciudad Valles, breakfast, safety gear, the briefing and the instructor. Your guide takes photos and video during the day. Lunch and dinner aren't included.",
+    },
+    {
+      q: "What's the minimum group size?",
+      a: "Two people: with two, the departure runs.",
+    },
+    {
+      q: "How deep is the Huahuas sinkhole?",
+      a: "It's 478 meters deep, according to the Association for Mexican Cave Studies survey (1977–1978): one of the deepest abysses in Mexico and a state Natural Monument.",
+    },
+  ],
+  "tour-rappel-golondrinas": [
+    {
+      q: "Do I need rappelling experience?",
+      a: "No. Before going down, the instructor fits your gear and gives you the safety briefing: how to descend, how to brake and what to do at every step. The instructor holds a DC-3 certificate in work at height and rope access (Mexican standard NOM-009-STPS-2011).",
+    },
+    {
+      q: "Is there an age or weight limit?",
+      a: "Yes: ages 8 and up, and up to 100 kg per person. Tell us each person's age and weight when you book.",
+    },
+    {
+      q: "What's included?",
+      a: "Round-trip transfer from your lodging in Xilitla or Ciudad Valles, breakfast, safety gear, the briefing and the instructor. Your guide takes photos and video during the day. Lunch and dinner aren't included.",
+    },
+    {
+      q: "What's the minimum group size?",
+      a: "Two people: with two, the departure runs.",
+    },
+    {
+      q: "Can you go down all year round?",
+      a: "No. Descents only happen once the birds have left the sinkhole and when the community allows it; they close during nesting season. When you book we confirm your date is open — and if it isn't, you aren't charged.",
+    },
+    {
+      q: "Is this the same as the Cave of Swallows visit?",
+      a: "No. On the visit you watch the birds come out from the rim. On this tour you rappel the 376-meter free fall all the way to the bottom.",
     },
   ],
   "tour-tamul": [
@@ -317,7 +387,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "Do you fly a drone?",
-      a: "No. Las Pozas does not allow drones or tripods, so neither is part of this tour. Photos are taken handheld. The only tour of ours with drone video is the Rappel at Tamul Waterfall, because that gear belongs to the rappel operator.",
+      a: "No. Las Pozas does not allow drones or tripods, so neither is part of this tour. Photos are taken handheld.",
     },
     {
       q: "Why doesn’t Day 1 run on Tuesdays?",

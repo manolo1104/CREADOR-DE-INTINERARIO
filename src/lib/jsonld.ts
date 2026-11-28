@@ -50,8 +50,8 @@ export function buildOrganizationNode(locale: Locale = "es", description?: strin
     description:
       description ??
       (locale === "en"
-        ? "Certified tour operator based in Xilitla, San Luis Potosí. Guided day tours across the Huasteca Potosina with NOM-09 certified guides and transport included."
-        : "Operadora de tours certificada con base en Xilitla, San Luis Potosí. Tours guiados de un día por la Huasteca Potosina con guías certificados NOM-09 y transporte incluidos."),
+        ? "Certified tour operator with departures from Ciudad Valles and Xilitla, San Luis Potosí. Guided day tours across the Huasteca Potosina with NOM-09 certified guides and transport included."
+        : "Operadora de tours certificada con salidas desde Ciudad Valles y Xilitla, San Luis Potosí. Tours guiados de un día por la Huasteca Potosina con guías certificados NOM-09 y transporte incluidos."),
     logo: { "@type": "ImageObject", url: `${BASE_URL}/logos/huasteca-potosina-tours-color.png`, width: 1296, height: 985 },
     image: `${BASE_URL}/og-image.jpg`,
     telephone: CONTACTO.telefonoE164,
@@ -67,11 +67,16 @@ export function buildOrganizationNode(locale: Locale = "es", description?: strin
       postalCode: "79900",
       addressCountry: "MX",
     },
-    areaServed: {
-      "@type": "Place",
-      name: "Huasteca Potosina",
-      address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
-    },
+    // 27 nov 2026: las dos ciudades de salida, además de la región.
+    areaServed: [
+      {
+        "@type": "Place",
+        name: "Huasteca Potosina",
+        address: { "@type": "PostalAddress", addressRegion: "San Luis Potosí", addressCountry: "MX" },
+      },
+      { "@type": "City", name: "Ciudad Valles", address: { "@type": "PostalAddress", addressLocality: "Ciudad Valles", addressRegion: "San Luis Potosí", addressCountry: "MX" } },
+      { "@type": "City", name: "Xilitla", address: { "@type": "PostalAddress", addressLocality: "Xilitla", addressRegion: "San Luis Potosí", addressCountry: "MX" } },
+    ],
     openingHoursSpecification: [
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"], opens: "06:00", closes: "20:00" },
       { "@type": "OpeningHoursSpecification", dayOfWeek: ["Saturday", "Sunday"], opens: "05:00", closes: "20:00" },
@@ -83,7 +88,7 @@ export function buildOrganizationNode(locale: Locale = "es", description?: strin
     // Sin `CONTACTO.mapsUrl`: esa liga abre la ficha de Google del HOTEL Paraíso
     // Encantado, otra marca (`resenas.ts`), y `sameAs` declara que es la misma
     // entidad que Tours.
-    sameAs: [CONTACTO.facebook, GOOGLE_REVIEWS_URL],
+    sameAs: [CONTACTO.facebook, CONTACTO.instagram, GOOGLE_REVIEWS_URL],
   };
 }
 

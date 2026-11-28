@@ -108,6 +108,8 @@ function extractJson(raw: string): string {
   return s;
 }
 
+const RAPPELES_SOTANOS_IDS = ["tour-rappel-cepillo", "tour-rappel-huahuas", "tour-rappel-golondrinas"];
+
 function fallbackMatch(intereses: string[], grupo: string, actividad: string, destino: string) {
   const scores: Record<string, number> = {
     "tour-rzr-xilitla":  0,
@@ -126,7 +128,13 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     "tour-golondrinas":  0,
     "tour-olla-de-la-luz": 0,
     "tour-huasteca-instagrameable": 0,
+    "tour-rappel-cepillo":     0,
+    "tour-rappel-huahuas":     0,
+    "tour-rappel-golondrinas": 0,
   };
+  // 27 nov 2026: los tres rappeles en sótanos se mueven juntos; el de Tamul
+  // sigue siendo la puerta de entrada (más barato y más corto).
+  const sotanos = (n: number) => { for (const id of RAPPELES_SOTANOS_IDS) scores[id] += n; };
 
   if (intereses.some((i) => ["Fotografía perfecta", "Cascadas turquesas"].includes(i))) {
     scores["tour-meco"]         += 3;
@@ -151,6 +159,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-rzr-xilitla"]  += 3;
     scores["tour-puente-dios"]  += 2;
     scores["tour-gruta-xilo"]   += 2;   // caminata nocturna en gruta
+    sotanos(3);
   }
   if (intereses.some((i) => ["Arte y cultura"].includes(i))) {
     scores["tour-edward-james"] += 3;
@@ -166,6 +175,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-rappel-tamul"] -= 2;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
+    sotanos(-3);
   }
   if (grupo === "Familia con niños") {
     scores["tour-minas-micos"]  += 2;
@@ -174,6 +184,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-travesia-cafe"] += 1;
     scores["tour-tamul"]        -= 1;
     scores["tour-rappel-tamul"] -= 3;
+    sotanos(-4);                           // desde 8 años, hasta 100 kg
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-buceo-media-luna"] -= 2;  // edad mínima 10 años
     scores["tour-gruta-xilo"]   -= 1;      // caminata nocturna
@@ -201,6 +212,7 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
   }
   if (actividad === "Intenso") {
     scores["tour-rappel-tamul"] += 3;
+    sotanos(2);
     scores["tour-rafting-tampaon"] += 3;
     scores["tour-rzr-xilitla"]  += 2;
     scores["tour-tamul"]        += 2;
@@ -220,14 +232,18 @@ function fallbackMatch(intereses: string[], grupo: string, actividad: string, de
     scores["tour-rappel-tamul"] -= 2;
     scores["tour-rafting-tampaon"] -= 2;
     scores["tour-rzr-xilitla"]  -= 1;
+    sotanos(-3);
   }
   // Bonus for matching destino
   if (destino.includes("RZR") || destino.includes("off-road") || destino.includes("Nanacatli")) scores["tour-rzr-xilitla"] += 4;
   if (destino.includes("Tamul"))                                  { scores["tour-tamul"] += 4; scores["tour-rappel-tamul"] += 3; }
   if (destino.includes("Tampaón") || destino.toLowerCase().includes("rafting")) scores["tour-rafting-tampaon"] += 4;
   // 19 nov 2026: Golondrinas ya tiene recorrido propio; Huahuas sigue dentro de Tamul.
-  if (destino.includes("Huahuas"))                                 scores["tour-tamul"] += 4;
+  if (destino.includes("Huahuas"))                                 { scores["tour-tamul"] += 4; scores["tour-rappel-huahuas"] += 3; }
+  if (destino.includes("Cepillo"))                                 scores["tour-rappel-cepillo"] += 5;
+  if (destino.toLowerCase().includes("rappel") && destino.toLowerCase().includes("sótano")) sotanos(4);
   if (destino.includes("Golondrinas") || destino.toLowerCase().includes("aves")) scores["tour-golondrinas"] += 4;
+  if (destino.includes("Golondrinas"))                             scores["tour-rappel-golondrinas"] += 2;
   if (destino.includes("Pozas") || destino.includes("Edward"))     scores["tour-edward-james"]+= 4;
   if (destino.includes("Meco"))                                    scores["tour-meco"]        += 4;
   if (destino.includes("Minas") || destino.includes("Micos"))      scores["tour-minas-micos"] += 4;

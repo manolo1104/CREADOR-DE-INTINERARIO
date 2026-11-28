@@ -253,7 +253,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "What is included in the price, and what is not?",
-          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes the photos and video of the trip. Adventure tours (rafting, rappel and RZR) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
+          a: `The price you see is the final price. Depending on the tour it includes round-trip transport from your lodging (${N_VALLES} tours pick up in Xilitla or Ciudad Valles and ${N_SOLO_XILITLA} in Xilitla only${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto) ? `; ${notaCargoValles(true, (t) => localizeTour(t, "en").nombreCorto)}` : ""}), entrance fees to parks and attractions, a local guide and safety gear; ${CON_DESAYUNO.length} of them also include a regional breakfast (${desayunos}). Every tour includes the photos and video of the trip. Adventure tours (rafting, RZR and the Tamul rappel) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). It does not include getting to the Huasteca (bus or flight to Ciudad Valles or Xilitla), meals the tour does not list, tips, or souvenirs and personal spending. There are no surprise charges on arrival.`,
         },
         {
           q: "How much do you pay when you book?",
@@ -291,7 +291,7 @@ function preciosUI(locale: Locale) {
         },
         {
           q: "¿Qué incluye el precio del tour y qué no?",
-          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen las fotos y el video del recorrido. Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
+          a: `El precio que ves es el precio final. Según el recorrido incluye traslado redondo desde tu hospedaje (${N_VALLES} recogen en Xilitla o Ciudad Valles y ${N_SOLO_XILITLA} solo en Xilitla${notaCargoValles(false) ? `; ${notaCargoValles(false)}` : ""}), entradas a parques y atracciones, guía local y equipo de seguridad; ${CON_DESAYUNO.length} llevan además desayuno regional (${desayunos}). Todos incluyen las fotos y el video del recorrido. Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). No incluye cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla), las comidas que el recorrido no menciona, las propinas ni los souvenirs y gastos personales. No hay cargos sorpresa al llegar.`,
         },
         {
           q: "¿Cuánto se paga al reservar?",
@@ -434,7 +434,7 @@ function preciosUI(locale: Locale) {
           "A guide on every tour (NOM-09 SECTUR certified on most)",
           "Safety gear and first-aid kit, depending on the activity",
           "Photos and video of the trip, on every tour",
-          "Traveler insurance on adventure tours (rafting, rappel and RZR); optional on the rest: MXN $80 per person",
+          "Traveler insurance on adventure tours (rafting, RZR and the Tamul rappel); optional on the rest: MXN $80 per person",
         ]
       : [
           `Traslado redondo desde tu hospedaje en ${N_TRASLADO} de los ${N_TOURS_DIA} recorridos (Xilitla o Ciudad Valles, o solo Xilitla)`,
@@ -443,7 +443,7 @@ function preciosUI(locale: Locale) {
           "Guía en todos los recorridos (certificado NOM-09 SECTUR en la mayoría)",
           "Equipo de seguridad y botiquín, según la actividad",
           "Fotos y video del recorrido, en todos",
-          "Seguro de viajero en los tours de aventura (rafting, rappel y RZR); en los demás es opcional: $80 por persona",
+          "Seguro de viajero en los tours de aventura (rafting, RZR y el rappel en Tamul); en los demás es opcional: $80 por persona",
         ],
     noIncluyeTitulo: en ? "Not included" : "No incluye",
     noIncluyeItems: en

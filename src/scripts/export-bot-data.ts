@@ -51,7 +51,7 @@ const NO_INCLUYE: Record<string, string[]> = {
   "rzr-xilitla": ["Transporte hasta Xilitla", "Alimentos"],
   // 6 oct 2026, Manolo: el rappel SÍ incluye el traslado desde Ciudad Valles
   // (como dicen su "incluye" y su ficha); lo que no va es llegar hasta Valles.
-  "rappel-tamul": ["Cómo llegar hasta Ciudad Valles: de ahí sale la unidad", "Alimentos (no lleva desayuno ni comida)", "Propinas y gastos personales"],
+  "rappel-tamul": ["Cómo llegar hasta Ciudad Valles o Xilitla: de ahí sale la unidad", "Alimentos (no lleva desayuno ni comida)", "Propinas y gastos personales"],
   // 6 oct 2026, Manolo: el rafting SÍ incluye comida. Lo que no lleva es el
   // desayuno buffet de los otros tours (`tourRequisitos.ts`).
   "rafting-rio-tampaon": ["Desayuno: lo que va incluido es una comida, que el cliente elige antes o después del descenso", "Bebidas alcohólicas", "Propinas y gastos personales"],
@@ -65,6 +65,10 @@ const NO_INCLUYE: Record<string, string[]> = {
   "gruta-de-xilo": ["Alimentos y bebidas: es un recorrido de noche y no lleva cena", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Ropa de cambio y calzado que se pueda mojar", "Propinas y gastos personales"],
   "amanecer-de-nubes": ["Alimentos: se sale de madrugada y no lleva desayuno", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Chamarra y calzado de montaña — arriba hace frío de verdad", "Propinas y gastos personales"],
   "tour-sotano-de-las-golondrinas": ["Alimentos: no lleva desayuno ni comida", "Traslado desde Ciudad Valles: el precio es saliendo de Xilitla; desde Valles se suma el traslado y cambian las horas (lo cotiza el equipo)", "Propinas y gastos personales"],
+  // 27 nov 2026: rappeles en sótanos (datos de Manolo).
+  "rappel-sotano-del-cepillo": ["Comida y cena: solo incluye el desayuno", "Cómo llegar a la Huasteca", "Propinas y gastos personales"],
+  "rappel-sotano-de-las-huahuas": ["Comida y cena: solo incluye el desayuno", "Cómo llegar a la Huasteca", "Propinas y gastos personales"],
+  "rappel-sotano-de-las-golondrinas": ["Comida y cena: solo incluye el desayuno", "Cómo llegar a la Huasteca", "Propinas y gastos personales"],
   "olla-de-la-luz": ["Alimentos: conviene llevar agua y algo de comer para la caminata", "Cómo llegar a Xilitla (el traslado DENTRO de Xilitla sí va incluido)", "Calzado de senderismo y chamarra o impermeable", "Propinas y gastos personales"],
   "huasteca-instagrameable": ["Comida de mediodía: hay parada para comer y se paga en el lugar", "Fotógrafo aparte del guía: las fotos las toma el guía", "Dron y tripié: en Las Pozas están prohibidos", "Propinas y gastos personales"],
 };
@@ -80,7 +84,7 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   // 6 oct 2026, Manolo: SÍ incluye el traslado desde Ciudad Valles. Antes el
   // bot lo daba como SIN transporte mientras la ficha, su "incluye" y su
   // pregunta frecuente decían lo contrario.
-  "rappel-tamul": { incluido: true, detalle: "SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo." },
+  "rappel-tamul": { incluido: true, detalle: "SÍ incluye el traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o en Xilitla y vamos al embarcadero del Río Tampaón (Manolo, 27 nov 2026: todos los rappeles salen de las dos ciudades)." },
   "buceo-media-luna": { incluido: false, detalle: "NO incluye transporte. La actividad es en la Laguna de la Media Luna (Rioverde) y el cliente llega por su cuenta." },
   // Sin hora aquí: tiene horarios FIJOS que pone el jardín (campo `horario`),
   // y "empieza entre 7 y 8 AM" contradecía al de las 5 PM.
@@ -98,6 +102,9 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
   "gruta-de-xilo": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla, y la recogida se hace EN EL RZR. Es un recorrido NOCTURNO. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
   "amanecer-de-nubes": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Se sale DE MADRUGADA para llegar a la cima antes del amanecer. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
   "tour-sotano-de-las-golondrinas": { incluido: true, detalle: "SÍ incluye traslado redondo, pero el precio y las horas son SALIENDO DE XILITLA (pasamos por el cliente a su hospedaje en Xilitla). Desde Ciudad Valles también vamos, pero se suma el traslado y cambian las horas de salida: eso lo cotiza el equipo por WhatsApp (Manolo, 19 nov 2026)." },
+  "rappel-sotano-del-cepillo": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. La hora exacta la confirma el equipo." },
+  "rappel-sotano-de-las-huahuas": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. La hora exacta la confirma el equipo." },
+  "rappel-sotano-de-las-golondrinas": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. La hora exacta la confirma el equipo." },
   "olla-de-la-luz": { incluido: true, detalle: "SÍ incluye traslado redondo, pero SOLO desde un hospedaje dentro de Xilitla. Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta." },
   "huasteca-instagrameable": { incluido: true, detalle: "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. OJO con la hora: el Día 1 sale a las 6:00 AM y los Días 2 y 3 a las 8:00 AM." },
 };
@@ -122,6 +129,9 @@ const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: s
   "gruta-de-xilo": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Es un recorrido de noche de unas 3 horas." },
   "amanecer-de-nubes": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Al terminar, gente de la comunidad ofrece comida (costo aparte) y en La Trinidad hay un restaurante; si quiere algo en la cima, que lleve un snack." },
   "tour-sotano-de-las-golondrinas": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento: se sale de madrugada (amanecer) o por la tarde (atardecer)." },
+  "rappel-sotano-del-cepillo": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno, en el camino. No lleva comida ni cena." },
+  "rappel-sotano-de-las-huahuas": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno, en el camino. No lleva comida ni cena." },
+  "rappel-sotano-de-las-golondrinas": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno, en el camino. No lleva comida ni cena." },
   "olla-de-la-luz": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. Conviene que el cliente lleve agua y algo de comer para la caminata." },
   "huasteca-instagrameable": { desayuno: false, comida: false, detalle: "NO incluye alimentos. Hay una parada para comer durante el día y el cliente paga en el lugar." },
 };
@@ -132,7 +142,8 @@ const FOTOS: Record<string, string> = {
   // que ser los mismos que en `tours.ts` (incluye), en `tourFaqs.ts` y en
   // `lib/bot/politicas.ts` (tema "fotos").
   "huasteca-instagrameable": "Es el recorrido de fotografía: SÍ se promete entrega. De 25 a 30 fotografías EDITADAS, en una carpeta privada, dentro de 3 días. Las toma el guía con una cámara Fujifilm X-T30 II. NO va un fotógrafo aparte del guía y NO hay dron: en Las Pozas están prohibidos el dron y el tripié. El grupo es de máximo 6 personas, y eso es parte de lo que hace posible la entrega.",
-  "rappel-tamul": "Fotos y video del descenso que toma el guía, incluyendo tomas aéreas con dron. Se entregan sin costo extra. NO las describas como 'profesionales'.",
+  // 27 nov 2026 (Manolo): ya NO lleva dron ni fotos profesionales.
+  "rappel-tamul": "Fotos y video del descenso que toma el guía, sin costo extra. Ya NO incluye dron ni fotógrafo aparte. NO las describas como 'profesionales'.",
 };
 const FOTOS_DEFAULT =
   "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.";
@@ -151,6 +162,9 @@ const IDEAL_PARA: Record<string, string[]> = {
   "gruta-de-xilo": ["aventura", "cuevas", "recorrido de noche", "parejas", "el más económico"],
   "amanecer-de-nubes": ["senderismo", "amanecer", "montaña", "fotografía", "buena condición física"],
   "tour-sotano-de-las-golondrinas": ["naturaleza", "aves", "fotografía", "madrugadores", "subir escaleras"],
+  "rappel-sotano-del-cepillo": ["aventura extrema", "adrenalina", "amigos", "cuevas"],
+  "rappel-sotano-de-las-huahuas": ["aventura extrema", "adrenalina", "amigos", "buena condición física"],
+  "rappel-sotano-de-las-golondrinas": ["aventura extrema", "la más grande", "buena condición física"],
   "olla-de-la-luz": ["senderismo", "bosque de niebla", "sótanos", "naturaleza", "fotografía"],
   "huasteca-instagrameable": ["fotografía", "creadores de contenido", "parejas", "grupo chico", "reels y redes"],
 };
@@ -567,12 +581,15 @@ const tours = TOURS_DB.map((t) => ({
   // Solo lo propio: `incluyeSiempre` va aparte y el bot las dice en dos
   // frases. Con la lista cruda repetía "seguro de viaje" en las dos.
   incluye: incluyePropioDeTour(t).map(sinLugarDelDesayuno),
-  noIncluye: [...(NO_INCLUYE[t.slug] || []), ...(llevaSeguro(t) ? [] : [SEGURO_OPCIONAL])],
+  // Rappeles de sótano (`sinSeguro`, Manolo 27 nov 2026): no se menciona el seguro.
+  noIncluye: [...(NO_INCLUYE[t.slug] || []), ...(llevaSeguro(t) || t.sinSeguro ? [] : [SEGURO_OPCIONAL])],
   // El seguro, ya escrito (17 nov 2026): solo los de aventura lo traen. Sin
   // este campo el bot llegó a decir «Tamul incluye seguro porque es aventura».
   seguro: llevaSeguro(t)
     ? "SÍ incluye seguro de viajero (es tour de aventura)."
-    : `NO incluye seguro: ${SEGURO_OPCIONAL}. Solo los tours de aventura (rafting, rappel y RZR) lo traen.`,
+    : t.sinSeguro
+    ? "No incluye seguro de viajero. No lo menciones ni lo ofrezcas; si el cliente pregunta por seguro, pásalo al equipo."
+    : `NO incluye seguro: ${SEGURO_OPCIONAL}. Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.`,
   puntoEncuentro: puntoEncuentro(t),
   // La recogida de ESTE tour (dónde, en qué, a qué hora y qué pasa con Valles).
   // Sin esto la herramienta del bot devolvía la salida GLOBAL junto a la ficha

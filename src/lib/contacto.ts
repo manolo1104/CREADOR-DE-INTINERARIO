@@ -47,4 +47,6 @@ export const CONTACTO = {
   rfc: null as string | null,
 
   facebook: "https://www.facebook.com/huastecatours/?locale=es_LA",
+  /** El Instagram de Tours (Manolo, 27 nov 2026). Va al `sameAs` del JSON-LD. */
+  instagram: "https://www.instagram.com/huasteca_potosina_tours_/",
 } as const;

@@ -381,9 +381,10 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Rappel en la Cascada de Tamul",
     texto:
       "Incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona, el punto de encuentro lo confirma el equipo. " +
-      `Sale con mínimo de ${minimo("rappel-tamul")} personas. No incluye alimentos. Las fotos y el video con dron van incluidos. No se necesita experiencia previa. ` +
+      `Sale con mínimo de ${minimo("rappel-tamul")} personas. No incluye alimentos. Las fotos y el video los toma el guía (ya NO lleva dron ni fotógrafo aparte). No se necesita experiencia previa. ` +
+      "Desde el 27 nov 2026 también hay RAPPEL EN SÓTANOS, cada uno es un recorrido propio: `rappel-sotano-del-cepillo`, `rappel-sotano-de-las-huahuas` y `rappel-sotano-de-las-golondrinas` (usa obtener_tour para precio e incluye; no escribas cifras de memoria). Salen desde 2 personas, mayores de 8 años y hasta 100 kg; incluyen traslado desde Xilitla o Ciudad Valles, desayuno, equipo y briefing; el instructor tiene la constancia DC-3 (NOM-009-STPS-2011). El de Golondrinas NO es la visita para ver las aves (`tour-sotano-de-las-golondrinas`). " +
       "El rappel en otros lugares (por ejemplo la Cascada de los Comales) no está en el catálogo.",
-    claves: ["rappel", "descenso", "cuerda", "comales", "rapel", "rappelling"],
+    claves: ["rappel", "descenso", "cuerda", "comales", "rapel", "rappelling", "cepillo", "sótano", "huahuas", "golondrinas rappel"],
   },
   {
     tema: "tamul",

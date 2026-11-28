@@ -114,8 +114,8 @@ export const RESPUESTAS_EQUIPO: RespuestaEquipo[] = [
   {
     id: "escalada", tema: "tours",
     preguntas: ["¿Tienen escalada?", "¿Hay tours de escalada en roca?"],
-    respuesta: "Por el momento no tenemos tours de escalada. Rappel sí: el Rappel en la Cascada de Tamul.",
-    tours: ["rappel-tamul"],
+    respuesta: "Por el momento no tenemos tours de escalada. Rappel sí: en la Cascada de Tamul y en los sótanos del Cepillo, las Huahuas y las Golondrinas.",
+    tours: ["rappel-tamul", "rappel-sotano-del-cepillo", "rappel-sotano-de-las-huahuas", "rappel-sotano-de-las-golondrinas"],
   },
   {
     id: "cuatrimotos", tema: "tours",
@@ -638,7 +638,7 @@ export const RESPUESTAS_EQUIPO: RespuestaEquipo[] = [
   {
     id: "seguro", tema: "seguridad",
     preguntas: ["¿Incluye seguro?", "¿Tienen seguro de viajero?"],
-    respuesta: "Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
+    respuesta: "Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
     nota: "Si lo quieren agregar, avisa al equipo (otro, avisar) para que lo sume a su reserva.",
   },
   {

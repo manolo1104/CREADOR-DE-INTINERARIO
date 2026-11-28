@@ -1,29 +1,12 @@
 /* TourDeparture — Punto de salida y transporte (Server Component) */
 import { headers } from "next/headers";
 import { MapPin, Clock, Bus, CheckCircle2 } from "lucide-react";
-import { TOURS_DB, recogidaDeTour, regresoDeTour, ventanaSalida, type Tour } from "@/lib/tours";
+import { TOURS_DB, recogidaDeTour, regresoDeTour, ventanaSalida, ciudadUnicaDeRecogida, type Tour } from "@/lib/tours";
 import { localizeTour } from "@/lib/i18n/localize";
 
-/**
- * La ciudad de recogida cuando la línea de traslado del `incluye` nombra UNA
- * sola. `null` si nombra las dos, ninguna, o el tour declara otra recogida.
- *
- * 🔴 El Rappel de Tamul no declara `recogida`, así que cae en el caso por
- * defecto ("tu hospedaje en Xilitla o Ciudad Valles"). Pero su fuente dice
- * "Traslado desde Ciudad Valles", y su relato, su pregunta propia y el "No
- * incluye" de la misma ficha también: prometerle Xilitla es decir algo que la
- * fuente no respalda. Se lee del `incluye` EN ESPAÑOL (pásale el tour de
- * `TOURS_DB`, no el localizado). Sobra el día que el catálogo le dé al Rappel
- * una `recogida` propia; hasta entonces la usan este bloque y la ficha.
- */
-export function ciudadUnicaDeRecogida(t: Pick<Tour, "incluye" | "recogida">): "Xilitla" | "Ciudad Valles" | null {
-  if (recogidaDeTour(t).tipo !== "hospedaje") return null;
-  const linea = t.incluye.find((i) => /traslado/i.test(i)) ?? "";
-  const xilitla = /xilitla/i.test(linea);
-  const valles = /ciudad valles/i.test(linea);
-  if (xilitla === valles) return null;
-  return xilitla ? "Xilitla" : "Ciudad Valles";
-}
+// `ciudadUnicaDeRecogida` vive en lib/tours.ts (la usan también las tarjetas,
+// que son de cliente y no pueden importar este componente de servidor).
+export { ciudadUnicaDeRecogida };
 
 /*
  * La hora de salida y la de regreso ya NO se calculan aquí: viven en

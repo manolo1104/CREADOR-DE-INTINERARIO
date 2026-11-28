@@ -24,6 +24,47 @@ export type BlogImageEdit = {
 
 // Clave = slug TAL CUAL está guardado en la base de datos (con sufijo de año si aplica).
 export const BLOG_IMAGE_EDITS: Record<string, BlogImageEdit> = {
+  // ── 27 nov 2026 (Manolo: «cambia las imágenes del último blog») ──────────────
+  // Río Axtla y el chalán: el agente le puso de portada la LAGUNA MEDIA LUNA
+  // (Rioverde) y de foto interior las CUEVAS DE MANTETZULEL (Aquismón). Van las
+  // fotos de la ficha del destino Río Axtla.
+  "rio-axtla-y-el-chalan-guia-2026": {
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/rio-axtla-el-chalan/hero.jpg",
+    coverImageAlt: "El río Axtla corriendo entre la selva en Axtla de Terrazas, Huasteca Potosina",
+    contentReplace: [
+      {
+        from: '<img src="https://www.huasteca-potosina.com/imagenes/cuevas-de-mantetzulel/gallery-1.jpg" alt="rio axtla chalan y paisaje de Axtla de Terrazas en la Huasteca Potosina"',
+        to: '<img src="https://www.huasteca-potosina.com/imagenes/rio-axtla-el-chalan/gallery-1.jpg" alt="El río Axtla visto desde el puente, entre cerros de selva, en Axtla de Terrazas"',
+      },
+      // La URL sola: la ficha JSON-LD de Google guarda las fotos del texto así.
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/cuevas-de-mantetzulel/gallery-1.jpg",
+        to: "https://www.huasteca-potosina.com/imagenes/rio-axtla-el-chalan/gallery-1.jpg",
+      },
+    ],
+  },
+  // ── 27 nov 2026 (Manolo) ── La Huasteca en diciembre: la portada era el
+  // HOTEL (nada que ver con qué abre en vacaciones) y la foto bajo «el clima en
+  // diciembre» era el Sótano de las Huahuas desde el aire. Portada = Tamul (la
+  // sección 1 del artículo); interior = Micos, el agua turquesa de diciembre.
+  "la-huasteca-potosina-en-diciembre-que-abre-en-vacaciones": {
+    coverImageUrl: "https://www.huasteca-potosina.com/imagenes/cascada-de-tamul/hero.jpg",
+    coverImageAlt: "La Cascada de Tamul con el río Tampaón turquesa, como se ve en diciembre en la Huasteca Potosina",
+    contentReplace: [
+      {
+        from: "https://www.huasteca-potosina.com/imagenes/sotano-de-las-huahuas/gallery-1.jpg",
+        to: "https://www.huasteca-potosina.com/imagenes/cascadas-de-micos/hero.jpg",
+      },
+      {
+        from: 'alt="huasteca potosina en diciembre con cielo despejado sobre el Sótano de las Huahuas en Aquismón"',
+        to: 'alt="Las Cascadas de Micos con agua turquesa en diciembre, en Ciudad Valles, Huasteca Potosina"',
+      },
+      {
+        from: "— vista del entorno del Sótano de las Huahuas, en la sierra de Aquismón, San Luis Potosí.</figcaption>",
+        to: "— las Cascadas de Micos, en Ciudad Valles, San Luis Potosí.</figcaption>",
+      },
+    ],
+  },
   // ── 11 nov 2026 (fe de erratas) ───────────────────────────────────────────
   // Tamohi El Consuelo llevaba de portada las Cuevas de Mantetzulel (otro lugar,
   // en Aquismón). Va la foto de su propia ficha de destino.

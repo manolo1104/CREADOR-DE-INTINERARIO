@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-20T01:26:43.232Z",
+  "generatedAt": "2026-11-28T00:19:14.922Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -11,9 +11,9 @@
     ],
     "sitio": "https://www.huasteca-potosina.com",
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
-    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Rappel en el Sótano del Cepillo (7:00–8:00 AM), Rappel en el Sótano de las Huahuas (7:00–8:00 AM) y Rappel en el Sótano de las Golondrinas (7:00–8:00 AM) tienen otro horario. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
-    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
+    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
     "rating": 4.7,
     "resenas": 169,
     "confianza": {
@@ -277,8 +277,8 @@
       "dificultad": "alta",
       "duracionHrs": 5,
       "duracionTexto": "5 h",
-      "precio": 1700,
-      "precioLista": 1700,
+      "precio": 2450,
+      "precioLista": 2450,
       "promo": null,
       "precioUnidad": "persona",
       "tarifaGrupo": null,
@@ -291,7 +291,7 @@
       "privateExtraPorPersona": null,
       "privadoTarifa": null,
       "tagline": "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
-      "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
+      "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y las fotos y el video que te toma tu guía para que lo cuentes. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
       "url": "https://www.huasteca-potosina.com/tours/rappel-tamul",
       "foto": "https://www.huasteca-potosina.com/imagenes/tours/rappel-tamul/hero.jpg",
       "destinos": [
@@ -300,24 +300,22 @@
         "Cañón del Río Tampaón"
       ],
       "incluye": [
-        "Traslado desde Ciudad Valles",
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
         "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
         "Guías de alta montaña certificados",
         "Briefing y técnica de descenso — apto para principiantes",
-        "Seguro de viajero para cada participante",
-        "Video con dron del descenso",
-        "Fotografía con cámaras de acción"
+        "Seguro de viajero para cada participante"
       ],
       "noIncluye": [
-        "Cómo llegar hasta Ciudad Valles: de ahí sale la unidad",
+        "Cómo llegar hasta Ciudad Valles o Xilitla: de ahí sale la unidad",
         "Alimentos (no lleva desayuno ni comida)",
         "Propinas y gastos personales"
       ],
       "seguro": "SÍ incluye seguro de viajero (es tour de aventura).",
-      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Ciudad Valles (traslado incluido). Si te hospedas en otra zona, el punto de encuentro te lo confirma el equipo.",
-      "salida": "Pasamos por ti a tu hospedaje en Ciudad Valles entre 8:00 y 9:00 AM. Si te hospedas en otra zona, el punto de encuentro te lo confirma el equipo.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
-      "horario": "Sale entre 8:00 y 9:00 AM (desde Ciudad Valles) y termina aprox. 1:00 PM (~5 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 1:00 PM (~5 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
       "itinerario": [
         {
           "hora": "8:00–9:00 AM",
@@ -337,7 +335,7 @@
         {
           "hora": "11:30 AM",
           "momento": "El descenso",
-          "texto": "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. El dron graba desde el aire y las cámaras de acción desde el casco."
+          "texto": "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. Tu guía te va tomando fotos y video."
         },
         {
           "hora": "12:00 PM",
@@ -357,14 +355,14 @@
       ],
       "transporte": {
         "incluido": true,
-        "detalle": "SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo."
+        "detalle": "SÍ incluye el traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o en Xilitla y vamos al embarcadero del Río Tampaón (Manolo, 27 nov 2026: todos los rappeles salen de las dos ciudades)."
       },
       "alimentos": {
         "desayuno": false,
         "comida": false,
         "detalle": "NO incluye ningún alimento."
       },
-      "fotos": "Fotos y video del descenso que toma el guía, incluyendo tomas aéreas con dron. Se entregan sin costo extra. NO las describas como 'profesionales'.",
+      "fotos": "Fotos y video del descenso que toma el guía, sin costo extra. Ya NO incluye dron ni fotógrafo aparte. NO las describas como 'profesionales'.",
       "incluyeSiempre": [
         "Fotografías y video del recorrido que toma tu guía"
       ],
@@ -382,7 +380,7 @@
       ],
       "requisitos": [
         "No se necesita experiencia previa: el primer descenso es 100 % guiado por guías de alta montaña",
-        "Las fotos y el video con dron van incluidos, sin costo extra"
+        "Las fotos y el video que te toma tu guía van incluidos, sin costo extra"
       ],
       "edadMinima": 8,
       "edadNota": "Si viajas con menores, cuéntanos su edad y complexión al reservar: confirmamos contigo que el descenso sea apto.",
@@ -393,11 +391,11 @@
         },
         {
           "q": "¿Está incluido el transporte?",
-          "a": "Sí, el traslado desde Ciudad Valles va incluido; de ahí salimos al embarcadero del río. Lo que no incluye el precio son los alimentos."
+          "a": "Sí, el traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla va incluido; de ahí vamos al embarcadero del río. Lo que no incluye el precio son los alimentos."
         },
         {
           "q": "¿Las fotos y el video tienen costo extra?",
-          "a": "No, están incluidos. Te documentamos todo el descenso con fotografía y video con dron, sin costo adicional."
+          "a": "No, están incluidos: tu guía te toma fotos y video del descenso, sin costo adicional. Ya no incluye dron ni fotógrafo aparte."
         },
         {
           "q": "¿Qué equipo debo llevar?",
@@ -406,6 +404,414 @@
         {
           "q": "¿Cuánto dura la actividad?",
           "a": "Entre 3 y 5 horas, dependiendo del tamaño del grupo y las condiciones del clima."
+        }
+      ],
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-rappel-cepillo",
+      "slug": "rappel-sotano-del-cepillo",
+      "nombre": "Rappel en el Sótano del Cepillo — Más de 120 Metros Hacia el Fondo de la Sierra de Aquismón",
+      "tipo": "Rappel en Sótano",
+      "dificultad": "alta",
+      "duracionHrs": 9,
+      "duracionTexto": "8–10 h",
+      "precio": 3200,
+      "precioLista": 3200,
+      "promo": null,
+      "precioUnidad": "persona",
+      "tarifaGrupo": null,
+      "escalaPersona": null,
+      "cancelacion": null,
+      "groupMin": 2,
+      "groupMax": 10,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateExtraPorPersona": null,
+      "privadoTarifa": null,
+      "tagline": "Una cuerda, un haz de luz y más de 120 metros hasta el fondo",
+      "pitch": "Bajas en rappel más de 120 metros dentro del Sótano del Cepillo, en la sierra de Aquismón, siguiendo el haz de luz que entra por la boca hasta una poza y formaciones de roca en el fondo. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. $3,200 MXN por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/rappel-sotano-del-cepillo",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/rappel-sotano-del-cepillo/rapelistas-en-el-haz-de-luz.jpg",
+      "destinos": [
+        "Sótano del Cepillo (El Eterno), en la sierra de Aquismón",
+        "Descenso en rappel de más de 120 metros",
+        "El fondo: poza de agua y formaciones de roca"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Desayuno",
+        "Equipo de seguridad para el descenso",
+        "Briefing de seguridad antes de bajar — no necesitas experiencia",
+        "Instructor con constancia DC-3 en trabajos en altura (NOM-009-STPS-2011)"
+      ],
+      "noIncluye": [
+        "Comida y cena: solo incluye el desayuno",
+        "Cómo llegar a la Huasteca",
+        "Propinas y gastos personales"
+      ],
+      "seguro": "No incluye seguro de viajero. No lo menciones ni lo ofrezcas; si el cliente pregunta por seguro, pásalo al equipo.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 7:00 y 8:00 AM.",
+      "recogidaTipo": "hospedaje",
+      "horario": "Sale entre 7:00 y 8:00 AM y dura entre 8 y 10 horas; regresa aprox. 3:00–5:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "7:00–8:00 AM",
+          "momento": "Recogida y desayuno",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. El desayuno va incluido, en el camino a la sierra."
+        },
+        {
+          "hora": "Ya en la boca",
+          "momento": "Equipo y briefing",
+          "texto": "El instructor te ajusta el equipo y te explica cómo se baja y cómo se frena. No necesitas experiencia: lo practicas antes de asomarte."
+        },
+        {
+          "hora": "El descenso",
+          "momento": "Más de 120 metros de cuerda",
+          "texto": "Dejas el borde y bajas colgado, con la pared de roca a un lado y el haz de luz al otro."
+        },
+        {
+          "hora": "En el fondo",
+          "momento": "La poza y las formaciones",
+          "texto": "Una poza de agua y estalactitas y estalagmitas que se ven con la luz que baja desde la boca."
+        },
+        {
+          "hora": "Por la tarde",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje."
+        }
+      ],
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. La hora exacta la confirma el equipo."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno, en el camino. No lleva comida ni cena."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
+      "incluyeSiempre": [
+        "Fotografías y video del recorrido que toma tu guía"
+      ],
+      "idealPara": [
+        "aventura extrema",
+        "adrenalina",
+        "amigos",
+        "cuevas"
+      ],
+      "urgencia": "Grupo chico por seguridad — sale desde 2 personas",
+      "queLlevar": [
+        "Ropa deportiva cómoda y que se pueda ensuciar",
+        "Calzado cerrado con suela firme",
+        "Agua y algo de comer para el día",
+        "Una muda de ropa para el regreso",
+        "Nosotros ponemos el equipo de seguridad"
+      ],
+      "requisitos": [
+        "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
+        "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
+        "Es un día completo en la sierra de Aquismón: el descenso es de más de 120 metros",
+        "Sale con mínimo 2 personas"
+      ],
+      "edadMinima": 8,
+      "edadNota": null,
+      "faqs": [
+        {
+          "q": "¿Necesito experiencia en rappel?",
+          "a": "No. Antes de bajar, el instructor te ajusta el equipo y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. El instructor tiene la constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011)."
+        },
+        {
+          "q": "¿Hay límite de edad o de peso?",
+          "a": "Sí: mayores de 8 años y hasta 100 kg por persona. Dinos la edad y el peso de cada quien al reservar."
+        },
+        {
+          "q": "¿Qué incluye?",
+          "a": "El traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad, el briefing y el instructor. Tu guía te toma fotos y video durante el día. No incluye comida ni cena."
+        },
+        {
+          "q": "¿Desde cuántas personas sale?",
+          "a": "Desde 2 personas: con dos ya se abre la salida."
+        },
+        {
+          "q": "¿Qué tan profundo es el Sótano del Cepillo?",
+          "a": "Su primer tiro mide más de 120 metros, según el registro de cuevas de los espeleólogos mexicanos. En el fondo hay una poza de agua y formaciones de roca, estalactitas y estalagmitas."
+        }
+      ],
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-rappel-huahuas",
+      "slug": "rappel-sotano-de-las-huahuas",
+      "nombre": "Rappel en el Sótano de las Huahuas — Al Fondo de un Abismo de 478 Metros",
+      "tipo": "Rappel en Sótano",
+      "dificultad": "alta",
+      "duracionHrs": 10,
+      "duracionTexto": "9–11 h",
+      "precio": 4200,
+      "precioLista": 4200,
+      "promo": null,
+      "precioUnidad": "persona",
+      "tarifaGrupo": null,
+      "escalaPersona": null,
+      "cancelacion": null,
+      "groupMin": 2,
+      "groupMax": 10,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateExtraPorPersona": null,
+      "privadoTarifa": null,
+      "tagline": "Uno de los abismos más profundos de México, visto desde adentro",
+      "pitch": "El Sótano de las Huahuas mide 478 metros de profundidad, uno de los abismos más hondos de México. Bajas en rappel con un instructor de trabajos verticales hasta un fondo verde al que casi nadie llega. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. $4,200 MXN por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/rappel-sotano-de-las-huahuas",
+      "foto": "https://www.huasteca-potosina.com/imagenes/tours/rappel-sotano-de-las-huahuas/rapelista-en-la-pared.jpg",
+      "destinos": [
+        "Sótano de las Huahuas, en la sierra de Aquismón",
+        "Descenso en rappel dentro del abismo de 478 metros",
+        "El fondo del sótano, entre musgo y bloques de roca"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Desayuno",
+        "Equipo de seguridad para el descenso",
+        "Briefing de seguridad antes de bajar — no necesitas experiencia",
+        "Instructor con constancia DC-3 en trabajos en altura (NOM-009-STPS-2011)"
+      ],
+      "noIncluye": [
+        "Comida y cena: solo incluye el desayuno",
+        "Cómo llegar a la Huasteca",
+        "Propinas y gastos personales"
+      ],
+      "seguro": "No incluye seguro de viajero. No lo menciones ni lo ofrezcas; si el cliente pregunta por seguro, pásalo al equipo.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 7:00 y 8:00 AM.",
+      "recogidaTipo": "hospedaje",
+      "horario": "Sale entre 7:00 y 8:00 AM y dura entre 9 y 11 horas; regresa aprox. 4:00–6:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "7:00–8:00 AM",
+          "momento": "Recogida y desayuno",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. El desayuno va incluido, en el camino a la sierra."
+        },
+        {
+          "hora": "Ya en el borde",
+          "momento": "Equipo y briefing",
+          "texto": "El instructor te ajusta el equipo y te explica cómo se baja y cómo se frena, antes de asomarte."
+        },
+        {
+          "hora": "El descenso",
+          "momento": "Adentro del abismo",
+          "texto": "La boca se va haciendo pequeña arriba de ti, con las paredes verdes y las aves cruzando el hueco."
+        },
+        {
+          "hora": "En el fondo",
+          "momento": "Otro mundo",
+          "texto": "Musgo, bloques de roca enormes y la luz que entra por la grieta de la boca."
+        },
+        {
+          "hora": "Por la tarde",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje."
+        }
+      ],
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. La hora exacta la confirma el equipo."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno, en el camino. No lleva comida ni cena."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
+      "incluyeSiempre": [
+        "Fotografías y video del recorrido que toma tu guía"
+      ],
+      "idealPara": [
+        "aventura extrema",
+        "adrenalina",
+        "amigos",
+        "buena condición física"
+      ],
+      "urgencia": "Grupo chico por seguridad — sale desde 2 personas",
+      "queLlevar": [
+        "Ropa deportiva cómoda y que se pueda ensuciar",
+        "Calzado cerrado con suela firme",
+        "Agua y algo de comer para el día",
+        "Una muda de ropa para el regreso",
+        "Nosotros ponemos el equipo de seguridad"
+      ],
+      "requisitos": [
+        "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
+        "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
+        "Es un día largo en la sierra: conviene buena condición física",
+        "El sótano es Monumento Natural: se respetan las reglas de la comunidad (sin drones, sin basura y en silencio cerca de las aves)",
+        "Sale con mínimo 2 personas"
+      ],
+      "edadMinima": 8,
+      "edadNota": null,
+      "faqs": [
+        {
+          "q": "¿Necesito experiencia en rappel?",
+          "a": "No. Antes de bajar, el instructor te ajusta el equipo y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. El instructor tiene la constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011)."
+        },
+        {
+          "q": "¿Hay límite de edad o de peso?",
+          "a": "Sí: mayores de 8 años y hasta 100 kg por persona. Dinos la edad y el peso de cada quien al reservar."
+        },
+        {
+          "q": "¿Qué incluye?",
+          "a": "El traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad, el briefing y el instructor. Tu guía te toma fotos y video durante el día. No incluye comida ni cena."
+        },
+        {
+          "q": "¿Desde cuántas personas sale?",
+          "a": "Desde 2 personas: con dos ya se abre la salida."
+        },
+        {
+          "q": "¿Qué tan profundo es el Sótano de las Huahuas?",
+          "a": "Tiene 478 metros de profundidad, según la topografía de la Association for Mexican Cave Studies (1977–1978): es uno de los abismos más profundos de México y Monumento Natural del estado."
+        }
+      ],
+      "rutas": null,
+      "flota": null
+    },
+    {
+      "id": "tour-rappel-golondrinas",
+      "slug": "rappel-sotano-de-las-golondrinas",
+      "nombre": "Rappel en el Sótano de las Golondrinas — 376 Metros de Caída Libre",
+      "tipo": "Rappel en Sótano",
+      "dificultad": "alta",
+      "duracionHrs": 11,
+      "duracionTexto": "10–12 h",
+      "precio": 5200,
+      "precioLista": 5200,
+      "promo": null,
+      "precioUnidad": "persona",
+      "tarifaGrupo": null,
+      "escalaPersona": null,
+      "cancelacion": null,
+      "groupMin": 2,
+      "groupMax": 10,
+      "soloAdultos": false,
+      "privateAvailable": false,
+      "privateExtraPorPersona": null,
+      "privadoTarifa": null,
+      "tagline": "El segundo tiro más profundo de México, colgado de una cuerda",
+      "pitch": "El Sótano de las Golondrinas tiene 376 metros de caída libre: el segundo tiro más profundo de México. Bajas colgado de una cuerda, con un instructor de trabajos verticales, hasta un fondo del tamaño de tres campos de fútbol. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. $5,200 MXN por persona.",
+      "url": "https://www.huasteca-potosina.com/tours/rappel-sotano-de-las-golondrinas",
+      "foto": "https://www.huasteca-potosina.com/imagenes/sotano-de-las-golondrinas/interior.jpg",
+      "destinos": [
+        "Sótano de las Golondrinas, en la sierra de Aquismón",
+        "Descenso de 376 metros de caída libre",
+        "El fondo del sótano, del tamaño de tres campos de fútbol"
+      ],
+      "incluye": [
+        "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Desayuno",
+        "Equipo de seguridad para el descenso",
+        "Briefing de seguridad antes de bajar — no necesitas experiencia",
+        "Instructor con constancia DC-3 en trabajos en altura (NOM-009-STPS-2011)"
+      ],
+      "noIncluye": [
+        "Comida y cena: solo incluye el desayuno",
+        "Cómo llegar a la Huasteca",
+        "Propinas y gastos personales"
+      ],
+      "seguro": "No incluye seguro de viajero. No lo menciones ni lo ofrezcas; si el cliente pregunta por seguro, pásalo al equipo.",
+      "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
+      "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 7:00 y 8:00 AM.",
+      "recogidaTipo": "hospedaje",
+      "horario": "Sale entre 7:00 y 8:00 AM y dura entre 10 y 12 horas; regresa aprox. 5:00–7:00 PM. La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "itinerario": [
+        {
+          "hora": "7:00–8:00 AM",
+          "momento": "Recogida y desayuno",
+          "texto": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. El desayuno va incluido, en el camino a la sierra."
+        },
+        {
+          "hora": "Cuando salen las aves",
+          "momento": "Equipo y briefing",
+          "texto": "Se baja cuando las aves ya salieron del sótano. Mientras, el instructor te ajusta el equipo y te explica cómo se baja."
+        },
+        {
+          "hora": "El descenso",
+          "momento": "376 metros de caída libre",
+          "texto": "Sin pared cerca: solo la cuerda, la luz de la boca y la niebla moviéndose debajo de ti."
+        },
+        {
+          "hora": "En el fondo",
+          "momento": "La ventana en el cielo",
+          "texto": "Desde abajo, la boca del sótano parece una ventana en el cielo."
+        },
+        {
+          "hora": "Por la tarde",
+          "momento": "Regreso",
+          "texto": "De vuelta a tu hospedaje."
+        }
+      ],
+      "transporte": {
+        "incluido": true,
+        "detalle": "SÍ incluye traslado redondo: pasamos por el cliente a su hospedaje en Xilitla o Ciudad Valles. La hora exacta la confirma el equipo."
+      },
+      "alimentos": {
+        "desayuno": true,
+        "comida": false,
+        "detalle": "Incluye SOLO el desayuno, en el camino. No lleva comida ni cena."
+      },
+      "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
+      "incluyeSiempre": [
+        "Fotografías y video del recorrido que toma tu guía"
+      ],
+      "idealPara": [
+        "aventura extrema",
+        "la más grande",
+        "buena condición física"
+      ],
+      "urgencia": "Se confirma con la comunidad — sale desde 2 personas",
+      "queLlevar": [
+        "Ropa deportiva cómoda y que se pueda ensuciar",
+        "Calzado cerrado con suela firme",
+        "Agua y algo de comer para el día",
+        "Una muda de ropa para el regreso",
+        "Nosotros ponemos el equipo de seguridad"
+      ],
+      "requisitos": [
+        "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
+        "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
+        "Es un día largo y el descenso es de 376 metros en caída libre: conviene buena condición física",
+        "Se baja solo cuando las aves ya salieron y la comunidad lo permite; en temporada de anidación se cierra, así que al reservar confirmamos que tu fecha esté abierta",
+        "El sótano es Monumento Natural: sin drones, sin basura y en silencio cerca de las aves",
+        "Sale con mínimo 2 personas"
+      ],
+      "edadMinima": 8,
+      "edadNota": null,
+      "faqs": [
+        {
+          "q": "¿Necesito experiencia en rappel?",
+          "a": "No. Antes de bajar, el instructor te ajusta el equipo y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. El instructor tiene la constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011)."
+        },
+        {
+          "q": "¿Hay límite de edad o de peso?",
+          "a": "Sí: mayores de 8 años y hasta 100 kg por persona. Dinos la edad y el peso de cada quien al reservar."
+        },
+        {
+          "q": "¿Qué incluye?",
+          "a": "El traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad, el briefing y el instructor. Tu guía te toma fotos y video durante el día. No incluye comida ni cena."
+        },
+        {
+          "q": "¿Desde cuántas personas sale?",
+          "a": "Desde 2 personas: con dos ya se abre la salida."
+        },
+        {
+          "q": "¿Se puede bajar todo el año?",
+          "a": "No. Se baja solo cuando las aves ya salieron del sótano y cuando la comunidad lo permite; en temporada de anidación los descensos se cierran. Al reservar te confirmamos que tu fecha esté abierta, y si no lo está, no se cobra."
+        },
+        {
+          "q": "¿Es lo mismo que la visita al Sótano de las Golondrinas?",
+          "a": "No. En la visita ves salir a las aves desde el borde. En este recorrido bajas en rappel los 376 metros de caída libre hasta el fondo."
         }
       ],
       "rutas": null,
@@ -633,7 +1039,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -791,7 +1197,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla (traslado redondo incluido) o en Ciudad Valles, con $400 MÁS POR RESERVA, no por persona (no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado cuesta $400 más por reserva (no por persona).",
       "recogidaTipo": "hospedaje",
@@ -939,7 +1345,7 @@
         "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla a tiempo para su horario fijo (8:00 AM lun, mié, jue y vie · 7:00 AM sáb y dom · 5:00 PM de mié a lun). Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1099,7 +1505,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1247,7 +1653,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1391,7 +1797,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1521,7 +1927,7 @@
       "noIncluye": [
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1644,7 +2050,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta. Al recogerlo le entregamos el casco y la lámpara frontal: desde el inicio, no al llegar.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, a las 7:40 PM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1789,7 +2195,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 4:00 y 4:30 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1944,7 +2350,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla a las 4:00 AM al amanecer o 3:00–4:00 PM al atardecer. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -2095,7 +2501,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, rappel y RZR) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 7:00 y 8:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -2773,7 +3179,7 @@
       "descripcion": "El icónico jardín surrealista de Edward James: esculturas de concreto entre cascadas y selva tropical.",
       "precioEntrada": "$180 MXN",
       "dificultad": "media",
-      "duracionHrs": 4,
+      "duracionHrs": 2,
       "horario": "09:00–18:00",
       "diasAbierto": "Miércoles a Lunes (cerrado martes)",
       "mejorHora": "09:00–11:00",
@@ -2804,33 +3210,70 @@
       "nombre": "Cascada de Tamul",
       "zona": "Aquismón",
       "tipo": "Aventura",
-      "descripcion": "La cascada más alta de SLP (105m), accesible remando por el río Tampaón. Espectacular caída turquesa.",
-      "precioEntrada": "$220 MXN + $300 MXN panga p/p",
+      "descripcion": "La cascada más alta de San Luis Potosí (unos 105 m), a la que se llega remando en canoa por el cañón del río Tampaón.",
+      "precioEntrada": "Canoa ~$2,000 por embarcación (hasta 10 personas) + embarcadero $10–$50 p/p",
       "dificultad": "alta",
       "duracionHrs": 5,
-      "horario": "08:00–17:00",
+      "horario": "08:00–18:00",
       "diasAbierto": "Lun-Dom",
       "mejorHora": "08:00",
-      "temporadaIdeal": "Ene–Abr",
-      "comoLlegar": "45 min desde Valles → Tanchachín + lancha",
+      "temporadaIdeal": "Nov–Feb",
+      "comoLlegar": "~1 h desde Valles → embarcadero La Morena o Tanchachín + canoa a remo",
       "queLlevar": [
-        "chaleco salvavidas",
-        "aqua shoes",
-        "agua 2L"
+        "efectivo (no hay cajero)",
+        "zapatos acuáticos que sujeten el pie",
+        "agua 2 L",
+        "bolsa seca para el celular"
       ],
-      "advertencias": "Lancheros dejan de salir a las 2 PM. SOLO EFECTIVO.",
+      "advertencias": "Sal del embarcadero antes de las 11:00: el paseo en canoa dura unas 3 horas. Solo efectivo: no hay cajero en los embarcaderos. Protección Civil cierra el río cuando crece.",
       "datosCuriosos": [
-        "105m de caída",
-        "En octubre: agua turquesa + follaje naranja"
+        "Unos 105 m de caída: el río Gallinas se desploma al cañón del Santa María, que aguas abajo se llama Tampaón",
+        "En secas fuertes (abril–mayo) la cascada puede quedarse casi sin agua: pasó en 2024, 2025 y 2026"
       ],
       "erroresComunes": [
-        "Llegar tarde",
-        "No llevar efectivo"
+        "Salir del embarcadero después del mediodía",
+        "No llevar efectivo",
+        "Ir en abril o mayo esperando la cascada llena"
       ],
       "idealPara": [
         "aventura",
         "fotografia",
         "amigos"
+      ]
+    },
+    {
+      "slug": "cueva-del-agua",
+      "nombre": "Cueva del Agua",
+      "zona": "Aquismón",
+      "tipo": "Aventura",
+      "descripcion": "Poza de agua azul y fría dentro de una cueva junto al río Tampaón: la parada para nadar y echarse clavados en el paseo en canoa a Tamul.",
+      "precioEntrada": "Incluida en la renta de la canoa a Tamul (sin cobro aparte documentado)",
+      "dificultad": "alta",
+      "duracionHrs": 1,
+      "horario": "08:00–18:00",
+      "diasAbierto": "Lun-Dom",
+      "mejorHora": "Media mañana",
+      "temporadaIdeal": "Nov–Feb",
+      "comoLlegar": "~1 h desde Valles → embarcadero La Morena o Tanchachín + canoa a remo",
+      "queLlevar": [
+        "zapatos acuáticos",
+        "bolsa seca para el celular",
+        "efectivo para la canoa"
+      ],
+      "advertencias": "Solo se llega en canoa por el río, en el paseo a Tamul. Se nada con chaleco: es muy profunda y las rocas resbalan. En temporada alta se llena y el agua se enturbia.",
+      "datosCuriosos": [
+        "Se sube un tramo corto de escalones desde la orilla del río hasta la poza",
+        "Cuando Tamul se queda sin agua en secas, los lancheros ofrecen el paseo solo hasta aquí"
+      ],
+      "erroresComunes": [
+        "Nadar sin chaleco",
+        "Pensar que se llega a pie"
+      ],
+      "idealPara": [
+        "natacion",
+        "aventura",
+        "amigos",
+        "fotografia"
       ]
     },
     {
@@ -2840,22 +3283,23 @@
       "tipo": "Extrema",
       "descripcion": "Abismo kárstico de 376 m de caída libre (hasta 512 m de profundidad). Santuario de vencejos que salen en espiral al amanecer y regresan al atardecer.",
       "precioEntrada": "$100 MXN",
-      "dificultad": "media",
+      "dificultad": "alta",
       "duracionHrs": 3,
-      "horario": "06:00–18:00",
+      "horario": "05:00–18:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "05:45 AM",
       "temporadaIdeal": "Nov–Mar",
-      "comoLlegar": "1h 15min desde Valles por sierra",
+      "comoLlegar": "~1h 30min desde Valles por la sierra (vía Aquismón y Tamapatz)",
       "queLlevar": [
         "chamarra",
-        "lámpara",
-        "calzado tenis"
+        "lámpara (sin apuntar al fondo)",
+        "tenis con buen agarre",
+        "efectivo (no hay cajero en la sierra)"
       ],
-      "advertencias": "568 escalones para bajar; subida AGOTADORA.",
+      "advertencias": "Más de 500 escalones (las cifras van de 526 a 686): bajar es fácil, subir toma unos 40 min. Prohibidos los drones y las luces hacia el fondo; silencio durante la salida de las aves. Solo efectivo.",
       "datosCuriosos": [
-        "Las aves son VENCEJOS, no golondrinas",
-        "Fondo = 3 campos de fútbol"
+        "Las aves son vencejos de collar blanco y pericos verdes, no golondrinas",
+        "Es Monumento Natural estatal y lo administra la comunidad de Unión de Guadalupe"
       ],
       "erroresComunes": [
         "Llegar a las 9 AM cuando aves ya salieron"
@@ -2875,16 +3319,16 @@
       "precioEntrada": "$100 MXN",
       "dificultad": "media",
       "duracionHrs": 4,
-      "horario": "08:00–18:00",
+      "horario": "07:00–19:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "09:00 AM",
       "temporadaIdeal": "Todo el año",
-      "comoLlegar": "20 min desde Valles · Combis $35 MXN c/30 min",
+      "comoLlegar": "30 min desde Valles · ~24 km por la carretera a El Naranjo (ejido Los Platanitos)",
       "queLlevar": [
         "aqua shoes",
         "ropa dry-fit"
       ],
-      "advertencias": "Chaleco y casco OBLIGATORIO.",
+      "advertencias": "Los 7 saltos (de 2 a 8 m) se hacen solo con guía, chaleco y casco, y desde 6 años; una vez que empiezas, se sale por las cascadas. Chaleco obligatorio en el agua. Protección Civil cierra el paraje cuando el río crece.",
       "datosCuriosos": [
         "El río más versátil de la zona"
       ],
@@ -2905,16 +3349,16 @@
       "precioEntrada": "$150 MXN",
       "dificultad": "media",
       "duracionHrs": 3.5,
-      "horario": "08:00–17:00",
+      "horario": "08:00–18:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "11:00–13:00",
-      "temporadaIdeal": "Ene–May",
+      "temporadaIdeal": "Nov–Abr",
       "comoLlegar": "1h desde Valles por autopista a SLP",
       "queLlevar": [
         "aqua shoes OBLIGATORIOS",
         "chaleco"
       ],
-      "advertencias": "Corrientes fuertes; seguir cuerda de seguridad.",
+      "advertencias": "Unos 300 escalones de bajada. Chaleco obligatorio para entrar al agua; a la cueva se cruza la corriente sujetándose de cuerdas, y con el río crecido no se entra. No se recomienda para menores de 5 años ni para quien no sabe nadar.",
       "datosCuriosos": [
         "Efecto de luz en la cueva único en México"
       ],
@@ -2932,20 +3376,20 @@
       "zona": "Tamuín",
       "tipo": "Arqueología",
       "descripcion": "El asentamiento prehispánico más importante de la cultura Huasteca.",
-      "precioEntrada": "Domingos gratis (mexicanos) · extranjeros ~$95 MXN",
+      "precioEntrada": "Nacionales $80 · extranjeros $145 · domingo gratis para nacionales con identificación",
       "dificultad": "baja",
       "duracionHrs": 3,
       "horario": "09:00–18:00",
       "diasAbierto": "Solo domingos",
       "mejorHora": "09:00 AM",
       "temporadaIdeal": "Dic–Feb",
-      "comoLlegar": "45 min desde Valles",
+      "comoLlegar": "55 min desde Valles · ~52 km por la carretera 70 rumbo a Tamuín",
       "queLlevar": [
         "sombrero",
         "agua abundante",
         "protector solar"
       ],
-      "advertencias": "IMPORTANTE: tras las lluvias de 2024 reabrió y por ahora SOLO abre los DOMINGOS de 9:00 a 18:00 (último acceso 17:00). Confirma con el Centro INAH SLP (444 813 4831). Poca sombra; puede superar 45°C en mayo.",
+      "advertencias": "Confirma los días con el Centro INAH SLP (444 813 4831): la ficha oficial del INAH (ene 2026) dice que por ahora solo abre los domingos, de 9:00 a 18:00, aunque en 2025 se anunció apertura diaria. INAPAM, menores de 13 y estudiantes no pagan. Poca sombra; puede superar 45°C en mayo.",
       "datosCuriosos": [
         "Monumento 32 pesa 30 toneladas"
       ],
@@ -2965,19 +3409,19 @@
       "zona": "Tamasopo",
       "tipo": "Naturaleza",
       "descripcion": "Paraíso de agua azul turquesa con pozas para nadar, ideal para familias.",
-      "precioEntrada": "$60 MXN",
+      "precioEntrada": "$200 MXN",
       "dificultad": "baja",
       "duracionHrs": 4,
-      "horario": "08:00–17:00",
+      "horario": "08:00–18:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "10:00–14:00",
       "temporadaIdeal": "Nov–May",
-      "comoLlegar": "45 min desde Valles por autopista",
+      "comoLlegar": "~1 h desde Valles · Fed. 70 → Tamasopo → km 2 de la carretera a Agua Buena",
       "queLlevar": [
         "traje de baño",
         "bloqueador biodegradable"
       ],
-      "advertencias": "SOLO bloqueador biodegradable.",
+      "advertencias": "Último acceso por la tarde (15:00 según el sistema de reservas oficial) y sin reingreso. No se entra con comida, bebida, hieleras ni chaleco propio: el chaleco se renta ($15 la hora o $60 el día). Estacionamiento $100. No hay cajero.",
       "datosCuriosos": [
         "Las pozas cambian de color según la estación"
       ],
@@ -3077,7 +3521,7 @@
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "08:00 o 18:00",
       "temporadaIdeal": "Dic–Ene",
-      "comoLlegar": "15 min desde Valles",
+      "comoLlegar": "25 min desde Valles por la carretera 70 rumbo a Tamuín",
       "queLlevar": [
         "traje de baño",
         "sandalias",
@@ -3102,14 +3546,14 @@
       "zona": "El Naranjo",
       "tipo": "Aventura",
       "descripcion": "Dos caídas gemelas de 50 m con pozas color turquesa rodeadas de selva preservada.",
-      "precioEntrada": "$100 MXN",
-      "dificultad": "baja",
+      "precioEntrada": "$100 MXN (niños e INAPAM $50; incluye chaleco)",
+      "dificultad": "media",
       "duracionHrs": 4,
       "horario": "08:00–18:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "08:00–10:00",
       "temporadaIdeal": "Oct–May",
-      "comoLlegar": "105 min desde Valles · Carretera 85 norte → desvío a El Naranjo por la 80",
+      "comoLlegar": "~1h 45min desde Valles · ~70 km por La Hincada hacia El Naranjo, desvío a Minas Viejas",
       "queLlevar": [
         "calzado acuático o tenis que puedan mojarse",
         "bloqueador solar biodegradable (obligatorio)",
@@ -3117,7 +3561,7 @@
         "efectivo (sin cajero en la zona)",
         "repelente natural"
       ],
-      "advertencias": "Respetar las zonas de nado señalizadas — hay corrientes fuertes en el canal central. El camino de acceso puede ser lodoso en temporada de lluvias. Solo efectivo.",
+      "advertencias": "Unos 200 escalones con barandal para bajar a la poza. Chaleco obligatorio en las pozas y nado solo donde indican los salvavidas. Estacionamiento aparte (~$50). En lluvias el agua se pone café y Protección Civil puede cerrar.",
       "datosCuriosos": [
         "Consideradas de las cascadas con el agua más azul de toda la región por alta concentración de minerales kársticos.",
         "El nombre viene de una antigua explotación minera del siglo XIX en el ejido."
@@ -3138,11 +3582,11 @@
       "nombre": "Manantial de la Media Luna",
       "zona": "Rioverde",
       "tipo": "Bienestar",
-      "descripcion": "Manantial de aguas frescas y cristalinas de un azul intenso — uno de los mejores destinos de buceo y snorkel en agua dulce de México.",
-      "precioEntrada": "$150 MXN",
+      "descripcion": "Manantial de agua tibia (27–30 °C) y cristalina, de un azul intenso: uno de los mejores lugares de México para bucear y hacer snorkel en agua dulce.",
+      "precioEntrada": "$150 MXN (niños de 3 a 9 y adultos mayores $80) + chaleco obligatorio $50–80 + estacionamiento $50",
       "dificultad": "baja",
       "duracionHrs": 6,
-      "horario": "08:00–18:30",
+      "horario": "08:00–18:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "09:00–11:00",
       "temporadaIdeal": "Todo el año",
@@ -3154,7 +3598,7 @@
         "googles de natación",
         "efectivo"
       ],
-      "advertencias": "No tocar el fondo para no levantar sedimentos. Chaleco salvavidas obligatorio para no-buceadores. Bloqueador no biodegradable estrictamente prohibido.",
+      "advertencias": "Chaleco obligatorio para todos los que no buceen (se renta en el lugar). No tocar el fondo para no levantar sedimento. Prohibido el bloqueador no biodegradable. Solo efectivo.",
       "datosCuriosos": [
         "El nombre 'Media Luna' viene de la forma semicircular perfecta del espejo de agua.",
         "Es uno de los pocos lugares de México donde puedes hacer tu primera inmersión de buceo en agua dulce cristalina."
@@ -3176,14 +3620,14 @@
       "zona": "Tamasopo",
       "tipo": "Aventura",
       "descripcion": "Caída de ~75 m entre cañones de selva densa — la segunda cascada más alta de la Huasteca y uno de los secretos mejor guardados de Tamasopo.",
-      "precioEntrada": "$50 MXN",
-      "dificultad": "media",
+      "precioEntrada": "$90 MXN",
+      "dificultad": "alta",
       "duracionHrs": 3,
       "horario": "09:00–17:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "15:00–16:30",
       "temporadaIdeal": "Dic–Abr",
-      "comoLlegar": "75 min desde Valles · Autopista a SLP → Tamasopo → Ejido El Aguacate (~3 km al norte del pueblo)",
+      "comoLlegar": "~1h 30min desde Valles · ~25 km al norte de Tamasopo; los últimos 5 km son de terracería",
       "queLlevar": [
         "calzado de montaña con suela de agarre (obligatorio)",
         "bastones de trekking (recomendado)",
@@ -3191,14 +3635,14 @@
         "repelente natural",
         "bloqueador biodegradable"
       ],
-      "advertencias": "Senderos resbaladizos — especialmente en el descenso hacia la poza. Sin señal de celular en toda la ruta. Guía local obligatorio. Coordenadas aproximadas — verificar GPS antes de ir.",
+      "advertencias": "Se bajan más de 170 escalones (menos de 10 min; unos 20 de subida). Bajo la caída no se nada: solo en la poza de río arriba y con chaleco. Sin señal de celular. Coordenadas aproximadas: verifica el GPS antes de ir.",
       "datosCuriosos": [
         "Es la segunda cascada más alta de la Huasteca (~75 m), solo después de Tamul, y de las menos documentadas de Tamasopo.",
         "Los guías locales la llaman 'la cascada que los turistas aún no descubrieron'."
       ],
       "erroresComunes": [
-        "No contratar guía local",
-        "Ir con calzado inadecuado"
+        "Nadar bajo la caída",
+        "Ir con calzado liso"
       ],
       "idealPara": [
         "senderismo",
@@ -3219,8 +3663,8 @@
       "horario": "08:00–17:30",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "Mañana temprana",
-      "temporadaIdeal": "Sep–Oct (cascada activa) · pozas todo el año",
-      "comoLlegar": "110 min desde Valles · Desde El Naranjo, carretera hacia Ciudad del Maíz · 8 km pavimentado",
+      "temporadaIdeal": "Jul–Sep (cascada activa) · pozas todo el año",
+      "comoLlegar": "110 min desde Valles · Desde El Naranjo, ~15 km hacia Ciudad del Maíz; último tramo de terracería (el GPS puede mandarte a la reja de la hidroeléctrica: no es ahí)",
       "queLlevar": [
         "calzado acuático — piso muy resbaladizo",
         "ropa ligera y traje de baño",
@@ -3228,7 +3672,7 @@
         "comida (sin restaurantes en el sitio)",
         "efectivo"
       ],
-      "advertencias": "Piso extremadamente resbaladizo en las pozas — accidentes frecuentes sin calzado adecuado. La cascada principal puede estar completamente seca la mayor parte del año.",
+      "advertencias": "La caída principal se desvía a la hidroeléctrica Camilo Arriaga: en secas está seca o casi seca y solo cae en lluvias (jul–sep). Piedras muy resbalosas en las pozas. Con la cascada activa no se permite acercarse a la orilla.",
       "datosCuriosos": [
         "El flujo se desvía artificialmente hacia una planta hidroeléctrica — por eso la cascada 'desaparece' en temporada seca.",
         "En septiembre de 2024, las lluvias excepcionales la activaron por 3 semanas continuas."
@@ -3256,14 +3700,14 @@
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "17:00–18:00",
       "temporadaIdeal": "Nov–May",
-      "comoLlegar": "105 min desde Valles · Desde El Naranjo, 5 km señalizados hasta el embarcadero",
+      "comoLlegar": "105 min desde Valles · Desde El Naranjo, ~10 km por la carretera 80 hacia Ciudad del Maíz",
       "queLlevar": [
         "cámara o teléfono con funda impermeable",
         "repelente natural",
         "ropa cómoda",
         "efectivo para panga y restaurantes"
       ],
-      "advertencias": "Corrientes fuertes en el centro del río — no nadar fuera de las zonas permitidas. La panga no opera si el río está crecido.",
+      "advertencias": "Al pie de la cascada la corriente es muy fuerte: ahí no se nada. La panga (~$150 p/p) no opera con el río crecido. Sin señal de celular; solo efectivo.",
       "datosCuriosos": [
         "Su nombre proviene de los monos 'mecos' (monos araña) que habitaban la zona antes de la deforestación del siglo XX.",
         "Es la única cascada permanente del municipio de El Naranjo — cae todo el año sin importar la temporada."
@@ -3284,14 +3728,14 @@
       "zona": "Aquismón",
       "tipo": "Extrema",
       "descripcion": "Abismo de 478 m donde miles de aves —loros y vencejos— dibujan espirales al amanecer y atardecer.",
-      "precioEntrada": "$60 MXN",
-      "dificultad": "media",
+      "precioEntrada": "$100 MXN",
+      "dificultad": "alta",
       "duracionHrs": 3,
-      "horario": "06:00–19:00",
+      "horario": "06:00–18:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "17:30–18:30",
-      "temporadaIdeal": "Mar–Oct",
-      "comoLlegar": "75 min desde Valles · Carretera 85 sur → desvío San Pedro de las Anonas · Terracería final",
+      "temporadaIdeal": "Nov–Abr",
+      "comoLlegar": "75 min desde Valles · Fed. 85 → Aquismón → San Isidro Tampaxal (17–19 km al norte de Aquismón) · tramo final de terracería",
       "queLlevar": [
         "lámpara de mano o frontal",
         "calzado de montaña con agarre",
@@ -3300,7 +3744,7 @@
         "agua y snacks",
         "ropa abrigadora para el amanecer"
       ],
-      "advertencias": "Caminata de subida intensa — no apta para personas con problemas de rodillas. No acercarse al borde sin guía. Sin señal de celular en todo el trayecto.",
+      "advertencias": "Alrededor de 1.2 km de sendero y más de 800 escalones hasta el mirador: no apto para rodillas delicadas. Prohibidos drones y mascotas. Sin señal de celular. Solo efectivo.",
       "datosCuriosos": [
         "Con 478 metros de profundidad, es uno de los abismos kársticos más profundos de México.",
         "Los lugareños llaman 'huahuas' a los loros verdes en lengua Tének — de ahí el nombre."
@@ -3320,15 +3764,15 @@
       "nombre": "Cuevas de Mantetzulel",
       "zona": "Aquismón",
       "tipo": "Naturaleza",
-      "descripcion": "Cuatro cuevas sagradas con techos colapsados — la luz entra desde arriba como columnas sólidas.",
-      "precioEntrada": "$70 MXN",
+      "descripcion": "Tres cuevas sagradas de los tének con techos colapsados: la luz entra desde arriba como columnas sólidas.",
+      "precioEntrada": "$35 MXN + guía comunitario ~$350 por grupo",
       "dificultad": "media",
       "duracionHrs": 4,
       "horario": "09:00–17:00",
       "diasAbierto": "Lunes a Domingo",
       "mejorHora": "11:00–13:00",
       "temporadaIdeal": "Oct–May",
-      "comoLlegar": "70 min desde Valles · Desde Aquismón, 12 km hacia comunidad Mantetzulel · Últimos 5 km terracería",
+      "comoLlegar": "70 min desde Valles · Desde Aquismón, ~8 km (20 min) hasta la comunidad de Mantetzulel",
       "queLlevar": [
         "calzado con suela antideslizante (obligatorio)",
         "linterna o frontal",
@@ -3336,7 +3780,7 @@
         "ropa que no importe ensuciar",
         "agua para 4 horas"
       ],
-      "advertencias": "Senderos muy resbaladizos después de lluvia — posponer si hubo lluvia reciente. Sin señal de celular. Guía comunitario obligatorio. Coordenadas aproximadas — verificar GPS antes de ir.",
+      "advertencias": "Senderos muy resbaladizos después de lluvia: pospón si llovió. Sin señal de celular. Se entra con guía comunitario (prestan linterna). Coordenadas aproximadas: verifica el GPS antes de ir.",
       "datosCuriosos": [
         "Los habitantes Tének consideran estas cuevas como portales de curación — aún se realizan ceremonias tradicionales.",
         "La Cueva del Espíritu Santo no es un túnel: es una bóveda abierta al cielo con 30 metros de altura."
@@ -3357,7 +3801,7 @@
       "zona": "Huehuetlán",
       "tipo": "Naturaleza",
       "descripcion": "Río cristalino que nace de una cueva — tan claro que se ven los peces en el fondo desde la orilla.",
-      "precioEntrada": "$30 MXN",
+      "precioEntrada": "~$50 MXN",
       "dificultad": "baja",
       "duracionHrs": 3,
       "horario": "08:30–18:00",
@@ -3368,16 +3812,16 @@
       "queLlevar": [
         "traje de baño",
         "sandalias acuáticas",
-        "alimentos (opciones limitadas en el sitio)",
-        "googles de natación"
+        "googles de natación",
+        "efectivo"
       ],
-      "advertencias": "Hay zonas profundas cerca del nacimiento — precaución con niños. Destino poco documentado — verificar condiciones antes de ir.",
+      "advertencias": "El agua sale helada del nacimiento y hay zonas profundas cerca de la boca: precaución con niños. Hay comida, palapas y vestidores en el lugar.",
       "datosCuriosos": [
-        "Huichihuayán es uno de los pueblos más activos en la preservación de la danza de los Voladores de Palo.",
-        "El agua es tan cristalina que la comunidad local la usa directamente para consumo humano."
+        "El río brota de una cueva al pie de la sierra y corre tan claro que se ven los peces desde la orilla.",
+        "Está a unos 15 minutos de Xilitla: se combina con Las Pozas el mismo día."
       ],
       "erroresComunes": [
-        "No preguntar en el pueblo sobre la danza de Voladores",
+        "Meterse de golpe al agua helada",
         "No llevar googles para ver los peces"
       ],
       "idealPara": [
@@ -3465,7 +3909,7 @@
       "tipo": "Aventura",
       "descripcion": "14 km de rápidos Clase III en aguas turquesa por un cañón de 500 m — uno de los 10 ríos más escénicos de Norteamérica.",
       "precioEntrada": "$1,950 MXN (tour completo, con traslado y comida)",
-      "dificultad": "media",
+      "dificultad": "alta",
       "duracionHrs": 7,
       "horario": "09:00–18:00",
       "diasAbierto": "Lunes a Domingo (reservación requerida)",
@@ -3781,7 +4225,7 @@
       "tipo": "Naturaleza",
       "descripcion": "Cascada y poza de aguas turquesa conocida localmente como 'poza azul', uno de los rincones naturales menos masificados de la Huasteca Potosina.",
       "precioEntrada": "Sin tarifa oficial publicada (confirmar en sitio)",
-      "dificultad": "baja",
+      "dificultad": "media",
       "duracionHrs": 2,
       "horario": "Visita de día (sin horario formal)",
       "diasAbierto": "Consultar localmente",
@@ -3849,7 +4293,7 @@
       "tipo": "Arte & Cultura",
       "descripcion": "Cabecera tének-nahua célebre por su parroquia de San Miguel Arcángel, a la que se sube por una larga escalinata (la 'Iglesia de los 149 Escalones'), y por su fuerte tradición de Xantolo, huapango y danzas indígenas.",
       "precioEntrada": "Acceso libre",
-      "dificultad": "baja",
+      "dificultad": "media",
       "duracionHrs": 3,
       "horario": "Abierto todo el día",
       "diasAbierto": "Lunes a Domingo",
@@ -4095,7 +4539,7 @@
       "tipo": "Naturaleza & Sótano",
       "descripcion": "La Olla de la Luz, también conocida como Hoya de la Luz, es un enorme sótano de 233 m de diámetro con un tiro vertical de 193 m de profundidad, coronado por el Cerro de la Luz, el punto más alto del municipio de Xilitla. Se llega tras un recorrido por el bosque de niebla desde La Trinidad.",
       "precioEntrada": "Recorrido guiado desde La Trinidad (~$150–$250 MXN por grupo)",
-      "dificultad": "media",
+      "dificultad": "alta",
       "duracionHrs": 5,
       "horario": "Recorridos durante el día (con guía de La Trinidad)",
       "diasAbierto": "Todo el año (reservar por anticipado)",
@@ -4132,7 +4576,7 @@
       "tipo": "Cueva & Aventura",
       "descripcion": "Caverna escondida entre la selva de Xilitla, de unos 100 m de boca por 300 m de fondo. Sus paredes son un destino popular de espeleología, rappel y escalada (cinco rutas equipadas), a pocos minutos del centro del Pueblo Mágico.",
       "precioEntrada": "$50 MXN por persona (entrada propia del sitio)",
-      "dificultad": "media",
+      "dificultad": "alta",
       "duracionHrs": 2,
       "horario": "Horario diurno (consultar en el acceso)",
       "diasAbierto": "Todo el año (puede inundarse en lluvias)",
@@ -4209,16 +4653,30 @@
         "slug": "rappel-tamul"
       }
     ],
+    "cueva-del-agua": [
+      {
+        "nombre": "Expedición Tamul",
+        "slug": "expedicion-tamul"
+      }
+    ],
     "sotano-de-las-huahuas": [
       {
         "nombre": "Expedición Tamul",
         "slug": "expedicion-tamul"
+      },
+      {
+        "nombre": "Rappel en el Sótano de las Huahuas",
+        "slug": "rappel-sotano-de-las-huahuas"
       }
     ],
     "sotano-de-las-golondrinas": [
       {
         "nombre": "Sótano de las Golondrinas",
         "slug": "tour-sotano-de-las-golondrinas"
+      },
+      {
+        "nombre": "Rappel en el Sótano de las Golondrinas",
+        "slug": "rappel-sotano-de-las-golondrinas"
       }
     ],
     "rio-tampaon-rafting": [
@@ -4580,7 +5038,7 @@
     ],
     "fotos": "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.",
     "alimentos": "NINGÚN tour es 'todo incluido'. La regla es: los tours de día completo incluyen SOLO el desayuno buffet (una parada camino a los destinos); la comida de mediodía no está incluida. Excepción: Rafting en el Río Tampaón. SÍ incluye UNA comida, que el cliente elige tomar antes o después del descenso. NO lleva el desayuno buffet de los otros tours. El RZR y el rappel no incluyen ningún alimento. Los paquetes incluyen el desayuno de los días de tour: comidas y cenas van por cuenta del cliente.",
-    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Rappel en la Cascada de Tamul: SÍ incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona (por ejemplo Xilitla), la recogida ahí NO está confirmada: dile que el punto de encuentro lo confirma el equipo. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Sótano de las Golondrinas, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
+    "transporte": "Traslado redondo desde el hospedaje en Xilitla o Ciudad Valles incluido en: Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Expedición Tamul, Ruta Surrealista, Cascadas del Meco, Paraíso Escalonado, Ruta Acuática. Traslado incluido SOLO desde un hospedaje en Xilitla (desde Ciudad Valles tiene costo adicional que se cotiza por WhatsApp): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Sótano de las Golondrinas, Olla de la Luz. NO incluyen traslado: Recorrido en RZR por Xilitla (El recorrido sale de nuestra base en Xilitla y el cliente llega por su cuenta hasta allá.). Nunca digas 'todos los tours incluyen transporte'.",
     "hotelHabitacionesUrl": "https://www.paraisoencantado.com/habitaciones",
     "hotelServicios": {
       "nombre": "Hotel Paraíso Encantado",
@@ -4602,8 +5060,8 @@
       "llegadaTemprano": "Si llegan antes del check-in (por ejemplo en el autobús de la mañana), se les da la habitación al llegar si ya está libre; si no, dejan las maletas en recepción (ahí quedan seguras) y esperan la camioneta del tour. Se registran solo con el nombre del titular de la reserva."
     },
     "mejorTemporada": "Se puede venir todo el año. Del 30 de octubre a mayo el agua baja clara; el turquesa más intenso es de marzo a mayo, y es cuando más gente hay. Junio es de transición: llegan las primeras lluvias. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; el rafting depende del nivel del río ese día y, si el río crece, se reprograma sin costo. Del 30 de octubre a diciembre es «la mejor temporada para venir» (aflojan las lluvias, el agua se aclara y todavía no llegan las multitudes de primavera), pero el turquesa más intenso es de marzo a mayo: no lo prometas para esas fechas.",
-    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Excepción: Rappel en la Cascada de Tamul recoge solo en Ciudad Valles; desde otra zona, el punto de encuentro lo confirma el equipo. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
-    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
+    "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Rappel en el Sótano del Cepillo (7:00–8:00 AM), Rappel en el Sótano de las Huahuas (7:00–8:00 AM) y Rappel en el Sótano de las Golondrinas (7:00–8:00 AM) tienen otro horario. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
+    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "cancelacionCompleta": [
       "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua.",
@@ -4926,7 +5384,7 @@
     {
       "tema": "donde-hospedarse",
       "titulo": "Dónde conviene hospedarse según sus tours",
-      "texto": "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió. En Xilitla o en Ciudad Valles, cualquiera le sirve: Rafting en el Río Tampaón, Expedición Tamul, Cascadas del Meco, Paraíso Escalonado y Ruta Acuática. En Xilitla va incluido; desde Ciudad Valles cuesta más: Ruta Surrealista (desde Ciudad Valles, +$400 por reserva, no por persona). Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Sótano de las Golondrinas y Olla de la Luz. Solo en Ciudad Valles: Rappel en la Cascada de Tamul. Recorrido en RZR por Xilitla: en nuestra base de Xilitla; llega por su cuenta. En corto: si alguno de sus tours recoge solo en Xilitla o empieza en nuestra base, le conviene Xilitla; con Rappel en la Cascada de Tamul, Ciudad Valles; si todos recogen en las dos, la que prefiera. En Xilitla está nuestro hotel, el Hotel Paraíso Encantado, a 5 minutos caminando de Las Pozas, con alberca, restaurante y estacionamiento gratis: ofrécelo como opción, no como requisito, y revisa disponibilidad antes de ofrecer un cuarto. Si prefiere otro, consulta «hoteles-alternativos»: también pasamos por él ahí. Un traslado entre Ciudad Valles y Xilitla (cambiar de zona, o ir desde Valles a un tour de solo Xilitla) NO va incluido salvo que una herramienta lo diga: nunca digas «sin costo», «gratis» ni «sin costo extra»; si lo pide, se cotiza con el equipo (escalar_a_humano: traslado_sin_tarifa, avisar). Contesta esto primero y pregúntale qué zona prefiere; en ese mensaje no cotices ni ofrezcas apartar.",
+      "texto": "No hace falta hospedarse con nosotros: en los tours con traslado pasamos por el cliente a su hospedaje (hotel, hostal, cabaña o Airbnb) y lo regresamos ahí. La zona depende de los tours que eligió. En Xilitla o en Ciudad Valles, cualquiera le sirve: Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Expedición Tamul, Cascadas del Meco, Paraíso Escalonado y Ruta Acuática. En Xilitla va incluido; desde Ciudad Valles cuesta más: Ruta Surrealista (desde Ciudad Valles, +$400 por reserva, no por persona). Solo en Xilitla (desde Ciudad Valles el traslado NO va incluido: se cotiza aparte): El Edén en el Jardín, Travesía del Café, Gruta de Xilo, Amanecer de Nubes, Sótano de las Golondrinas y Olla de la Luz. Recorrido en RZR por Xilitla: en nuestra base de Xilitla; llega por su cuenta. En corto: si alguno de sus tours recoge solo en Xilitla o empieza en nuestra base, le conviene Xilitla; si todos recogen en las dos, la que prefiera. En Xilitla está nuestro hotel, el Hotel Paraíso Encantado, a 5 minutos caminando de Las Pozas, con alberca, restaurante y estacionamiento gratis: ofrécelo como opción, no como requisito, y revisa disponibilidad antes de ofrecer un cuarto. Si prefiere otro, consulta «hoteles-alternativos»: también pasamos por él ahí. Un traslado entre Ciudad Valles y Xilitla (cambiar de zona, o ir desde Valles a un tour de solo Xilitla) NO va incluido salvo que una herramienta lo diga: nunca digas «sin costo», «gratis» ni «sin costo extra»; si lo pide, se cotiza con el equipo (escalar_a_humano: traslado_sin_tarifa, avisar). Contesta esto primero y pregúntale qué zona prefiere; en ese mensaje no cotices ni ofrezcas apartar.",
       "claves": [
         "dónde hospedarnos",
         "dónde hospedarse",
@@ -5030,14 +5488,18 @@
     {
       "tema": "rappel",
       "titulo": "Rappel en la Cascada de Tamul",
-      "texto": "Incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona, el punto de encuentro lo confirma el equipo. Sale con mínimo de 4 personas. No incluye alimentos. Las fotos y el video con dron van incluidos. No se necesita experiencia previa. El rappel en otros lugares (por ejemplo la Cascada de los Comales) no está en el catálogo.",
+      "texto": "Incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona, el punto de encuentro lo confirma el equipo. Sale con mínimo de 4 personas. No incluye alimentos. Las fotos y el video los toma el guía (ya NO lleva dron ni fotógrafo aparte). No se necesita experiencia previa. Desde el 27 nov 2026 también hay RAPPEL EN SÓTANOS, cada uno es un recorrido propio: `rappel-sotano-del-cepillo`, `rappel-sotano-de-las-huahuas` y `rappel-sotano-de-las-golondrinas` (usa obtener_tour para precio e incluye; no escribas cifras de memoria). Salen desde 2 personas, mayores de 8 años y hasta 100 kg; incluyen traslado desde Xilitla o Ciudad Valles, desayuno, equipo y briefing; el instructor tiene la constancia DC-3 (NOM-009-STPS-2011). El de Golondrinas NO es la visita para ver las aves (`tour-sotano-de-las-golondrinas`). El rappel en otros lugares (por ejemplo la Cascada de los Comales) no está en el catálogo.",
       "claves": [
         "rappel",
         "descenso",
         "cuerda",
         "comales",
         "rapel",
-        "rappelling"
+        "rappelling",
+        "cepillo",
+        "sótano",
+        "huahuas",
+        "golondrinas rappel"
       ]
     },
     {
@@ -5255,9 +5717,12 @@
         "¿Tienen escalada?",
         "¿Hay tours de escalada en roca?"
       ],
-      "respuesta": "Por el momento no tenemos tours de escalada. Rappel sí: el Rappel en la Cascada de Tamul.",
+      "respuesta": "Por el momento no tenemos tours de escalada. Rappel sí: en la Cascada de Tamul y en los sótanos del Cepillo, las Huahuas y las Golondrinas.",
       "tours": [
-        "rappel-tamul"
+        "rappel-tamul",
+        "rappel-sotano-del-cepillo",
+        "rappel-sotano-de-las-huahuas",
+        "rappel-sotano-de-las-golondrinas"
       ]
     },
     {
@@ -6278,7 +6743,7 @@
         "¿Incluye seguro?",
         "¿Tienen seguro de viajero?"
       ],
-      "respuesta": "Los tours de aventura (rafting, rappel y RZR) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
+      "respuesta": "Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
       "nota": "Si lo quieren agregar, avisa al equipo (otro, avisar) para que lo sume a su reserva."
     },
     {

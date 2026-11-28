@@ -22,8 +22,29 @@ Momentos que vas a vivir:
 - Llegas al embarcadero del río y, tras el briefing de técnica, te asomas al borde de la pared del cañón del Tampaón. A tu lado, 105 metros de agua se desploman: es la Cascada de Tamul, la más alta de San Luis Potosí, rugiendo mientras te preparas para descender.
 - El primer paso al vacío es puro vértigo controlado. Los guías de alta montaña te aseguran con equipo profesional y vas bajando poco a poco por la pared tapizada de vegetación, con el río turquesa esperándote abajo y el rocío de la cascada mojándote la cara.
 - A media pared te detienes colgado del arnés y miras alrededor: el cañón abierto, los pájaros cruzando frente a la cortina de agua, el verde de la selva en todas direcciones. Es el tipo de imagen que normalmente solo se ve desde un dron — y aquí estás tú, dentro de ella.
-- Mientras desciendes, un dron te sigue y registra todo en foto y video. Terminas tocando el agua con la adrenalina al máximo y la prueba grabada de que sí lo hiciste. Apto incluso para quienes nunca han hecho rappel.
-NOTA: Es una actividad enfocada (3–5 h), no un tour de día completo. El equipo, los guías y las fotos/video con dron están incluidos; el transporte y los alimentos NO están incluidos (el transporte se coordina con costo adicional y el punto de encuentro es el embarcadero del río).`,
+- Mientras desciendes, tu guía te va tomando fotos y video. Terminas tocando el agua con la adrenalina al máximo y la prueba grabada de que sí lo hiciste. Apto incluso para quienes nunca han hecho rappel.
+NOTA: Es una actividad enfocada (3–5 h), no un tour de día completo. El equipo, los guías y las fotos/video que toma el guía están incluidos (ya NO hay dron); el traslado desde Ciudad Valles SÍ va incluido y los alimentos NO.`,
+
+  "tour-rappel-cepillo": `
+Momentos que vas a vivir:
+- Desde la boca del Sótano del Cepillo (El Eterno), en la sierra de Aquismón, no se ve el fondo: solo un haz de luz que entra y se pierde hacia abajo.
+- Tras el briefing con el instructor, bajas colgado de la cuerda más de 120 metros, con la pared de roca a un lado y la luz al otro.
+- Abajo: una poza de agua y estalactitas y estalagmitas que casi nadie llega a ver.
+NOTA: $3,200 por persona. Sale desde 2 personas; mayores de 8 años y hasta 100 kg. Incluye traslado redondo desde el hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad, briefing e instructor con constancia DC-3 (NOM-009-STPS-2011). No se necesita experiencia. Día completo.`,
+
+  "tour-rappel-huahuas": `
+Momentos que vas a vivir:
+- El Sótano de las Huahuas (Aquismón) mide 478 metros de profundidad: uno de los abismos más profundos de México y Monumento Natural.
+- Bajas en rappel con el instructor mientras la boca se hace pequeña arriba y los pericos y vencejos cruzan el hueco.
+- En el fondo: musgo, bloques de roca enormes y la luz que entra por la grieta de la boca.
+NOTA: $4,200 por persona. Sale desde 2 personas; mayores de 8 años y hasta 100 kg. Incluye traslado redondo desde el hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad, briefing e instructor con constancia DC-3 (NOM-009-STPS-2011). Día largo: pide buena condición. Distinto de la Expedición Tamul, que solo se asoma al borde.`,
+
+  "tour-rappel-golondrinas": `
+Momentos que vas a vivir:
+- El Sótano de las Golondrinas tiene 376 metros de caída libre: el segundo tiro más profundo de México.
+- Se baja cuando las aves ya salieron: colgado de la cuerda, sin pared cerca, con la luz de la boca y la niebla debajo.
+- Desde el fondo, del tamaño de tres campos de fútbol, la boca parece una ventana en el cielo.
+NOTA: $5,200 por persona. Sale desde 2 personas; mayores de 8 años y hasta 100 kg. Incluye traslado redondo desde el hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad, briefing e instructor con constancia DC-3 (NOM-009-STPS-2011). En temporada de anidación se cierra: la fecha se confirma con la comunidad. No confundir con la visita al Sótano de las Golondrinas ($900, solo mirar las aves).`,
 
   "tour-tamul": `
 Momentos que vas a vivir:

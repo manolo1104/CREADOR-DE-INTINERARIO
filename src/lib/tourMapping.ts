@@ -33,6 +33,9 @@ const T = {
   xilo:       { nombre: "Gruta de Xilo",     slug: "gruta-de-xilo" },
   amanecer:   { nombre: "Amanecer de Nubes", slug: "amanecer-de-nubes" },
   golondrinas:{ nombre: "Sótano de las Golondrinas", slug: "tour-sotano-de-las-golondrinas" },
+  rapCepillo: { nombre: "Rappel en el Sótano del Cepillo", slug: "rappel-sotano-del-cepillo" },
+  rapHuahuas: { nombre: "Rappel en el Sótano de las Huahuas", slug: "rappel-sotano-de-las-huahuas" },
+  rapGolondrinas: { nombre: "Rappel en el Sótano de las Golondrinas", slug: "rappel-sotano-de-las-golondrinas" },
   olla:       { nombre: "Olla de la Luz",    slug: "olla-de-la-luz" },
   cafe:       { nombre: "Travesía del Café", slug: "travesia-del-cafe" },
 } as const;
@@ -44,12 +47,13 @@ export const DESTINO_EN_TOURS: Record<string, TourRef[]> = {
   // ── Aquismón ──────────────────────────────────────────────────────────────
   "cascada-de-tamul":               [T.tamul, T.rappel],
   "cueva-del-agua":                 [T.tamul],
-  "sotano-de-las-huahuas":          [T.tamul],
+  // 27 nov 2026: rappel propio hasta el fondo (Tamul solo se asoma al borde).
+  "sotano-de-las-huahuas":          [T.tamul, T.rapHuahuas],
   // 🔴 Era [T.tamul]: la ficha decía que la Expedición Tamul lo visita y el bot
   // lo vendía dentro de Tamul (un operador llegó a cotizarlo). Del 17 sep al
   // 19 nov 2026 Golondrinas no se operó y quedó como "cerca" de Tamul.
   // 🟢 19 nov 2026 (Manolo): tiene recorrido propio. Tamul sigue sin visitarlo.
-  "sotano-de-las-golondrinas":      [T.golondrinas, cerca(T.tamul)],
+  "sotano-de-las-golondrinas":      [T.golondrinas, T.rapGolondrinas, cerca(T.tamul)],
   "rio-tampaon-rafting":            [T.rafting, T.rappel],
   "nacimiento-tambaque":            [cerca(T.tamul), cerca(T.rafting)],
   "cuevas-de-mantetzulel":          [cerca(T.tamul)],

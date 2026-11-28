@@ -68,13 +68,12 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Está incluido el transporte?",
-      // Decía que NO estaba incluido, contradiciendo la lista de "incluye" del
-      // propio tour y su descripción, que sí traen el traslado desde Ciudad Valles.
-      a: "Sí, el traslado desde Ciudad Valles va incluido; de ahí salimos al embarcadero del río. Lo que no incluye el precio son los alimentos.",
+      // 27 nov 2026 (Manolo): sale de Ciudad Valles o Xilitla, como los demás rappeles.
+      a: "Sí, el traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla va incluido; de ahí vamos al embarcadero del río. Lo que no incluye el precio son los alimentos.",
     },
     {
       q: "¿Las fotos y el video tienen costo extra?",
-      a: "No, están incluidos. Te documentamos todo el descenso con fotografía y video con dron, sin costo adicional.",
+      a: "No, están incluidos: tu guía te toma fotos y video del descenso, sin costo adicional. Ya no incluye dron ni fotógrafo aparte.",
     },
     {
       q: "¿Qué equipo debo llevar?",
@@ -83,6 +82,77 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     {
       q: "¿Cuánto dura la actividad?",
       a: "Entre 3 y 5 horas, dependiendo del tamaño del grupo y las condiciones del clima.",
+    },
+  ],
+  // 🟢 27 nov 2026: los tres rappeles en sótanos (datos de Manolo; cifras de la AMCS).
+  "tour-rappel-cepillo": [
+    {
+      q: "¿Necesito experiencia en rappel?",
+      a: "No. Antes de bajar, el instructor te ajusta el equipo y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. El instructor tiene la constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011).",
+    },
+    {
+      q: "¿Hay límite de edad o de peso?",
+      a: "Sí: mayores de 8 años y hasta 100 kg por persona. Dinos la edad y el peso de cada quien al reservar.",
+    },
+    {
+      q: "¿Qué incluye?",
+      a: "El traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad, el briefing y el instructor. Tu guía te toma fotos y video durante el día. No incluye comida ni cena.",
+    },
+    {
+      q: "¿Desde cuántas personas sale?",
+      a: "Desde 2 personas: con dos ya se abre la salida.",
+    },
+    {
+      q: "¿Qué tan profundo es el Sótano del Cepillo?",
+      a: "Su primer tiro mide más de 120 metros, según el registro de cuevas de los espeleólogos mexicanos. En el fondo hay una poza de agua y formaciones de roca, estalactitas y estalagmitas.",
+    },
+  ],
+  "tour-rappel-huahuas": [
+    {
+      q: "¿Necesito experiencia en rappel?",
+      a: "No. Antes de bajar, el instructor te ajusta el equipo y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. El instructor tiene la constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011).",
+    },
+    {
+      q: "¿Hay límite de edad o de peso?",
+      a: "Sí: mayores de 8 años y hasta 100 kg por persona. Dinos la edad y el peso de cada quien al reservar.",
+    },
+    {
+      q: "¿Qué incluye?",
+      a: "El traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad, el briefing y el instructor. Tu guía te toma fotos y video durante el día. No incluye comida ni cena.",
+    },
+    {
+      q: "¿Desde cuántas personas sale?",
+      a: "Desde 2 personas: con dos ya se abre la salida.",
+    },
+    {
+      q: "¿Qué tan profundo es el Sótano de las Huahuas?",
+      a: "Tiene 478 metros de profundidad, según la topografía de la Association for Mexican Cave Studies (1977–1978): es uno de los abismos más profundos de México y Monumento Natural del estado.",
+    },
+  ],
+  "tour-rappel-golondrinas": [
+    {
+      q: "¿Necesito experiencia en rappel?",
+      a: "No. Antes de bajar, el instructor te ajusta el equipo y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. El instructor tiene la constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011).",
+    },
+    {
+      q: "¿Hay límite de edad o de peso?",
+      a: "Sí: mayores de 8 años y hasta 100 kg por persona. Dinos la edad y el peso de cada quien al reservar.",
+    },
+    {
+      q: "¿Qué incluye?",
+      a: "El traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad, el briefing y el instructor. Tu guía te toma fotos y video durante el día. No incluye comida ni cena.",
+    },
+    {
+      q: "¿Desde cuántas personas sale?",
+      a: "Desde 2 personas: con dos ya se abre la salida.",
+    },
+    {
+      q: "¿Se puede bajar todo el año?",
+      a: "No. Se baja solo cuando las aves ya salieron del sótano y cuando la comunidad lo permite; en temporada de anidación los descensos se cierran. Al reservar te confirmamos que tu fecha esté abierta, y si no lo está, no se cobra.",
+    },
+    {
+      q: "¿Es lo mismo que la visita al Sótano de las Golondrinas?",
+      a: "No. En la visita ves salir a las aves desde el borde. En este recorrido bajas en rappel los 376 metros de caída libre hasta el fondo.",
     },
   ],
   "tour-tamul": [
@@ -323,7 +393,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Llevan dron?",
-      a: "No. En Las Pozas están prohibidos los drones y los tripiés, así que no forman parte de este recorrido. Las fotos se hacen con cámara en mano. El único recorrido nuestro con video de dron es el Rappel en la Cascada de Tamul, porque el equipo es del operador del rappel.",
+      a: "No. En Las Pozas están prohibidos los drones y los tripiés, así que no forman parte de este recorrido. Las fotos se hacen con cámara en mano.",
     },
     {
       q: "¿Por qué el Día 1 no sale los martes?",

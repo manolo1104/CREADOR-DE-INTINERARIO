@@ -4,11 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRef, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, precioTachado, recogidaDeTour, type Tour } from "@/lib/tours";
+import { tourCollage, tourDurTexto, etiquetaUnidad, precioGrupo, precioTachado, recogidaDeTour, textoSalida, type Tour } from "@/lib/tours";
 import { IconoInstagram } from "@/components/IconoInstagram";
 import { TourCarrusel } from "@/components/TourCarrusel";
 import { waLink, WA_MESSAGES } from "@/lib/whatsapp";
-import { Clock, Users } from "lucide-react";
+import { Clock, Users, MapPin } from "lucide-react";
 import { trackTourEvent } from "@/lib/tourTracker";
 
 const dificultadConfig = {
@@ -86,9 +86,11 @@ export function TourCard({ tour: t, variant = "default", conLogo = false, cargaD
     el.style.setProperty("--ry", "0deg");
   };
 
-  /** El nombre del tour. Va sobre la foto, o dentro de la tarjeta si hay logotipo. */
-  const Titulo = ({ enCuerpo = false }: { enCuerpo?: boolean }) => (
-    <div className={enCuerpo ? "" : "pointer-events-none absolute bottom-0 left-0 right-0 px-4 pb-3 z-10"}>
+  /** El nombre del tour. Siempre en el cuerpo de la tarjeta, bajo la foto
+   *  (Manolo, 27 nov 2026: «bajes el texto a la ficha y las imágenes queden
+   *  libres»). Antes iba encima de la foto con un degradado negro que la tapaba. */
+  const Titulo = () => (
+    <div>
       <h3 className="font-cormorant text-crema text-lg font-normal leading-tight uppercase tracking-wide">
         {t.nombre}
       </h3>
@@ -142,10 +144,9 @@ export function TourCard({ tour: t, variant = "default", conLogo = false, cargaD
           <div className="absolute inset-0 bg-gradient-to-br from-verde-selva/40 via-verde-profundo to-negro" />
         )}
 
-        {/* pointer-events-none: sin él, este degradado se tragaba el dedo y
-            en móvil las fotos de la tarjeta no se podían deslizar (Manolo,
-            29 sep 2026). El carrusel de abajo es scroll-snap puro. */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-negro/90 via-negro/30 to-transparent" />
+        {/* 27 nov 2026: aquí iba un degradado negro de abajo hacia arriba para
+            que se leyera el nombre encima de la foto. El nombre ya va en el
+            cuerpo, así que la foto queda limpia. */}
 
         {/* Badge tipo — top left */}
         <span className="absolute top-3 left-3 z-10 bg-verde-vivo text-negro text-[9px] font-dm font-bold tracking-[1.5px] uppercase px-2.5 py-1 rounded-full inline-flex items-center gap-1.5">
@@ -166,11 +167,6 @@ export function TourCard({ tour: t, variant = "default", conLogo = false, cargaD
           </span>
         </div>
 
-        {/* Nombre + tagline sobre la imagen — SOLO si el tour no tiene
-            logotipo. Con logotipo se van al cuerpo de la tarjeta: encima de la
-            foto, el título quedaba pegado al logo y sobre agua turquesa no se
-            leía. */}
-        {!(conLogo && t.logo) && <Titulo />}
       </div>
 
       {/* Logotipo a caballo del borde de arriba, igual que en /tours. Por eso
@@ -193,11 +189,9 @@ export function TourCard({ tour: t, variant = "default", conLogo = false, cargaD
       {/* ── INFO ── */}
       <div className="flex flex-col flex-1 p-4 bg-negro/80 rounded-b-xl">
 
-        {conLogo && t.logo && (
-          <div className="mb-3 pb-3 border-b border-white/8">
-            <Titulo enCuerpo />
-          </div>
-        )}
+        <div className="mb-3 pb-3 border-b border-white/8">
+          <Titulo />
+        </div>
 
         {/* Destinos incluidos */}
         <div className="mb-3">
@@ -234,6 +228,12 @@ export function TourCard({ tour: t, variant = "default", conLogo = false, cargaD
             <span className="text-verde-vivo/70 font-medium">✦ {en ? "Daily departures" : "Salidas diarias"}</span>
           )}
         </div>
+
+        {/* De dónde sale (Manolo, 27 nov 2026: que se vea en todo el sitio). */}
+        <p className="-mt-1 mb-3 flex items-center gap-1.5 text-[11px] text-crema/70 font-dm">
+          <MapPin className="w-3.5 h-3.5 text-verde-vivo flex-shrink-0" aria-hidden="true" />
+          {textoSalida(t, en)}
+        </p>
 
         {/* Precio */}
         <div className="mb-4">

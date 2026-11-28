@@ -140,8 +140,8 @@ export function SiteFooter() {
             <img src="/logos/huasteca-potosina-tours-reverso.svg" alt="Huasteca Potosina Tours" width={516} height={382} loading="lazy" className="mb-5 w-40 h-auto" />
             <p className="text-crema/75 text-xs font-dm leading-relaxed mb-4">
               {en
-                ? "Local tour operator based in Xilitla, San Luis Potosí. Our own hotel and restaurant, NOM-09 certified guides, daily departures."
-                : "Operadora local con base en Xilitla, San Luis Potosí. Hotel y restaurante propios, guías certificados NOM-09, salidas todos los días."}
+                ? "Local tour operator with departures from Ciudad Valles and Xilitla, San Luis Potosí. Our own hotel and restaurant in Xilitla, NOM-09 certified guides, daily departures."
+                : "Operadora local con salidas desde Ciudad Valles y Xilitla, San Luis Potosí. Hotel y restaurante propios en Xilitla, guías certificados NOM-09, salidas todos los días."}
             </p>
             <a
               href={CONTACTO.whatsappUrl}

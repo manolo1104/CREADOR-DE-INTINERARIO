@@ -70,17 +70,22 @@ export function TourCarrusel({
     setActiva((prev) => (prev === i ? prev : i));
   }, []);
 
+  const total = panels.length;
   const ir = useCallback((dir: -1 | 1) => (e: React.MouseEvent) => {
     // La tarjeta entera es un enlace: sin esto, tocar una flecha entraba al tour.
     e.preventDefault();
     e.stopPropagation();
     const caja = pista.current;
-    if (!caja) return;
+    if (!caja || !caja.clientWidth) return;
     const quieto =
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    caja.scrollBy({ left: dir * caja.clientWidth, behavior: quieto ? "auto" : "smooth" });
-  }, []);
+    // Las flechas están siempre a la vista, así que no se quedan muertas en
+    // los extremos: después de la última vuelve a la primera, y al revés.
+    const actual = Math.round(caja.scrollLeft / caja.clientWidth);
+    const destino = (actual + dir + total) % total;
+    caja.scrollTo({ left: destino * caja.clientWidth, behavior: quieto ? "auto" : "smooth" });
+  }, [total]);
 
   return (
     <div className="absolute inset-0">
@@ -122,14 +127,15 @@ export function TourCarrusel({
 
       {varias && (
         <>
-          {/* Flechas: solo con ratón. En táctil sobran —se desliza— y encima
-              tapan foto. */}
-          <div className="pointer-events-none absolute inset-0 hidden items-center justify-between px-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100 [@media(hover:hover)_and_(pointer:fine)]:flex">
+          {/* Flechas SIEMPRE a la vista, también en el teléfono (Manolo,
+              27 nov 2026). Antes solo salían al pasar el ratón, y en táctil
+              nunca: mucha gente no sabía que había más fotos. */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-between px-2">
             <button
               type="button"
               onClick={ir(-1)}
               aria-label="Foto anterior"
-              className="pointer-events-auto z-20 flex h-8 w-8 items-center justify-center rounded-full bg-negro/60 text-crema/80 backdrop-blur-sm transition-colors duration-200 hover:bg-negro/85 hover:text-crema active:scale-95"
+              className="pointer-events-auto z-20 flex h-9 w-9 items-center justify-center rounded-full bg-negro/60 text-crema/90 shadow-[0_1px_6px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-colors duration-200 hover:bg-negro/85 hover:text-crema active:scale-95"
             >
               <ChevronLeft className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -137,7 +143,7 @@ export function TourCarrusel({
               type="button"
               onClick={ir(1)}
               aria-label="Foto siguiente"
-              className="pointer-events-auto z-20 flex h-8 w-8 items-center justify-center rounded-full bg-negro/60 text-crema/80 backdrop-blur-sm transition-colors duration-200 hover:bg-negro/85 hover:text-crema active:scale-95"
+              className="pointer-events-auto z-20 flex h-9 w-9 items-center justify-center rounded-full bg-negro/60 text-crema/90 shadow-[0_1px_6px_rgba(0,0,0,0.35)] backdrop-blur-sm transition-colors duration-200 hover:bg-negro/85 hover:text-crema active:scale-95"
             >
               <ChevronRight className="h-4 w-4" aria-hidden="true" />
             </button>
@@ -152,8 +158,8 @@ export function TourCarrusel({
             {panels.map((p, i) => (
               <span
                 key={p.src + i}
-                className={`h-1.5 rounded-full transition-all duration-300 ease-out ${
-                  i === activa ? "w-4 bg-crema" : "w-1.5 bg-crema/45"
+                className={`h-1.5 rounded-full shadow-[0_0_3px_rgba(0,0,0,0.7)] transition-all duration-300 ease-out ${
+                  i === activa ? "w-4 bg-crema" : "w-1.5 bg-crema/60"
                 }`}
               />
             ))}

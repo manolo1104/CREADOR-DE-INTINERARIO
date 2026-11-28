@@ -32,6 +32,13 @@ export const CHECKLIST_POR_TOUR: Record<string, { clave: string; texto: string }
   "ruta-surrealista-edward-james":[{ clave: "boletos", texto: "Boletos de Las Pozas (se pagan en taquilla)" }],
   "gruta-de-xilo":                [{ clave: "lamparas", texto: "Lámparas cargadas y de repuesto" }],
   "rzr-xilitla":                  [{ clave: "unidades", texto: "Unidades RZR con gasolina y revisadas" }],
+  // 27 nov 2026: los rappeles en sótanos (instructor aparte, límite 100 kg).
+  ...Object.fromEntries(["rappel-sotano-del-cepillo", "rappel-sotano-de-las-huahuas", "rappel-sotano-de-las-golondrinas"].map((slug) => [slug, [
+    { clave: "cuerdas", texto: "Cuerdas y arneses revisados (fecha de revisión)" },
+    { clave: "instructor", texto: "Instructor confirmado para la fecha" },
+    { clave: "pesos-edades", texto: "Peso (máx. 100 kg) y edad (8+) de cada cliente confirmados" },
+    { clave: "desayunos", texto: "Desayunos pedidos" },
+  ]])),
 };
 
 const limpio = (v: unknown, max: number) => String(v ?? "").trim().slice(0, max);

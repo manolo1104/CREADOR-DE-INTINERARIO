@@ -48,6 +48,11 @@ export const TOURS_COLOR: Record<string, { color: string; codigo: string }> = {
   "tour-sotano-de-las-golondrinas": { color: "#00a3a3", codigo: "GOL" },
   "olla-de-la-luz":                { color: "#cc77a4", codigo: "OLL" },
   "huasteca-instagrameable":       { color: "#ab73fd", codigo: "INS" },
+  // 27 nov 2026: los tres rappeles en sótanos. «R» de rappel + el sótano, para
+  // que no se confundan con GOL (la visita a Golondrinas, sin rappel).
+  "rappel-sotano-del-cepillo":        { color: "#c99a00", codigo: "RCE" },
+  "rappel-sotano-de-las-huahuas":     { color: "#6b0f1a", codigo: "RHU" },
+  "rappel-sotano-de-las-golondrinas": { color: "#2f5d5a", codigo: "RGO" },
   // El viaje grupal CDMX–Xilitla no está en el catálogo de tours, pero se vende y
   // se cotiza como uno (20 nov 2026): sin entrada salía en gris «OTR», igual que
   // una salida a medida, y ahora que Inicio y Cotizaciones muestran solo badges

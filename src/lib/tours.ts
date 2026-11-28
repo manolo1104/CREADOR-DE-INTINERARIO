@@ -112,7 +112,7 @@ export interface TourVehiculo {
  * calcule "qué incluye" debe sumarlo.
  *
  * 🔴 17 nov 2026 (Manolo): el seguro de viajero YA NO va en todos. Solo lo
- * traen los tours de aventura —rafting, rappel y RZR—, y está en el `incluye`
+ * traen los tours de aventura —rafting, RZR y el rappel en Tamul—, y está en el `incluye`
  * de cada uno. En los demás es opcional: $80 por persona, se pide al reservar.
  * No lo vuelvas a meter aquí o todos los tours lo prometerían otra vez.
  */
@@ -447,6 +447,13 @@ export interface Tour {
    * hero no pinta nada.
    */
   exclusivo?:       { es: string; en: string };
+  /**
+   * Reconocimiento público del LUGAR, como insignia del hero. Nació el 27 nov
+   * 2026 (Manolo) con el Sótano de las Golondrinas: una de las 13 Maravillas
+   * Naturales de México (concurso de 2007; lo repiten Journey Mexico y otras
+   * guías). Solo con un dato comprobable: es una afirmación pública.
+   */
+  distincion?:      { es: string; en: string };
   rutas?:           TourRuta[];
   flota?:           TourVehiculo[];
   duracion_hrs:     number;
@@ -525,6 +532,27 @@ export interface Tour {
    * Leerlo siempre con `privadoDe()`: ahí vive la regla de los dos casos.
    */
   privadoPropio?:   { personas: number; precio: number; extraPorPersona?: number };
+  /**
+   * Fotos de terceros con licencia libre que piden crédito (CC BY, CC BY-SA,
+   * Arte Libre). La ficha lo pinta debajo de la galería. 🔴 Sin su crédito
+   * visible, usar la foto viola su licencia: no se borra mientras la foto siga.
+   */
+  creditosFotos?:   { src: string; autor: string; licencia: string; licenciaUrl: string; fuenteUrl: string }[];
+  /**
+   * De dónde sale cada dato duro de la ficha (profundidades, distinciones).
+   * Se pinta como «Fuentes de los datos» y va al llms-full: un dato con su
+   * fuente es lo que un asistente de IA prefiere citar (27 nov 2026).
+   * Solo fuentes leídas de verdad; si una cifra no tiene fuente, se quita.
+   */
+  fuentes?:         { dato: { es: string; en: string }; fuente: string; url: string }[];
+  /** AAAA-MM-DD en que se revisó la ficha completa. Solo si de verdad se revisó. */
+  revisado?:        string;
+  /**
+   * No se menciona el seguro de viajero en ninguna parte del recorrido: ni
+   * incluido ni opcional (Manolo, 27 nov 2026, rappeles de sótano: «no pongas
+   * lo del seguro»).
+   */
+  sinSeguro?:       boolean;
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
   soloAdultos?:     boolean;
   gallery:          GalleryImage[];
@@ -767,6 +795,50 @@ export function recogidaDeTour(t: Pick<Tour, "recogida">) {
     regresoTexto: r?.regresoTexto,
     cargoValles: r?.tipo === "hospedaje" ? Math.max(0, r.cargoValles ?? 0) : 0,
   };
+}
+
+/**
+ * La ciudad de recogida cuando la línea de traslado del `incluye` nombra UNA
+ * sola. `null` si nombra las dos, ninguna, o el tour declara otra recogida.
+ *
+ * 🔴 El Rappel de Tamul no declara `recogida`, así que cae en el caso por
+ * defecto ("tu hospedaje en Xilitla o Ciudad Valles"). Pero su fuente dice
+ * "Traslado desde Ciudad Valles", y su relato, su pregunta propia y el "No
+ * incluye" de la misma ficha también: prometerle Xilitla es decir algo que la
+ * fuente no respalda. Se lee del `incluye` EN ESPAÑOL (pásale el tour de
+ * `TOURS_DB`, no el localizado). Sobra el día que el catálogo le dé al Rappel
+ * una `recogida` propia; hasta entonces la usan este bloque y la ficha.
+ */
+export function ciudadUnicaDeRecogida(t: Pick<Tour, "incluye" | "recogida">): "Xilitla" | "Ciudad Valles" | null {
+  if (recogidaDeTour(t).tipo !== "hospedaje") return null;
+  const linea = t.incluye.find((i) => /traslado/i.test(i)) ?? "";
+  const xilitla = /xilitla/i.test(linea);
+  const valles = /ciudad valles/i.test(linea);
+  if (xilitla === valles) return null;
+  return xilitla ? "Xilitla" : "Ciudad Valles";
+}
+
+/**
+ * De dónde sale el recorrido, en una línea corta para las tarjetas.
+ *
+ * 27 nov 2026 (Manolo): «deja claro en toda la página que las salidas son de
+ * Ciudad Valles y Xilitla». Va primero Ciudad Valles, como lo dijo él. Lo que
+ * cuesta salir de Valles en los que tienen cargo lo explica la ficha.
+ */
+export function textoSalida(t: Pick<Tour, "id" | "incluye" | "recogida">, en = false): string {
+  const rec = recogidaDeTour(t);
+  if (rec.tipo === "hospedaje") {
+    // `ciudadUnicaDeRecogida` lee el `incluye` en ESPAÑOL: con el tour ya
+    // traducido no encontraría «traslado» y diría las dos ciudades.
+    const unica = ciudadUnicaDeRecogida(TOURS_DB.find((x) => x.id === t.id) ?? t);
+    if (unica) return en ? `Departs from ${unica}` : `Sale de ${unica}`;
+    return en ? "Departs from Ciudad Valles or Xilitla" : "Sale de Ciudad Valles o Xilitla";
+  }
+  if (rec.tipo === "hospedaje-xilitla") {
+    return en ? "Departs from Xilitla · from Valles at extra cost" : "Sale de Xilitla · desde Valles con costo extra";
+  }
+  if (rec.tipo === "base-xilitla") return en ? "Departs from our base in Xilitla" : "Sale de nuestra base en Xilitla";
+  return rec.lugar ? (en ? `Meet at ${rec.lugar.en}` : `Nos vemos en ${rec.lugar.es}`) : (en ? "Meet at the destination" : "Nos vemos en el destino");
 }
 
 /** Cuánto cuesta de más salir de Ciudad Valles en este recorrido (por reserva). 0 si no cobra. */
@@ -1158,6 +1230,7 @@ const TOURS_RAW: Tour[] = [
   },
   {
     id:               "tour-rappel-tamul",
+    revisado: "2026-11-27",
     slug:             "rappel-tamul",
     categoria:        "extremo",
     icon:             "Mountain",
@@ -1172,47 +1245,54 @@ const TOURS_RAW: Tour[] = [
     nombreCorto:      "Rappel en la Cascada de Tamul",
     articulo:         "el",
     tagline:          "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
-    precio:           1700,
+    // 27 nov 2026 (Manolo): sube de $1,700 a $2,450 y deja de llevar el dron y
+    // las fotos «profesionales»: las fotos y el video los toma el guía (lo dice
+    // `INCLUYE_SIEMPRE`, por eso ya no van en su `incluye`).
+    precio:           2450,
     // 🔴 Decía "máximo 8 personas por día" justo debajo del "máximo 10 personas
     // por salida" que la ficha lee de `groupMax`: dos cupos distintos en la
     // misma pantalla. La urgencia ya no lleva cifra; el cupo sale solo de
     // `groupMax`. (Pendiente de Manolo: si el tope real es 8, se baja ahí.)
     urgencia:         "Grupo chico por seguridad — se reserva con anticipación",
     descripcion:
-      "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y la fotografía aérea con dron que demuestra que sí lo hiciste. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
+      "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y las fotos y el video que te toma tu guía para que lo cuentes. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
     descripcionLarga:
-      "Hay pocos lugares en el mundo donde puedas colgarte de una cuerda frente a una cascada de 105 metros. La Cascada de Tamul —105 metros de agua desplomándose sobre el Río Tampaón— es el telón de fondo de esta experiencia, y desde el momento en que te asomas al borde del cañón entiendes por qué quienes la hacen no dejan de hablar de ella.\n\nTe recogemos en Ciudad Valles y empezamos en el embarcadero del río, donde te entregamos el equipo completo y nuestros guías de alta montaña te dan el briefing de técnica. No necesitas experiencia previa: el primer descenso es guiado paso a paso y la mayoría de nuestros visitantes nunca habían tocado una cuerda antes. Lo único que necesitas son ganas.\n\nUna vez asegurado al arnés, comienzas a bajar por la pared de roca caliza tapizada de vegetación, con la cascada a un costado lanzando su rocío fresco sobre ti y el agua turquesa del río esperándote abajo. El sonido es ensordecedor, el paisaje es irreal y, durante esos minutos, no existe nada más en el mundo. Nuestro fotógrafo te sigue desde el aire con dron y desde tierra, así que cada segundo queda registrado en foto y video —incluido en tu reserva, sin costo extra.\n\nLa actividad dura entre 3 y 5 horas según el grupo y el clima. El precio incluye el traslado desde Ciudad Valles, todo el equipo de seguridad, el video con dron y las fotografías con cámaras de acción; no incluye alimentos. Si buscas la historia que vas a contar el resto de tu vida, empieza aquí.",
+      "Hay pocos lugares en el mundo donde puedas colgarte de una cuerda frente a una cascada de 105 metros. La Cascada de Tamul —105 metros de agua desplomándose sobre el Río Tampaón— es el telón de fondo de esta experiencia, y desde el momento en que te asomas al borde del cañón entiendes por qué quienes la hacen no dejan de hablar de ella.\n\nPasamos por ti a tu hospedaje en Ciudad Valles o en Xilitla y empezamos en el embarcadero del río, donde te entregamos el equipo completo y nuestros guías de alta montaña te dan el briefing de técnica. No necesitas experiencia previa: el primer descenso es guiado paso a paso y la mayoría de nuestros visitantes nunca habían tocado una cuerda antes. Lo único que necesitas son ganas.\n\nUna vez asegurado al arnés, comienzas a bajar por la pared de roca caliza tapizada de vegetación, con la cascada a un costado lanzando su rocío fresco sobre ti y el agua turquesa del río esperándote abajo. El sonido es ensordecedor, el paisaje es irreal y, durante esos minutos, no existe nada más en el mundo. Tu guía te va tomando fotos y video del descenso, incluidos en tu reserva sin costo extra.\n\nLa actividad dura entre 3 y 5 horas según el grupo y el clima. El precio incluye el traslado desde tu hospedaje en Ciudad Valles o Xilitla, todo el equipo de seguridad y las fotos y el video que toma tu guía; no incluye alimentos. Si buscas la historia que vas a contar el resto de tu vida, empieza aquí.",
     destinos: [
       "Embarcadero del Río Tampaón (inicio del descenso)",
       "Pared de rappel frente a la Cascada de Tamul",
       "Cañón del Río Tampaón",
     ],
     incluye: [
-      "Traslado desde Ciudad Valles",
+      // 27 nov 2026 (Manolo): todos los rappeles salen de Ciudad Valles o Xilitla.
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
       "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
       "Guías de alta montaña certificados",
       "Briefing y técnica de descenso — apto para principiantes",
       "Seguro de viajero para cada participante",
-      "Video con dron del descenso",
-      "Fotografía con cámaras de acción",
     ],
     imagen_hero: "/imagenes/tours/rappel-tamul/hero.jpg",
     itinerario: [
       { hora: "8:00–9:00 AM", momento: "Recogida",
-        texto: "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón." },
+        texto: "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón.",
+        foto: "/imagenes/tours/tamul/recogida-hotel.jpg" },
       { hora: "10:00 AM", momento: "Embarcadero del Tampaón",
-        texto: "Llegas al río y conoces a los guías de alta montaña que van a bajar contigo. Aquí se queda lo que no baja a la pared." },
+        texto: "Llegas al río y conoces a los guías de alta montaña que van a bajar contigo. Aquí se queda lo que no baja a la pared.",
+        foto: "/imagenes/tours/tamul/canoas-en-el-embarcadero.jpg" },
       { hora: "10:30 AM", momento: "Equipo y briefing",
         texto: "Arnés, casco y guantes, y la técnica de descenso practicada en seco antes de asomarte. No necesitas experiencia: el primer rappel es 100 % guiado." },
       { hora: "11:30 AM", momento: "El descenso",
-        texto: "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. El dron graba desde el aire y las cámaras de acción desde el casco.",
-        foto: "/imagenes/tours/rappel-tamul/hero.jpg" },
+        texto: "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. Tu guía te va tomando fotos y video.",
+        foto: "/imagenes/tours/rappel-tamul/hero.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-tamul/gallery-2.jpg", "/imagenes/tours/rappel-tamul/gallery-3.jpg"] },
       { hora: "12:00 PM", momento: "Frente a la cortina de agua",
         texto: "El tramo en el que la pared se tapiza de vegetación y el ruido del agua tapa todo lo demás.",
-        foto: "/imagenes/tours/rappel-tamul/gallery-1.jpg" },
+        foto: "/imagenes/tours/rappel-tamul/gallery-1.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-tamul/gallery-6.jpg", "/imagenes/tours/rappel-tamul/tamul-desde-el-aire.jpg"] },
       { hora: "12:30 PM", momento: "El cañón desde abajo",
         texto: "Con los pies en el suelo, el río turquesa y la pared que acabas de bajar se ven de otra manera.",
-        foto: "/imagenes/tours/rappel-tamul/gallery-4.jpg" },
+        foto: "/imagenes/tours/rappel-tamul/gallery-4.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-tamul/canon-del-tampaon-y-tamul.jpg", "/imagenes/tours/tamul/cascada-de-tamul-desde-el-rio.jpg"] },
       { hora: "1:00 PM", momento: "Regreso",
         texto: "De vuelta a tu hospedaje." },
     ],
@@ -1233,6 +1313,347 @@ const TOURS_RAW: Tour[] = [
       { src: "/imagenes/tours/rappel-tamul/gallery-4.jpg", alt: "Vista amplia del descenso en rappel sobre la imponente Cascada de Tamul — la más alta de San Luis Potosí", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-5.jpg", alt: "Rapelista de espaldas descendiendo la pared del cañón del Tampaón junto a la cortina de agua de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-6.jpg", alt: "Mujer con casco sonriendo y haciendo pulgar arriba en rappel, con pájaros volando frente a la Cascada de Tamul", hasRealPeople: true },
+      // 27 nov 2026: Manolo pidió más fotos del rappel en Tamul. De rappel en Tamul no hay
+      // ninguna con licencia libre (Commons, Openverse/Flickr); entran 2 de la cascada.
+      { src: "/imagenes/tours/rappel-tamul/tamul-desde-el-aire.jpg",       alt: "La Cascada de Tamul desde el aire: el río cae por el borde del cañón entre la selva y la neblina" },
+      { src: "/imagenes/tours/rappel-tamul/canon-del-tampaon-y-tamul.jpg", alt: "La Cascada de Tamul al fondo del cañón del Tampaón, con el río turquesa entre paredes de roca" },
+    ],
+    creditosFotos: [
+      { src: "/imagenes/tours/rappel-tamul/tamul-desde-el-aire.jpg",       autor: "Mauro Trejo",    licencia: "CC BY-SA 4.0", licenciaUrl: "https://creativecommons.org/licenses/by-sa/4.0/", fuenteUrl: "https://commons.wikimedia.org/wiki/File:Cascada_de_Tamul_vista_a%C3%A8rea.jpg" },
+      { src: "/imagenes/tours/rappel-tamul/canon-del-tampaon-y-tamul.jpg", autor: "Eneas De Troya", licencia: "CC BY 2.0",    licenciaUrl: "https://creativecommons.org/licenses/by/2.0/",    fuenteUrl: "https://commons.wikimedia.org/wiki/File:Cascada_de_Tamul,_Slp.jpg" },
+    ],
+  },
+  // ── Rappeles en sótanos (27 nov 2026) ──────────────────────────────────────
+  // Datos de Manolo ese día, iguales para los tres: precio por persona
+  // (Cepillo $3,200, Huahuas $4,200, Golondrinas $5,200), salen y se reservan
+  // desde 2 personas, mayores de 8 años, hasta 100 kg, incluyen traslado desde
+  // Xilitla o Ciudad Valles, equipo de seguridad, briefing de seguridad y
+  // desayuno. Los baja un instructor con constancia DC-3 (NOM-009-STPS-2011);
+  // su nombre y foto llegan después (`INSTRUCTORES_RAPPEL` en lib/guias.ts).
+  // Las cifras de los sótanos son del catálogo de la AMCS (mexicancaves.org):
+  // Cepillo 126 m de primer tiro (la prensa dice 160: NO se publica), Huahuas
+  // 478 m (AMCS; el «primer tiro de 202 m» se quitó el 27 nov: ninguna fuente lo respalda), Golondrinas 376 m de caída libre.
+  // 🟡 Por confirmar con Manolo: hora de recogida (puse 7–8 AM), duración,
+  // cupo (puse 6), cómo se sube en cada uno, entrada a la comunidad y meses
+  // cerrados de Golondrinas. Ninguno se ha hecho todavía con este instructor:
+  // `reviewCount: 0` apaga la calificación y el bloque de opiniones.
+  {
+    id:               "tour-rappel-cepillo",
+    sinSeguro: true,
+    revisado: "2026-11-27",
+    fuentes: [
+      { dato: { es: "Tiro de 128 m y 142 m de profundidad", en: "128 m rope drop, 142 m deep" }, fuente: "AMCS · Mexican Caving 2001, p. 135", url: "https://www.mexicancaves.org/maps/3110.pdf" },
+    ],
+    slug:             "rappel-sotano-del-cepillo",
+    categoria:        "extremo",
+    icon:             "Mountain",
+    tipo:             "Rappel en Sótano",
+    dificultad:       "alta",
+    duracion_hrs:     9,
+    duracionRango:    [8, 10],
+    recogida:         { tipo: "hospedaje", horaInicio: 7, ventanaHrs: 1 },
+    reviewCount:      0,
+    groupMin:         2,
+    groupMax:         10,
+    privateAvailable: false,
+    clima: {
+      es: "Con tormenta o lluvia fuerte no se baja al sótano. Si lo cancelamos por clima, eliges reembolso completo o cambio de fecha sin costo.",
+      en: "We don't go down in a storm or heavy rain. If we cancel because of the weather, you choose a full refund or a free change of date.",
+    },
+    nombre:           "Rappel en el Sótano del Cepillo — Más de 120 Metros Hacia el Fondo de la Sierra de Aquismón",
+    nombreCorto:      "Rappel en el Sótano del Cepillo",
+    articulo:         "el",
+    seo: {
+      titulo: {
+        es: "Rappel en el Sótano del Cepillo, Aquismón",
+        en: "El Cepillo Sinkhole Rappel, Aquismón",
+      },
+      descripcion: {
+        es: "Rappel en el Sótano del Cepillo: más de 120 m de descenso hasta una poza y formaciones de roca. Traslado desde Xilitla o Valles, equipo y desayuno. {precio} por persona.",
+        en: "Rappel into El Cepillo sinkhole: 120+ m down to a pool and rock formations. Pickup in Xilitla or Valles, gear and breakfast included. {precio} per person.",
+      },
+      alias: ["Sótano El Cepillo", "Sótano El Eterno", "Rappel en El Cepillo"],
+    },
+    tagline:          "Una cuerda, un haz de luz y más de 120 metros hasta el fondo",
+    precio:           3200,
+    precioUnidad:     "persona",
+    urgencia:         "Grupo chico por seguridad — sale desde 2 personas",
+    descripcion:
+      "Bajas en rappel más de 120 metros dentro del Sótano del Cepillo, en la sierra de Aquismón, siguiendo el haz de luz que entra por la boca hasta una poza y formaciones de roca en el fondo. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. {precio} por persona.",
+    descripcionLarga:
+      "El Sótano del Cepillo —en Aquismón también le dicen El Eterno— es un tiro vertical que se abre en medio de la sierra. Desde la boca no se ve el fondo: se ve la luz que entra en un solo haz y se pierde hacia abajo. El primer tiro mide más de 120 metros, y ese es el camino.\n\nEl día empieza temprano: pasamos por ti a tu hospedaje en Xilitla o en Ciudad Valles, desayunamos en el camino y subimos a la sierra. En la boca del sótano el instructor te entrega el equipo, te lo ajusta y te da el briefing de seguridad: cómo se baja, cómo se frena y qué hacer en cada momento. No necesitas experiencia previa.\n\nLuego viene lo que vas a contar siempre: dejas el borde y empiezas a bajar colgado de la cuerda, con la pared de roca a un lado y el haz de luz al otro. Allá abajo te esperan una poza de agua y formaciones de roca —estalactitas y estalagmitas— que casi nadie llega a ver. Tu guía te toma fotos y video durante el día.\n\nPueden ir mayores de 8 años con un peso de hasta 100 kg, y sale desde 2 personas. Incluye el traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad y el briefing.",
+    destinos: [
+      "Sótano del Cepillo (El Eterno), en la sierra de Aquismón",
+      "Descenso en rappel de más de 120 metros",
+      "El fondo: poza de agua y formaciones de roca",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+      "Desayuno",
+      "Equipo de seguridad para el descenso",
+      "Briefing de seguridad antes de bajar — no necesitas experiencia",
+      "Instructor con constancia DC-3 en trabajos en altura (NOM-009-STPS-2011)",
+    ],
+    imagen_hero: "/imagenes/tours/rappel-sotano-del-cepillo/rapelistas-en-el-haz-de-luz.jpg",
+    posicionHero: "50% 38%",
+    itinerario: [
+      { hora: "7:00–8:00 AM", momento: "Recogida y desayuno",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. El desayuno va incluido, en el camino a la sierra." },
+      { hora: "Ya en la boca", momento: "Equipo y briefing",
+        texto: "El instructor te ajusta el equipo y te explica cómo se baja y cómo se frena. No necesitas experiencia: lo practicas antes de asomarte.",
+        foto: "/imagenes/tours/rappel-sotano-del-cepillo/luz-desde-la-boca.jpg" },
+      { hora: "El descenso", momento: "Más de 120 metros de cuerda",
+        texto: "Dejas el borde y bajas colgado, con la pared de roca a un lado y el haz de luz al otro.",
+        foto: "/imagenes/tours/rappel-sotano-del-cepillo/dos-rapelistas-bajando.jpg" },
+      { hora: "En el fondo", momento: "La poza y las formaciones",
+        texto: "Una poza de agua y estalactitas y estalagmitas que se ven con la luz que baja desde la boca.",
+        foto: "/imagenes/tours/rappel-sotano-del-cepillo/fondo-con-lago-y-formaciones.jpg" },
+      { hora: "Por la tarde", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje." },
+    ],
+    collage: [
+      "/imagenes/tours/rappel-sotano-del-cepillo/luz-desde-la-boca.jpg",
+      "/imagenes/tours/rappel-sotano-del-cepillo/rapelistas-en-el-haz-de-luz.jpg",
+      "/imagenes/tours/rappel-sotano-del-cepillo/fondo-con-lago-y-formaciones.jpg",
+    ],
+    imagenes: [
+      "/imagenes/tours/rappel-sotano-del-cepillo/rapelistas-en-el-haz-de-luz.jpg",
+      "/imagenes/tours/rappel-sotano-del-cepillo/dos-rapelistas-bajando.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/tours/rappel-sotano-del-cepillo/rapelistas-en-el-haz-de-luz.jpg", alt: "Dos rapelistas colgados de la cuerda dentro del haz de luz que entra al Sótano del Cepillo, en Aquismón", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-del-cepillo/dos-rapelistas-bajando.jpg",      alt: "Dos personas bajando en rappel por la pared del Sótano del Cepillo, con la luz y el polvo flotando a su alrededor", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-del-cepillo/fondo-con-lago-y-formaciones.jpg", alt: "El fondo del Sótano del Cepillo: una poza de agua verde y formaciones de roca, con una persona con casco y arnés", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-del-cepillo/luz-desde-la-boca.jpg",           alt: "Un haz de luz entra por la boca del Sótano del Cepillo y cae sobre las rocas del fondo" },
+    ],
+  },
+  {
+    id:               "tour-rappel-huahuas",
+    sinSeguro: true,
+    revisado: "2026-11-27",
+    fuentes: [
+      { dato: { es: "478 m de profundidad (topografía de 1977–1978)", en: "478 m deep (1977–1978 survey)" }, fuente: "AMCS Activities Newsletter no. 9 (1979)", url: "https://www.mexicancaves.org/maps/0112.pdf" },
+    ],
+    slug:             "rappel-sotano-de-las-huahuas",
+    categoria:        "extremo",
+    icon:             "Mountain",
+    tipo:             "Rappel en Sótano",
+    dificultad:       "alta",
+    duracion_hrs:     10,
+    duracionRango:    [9, 11],
+    recogida:         { tipo: "hospedaje", horaInicio: 7, ventanaHrs: 1 },
+    reviewCount:      0,
+    groupMin:         2,
+    groupMax:         10,
+    privateAvailable: false,
+    clima: {
+      es: "Con tormenta o lluvia fuerte no se baja al sótano. Si lo cancelamos por clima, eliges reembolso completo o cambio de fecha sin costo.",
+      en: "We don't go down in a storm or heavy rain. If we cancel because of the weather, you choose a full refund or a free change of date.",
+    },
+    nombre:           "Rappel en el Sótano de las Huahuas — Al Fondo de un Abismo de 478 Metros",
+    nombreCorto:      "Rappel en el Sótano de las Huahuas",
+    articulo:         "el",
+    seo: {
+      titulo: {
+        es: "Rappel en el Sótano de las Huahuas, Aquismón",
+        en: "Huahuas Sinkhole Rappel, Aquismón",
+      },
+      descripcion: {
+        es: "Rappel en el Sótano de las Huahuas, un abismo de 478 m en Aquismón. Traslado desde Xilitla o Valles, desayuno, equipo e instructor DC-3. {precio} por persona.",
+        en: "Rappel into the Huahuas sinkhole, a 478 m abyss in Aquismón. Pickup in Xilitla or Valles, breakfast, gear and a DC-3 instructor. {precio} per person.",
+      },
+      alias: ["Hoya de las Huahuas", "Sótano de las Guaguas", "Rappel en Huahuas"],
+    },
+    tagline:          "Uno de los abismos más profundos de México, visto desde adentro",
+    precio:           4200,
+    precioUnidad:     "persona",
+    urgencia:         "Grupo chico por seguridad — sale desde 2 personas",
+    descripcion:
+      "El Sótano de las Huahuas mide 478 metros de profundidad, uno de los abismos más hondos de México. Bajas en rappel con un instructor de trabajos verticales hasta un fondo verde al que casi nadie llega. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. {precio} por persona.",
+    descripcionLarga:
+      "En la sierra de Aquismón, cerca de San Isidro Tampaxal, la tierra se abre en un hueco de 478 metros de profundidad: el Sótano de las Huahuas, uno de los abismos más profundos de México y Monumento Natural del estado. Su nombre viene del tének: «huahua» es como le dicen a los pericos verdes que viven en sus paredes junto con los vencejos. Quien lo visita se asoma desde el mirador. Tú vas a bajar.\n\nPasamos por ti temprano a tu hospedaje en Xilitla o en Ciudad Valles y desayunamos en el camino. Ya en el sótano, el instructor te entrega el equipo, te lo ajusta y te da el briefing de seguridad. No necesitas experiencia previa, pero sí ganas y buena condición: es un día largo en la sierra.\n\nEl descenso es lo que no se olvida: dejas el borde y la boca del sótano se va haciendo pequeña arriba de ti, con las paredes cubiertas de verde y el sonido de las aves rebotando en la roca. Abajo, el fondo es otro mundo: musgo, bloques de piedra del tamaño de una casa y la luz que entra por la grieta de la boca. Tu guía te toma fotos y video durante el día.\n\nPueden ir mayores de 8 años con un peso de hasta 100 kg, y sale desde 2 personas. Incluye el traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad y el briefing.",
+    destinos: [
+      "Sótano de las Huahuas, en la sierra de Aquismón",
+      "Descenso en rappel dentro del abismo de 478 metros",
+      "El fondo del sótano, entre musgo y bloques de roca",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+      "Desayuno",
+      "Equipo de seguridad para el descenso",
+      "Briefing de seguridad antes de bajar — no necesitas experiencia",
+      "Instructor con constancia DC-3 en trabajos en altura (NOM-009-STPS-2011)",
+    ],
+    // 27 nov 2026: la del rapelista bajo la boca salió de aquí (su boca es ancha,
+    // como la de Golondrinas; el sitio ya la usa allá). Pendiente de Manolo.
+    imagen_hero: "/imagenes/tours/rappel-sotano-de-las-huahuas/rapelista-en-la-pared.jpg",
+    posicionHero: "50% 30%",
+    itinerario: [
+      { hora: "7:00–8:00 AM", momento: "Recogida y desayuno",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. El desayuno va incluido, en el camino a la sierra." },
+      { hora: "Ya en el borde", momento: "Equipo y briefing",
+        texto: "El instructor te ajusta el equipo y te explica cómo se baja y cómo se frena, antes de asomarte.",
+        foto: "/imagenes/tours/rappel-sotano-de-las-huahuas/abismo-desde-la-orilla.jpg",
+        fotosExtra: ["/imagenes/sotano-de-las-huahuas/borde-rocas-blancas.jpg", "/imagenes/tours/rappel-sotano-de-las-huahuas/aves-saliendo-de-la-boca.jpg"] },
+      { hora: "El descenso", momento: "Adentro del abismo",
+        texto: "La boca se va haciendo pequeña arriba de ti, con las paredes verdes y las aves cruzando el hueco.",
+        foto: "/imagenes/tours/rappel-sotano-de-las-huahuas/rapelista-en-la-pared.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-sotano-de-las-huahuas/arrancando-en-la-orilla.jpg", "/imagenes/sotano-de-las-huahuas/gallery-7.webp"] },
+      { hora: "En el fondo", momento: "Otro mundo",
+        texto: "Musgo, bloques de roca enormes y la luz que entra por la grieta de la boca.",
+        foto: "/imagenes/tours/rappel-sotano-de-las-huahuas/fondo-verde-y-la-grieta.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-sotano-de-las-huahuas/grieta-desde-el-fondo.jpg", "/imagenes/tours/rappel-sotano-de-las-huahuas/grupo-en-el-fondo.jpg", "/imagenes/tours/rappel-sotano-de-las-huahuas/siluetas-en-el-fondo.jpg"] },
+      { hora: "Por la tarde", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje." },
+    ],
+    collage: [
+      "/imagenes/tours/rappel-sotano-de-las-huahuas/fondo-verde-y-la-grieta.jpg",
+      "/imagenes/tours/rappel-sotano-de-las-huahuas/rapelista-en-la-pared.jpg",
+      "/imagenes/tours/rappel-sotano-de-las-huahuas/grupo-en-el-fondo.jpg",
+    ],
+    imagenes: [
+      "/imagenes/tours/rappel-sotano-de-las-huahuas/rapelista-en-la-pared.jpg",
+      "/imagenes/tours/rappel-sotano-de-las-huahuas/siluetas-en-el-fondo.jpg",
+    ],
+    gallery: [
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/rapelista-en-la-pared.jpg",    alt: "Mujer bajando en rappel por la pared del Sótano de las Huahuas, con la boca del abismo arriba", hasRealPeople: true },
+      // 27 nov 2026 (tarde): 3 de las 6 fotos que mandó Manolo. Fuera: la aérea (trae
+      // «© Carlos Carrillo»), la de la boca ovalada (parece Golondrinas) y la del equipo
+      // en el borde (el archivo se llama «sotano-de-las-golondrinas»). Pendiente su permiso.
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/grieta-desde-el-fondo.jpg",    alt: "La grieta de luz de la boca del Sótano de las Huahuas vista desde el fondo cubierto de musgo" },
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/aves-saliendo-de-la-boca.jpg", alt: "Una persona con los brazos arriba mientras las aves salen en parvada de la boca del Sótano de las Huahuas", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/arrancando-en-la-orilla.jpg",  alt: "Rapelista con casco sonriendo al empezar a bajar desde la orilla del Sótano de las Huahuas", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/grupo-en-el-fondo.jpg",        alt: "Grupo celebrando con los brazos arriba en el fondo del Sótano de las Huahuas, entre musgo y roca", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/fondo-verde-y-la-grieta.jpg",  alt: "El fondo verde del Sótano de las Huahuas con la grieta de luz de la boca allá arriba", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/siluetas-en-el-fondo.jpg",     alt: "Siluetas del grupo contra la luz en el fondo del Sótano de las Huahuas", hasRealPeople: true },
+      { src: "/imagenes/sotano-de-las-huahuas/gallery-7.webp",                            alt: "Dos rapelistas bajando dentro del haz de luz que entra al Sótano de las Huahuas", hasRealPeople: true },
+      { src: "/imagenes/sotano-de-las-huahuas/borde-rocas-blancas.jpg", alt: "Las rocas blancas del borde y la boca oscura del Sótano de las Huahuas, entre la selva" },
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/abismo-desde-la-orilla.jpg", alt: "El abismo del Sótano de las Huahuas visto desde la orilla, con su pared cubierta de verde y plantas en el borde" },
+    ],
+    // 27 nov 2026: foto libre de Wikimedia Commons (Manolo pidió fotos de alta calidad).
+    creditosFotos: [
+      { src: "/imagenes/tours/rappel-sotano-de-las-huahuas/abismo-desde-la-orilla.jpg", autor: "panza.rayada", licencia: "CC BY-SA 3.0", licenciaUrl: "https://creativecommons.org/licenses/by-sa/3.0/", fuenteUrl: "https://commons.wikimedia.org/wiki/File:S%C3%B3tano_de_las_Huahuas_-_panoramio.jpg" },
+    ],
+  },
+  {
+    id:               "tour-rappel-golondrinas",
+    sinSeguro: true,
+    revisado: "2026-11-27",
+    fuentes: [
+      { dato: { es: "Profundidad de 512 m", en: "512 m deep" }, fuente: "Association for Mexican Cave Studies (AMCS)", url: "https://www.mexicancaves.org/maps/2975.pdf" },
+      { dato: { es: "376 m de caída libre desde el borde más alto de la boca", en: "376 m free fall from the highest edge of the mouth" }, fuente: "México Desconocido", url: "https://www.mexicodesconocido.com.mx/las-cavernas-de-mexico-un-increible-universo-subterraneo.html" },
+      { dato: { es: "333 m de caída libre desde el borde más bajo y 370 m desde el más alto", en: "333 m free fall from the lowest edge and 370 m from the highest" }, fuente: "Wikipedia", url: "https://en.wikipedia.org/wiki/Cave_of_Swallows" },
+      { dato: { es: "Una de las 13 Maravillas de México", en: "One of the 13 Wonders of Mexico" }, fuente: "Yumping", url: "https://www.yumping.com/noticias-aventura/el-sotano-de-las-golondrinas--c1470" },
+    ],
+    slug:             "rappel-sotano-de-las-golondrinas",
+    categoria:        "extremo",
+    icon:             "Mountain",
+    tipo:             "Rappel en Sótano",
+    dificultad:       "alta",
+    duracion_hrs:     11,
+    duracionRango:    [10, 12],
+    recogida:         { tipo: "hospedaje", horaInicio: 7, ventanaHrs: 1 },
+    reviewCount:      0,
+    groupMin:         2,
+    groupMax:         10,
+    privateAvailable: false,
+    clima: {
+      es: "Con tormenta o lluvia fuerte no se baja al sótano. Si lo cancelamos por clima, eliges reembolso completo o cambio de fecha sin costo.",
+      en: "We don't go down in a storm or heavy rain. If we cancel because of the weather, you choose a full refund or a free change of date.",
+    },
+    nombre:           "Rappel en el Sótano de las Golondrinas — 376 Metros de Caída Libre",
+    nombreCorto:      "Rappel en el Sótano de las Golondrinas",
+    articulo:         "el",
+    // 🔴 La visita sin rappel es `tour-sotano-de-las-golondrinas` (y la ficha del
+    // destino es dueña de «sótano de las golondrinas» a secas): esta va por
+    // «rappel sótano de las golondrinas».
+    seo: {
+      titulo: {
+        es: "Rappel en el Sótano de las Golondrinas",
+        en: "Cave of Swallows Rappel, Aquismón",
+      },
+      descripcion: {
+        es: "Rappel en el Sótano de las Golondrinas: 376 m de caída libre hasta el fondo. Traslado desde Xilitla o Valles, desayuno, equipo e instructor DC-3. {precio} por persona.",
+        en: "Rappel into the Cave of Swallows: 376 m of free fall to the bottom. Pickup in Xilitla or Valles, breakfast, gear and a DC-3 instructor. {precio} per person.",
+      },
+      alias: ["Descenso al Sótano de las Golondrinas", "Rappel Golondrinas"],
+    },
+    distincion: {
+      es: "1 de las 13 Maravillas de México",
+      en: "One of the 13 Wonders of Mexico",
+    },
+    tagline:          "El segundo tiro más profundo de México, colgado de una cuerda",
+    precio:           5200,
+    precioUnidad:     "persona",
+    urgencia:         "Se confirma con la comunidad — sale desde 2 personas",
+    descripcion:
+      "El Sótano de las Golondrinas tiene 376 metros de caída libre: el segundo tiro más profundo de México. Bajas colgado de una cuerda, con un instructor de trabajos verticales, hasta un fondo del tamaño de tres campos de fútbol. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. {precio} por persona.",
+    descripcionLarga:
+      "En el Sótano de las Golondrinas cabría la Torre Latinoamericana con espacio de sobra: 376 metros de caída libre, el segundo tiro más profundo de México, con un fondo del tamaño de tres campos de fútbol. Es Monumento Natural del estado y lo cuida la comunidad de Unión de Guadalupe. Lo famoso son las aves —vencejos y pericos, no golondrinas— que salen de él girando en espiral cada mañana. Lo que casi nadie hace es bajar.\n\nPasamos por ti temprano a tu hospedaje en Xilitla o en Ciudad Valles y desayunamos en el camino. Se baja cuando las aves ya salieron, para no molestarlas: mientras tanto, el instructor te entrega el equipo, te lo ajusta y te da el briefing de seguridad. No necesitas experiencia previa, pero sí ganas y buena condición: es un día largo.\n\nY luego, el vacío. Dejas el borde de roca y la selva y empiezas a bajar colgado, sin pared cerca, con la luz entrando por la boca y la niebla moviéndose debajo de tus pies. Es un descenso largo, de esos en los que el silencio pesa. Abajo, el fondo es un mundo aparte, y desde ahí la boca del sótano parece una ventana en el cielo. Tu guía te toma fotos y video durante el día.\n\nPueden ir mayores de 8 años con un peso de hasta 100 kg, y sale desde 2 personas. Los descensos dependen de la comunidad y de las aves: en temporada de anidación se cierran, así que al reservar confirmamos que tu fecha esté abierta. Incluye el traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles, el desayuno, el equipo de seguridad y el briefing.",
+    destinos: [
+      "Sótano de las Golondrinas, en la sierra de Aquismón",
+      "Descenso de 376 metros de caída libre",
+      "El fondo del sótano, del tamaño de tres campos de fútbol",
+    ],
+    incluye: [
+      "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+      "Desayuno",
+      "Equipo de seguridad para el descenso",
+      "Briefing de seguridad antes de bajar — no necesitas experiencia",
+      "Instructor con constancia DC-3 en trabajos en altura (NOM-009-STPS-2011)",
+    ],
+    // 27 nov 2026: la del rapelista en la niebla salió de aquí: su boca es una
+    // grieta, como la de Huahuas, y la de Golondrinas es redonda. Pendiente de Manolo.
+    imagen_hero: "/imagenes/sotano-de-las-golondrinas/interior.jpg",
+    posicionHero: "50% 40%",
+    itinerario: [
+      { hora: "7:00–8:00 AM", momento: "Recogida y desayuno",
+        texto: "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles. El desayuno va incluido, en el camino a la sierra." },
+      { hora: "Cuando salen las aves", momento: "Equipo y briefing",
+        texto: "Se baja cuando las aves ya salieron del sótano. Mientras, el instructor te ajusta el equipo y te explica cómo se baja.",
+        foto: "/imagenes/tours/rappel-sotano-de-las-golondrinas/listo-en-la-boca.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-sotano-de-las-golondrinas/asomados-al-borde.jpg", "/imagenes/sotano-de-las-golondrinas/gallery-7.webp"] },
+      { hora: "El descenso", momento: "376 metros de caída libre",
+        texto: "Sin pared cerca: solo la cuerda, la luz de la boca y la niebla moviéndose debajo de ti.",
+        foto: "/imagenes/tours/rappel-sotano-de-las-golondrinas/rapelista-desde-el-fondo.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-sotano-de-las-golondrinas/haz-de-luz.jpg", "/imagenes/tours/rappel-sotano-de-las-golondrinas/brazos-abiertos-bajo-la-boca.jpg", "/imagenes/tours/rappel-sotano-de-las-golondrinas/suspendido-en-el-abismo.jpg"] },
+      { hora: "En el fondo", momento: "La ventana en el cielo",
+        texto: "Desde abajo, la boca del sótano parece una ventana en el cielo.",
+        foto: "/imagenes/sotano-de-las-golondrinas/interior.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-sotano-de-las-golondrinas/cordada-en-la-caverna.jpg", "/imagenes/tours/rappel-sotano-de-las-golondrinas/grupo-bajo-la-ventana.jpg", "/imagenes/tours/rappel-sotano-de-las-golondrinas/fondo-de-musgo.jpg"] },
+      { hora: "Por la tarde", momento: "Regreso",
+        texto: "De vuelta a tu hospedaje." },
+    ],
+    collage: [
+      "/imagenes/sotano-de-las-golondrinas/gallery-12.jpg",
+      "/imagenes/tours/rappel-sotano-de-las-golondrinas/rapelista-desde-el-fondo.jpg",
+      "/imagenes/tours/rappel-sotano-de-las-golondrinas/fondo-de-musgo.jpg",
+    ],
+    imagenes: [
+      "/imagenes/tours/rappel-sotano-de-las-golondrinas/rapelista-desde-el-fondo.jpg",
+      "/imagenes/tours/rappel-sotano-de-las-golondrinas/bajo-la-boca.jpg",
+    ],
+    // 27 nov 2026 (tarde): Manolo mandó 8 fotos más. Entran 6; fuera la del rapelista
+    // entre dos paredes juntas (no se ve la boca; la forma parece de Huahuas) y la de
+    // las 5 siluetas (borrosa). Pendiente que confirme que puede usarlas (vienen de redes).
+    gallery: [
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/cordada-en-la-caverna.jpg",       alt: "Rapelistas colgados de una cuerda en la enorme caverna del Sótano de las Golondrinas, con una persona diminuta en el fondo de musgo", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/haz-de-luz.jpg",                  alt: "Un rapelista bajando dentro del haz de luz que entra por la boca redonda del Sótano de las Golondrinas", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/grupo-bajo-la-ventana.jpg",       alt: "Grupo descansando en el fondo del Sótano de las Golondrinas mientras dos rapelistas bajan bajo la boca iluminada", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/brazos-abiertos-bajo-la-boca.jpg", alt: "Silueta de un rapelista con los brazos abiertos bajo la boca del Sótano de las Golondrinas", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/listo-en-la-boca.jpg",            alt: "Rapelista con casco y traje rojo entrando a la boca del Sótano de las Golondrinas", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/asomados-al-borde.jpg",           alt: "Dos visitantes amarradas con cuerda asomándose al abismo del Sótano de las Golondrinas desde las rocas del borde", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/bajo-la-boca.jpg",             alt: "Silueta de un rapelista suspendido bajo la boca del Sótano de las Golondrinas, vista desde el fondo", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/suspendido-en-el-abismo.jpg",  alt: "Rapelista con los brazos abiertos en la caída libre del Sótano de las Golondrinas", hasRealPeople: true },
+      // 🟡 Trae la marca «Sunguramy Photography»: avisado a Manolo el 27 nov 2026.
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/fondo-de-musgo.jpg",           alt: "Una persona en el fondo verde de musgo del Sótano de las Golondrinas, mirando la boca allá arriba", hasRealPeople: true },
+      { src: "/imagenes/sotano-de-las-golondrinas/interior.jpg",                              alt: "Viajera con casco y arnés sentada sobre el musgo del fondo del Sótano de las Golondrinas, con la boca iluminada arriba", hasRealPeople: true },
+      { src: "/imagenes/sotano-de-las-golondrinas/gallery-12.jpg",                            alt: "El abismo del Sótano de las Golondrinas visto desde el borde, con la pared de roca cayendo entre la selva" },
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/rapelista-desde-el-fondo.jpg", alt: "Un rapelista diminuto colgado de la cuerda bajo la boca del Sótano de las Golondrinas, visto desde el fondo", hasRealPeople: true },
+    ],
+    // 27 nov 2026: foto libre de Wikimedia Commons (Manolo pidió fotos de alta calidad).
+    creditosFotos: [
+      { src: "/imagenes/tours/rappel-sotano-de-las-golondrinas/rapelista-desde-el-fondo.jpg", autor: "Stubb", licencia: "Licencia Arte Libre 1.3", licenciaUrl: "https://artlibre.org/licence/lal/en/", fuenteUrl: "https://commons.wikimedia.org/wiki/File:Golondrinas_Entrance_Rappelling.png" },
     ],
   },
   {
@@ -2471,6 +2892,12 @@ const TOURS_RAW: Tour[] = [
   // destino `sotano-de-las-golondrinas` y de lo que contó Erick.
   {
     id:               "tour-golondrinas",
+    fuentes: [
+      { dato: { es: "Profundidad de 512 m", en: "512 m deep" }, fuente: "Association for Mexican Cave Studies (AMCS)", url: "https://www.mexicancaves.org/maps/2975.pdf" },
+      { dato: { es: "376 m de caída libre desde el borde más alto de la boca", en: "376 m free fall from the highest edge of the mouth" }, fuente: "México Desconocido", url: "https://www.mexicodesconocido.com.mx/las-cavernas-de-mexico-un-increible-universo-subterraneo.html" },
+      { dato: { es: "333 m de caída libre desde el borde más bajo y 370 m desde el más alto", en: "333 m free fall from the lowest edge and 370 m from the highest" }, fuente: "Wikipedia", url: "https://en.wikipedia.org/wiki/Cave_of_Swallows" },
+      { dato: { es: "Una de las 13 Maravillas de México", en: "One of the 13 Wonders of Mexico" }, fuente: "Yumping", url: "https://www.yumping.com/noticias-aventura/el-sotano-de-las-golondrinas--c1470" },
+    ],
     slug:             "tour-sotano-de-las-golondrinas",
     categoria:        "ecoturismo",
     icon:             "Bird",
@@ -2533,6 +2960,10 @@ const TOURS_RAW: Tour[] = [
       },
       alias: ["Tour a las Golondrinas", "Sótano de las Golondrinas al amanecer"],
     },
+    distincion: {
+      es: "1 de las 13 Maravillas de México",
+      en: "One of the 13 Wonders of Mexico",
+    },
     tagline:          "Un abismo de 376 metros y las aves que salen de él en espiral",
     precio:           900,
     precioUnidad:     "persona",
@@ -2589,7 +3020,8 @@ const TOURS_RAW: Tour[] = [
     ],
     collage: [
       "/imagenes/sotano-de-las-golondrinas/gallery-12.jpg",
-      "/imagenes/sotano-de-las-golondrinas/borde.jpg",
+      // 27 nov 2026: aquí iba borde.jpg, que era del Sótano de las HUAHUAS (Manolo).
+      "/imagenes/sotano-de-las-golondrinas/gallery-7.webp",
       "/imagenes/sotano-de-las-golondrinas/hero.jpg",
     ],
     imagenes: [
@@ -2600,7 +3032,6 @@ const TOURS_RAW: Tour[] = [
       { src: "/imagenes/sotano-de-las-golondrinas/hero.jpg",       alt: "Aves saliendo en grupo de la boca del Sótano de las Golondrinas, entre la vegetación de la sierra de Aquismón" },
       { src: "/imagenes/sotano-de-las-golondrinas/gallery-12.jpg", alt: "El abismo del Sótano de las Golondrinas visto desde el borde, con la pared de roca cayendo entre la selva" },
       { src: "/imagenes/sotano-de-las-golondrinas/gallery-7.webp", alt: "La pared del Sótano de las Golondrinas con la primera luz dorada del día sobre la selva" },
-      { src: "/imagenes/sotano-de-las-golondrinas/borde.jpg",      alt: "Las rocas del borde y la boca oscura del Sótano de las Golondrinas, en Aquismón" },
       { src: "/imagenes/sotano-de-las-golondrinas/aerea.jpg",      alt: "Vista aérea del Sótano de las Golondrinas abierto en medio de la selva de la Huasteca Potosina" },
       // 19 nov 2026: las fotos que Manolo puso en el itinerario; aquí dan su alt.
       { src: "/imagenes/sotano-de-las-golondrinas/gallery-4.jpg", alt: "Visitante amarrada con cuerda asomándose al abismo del Sótano de las Golondrinas desde las rocas del borde", hasRealPeople: true },

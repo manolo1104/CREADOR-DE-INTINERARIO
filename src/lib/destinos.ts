@@ -255,7 +255,6 @@ export const DESTINOS_DB: Destino[] = [
     imagen_galeria: [
       "/imagenes/sotano-de-las-golondrinas/gallery-1.avif",
       "/imagenes/sotano-de-las-golondrinas/aerea.jpg",
-      "/imagenes/sotano-de-las-golondrinas/borde.jpg",
       "/imagenes/sotano-de-las-golondrinas/rappel.jpg",
       "/imagenes/sotano-de-las-golondrinas/interior.jpg",
       "/imagenes/sotano-de-las-golondrinas/aves-cielo.jpg",

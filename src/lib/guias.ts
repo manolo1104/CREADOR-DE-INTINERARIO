@@ -134,7 +134,40 @@ export const TODOS_NOM09 = GUIAS.every((g) => g.certificaciones.es.some((c) => c
 /** Solo si TODOS son de Xilitla se dice «de Xilitla» de todos. */
 export const TODOS_DE_XILITLA = GUIAS.every((g) => g.origen?.startsWith("Xilitla"));
 
+/**
+ * Los rappeles en sótanos (27 nov 2026). Los baja un instructor de trabajos
+ * verticales que no es del equipo de los acuáticos.
+ */
+export const RAPPELES_SOTANOS = [
+  "rappel-sotano-del-cepillo",
+  "rappel-sotano-de-las-huahuas",
+  "rappel-sotano-de-las-golondrinas",
+];
+
+/**
+ * La constancia del instructor de los rappeles en sótanos, según Manolo
+ * (27 nov 2026): DC-3 en Trabajos en Altura y/o Acceso con Cuerdas (Trabajos
+ * Verticales) bajo la NOM-009-STPS-2011. Es lo ÚNICO que se publica de él
+ * mientras no mande sus datos: ni nombre, ni foto, ni años.
+ */
+export const CONSTANCIA_DC3 = {
+  es: "Constancia DC-3 en trabajos en altura y acceso con cuerdas (NOM-009-STPS-2011)",
+  en: "DC-3 certificate in work at height and rope access (Mexican standard NOM-009-STPS-2011)",
+} as const;
+
+/**
+ * 🟡 PREPARADO, VACÍO A PROPÓSITO (27 nov 2026): el instructor de los
+ * rappeles en sótanos todavía no manda nombre, foto ni certificaciones.
+ * Cuando lleguen, se agrega aquí un `Guia` igual que los de arriba (foto
+ * 720×960 en public/guias/, recorte de cara 160×160, `tours: RAPPELES_SOTANOS`
+ * y `CONSTANCIA_DC3` en `certificaciones`) y la tarjeta «Quién te guía» de
+ * esos tres tours sale sola. Va en su propia lista y NO en `GUIAS` para no
+ * tocar /nosotros, el inicio ni las frases de «todos los guías» (TODOS_NOM09).
+ * Mientras esté vacía, la ficha pinta solo la constancia, sin cara.
+ */
+export const INSTRUCTORES_RAPPEL: Guia[] = [];
+
 /** Los guías que salen en la ficha de un tour. */
 export function guiasDeTour(slug: string): Guia[] {
-  return GUIAS.filter((g) => g.tours.includes(slug));
+  return [...GUIAS, ...INSTRUCTORES_RAPPEL].filter((g) => g.tours.includes(slug));
 }

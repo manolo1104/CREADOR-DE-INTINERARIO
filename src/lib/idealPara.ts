@@ -23,6 +23,18 @@ export const IDEAL_PARA: Record<string, { es: string; en: string }> = {
     es: "Aventureros y grupos de amigos",
     en: "Adventurers and groups of friends",
   },
+  "tour-rappel-cepillo": {
+    es: "Aventureros que quieren su primer sótano",
+    en: "Adventurers after their first sinkhole",
+  },
+  "tour-rappel-huahuas": {
+    es: "Aventureros con buena condición",
+    en: "Fit adventurers",
+  },
+  "tour-rappel-golondrinas": {
+    es: "Quien busca la aventura más grande de la Huasteca",
+    en: "Those after the Huasteca's biggest adventure",
+  },
   "tour-rafting-tampaon": {
     es: "Grupos de amigos y amantes de la adrenalina",
     en: "Groups of friends and adrenaline lovers",
