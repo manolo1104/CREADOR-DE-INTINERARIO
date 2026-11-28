@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Plus, X, Save, Calculator, AlertTriangle, Users, Percent, Truck, Wallet } from "lucide-react";
-import { TOURS_LISTA } from "@/lib/tours";
+import { TOURS_LISTA, etiquetaUnidad } from "@/lib/tours";
+import { TOUR_REQUISITOS } from "@/lib/tourRequisitos";
 import { calcTourLine, esTourVehiculo, type LineItem } from "@/components/admin/ReservaModal";
 import { playClick, playSuccess, playError } from "@/lib/admin/sfx";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
@@ -419,7 +420,7 @@ export default function CotizadorClient(
                   <div className="min-w-0">
                     <p className="text-[#1B4332] font-dm text-sm font-medium truncate">{t.nombre.split(" — ")[0]}</p>
                     <p className="text-[#1B4332]/45 font-dm text-xs mt-0.5">
-                      Precio de venta {fmxL(t.precio)} {t.precioUnidad === "vehiculo" ? "por vehículo" : "por persona"}
+                      Precio de venta {fmxL(t.precio)} {etiquetaUnidad(t)}
                       {!sinDatos && <> · te cuesta {fmx(resumen.porPersona)}/persona + {fmx(resumen.fijo)} por salida</>}
                     </p>
                   </div>
@@ -709,6 +710,12 @@ export default function CotizadorClient(
                     } else {
                       delete nueva.ruta; delete nueva.vehiculo; delete nueva.unidades;
                     }
+                    // Desde 8 años no van niños ni bebés: los contadores se ocultan
+                    // y no deben seguir sumando lo de un recorrido anterior.
+                    if ((TOUR_REQUISITOS[nt?.id ?? ""]?.edadMinima ?? 0) >= 8) {
+                      nueva.adultos = nueva.adultos + nueva.ninosSmall;
+                      nueva.ninosSmall = 0; nueva.bebes = 0;
+                    }
                   }
                   return nueva;
                 }));
@@ -792,25 +799,35 @@ export default function CotizadorClient(
                           onChange={e => up("personasVehiculo", Math.max(1, Number(e.target.value) || 1))} className={inputCls} />
                       </div>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-3 gap-2">
+                  ) : (() => {
+                    // 27 nov 2026: los contadores siguen la regla de cada recorrido.
+                    // Desde 8 años (rappeles, Gruta, rafting…) no van niños ni bebés;
+                    // sin descuento de menores, el de 4 a 7 paga completo.
+                    const tSel  = TOURS_LISTA.find(x => x.slug === l.tourSlug);
+                    const edad  = TOUR_REQUISITOS[tSel?.id ?? ""]?.edadMinima ?? 0;
+                    const sinDesc = !!tSel?.sinDescuentoNinos;
+                    return (
+                    <div className={`grid ${edad >= 8 ? "grid-cols-1" : "grid-cols-3"} gap-2`}>
                       <div>
-                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">Adultos</label>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1">{edad >= 8 ? `Personas (${edad}+ años)` : "Adultos"}</label>
                         <input type="number" min={0} max={40} value={l.adultos}
                           onChange={e => up("adultos", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
                       </div>
+                      {edad < 8 && (<>
                       <div>
                         <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="0 a 3 años: gratis">Bebés 0–3</label>
                         <input type="number" min={0} max={20} value={l.bebes}
                           onChange={e => up("bebes", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
                       </div>
                       <div>
-                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title="4 a 7 años: pagan el 50%">Niños 4–7</label>
+                        <label className="block text-[9px] tracking-[2px] uppercase text-[#1B4332]/50 font-dm mb-1 truncate" title={sinDesc ? "4 a 7 años: en este recorrido pagan completo" : "4 a 7 años: pagan el 50%"}>{sinDesc ? "Niños 4–7 · completo" : "Niños 4–7 · 50 %"}</label>
                         <input type="number" min={0} max={20} value={l.ninosSmall}
                           onChange={e => up("ninosSmall", Math.max(0, Number(e.target.value) || 0))} className={inputCls} />
                       </div>
+                      </>)}
                     </div>
-                  )}
+                    );
+                  })()}
                 </div>
               );
             })}

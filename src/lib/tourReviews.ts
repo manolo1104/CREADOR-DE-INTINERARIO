@@ -86,7 +86,7 @@ export const TOUR_REVIEWS: Record<string, Review[]> = {
       fecha:     "Marzo 2025",
       foto:      "/imagenes/reviews/reviewer-7.jpg",
       texto:
-        "Nunca había hecho rappel en mi vida y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo paso a paso. El rocío de la cascada pegándote mientras bajas es algo que no se me va a olvidar.",
+        "Nunca había hecho rappel en mi vida y bajar frente a la Cascada de Tamul fue una locura. Los guías te aseguran súper bien y te explican todo paso a paso. El rocío de la cascada pegándote mientras bajas es algo que no se me va a olvidar. Las fotos con dron quedaron de revista.",
     },
     {
       nombre:    "Mariana Cabrera",

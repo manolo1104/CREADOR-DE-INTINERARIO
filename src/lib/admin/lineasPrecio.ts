@@ -5,6 +5,7 @@
  * y de confirmación que descarga el panel (el bot lo manda por WhatsApp). Un
  * módulo «use client» no se puede llamar desde una ruta del servidor.
  */
+import { recargoUnaPersonaDe } from "@/lib/tourBooking";
 import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "@/lib/ninos";
 import type { LineItem, PackageItem } from "@/components/admin/ReservaModal";
 import { TOURS_LISTA, precioGrupo, precioPorCabeza, cargoVallesDe, extraDeEleccion } from "@/lib/tours";
@@ -100,6 +101,10 @@ export function calcTourLine(l: LineItem): number {
         const unidades = Math.max(1, l.unidades ?? 1);
         return (veh?.precios[rutaIdx] ?? t.precio) * unidades;
       })()
+    : t.sinDescuentoNinos
+    // Sin descuento de menores (27 nov 2026): todos pagan el precio completo,
+    // y una sola persona paga además su cargo (`recargoUnaPersonaDe`).
+    ? porCabeza * pagan + recargoUnaPersonaDe(t, pagan)
     : (
         porCabeza * l.adults +
         Math.round(porCabeza * FACTOR_NINO_ANTERIOR) * (l.childrenMid   ?? 0) +

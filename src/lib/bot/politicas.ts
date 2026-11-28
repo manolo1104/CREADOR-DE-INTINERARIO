@@ -251,7 +251,7 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     tema: "ninos-y-edades",
     titulo: "Niños y edades",
     texto:
-      "En los tours que se cobran por persona: niños de 4 a 7 años pagan el 50 % del precio de adulto; de 3 años o menos van GRATIS (ocupan lugar en la camioneta, pero no cuentan para el mínimo de personas); de 8 años en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. " +
+      "En los tours que se cobran por persona: niños de 4 a 7 años pagan el 50 % del precio de adulto; de 3 años o menos van GRATIS (ocupan lugar en la camioneta, pero no cuentan para el mínimo de personas); de 8 años en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo. " +
       "En las herramientas: los de 8 en adelante van en `adultos`, los de 4 a 7 en `ninosSmall` y los de 0 a 3 en `bebes`. " +
       "Cada tour tiene su edad mínima en su ficha (`edadMinima` y `edadNota`): rafting, rappel, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz son desde 8 años, así que ahí no hay precio de niño. " +
       "En el RZR los niños van según el vehículo (cada unidad dice cuántos adultos y niños lleva). " +
@@ -381,8 +381,8 @@ export const POLITICAS_BOT: PoliticaBot[] = [
     titulo: "Rappel en la Cascada de Tamul",
     texto:
       "Incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona, el punto de encuentro lo confirma el equipo. " +
-      `Sale con mínimo de ${minimo("rappel-tamul")} personas. No incluye alimentos. Las fotos y el video los toma el guía (ya NO lleva dron ni fotógrafo aparte). No se necesita experiencia previa. ` +
-      "Desde el 27 nov 2026 también hay RAPPEL EN SÓTANOS, cada uno es un recorrido propio: `rappel-sotano-del-cepillo`, `rappel-sotano-de-las-huahuas` y `rappel-sotano-de-las-golondrinas` (usa obtener_tour para precio e incluye; no escribas cifras de memoria). Salen desde 2 personas, mayores de 8 años y hasta 100 kg; incluyen traslado desde Xilitla o Ciudad Valles, desayuno, equipo y briefing; el instructor tiene la constancia DC-3 (NOM-009-STPS-2011). El de Golondrinas NO es la visita para ver las aves (`tour-sotano-de-las-golondrinas`). " +
+      `Se reserva y sale desde 1 persona (UNA sola persona paga el precio normal + $700). Sin descuento de niños. Incluye desayuno (no comida). Termina alrededor de las 2:00 PM. Incluye fotos y video con GoPro 13 y video con dron del descenso, y nado en las pozas antes de bajar. No se necesita experiencia previa. ` +
+      "Desde el 27 nov 2026 también hay RAPPEL EN SÓTANOS, cada uno es un recorrido propio: `rappel-sotano-del-cepillo`, `rappel-sotano-de-las-huahuas` y `rappel-sotano-de-las-golondrinas` (usa obtener_tour para precio e incluye; no escribas cifras de memoria). Se reservan desde 1 persona (si va UNA sola, paga el precio normal + $700; desde 2, precio normal), mayores de 8 años y hasta 100 kg, sin descuento de niños; incluyen traslado desde Xilitla o Ciudad Valles, desayuno, equipo y briefing; el instructor tiene la constancia DC-3 (NOM-009-STPS-2011). El de Golondrinas NO es la visita para ver las aves (`tour-sotano-de-las-golondrinas`). " +
       "El rappel en otros lugares (por ejemplo la Cascada de los Comales) no está en el catálogo.",
     claves: ["rappel", "descenso", "cuerda", "comales", "rapel", "rappelling", "cepillo", "sótano", "huahuas", "golondrinas rappel"],
   },

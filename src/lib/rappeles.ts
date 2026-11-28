@@ -75,7 +75,7 @@ export function textoComparaRappeles(locale: Locale): string {
       `El Cepillo (${mxn(cep.precio, en)}) is the sinkhole to start with: a 128 m drop to a pool at the bottom.`,
       `Huahuas (${mxn(hua.precio, en)}) is a 478 m deep abyss that very few people ever descend into.`,
       `The Cave of Swallows (${mxn(gol.precio, en)}) is the most extreme: 376 m of free fall in one of the largest pits in the world, one of the 13 Wonders of Mexico.`,
-      `The sinkholes take the whole day (${hMin} to ${hMax} hours) and run from ${cep.tour.groupMin} people; Tamul from ${tamul.tour.groupMin}.`,
+      `The sinkholes take the whole day (${hMin} to ${hMax} hours). All four can be booked from 1 person; going alone costs MXN $700 more.`,
     ].join(" ");
   }
   return [
@@ -84,6 +84,6 @@ export function textoComparaRappeles(locale: Locale): string {
     `El Sótano del Cepillo (${mxn(cep.precio, en)}) es el sótano para empezar: un tiro de 128 m hasta una poza en el fondo.`,
     `El Sótano de las Huahuas (${mxn(hua.precio, en)}) es un abismo de 478 m de profundidad al que casi nadie baja.`,
     `El Sótano de las Golondrinas (${mxn(gol.precio, en)}) es el más extremo: 376 m de caída libre en uno de los abismos más grandes del mundo, una de las 13 Maravillas de México.`,
-    `Los sótanos ocupan el día completo (de ${hMin} a ${hMax} horas) y salen desde ${cep.tour.groupMin} personas; Tamul, desde ${tamul.tour.groupMin}.`,
+    `Los sótanos ocupan el día completo (de ${hMin} a ${hMax} horas). Los cuatro se reservan desde 1 persona; si vas solo, son $700 más.`,
   ].join(" ");
 }

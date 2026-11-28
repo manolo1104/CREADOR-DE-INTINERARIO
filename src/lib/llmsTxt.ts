@@ -278,10 +278,10 @@ function bloque(b: Bloque, full: boolean): string {
 const CABECERA: Record<Locale, string> = {
   es: `# Tours Huasteca Potosina
 
-> Operadora turística local certificada en la Huasteca Potosina, San Luis Potosí, México, con salidas desde Ciudad Valles y Xilitla: en la mayoría de los recorridos pasamos por ti a tu hospedaje. Tours guiados con precio final en pesos mexicanos (MXN): fotografías en todos; transporte desde tu hospedaje, entradas, equipo de seguridad y desayuno según el recorrido. Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). Guías certificados NOM-09 SECTUR. ${resenasTexto(false)}.`,
+> Operadora turística local certificada en la Huasteca Potosina, San Luis Potosí, México, con salidas desde Ciudad Valles y Xilitla: en la mayoría de los recorridos pasamos por ti a tu hospedaje. Tours guiados con precio final en pesos mexicanos (MXN): fotografías en todos; transporte desde tu hospedaje, entradas, equipo de seguridad y desayuno según el recorrido. Los tours de aventura (rafting y RZR) incluyen seguro de viajero; en los demás es opcional: $80 por persona (pídelo al reservar). Guías certificados NOM-09 SECTUR. ${resenasTexto(false)}.`,
   en: `# Huasteca Potosina Tours
 
-> Certified local tour operator in the Huasteca Potosina, San Luis Potosí, Mexico, with departures from Ciudad Valles and Xilitla: on most tours we pick you up at your lodging. Guided tours at a final price in Mexican pesos (MXN): photographs on every tour; transport from your lodging, entrance fees, safety gear and breakfast depending on the tour. Adventure tours (rafting, RZR and the Tamul rappel) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). NOM-09 SECTUR certified guides. ${resenasTexto(true)}.`,
+> Certified local tour operator in the Huasteca Potosina, San Luis Potosí, Mexico, with departures from Ciudad Valles and Xilitla: on most tours we pick you up at your lodging. Guided tours at a final price in Mexican pesos (MXN): photographs on every tour; transport from your lodging, entrance fees, safety gear and breakfast depending on the tour. Adventure tours (rafting and RZR) include traveler insurance; on the others it's optional: MXN $80 per person (just ask when you book). NOM-09 SECTUR certified guides. ${resenasTexto(true)}.`,
 };
 
 /**
@@ -304,7 +304,7 @@ function reserva(locale: Locale): Bloque {
 - Cancellation: free up to 48 hours before the tour (full refund). If we cancel for safety (storm, weather alert, unsafe river or closed site), you choose a full refund or free rescheduling. The water's color isn't guaranteed: it depends on the river and the weather.${cancelacionPropia(locale)}
 - Departures and pickup: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)} The night before, between 8 and 9 PM, the guide sends the exact pickup time on WhatsApp.
 - Prices are in Mexican pesos (MXN) and per person${otras ? ` (except — ${otras})` : ""}.
-  On per-person tours, kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.`,
+  On per-person tours, kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. No children's discount on the rappels, the RZR, the Coffee Route, El Edén en el Jardín or the Xilo Cave: everyone pays the full price there.`,
     };
   }
   return {
@@ -314,7 +314,7 @@ function reserva(locale: Locale): Bloque {
 - Reserva: en línea con pago seguro (Stripe) o por WhatsApp. Cualquier reserva (paquetes incluidos) se aparta con el ${ANTICIPO_PCT} %; el saldo se liquida el día del tour.
 - Cancelación: gratuita hasta 48 horas antes del tour (reembolso completo). Si cancelamos nosotros por seguridad (tormenta, alerta meteorológica, río no seguro o paraje cerrado), eliges reembolso completo o reagendar sin costo. El color del agua no se garantiza: depende del río y del clima.${cancelacionPropia(locale)}
 - Salidas y recogida: ${excepcionesSalida(locale)}${excepcionesCiudadUnica(locale)} La noche anterior, entre 8 y 9 PM, el guía manda por WhatsApp la hora exacta de recogida.
-- Precios en pesos mexicanos (MXN) y por persona${otras ? ` (salvo — ${otras})` : ""}. En los recorridos por persona, niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.`,
+- Precios en pesos mexicanos (MXN) y por persona${otras ? ` (salvo — ${otras})` : ""}. En los recorridos por persona, niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo.`,
   };
 }
 
@@ -1049,7 +1049,7 @@ export function buildLlmsFullTxt(locale: Locale = "es", blog: BlogLlms[] = [], v
       // TODOS (`INCLUYE_SIEMPRE`, decisión del dueño) pero no están en el
       // `incluye` de cada tour: el blockquote de arriba decía "en todos" y el
       // "Incluye:" de la Gruta, seis líneas abajo, no las traía. (El seguro
-      // salió de esa lista el 17 nov 2026: solo lo traen rafting, RZR y el rappel en Tamul.)
+      // salió de esa lista el 17 nov 2026: solo lo traen rafting y RZR.)
       // En inglés `t` ya viene localizado y el locale traduce esa línea.
       // "; " y no ", ": renglones como "Equipo completo de rappel (arnés, casco,
       // guantes…)" traen comas dentro.

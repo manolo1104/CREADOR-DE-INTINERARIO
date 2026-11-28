@@ -1,5 +1,6 @@
 "use client";
 
+import { descargarArchivo } from "@/lib/admin/descargarArchivo";
 import { cobradoDe } from "@/lib/admin/dinero";
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
@@ -22,7 +23,6 @@ import { AvisoFlotante } from "@/components/admin/AvisoFlotante";
 import { avisoDeCobro } from "@/lib/admin/metodosCobro";
 import { origenValido } from "@/lib/origenReserva";
 import { MOTIVOS_CANCELACION, motivoParaGuardar, type MotivoCancelacion } from "@/lib/admin/cancelacion";
-import { htmlConfirmacion } from "@/lib/documentos/htmlConfirmacion";
 import { CheckinBoton } from "@/components/admin/Checkin";
 import type { EstadoCheckin } from "@/lib/encuestas/opciones";
 
@@ -465,12 +465,10 @@ export default function ReservasClient(
   function downloadPDF(b: TourBooking) {
     // El comprobante dice «✓ Reserva confirmada»: una cancelada no lo lleva (lote 5).
     if (b.status === "cancelled") { flash("❌ Esta reserva está cancelada: no lleva comprobante."); return; }
-    const win = window.open("", "_blank");
-    if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
-
-    win.document.write(htmlConfirmacion(b, window.location.origin));
-    win.document.close();
-    setTimeout(() => win.print(), 1000);
+    // 27 nov 2026: un PDF de verdad, armado en el servidor. Antes se abría el
+    // HTML y se imprimía: desde el celular salía con márgenes, la URL y la
+    // fecha al pie, y el itinerario aplastado.
+    descargarArchivo(`/api/admin/documento/${encodeURIComponent(b.confirmationNumber)}`, `Confirmación ${b.confirmationNumber}.pdf`);
   }
 
   const filtered = useMemo(() => {

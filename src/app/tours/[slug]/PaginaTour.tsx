@@ -42,7 +42,7 @@ import { ReservasRecientes } from "@/components/booking/ReservasRecientes";
 import { ReservaDirecto } from "@/components/ReservaDirecto";
 import { BloqueCasaPropia } from "@/components/BloqueCasaPropia";
 import { asLocale, localePath, buildAlternates, SITE, type Locale } from "@/lib/i18n/config";
-import { guiasDeTour, ACUATICOS_ECOTURISMO, RAPPELES_SOTANOS, CONSTANCIA_DC3 } from "@/lib/guias";
+import { guiasDeTour, ACUATICOS_ECOTURISMO, RAPPELES_SOTANOS, RAPPELES, CONSTANCIA_DC3 } from "@/lib/guias";
 import { buildOrganizationJsonLd, ORG_REF } from "@/lib/jsonld";
 import { localizeTour, getLocalizedDestino } from "@/lib/i18n/localize";
 import { getDict } from "@/lib/i18n/messages";
@@ -319,7 +319,7 @@ function construirDescripcion(
   // fragmento de Google era decir algo que TOURS_DB no respalda.
   const guiaDe = (a: AvalGuia) => (a ? (en ? "certified guide" : `guía ${a}`) : en ? "guide" : "guía");
   const guia = guiaDe(aval);
-  // 🔴 17 nov 2026: el seguro solo va incluido en rafting, RZR y el rappel en Tamul. En
+  // 🔴 17 nov 2026: el seguro solo va incluido en rafting y RZR. En
   // los demás la meta prometía "seguro incluido" y es opcional ($80 por
   // persona), así que solo se nombra donde el `incluye` del tour lo trae.
   const cola = (g: string) => conSeguro
@@ -487,7 +487,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   // 🔴 Lo que se le ENSEÑA al cliente como "qué incluye" (la lista visible y
   // la pregunta frecuente, que viaja al JSON-LD) pasa por `incluyeDeTour`, que
   // suma las fotos de `INCLUYE_SIEMPRE` (el seguro ya no: desde el 17 nov
-  // 2026 solo lo traen rafting, RZR y el rappel en Tamul en su propio `incluye`). Con
+  // 2026 solo lo traen rafting y RZR en su propio `incluye`). Con
   // `tour.incluye` a pelo, la lista callaba lo que el párrafo citable
   // de esta misma ficha promete. En inglés recibe el tour ya localizado.
   // Las expresiones de más abajo que DETECTAN piezas (desayuno, entradas,
@@ -698,7 +698,7 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
   else if (/gu[ií]a[^|]*acreditad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified guide" : "el guía acreditado");
   else if (/instructor certificad/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "a certified PADI instructor" : "el instructor certificado PADI");
   else if (/gu[ií]a/.test(incluyeBase)) piezasIncluidas.push(locale === "en" ? "the guide" : "el guía");
-  // El seguro solo va en los tours de aventura (rafting, RZR y el rappel en Tamul), que lo
+  // El seguro solo va en los tours de aventura (rafting y RZR), que lo
   // traen en su `incluye`; en los demás es opcional y se dice aparte.
   const conSeguro = /seguro/.test(incluyeBase);
   if (conSeguro) piezasIncluidas.push(locale === "en" ? "traveler insurance" : "el seguro de viajero");
@@ -863,6 +863,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
             ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This activity is for ages 10 and up, so there is no children's discount. The park admission is paid separately on site.` }
           // Desde 8 años (rafting, rappel, Gruta, Amanecer, Olla): el niño más
           // chico que entra ya paga como adulto, así que no hay descuento.
+          : base.sinDescuentoNinos && (req?.edadMinima ?? 0) < 8
+            ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person, from age 4 up: there is no children's discount on this tour. Ages 3 and under ride free.` }
           : (req?.edadMinima ?? 0) >= 8
             ? { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per person. This tour is for ages ${req?.edadMinima} and up, and from that age everyone pays the adult price, so there is no children's discount.` }
             : { q: "What is the price per person?", a: `The price is ${money(tour.precio)} MXN per adult. Kids 4–7 pay 50 % (${money(Math.round(tour.precio * 0.5))} MXN); ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. The discount applies when you book online.` },
@@ -893,6 +895,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           ? { q: "¿El precio es por persona?", a: `No: es una tarifa del grupo completo, desde ${money(tour.precio)} MXN si va una sola persona hasta ${money(tour.tarifaGrupo?.[maxGrupo - 1] ?? tour.precio)} MXN si van ${maxGrupo}, que es el máximo que permite el jardín. Entre más van, menos le toca a cada uno.` }
           : tour.soloAdultos
             ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona. Es una actividad para mayores de 10 años, por lo que no aplica descuento de niños. La entrada al parque se paga aparte en sitio.` }
+          : base.sinDescuentoNinos && (req?.edadMinima ?? 0) < 8
+            ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona, desde los 4 años: en este recorrido no hay descuento de niños. Los de 3 años o menos van gratis.` }
           : (req?.edadMinima ?? 0) >= 8
             ? { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona. Es un recorrido desde los ${req?.edadMinima} años, y a partir de esa edad todos pagan como adulto, así que no aplica descuento de niños.` }
             : { q: "¿Cuál es el precio por persona?", a: `El precio es ${money(tour.precio)} MXN por persona adulta. Los niños de 4 a 7 años pagan el 50 % (${money(Math.round(tour.precio * 0.5))} MXN); los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. El descuento se aplica solo al reservar en línea.` },
@@ -1665,13 +1669,19 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
           {guiasDeTour(tour.slug).length > 0 && (
             <section aria-labelledby="guias-tour">
               <h2 id="guias-tour" className="font-cormorant text-crema text-2xl mb-2">
-                {locale === "en" ? "Who guides you" : "Quién te guía"}
+                {RAPPELES.includes(tour.slug)
+                  ? (locale === "en" ? "Who takes you down" : "Quién te baja")
+                  : (locale === "en" ? "Who guides you" : "Quién te guía")}
               </h2>
               {/* «En estos ríos» solo en los acuáticos de Alex y Ángel. Erick
                   (Olla de la Luz, Gruta de Xilo; 11 nov 2026) es de montaña y
                   cueva. Un guía sin certificación confirmada: frase neutra. */}
               <p className="text-sm text-crema/55 font-dm mb-5">
-                {!guiasDeTour(tour.slug).every((g) => g.certificaciones.es.length > 0)
+                {RAPPELES.includes(tour.slug)
+                  ? (locale === "en"
+                    ? "A rope access technician rigs the ropes and checks your gear before every descent."
+                    : "Un técnico vertical arma las cuerdas y revisa tu equipo antes de cada descenso.")
+                  : !guiasDeTour(tour.slug).every((g) => g.certificaciones.es.length > 0)
                   ? (locale === "en" ? "One of our own guides, not a subcontractor." : "Un guía de la casa, no subcontratado.")
                   : ACUATICOS_ECOTURISMO.includes(tour.slug)
                     ? (locale === "en"
@@ -1686,12 +1696,46 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                   las credenciales debajo como sellos. Hover solo en el zoom de
                   la foto, con el mismo patrón del resto del sitio. */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {guiasDeTour(tour.slug).map((g) => (
+                {guiasDeTour(tour.slug).map((g) => {
+                  const oficio = g.oficio ? (locale === "en" ? g.oficio.en : g.oficio.es) : (locale === "en" ? "Guiding" : "Guía");
+                  const linea = `${oficio} ${locale === "en" ? "since" : "desde"} ${g.desde}${g.origen ? ` · ${g.origen}` : ""}`;
+                  const sellos = [...(locale === "en" ? g.certificaciones.en : g.certificaciones.es), ...(g.idiomas ? [locale === "en" ? g.idiomas.en : g.idiomas.es] : [])];
+                  const frase = (
+                    <blockquote className="mt-3.5 font-cormorant italic text-crema/80 text-base leading-snug">
+                      «{locale === "en" ? g.frase.en : g.frase.es}»
+                    </blockquote>
+                  );
+                  // Sin foto todavía (27 nov 2026, Nacho): su inicial, su
+                  // nombre y lo que hace. Nada de una cara que no es la suya.
+                  if (!g.foto) return (
+                    <figure key={g.nombre} className="border border-crema/15 p-5 flex flex-col">
+                      <div className="flex items-center gap-4">
+                        <span aria-hidden="true" className="w-14 h-14 shrink-0 rounded-full border border-dorado/50 grid place-items-center font-cormorant text-dorado text-3xl leading-none">
+                          {(g.apodo ?? g.nombre).charAt(0)}
+                        </span>
+                        <div>
+                          <p className="font-cormorant text-crema text-3xl leading-none">{g.apodo ?? g.nombre}</p>
+                          <p className="mt-1.5 text-xs text-crema/75 font-dm">
+                            {g.apodo ? <>{g.nombre}<br /></> : null}{linea}
+                          </p>
+                        </div>
+                      </div>
+                      {sellos.length > 0 && (
+                        <ul className="mt-4 flex flex-wrap gap-1.5">
+                          {sellos.map((c) => (
+                            <li key={c} className="rounded-full border border-dorado/40 text-dorado/90 text-[10px] font-dm tracking-wide px-2 py-0.5">{c}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {frase}
+                    </figure>
+                  );
+                  return (
                   <figure key={g.nombre} className="group">
                     <div className="relative aspect-[3/4] overflow-hidden">
                       <Image
                         src={g.foto}
-                        alt={locale === "en" ? g.fotoAlt.en : g.fotoAlt.es}
+                        alt={g.fotoAlt ? (locale === "en" ? g.fotoAlt.en : g.fotoAlt.es) : g.nombre}
                         fill
                         className="object-cover transition-transform duration-700 ease-out [@media(hover:hover)]:group-hover:scale-[1.04]"
                         style={{ objectPosition: g.fotoPos }}
@@ -1704,24 +1748,23 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                         </p>
                         <p className="mt-1.5 text-xs text-crema/75 font-dm">
                           {g.apodo ? <>{g.nombre}<br /></> : null}
-                          {locale === "en" ? `Guiding since ${g.desde}` : `Guía desde ${g.desde}`}{g.origen ? ` · ${g.origen}` : ""}
+                          {linea}
                         </p>
                       </div>
                     </div>
                     <figcaption className="pt-3.5">
                       <ul className="flex flex-wrap gap-1.5">
-                        {[...(locale === "en" ? g.certificaciones.en : g.certificaciones.es), locale === "en" ? g.idiomas.en : g.idiomas.es].map((c) => (
+                        {sellos.map((c) => (
                           <li key={c} className="rounded-full border border-dorado/40 text-dorado/90 text-[10px] font-dm tracking-wide px-2 py-0.5">
                             {c}
                           </li>
                         ))}
                       </ul>
-                      <blockquote className="mt-3.5 font-cormorant italic text-crema/80 text-base leading-snug">
-                        «{locale === "en" ? g.frase.en : g.frase.es}»
-                      </blockquote>
+                      {frase}
                     </figcaption>
                   </figure>
-                ))}
+                  );
+                })}
               </div>
             </section>
           )}
@@ -2027,6 +2070,8 @@ export function Pagina({ params, locale }: Props & { locale: Locale }) {
                 groupMax={tour.groupMax}
                 soloMayores={!!tour.soloAdultos}
                 tarifaGrupo={tour.tarifaGrupo}
+                sinDescuentoNinos={!!base.sinDescuentoNinos}
+                edadMinima={TOUR_REQUISITOS[tour.id]?.edadMinima ?? 0}
               />
             )}
 

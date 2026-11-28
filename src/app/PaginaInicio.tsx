@@ -580,9 +580,9 @@ export async function Pagina({ locale }: { locale: Locale }) {
                     );
                   })}
                 </ul>
-                {/* 17 nov 2026: el seguro solo va incluido en rafting, RZR y el rappel en Tamul. */}
+                {/* 17 nov 2026: el seguro solo va incluido en rafting y RZR. */}
                 <p className="mb-4 font-dm text-sm leading-relaxed text-negro/65">
-                  <strong className="text-negro/85">Traveler insurance</strong>, except on adventure tours (rafting, RZR and the Tamul rappel), which include it. On the rest it&apos;s optional: MXN $80 per person (just ask when you book).
+                  <strong className="text-negro/85">Traveler insurance</strong>, except on adventure tours (rafting and RZR), which include it. On the rest it&apos;s optional: MXN $80 per person (just ask when you book).
                 </p>
                 <p className="font-dm text-sm leading-relaxed text-negro/65">
                   <strong className="text-negro/85">Flights</strong>, any meals not listed on your itinerary{TOURS_DB.length > nConTraslado ? <>, and getting to the meeting point on the {TOURS_DB.length - nConTraslado} tours that don&apos;t pick you up</> : null}. That&apos;s the whole list.

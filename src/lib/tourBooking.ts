@@ -152,8 +152,13 @@ export function esViajeroSolo(tour: TourParaSolo, adults: number, childrenMid = 
  * iba a cobrar en $3,480. Todo lo que muestre un total de recorrido tiene que
  * pasar por aquí; el servidor hace la misma bifurcación en `computeTourCharge`.
  */
+/** El cargo por reservar para UNA sola persona que paga (0 si no aplica). */
+export function recargoUnaPersonaDe(tour: { recargoUnaPersona?: number }, pagan: number): number {
+  return tour.recargoUnaPersona && pagan === 1 ? tour.recargoUnaPersona : 0;
+}
+
 export function totalRecorrido(
-  tour: Pick<Tour, "precio" | "precioLista" | "tarifaGrupo" | "escalaPersona" | "groupMin" | "precioUnidad" | "eleccion">,
+  tour: Pick<Tour, "precio" | "precioLista" | "tarifaGrupo" | "escalaPersona" | "groupMin" | "precioUnidad" | "eleccion"> & { sinDescuentoNinos?: boolean; recargoUnaPersona?: number },
   adults: number,
   childrenMid = 0,
   childrenSmall = 0,
@@ -178,7 +183,14 @@ export function totalRecorrido(
   // El extra de la opción elegida (Ruta Acuática → Tamasopo, +$230) va DENTRO
   // del precio por cabeza: el menor paga su 50 % también de él.
   const porCabeza = precioPorCabeza(tour, adults + childrenMid + childrenSmall) + extraDeEleccion(tour, eleccion);
-  return calcTourTotal(porCabeza, adults, childrenMid, childrenSmall, promoDiscount).total;
+  // Sin descuento de menores (27 nov 2026: rappeles, RZR, Café, Edén, Gruta):
+  // el niño de 4 a 7 paga como adulto.
+  const total = tour.sinDescuentoNinos
+    ? calcTourTotal(porCabeza, adults + childrenMid + childrenSmall, 0, 0, promoDiscount).total
+    : calcTourTotal(porCabeza, adults, childrenMid, childrenSmall, promoDiscount).total;
+  // Una sola persona que paga (rappeles, 27 nov 2026): su precio + el cargo.
+  // Va después de la promo: el cargo no se descuenta.
+  return total + recargoUnaPersonaDe(tour, adults + childrenMid + childrenSmall);
 }
 
 // ── Códigos promo ────────────────────────────────────────────

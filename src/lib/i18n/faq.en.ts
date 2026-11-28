@@ -319,7 +319,7 @@ const ES: FaqContent = {
     },
     {
       q: "¿Hay tours para niños o familias?",
-      a: "Sí. Varios recorridos son de dificultad baja y muy aptos para ir en familia, como las Cascadas del Meco, el Paraíso Escalonado (Minas Viejas y Micos) y la Ruta Surrealista de Edward James. El precio es por persona, con tarifa de niños: de 4 a 7 años pagan el 50 %; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.",
+      a: "Sí. Varios recorridos son de dificultad baja y muy aptos para ir en familia, como las Cascadas del Meco, el Paraíso Escalonado (Minas Viejas y Micos) y la Ruta Surrealista de Edward James. El precio es por persona, con tarifa de niños: de 4 a 7 años pagan el 50 %; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo.",
     },
     {
       q: "¿Se puede conocer la Huasteca Potosina en 3 días?",
@@ -439,7 +439,7 @@ const EN: FaqContent = {
     },
     {
       q: "Are there tours for kids and families?",
-      a: "Yes. Several routes are low difficulty and work very well for families — Cascadas del Meco, the Stepped Paradise (Minas Viejas and Micos) and the Edward James Surrealist Route. Pricing is per person, with a children's rate: kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.",
+      a: "Yes. Several routes are low difficulty and work very well for families — Cascadas del Meco, the Stepped Paradise (Minas Viejas and Micos) and the Edward James Surrealist Route. Pricing is per person, with a children's rate: kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. No children's discount on the rappels, the RZR, the Coffee Route, El Edén en el Jardín or the Xilo Cave: everyone pays the full price there.",
     },
     {
       q: "Can I see the Huasteca Potosina in 3 days?",

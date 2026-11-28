@@ -64,3 +64,56 @@ describe("regla de niños: ≤3 gratis, 4–7 al 50 %, 8+ adulto", () => {
     expect(REGLA_NINOS.es).toMatch(/4 a 7 años pagan el 50 %.*3 años o menos van gratis.*8 en adelante/);
   });
 });
+
+// 27 nov 2026 (Manolo): sin descuento de menores en los 4 rappeles, RZR,
+// Travesía del Café, El Edén y la Gruta de Xilo. El niño de 4 a 7 paga completo.
+describe("sin descuento de menores (sinDescuentoNinos)", () => {
+  const cafe = () => tourEnFecha(TOURS_DB.find((t) => t.slug === "travesia-del-cafe")!, FECHA);
+  it("los 8 tours llevan la marca", () => {
+    const ids = ["tour-rappel-tamul", "tour-rappel-cepillo", "tour-rappel-huahuas", "tour-rappel-golondrinas",
+      "tour-rzr-xilitla", "tour-travesia-cafe", "tour-eden-jardin", "tour-gruta-xilo"];
+    for (const id of ids) expect(TOURS_DB.find((t) => t.id === id)?.sinDescuentoNinos, id).toBe(true);
+    expect(TOURS_DB.find((t) => t.id === "tour-tamul")?.sinDescuentoNinos).toBeFalsy();
+  });
+  it("Travesía del Café: 2 adultos + niño de 5 = $2,700 (3 × $900), no $2,250", () => {
+    expect(totalRecorrido(cafe(), 2, 0, 1)).toBe(2700);
+    const c = computeTourCharge({ tourSlug: "travesia-del-cafe", adults: 2, childrenMid: 0, childrenSmall: 1, infants: 0, tourDate: FECHA, pct: 100 });
+    expect(c?.total).toBe(2700);
+  });
+  it("el bebé de 0 a 3 sigue sin pagar", () => {
+    expect(totalRecorrido(cafe(), 2, 0, 0, 0, null, 1)).toBe(1800);
+  });
+  it("el panel y las cotizaciones cobran igual que la web", () => {
+    const l = { tourSlug: "travesia-del-cafe", adults: 2, childrenMid: 0, childrenSmall: 1, infants: 0, tourDate: FECHA } as Parameters<typeof calcTourLine>[0];
+    expect(calcTourLine(l)).toBe(2700);
+    expect(subtotalPanel(l as Parameters<typeof subtotalPanel>[0])).toBe(2700);
+  });
+  it("Tamul (Expedición) conserva el 50 %", () => {
+    expect(totalRecorrido(tamul(), 2, 0, 1)).toBeLessThan(totalRecorrido(tamul(), 3, 0, 0));
+  });
+});
+
+// 27 nov 2026 (Manolo): los rappeles se reservan desde 1 persona; si va UNA
+// sola, paga lo normal más $700.
+describe("rappeles: una sola persona paga $700 extra", () => {
+  const r = (slug: string) => tourEnFecha(TOURS_DB.find((t) => t.slug === slug)!, FECHA);
+  it("Cepillo: 1 persona $3,900; 2 personas $6,400", () => {
+    expect(totalRecorrido(r("rappel-sotano-del-cepillo"), 1)).toBe(3900);
+    expect(totalRecorrido(r("rappel-sotano-del-cepillo"), 2)).toBe(6400);
+  });
+  it("Tamul $3,150, Huahuas $4,900, Golondrinas $5,900 para 1", () => {
+    expect(totalRecorrido(r("rappel-tamul"), 1)).toBe(3150);
+    expect(totalRecorrido(r("rappel-sotano-de-las-huahuas"), 1)).toBe(4900);
+    expect(totalRecorrido(r("rappel-sotano-de-las-golondrinas"), 1)).toBe(5900);
+  });
+  it("el cobro del servidor y el panel dicen lo mismo", () => {
+    const c = computeTourCharge({ tourSlug: "rappel-sotano-del-cepillo", adults: 1, childrenMid: 0, childrenSmall: 0, infants: 0, tourDate: FECHA, pct: 30 });
+    expect(c?.total).toBe(3900);
+    const l = { tourSlug: "rappel-sotano-del-cepillo", adults: 1, childrenMid: 0, childrenSmall: 0, infants: 0, tourDate: FECHA } as Parameters<typeof calcTourLine>[0];
+    expect(calcTourLine(l)).toBe(3900);
+    expect(subtotalPanel(l as Parameters<typeof subtotalPanel>[0])).toBe(3900);
+  });
+  it("los demás tours no cobran cargo por ir solo", () => {
+    expect(totalRecorrido(tamul(), 1)).toBe(1550);
+  });
+});

@@ -110,11 +110,11 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "Is transport included?",
-      a: "Yes — the round-trip transfer from your lodging in Ciudad Valles or Xilitla is included, and from there we head to the river landing. Meals are the one thing the price doesn't cover.",
+      a: "Yes — the round-trip transfer from your lodging in Ciudad Valles or Xilitla is included, and from there we head to the river landing. Breakfast is included too; lunch isn't.",
     },
     {
       q: "Do photos and video cost extra?",
-      a: "No, they're included: your guide takes photos and video of your descent at no additional cost. There's no drone or separate photographer anymore.",
+      a: "No, they're included: your descent is filmed with a GoPro 13 and with drone video, at no additional cost.",
     },
     {
       q: "What gear do I need to bring?",
@@ -140,7 +140,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "What's the minimum group size?",
-      a: "Two people: with two, the departure runs.",
+      a: "You can book from 1 person. Going alone, you pay the regular price plus MXN $700; from 2 people, everyone pays the regular price.",
     },
     {
       q: "How deep is El Cepillo sinkhole?",
@@ -162,7 +162,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "What's the minimum group size?",
-      a: "Two people: with two, the departure runs.",
+      a: "You can book from 1 person. Going alone, you pay the regular price plus MXN $700; from 2 people, everyone pays the regular price.",
     },
     {
       q: "How deep is the Huahuas sinkhole?",
@@ -184,7 +184,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "What's the minimum group size?",
-      a: "Two people: with two, the departure runs.",
+      a: "You can book from 1 person. Going alone, you pay the regular price plus MXN $700; from 2 people, everyone pays the regular price.",
     },
     {
       q: "Can you go down all year round?",
@@ -387,7 +387,7 @@ export const TOUR_FAQS_EN: Record<string, FAQ[]> = {
     },
     {
       q: "Do you fly a drone?",
-      a: "No. Las Pozas does not allow drones or tripods, so neither is part of this tour. Photos are taken handheld.",
+      a: "No. Las Pozas does not allow drones or tripods, so neither is part of this tour. Photos are taken handheld. The only tour of ours with drone video is the Rappel at Tamul Waterfall.",
     },
     {
       q: "Why doesn’t Day 1 run on Tuesdays?",

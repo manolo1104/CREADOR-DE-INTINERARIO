@@ -40,7 +40,8 @@ describe("un solo guía por salida", () => {
 describe("mínimo del tour vs. mínimo de rentabilidad", () => {
   it("el mínimo del tour sale de groupMin; 1–2 o sin dato no cuentan", () => {
     expect(minimoDelTour(RAF)).toBe(5);
-    expect(minimoDelTour(RAP)).toBe(4);
+    // 27 nov 2026 (Manolo): el rappel en Tamul sale desde 1 persona (antes 4).
+    expect(minimoDelTour(RAP)).toBeNull();
     expect(minimoDelTour(TAM)).toBeNull();
     expect(minimoDelTour(EDEN)).toBeNull();
     expect(minimoDelTour("no-existe")).toBeNull();
@@ -53,7 +54,8 @@ describe("mínimo del tour vs. mínimo de rentabilidad", () => {
     expect(estadoDeSalida({ slug: RAF, personas: 2, aMedida: false }, 8)).toBe("no-llega");
     expect(bajoMinimoRentable({ slug: RAF, personas: 2, aMedida: false })).toBe(true);
     expect(bajoMinimoRentable({ slug: RAF, personas: 4, aMedida: false })).toBe(false);
-    expect(estadoDeSalida({ slug: RAP, personas: 3, aMedida: false }, 10)).toBe("no-llega");
+    // El rappel en Tamul ya no tiene mínimo para salir: con 3 nunca «no llega».
+    expect(estadoDeSalida({ slug: RAP, personas: 3, aMedida: false }, 10)).not.toBe("no-llega");
     expect(estadoDeSalida({ slug: TAM, personas: 2, aMedida: false }, 12)).toBe("bajo-minimo");
     expect(estadoDeSalida({ slug: TAM, personas: 3, aMedida: false }, 12)).toBe("en-meta");
   });

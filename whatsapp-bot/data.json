@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-28T00:19:14.922Z",
+  "generatedAt": "2026-11-28T02:46:37.030Z",
   "_nota": "Generado por src/scripts/export-bot-data.ts — NO editar a mano. Cambia la fuente (src/lib/*) y vuelve a correr el script.",
   "empresa": {
     "nombre": "Tours Huasteca Potosina",
@@ -13,7 +13,7 @@
     "zona": "Huasteca Potosina, San Luis Potosí, México (Xilitla, Aquismón, Ciudad Valles, Tamasopo, El Naranjo, Rioverde)",
     "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Rappel en el Sótano del Cepillo (7:00–8:00 AM), Rappel en el Sótano de las Huahuas (7:00–8:00 AM) y Rappel en el Sótano de las Golondrinas (7:00–8:00 AM) tienen otro horario. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
-    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
+    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo. Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
     "rating": 4.7,
     "resenas": 169,
     "confianza": {
@@ -274,9 +274,9 @@
       "slug": "rappel-tamul",
       "nombre": "Rappel en la Cascada de Tamul — Descenso Frente a la Cascada Más Alta de San Luis Potosí",
       "tipo": "Aventura Extrema",
-      "dificultad": "alta",
-      "duracionHrs": 5,
-      "duracionTexto": "5 h",
+      "dificultad": "media",
+      "duracionHrs": 6,
+      "duracionTexto": "6 h",
       "precio": 2450,
       "precioLista": 2450,
       "promo": null,
@@ -284,14 +284,14 @@
       "tarifaGrupo": null,
       "escalaPersona": null,
       "cancelacion": null,
-      "groupMin": 4,
+      "groupMin": 1,
       "groupMax": 10,
       "soloAdultos": false,
       "privateAvailable": false,
       "privateExtraPorPersona": null,
       "privadoTarifa": null,
       "tagline": "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
-      "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y las fotos y el video que te toma tu guía para que lo cuentes. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
+      "pitch": "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados, nado en las pozas antes de bajar y tu descenso grabado con GoPro 13 y con dron. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
       "url": "https://www.huasteca-potosina.com/tours/rappel-tamul",
       "foto": "https://www.huasteca-potosina.com/imagenes/tours/rappel-tamul/hero.jpg",
       "destinos": [
@@ -301,54 +301,62 @@
       ],
       "incluye": [
         "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+        "Desayuno",
         "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
         "Guías de alta montaña certificados",
         "Briefing y técnica de descenso — apto para principiantes",
-        "Seguro de viajero para cada participante"
+        "Fotos y video del descenso con GoPro 13",
+        "Video con dron del descenso",
+        "Nado en las pozas antes del descenso"
       ],
       "noIncluye": [
         "Cómo llegar hasta Ciudad Valles o Xilitla: de ahí sale la unidad",
-        "Alimentos (no lleva desayuno ni comida)",
+        "Comida (sí lleva desayuno)",
         "Propinas y gastos personales"
       ],
-      "seguro": "SÍ incluye seguro de viajero (es tour de aventura).",
+      "seguro": "No incluye seguro de viajero. No lo menciones ni lo ofrezcas; si el cliente pregunta por seguro, pásalo al equipo.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
-      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 1:00 PM (~5 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
+      "horario": "Sale entre 8:00 y 9:00 AM y termina aprox. 2:00 PM (~6 h). La hora exacta se la manda su guía la noche anterior, entre 8 y 9 pm.",
       "itinerario": [
         {
           "hora": "8:00–9:00 AM",
-          "momento": "Recogida",
-          "texto": "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón."
+          "momento": "Recogida y desayuno",
+          "texto": "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón. El desayuno va incluido, en el camino."
         },
         {
-          "hora": "10:00 AM",
+          "hora": "10:30 AM",
           "momento": "Embarcadero del Tampaón",
           "texto": "Llegas al río y conoces a los guías de alta montaña que van a bajar contigo. Aquí se queda lo que no baja a la pared."
         },
         {
-          "hora": "10:30 AM",
+          "hora": "11:00 AM",
           "momento": "Equipo y briefing",
           "texto": "Arnés, casco y guantes, y la técnica de descenso practicada en seco antes de asomarte. No necesitas experiencia: el primer rappel es 100 % guiado."
         },
         {
           "hora": "11:30 AM",
-          "momento": "El descenso",
-          "texto": "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. Tu guía te va tomando fotos y video."
+          "momento": "Nado en las pozas",
+          "texto": "Antes del descenso, un chapuzón en las pozas turquesa que forma el río justo antes de caer por la Cascada de Tamul."
         },
         {
           "hora": "12:00 PM",
+          "momento": "El descenso",
+          "texto": "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. El dron graba desde el aire y la GoPro 13 desde tu casco."
+        },
+        {
+          "hora": "12:30 PM",
           "momento": "Frente a la cortina de agua",
           "texto": "El tramo en el que la pared se tapiza de vegetación y el ruido del agua tapa todo lo demás."
         },
         {
-          "hora": "12:30 PM",
+          "hora": "1:00 PM",
           "momento": "El cañón desde abajo",
           "texto": "Con los pies en el suelo, el río turquesa y la pared que acabas de bajar se ven de otra manera."
         },
         {
-          "hora": "1:00 PM",
+          "hora": "2:00 PM",
           "momento": "Regreso",
           "texto": "De vuelta a tu hospedaje."
         }
@@ -358,11 +366,11 @@
         "detalle": "SÍ incluye el traslado redondo: pasamos por el cliente a su hospedaje en Ciudad Valles o en Xilitla y vamos al embarcadero del Río Tampaón (Manolo, 27 nov 2026: todos los rappeles salen de las dos ciudades)."
       },
       "alimentos": {
-        "desayuno": false,
+        "desayuno": true,
         "comida": false,
-        "detalle": "NO incluye ningún alimento."
+        "detalle": "Incluye SOLO el desayuno, en el camino. No lleva comida."
       },
-      "fotos": "Fotos y video del descenso que toma el guía, sin costo extra. Ya NO incluye dron ni fotógrafo aparte. NO las describas como 'profesionales'.",
+      "fotos": "Fotos y video del descenso con GoPro 13 y video con dron, sin costo extra. NO las describas como 'profesionales'.",
       "incluyeSiempre": [
         "Fotografías y video del recorrido que toma tu guía"
       ],
@@ -380,7 +388,8 @@
       ],
       "requisitos": [
         "No se necesita experiencia previa: el primer descenso es 100 % guiado por guías de alta montaña",
-        "Las fotos y el video que te toma tu guía van incluidos, sin costo extra"
+        "Las fotos y el video con GoPro 13 y el video con dron van incluidos, sin costo extra",
+        "Se reserva desde 1 persona: si vas solo, se suman $700 al precio"
       ],
       "edadMinima": 8,
       "edadNota": "Si viajas con menores, cuéntanos su edad y complexión al reservar: confirmamos contigo que el descenso sea apto.",
@@ -391,11 +400,11 @@
         },
         {
           "q": "¿Está incluido el transporte?",
-          "a": "Sí, el traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla va incluido; de ahí vamos al embarcadero del río. Lo que no incluye el precio son los alimentos."
+          "a": "Sí, el traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla va incluido; de ahí vamos al embarcadero del río. También va incluido el desayuno; la comida no."
         },
         {
           "q": "¿Las fotos y el video tienen costo extra?",
-          "a": "No, están incluidos: tu guía te toma fotos y video del descenso, sin costo adicional. Ya no incluye dron ni fotógrafo aparte."
+          "a": "No, están incluidos: tu descenso queda grabado con GoPro 13 y con video de dron, sin costo adicional."
         },
         {
           "q": "¿Qué equipo debo llevar?",
@@ -424,7 +433,7 @@
       "tarifaGrupo": null,
       "escalaPersona": null,
       "cancelacion": null,
-      "groupMin": 2,
+      "groupMin": 1,
       "groupMax": 10,
       "soloAdultos": false,
       "privateAvailable": false,
@@ -502,7 +511,7 @@
         "amigos",
         "cuevas"
       ],
-      "urgencia": "Grupo chico por seguridad — sale desde 2 personas",
+      "urgencia": "Grupo chico por seguridad — se reserva desde 1 persona",
       "queLlevar": [
         "Ropa deportiva cómoda y que se pueda ensuciar",
         "Calzado cerrado con suela firme",
@@ -514,7 +523,7 @@
         "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
         "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
         "Es un día completo en la sierra de Aquismón: el descenso es de más de 120 metros",
-        "Sale con mínimo 2 personas"
+        "Se reserva desde 1 persona: si vas solo, se suman $700 al precio"
       ],
       "edadMinima": 8,
       "edadNota": null,
@@ -533,7 +542,7 @@
         },
         {
           "q": "¿Desde cuántas personas sale?",
-          "a": "Desde 2 personas: con dos ya se abre la salida."
+          "a": "Se reserva desde 1 persona. Si vas solo, pagas el precio normal más $700; desde 2 personas, cada quien paga el precio normal."
         },
         {
           "q": "¿Qué tan profundo es el Sótano del Cepillo?",
@@ -558,7 +567,7 @@
       "tarifaGrupo": null,
       "escalaPersona": null,
       "cancelacion": null,
-      "groupMin": 2,
+      "groupMin": 1,
       "groupMax": 10,
       "soloAdultos": false,
       "privateAvailable": false,
@@ -636,7 +645,7 @@
         "amigos",
         "buena condición física"
       ],
-      "urgencia": "Grupo chico por seguridad — sale desde 2 personas",
+      "urgencia": "Grupo chico por seguridad — se reserva desde 1 persona",
       "queLlevar": [
         "Ropa deportiva cómoda y que se pueda ensuciar",
         "Calzado cerrado con suela firme",
@@ -649,7 +658,7 @@
         "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
         "Es un día largo en la sierra: conviene buena condición física",
         "El sótano es Monumento Natural: se respetan las reglas de la comunidad (sin drones, sin basura y en silencio cerca de las aves)",
-        "Sale con mínimo 2 personas"
+        "Se reserva desde 1 persona: si vas solo, se suman $700 al precio"
       ],
       "edadMinima": 8,
       "edadNota": null,
@@ -668,7 +677,7 @@
         },
         {
           "q": "¿Desde cuántas personas sale?",
-          "a": "Desde 2 personas: con dos ya se abre la salida."
+          "a": "Se reserva desde 1 persona. Si vas solo, pagas el precio normal más $700; desde 2 personas, cada quien paga el precio normal."
         },
         {
           "q": "¿Qué tan profundo es el Sótano de las Huahuas?",
@@ -693,7 +702,7 @@
       "tarifaGrupo": null,
       "escalaPersona": null,
       "cancelacion": null,
-      "groupMin": 2,
+      "groupMin": 1,
       "groupMax": 10,
       "soloAdultos": false,
       "privateAvailable": false,
@@ -770,7 +779,7 @@
         "la más grande",
         "buena condición física"
       ],
-      "urgencia": "Se confirma con la comunidad — sale desde 2 personas",
+      "urgencia": "Se confirma con la comunidad — se reserva desde 1 persona",
       "queLlevar": [
         "Ropa deportiva cómoda y que se pueda ensuciar",
         "Calzado cerrado con suela firme",
@@ -784,7 +793,7 @@
         "Es un día largo y el descenso es de 376 metros en caída libre: conviene buena condición física",
         "Se baja solo cuando las aves ya salieron y la comunidad lo permite; en temporada de anidación se cierra, así que al reservar confirmamos que tu fecha esté abierta",
         "El sótano es Monumento Natural: sin drones, sin basura y en silencio cerca de las aves",
-        "Sale con mínimo 2 personas"
+        "Se reserva desde 1 persona: si vas solo, se suman $700 al precio"
       ],
       "edadMinima": 8,
       "edadNota": null,
@@ -803,7 +812,7 @@
         },
         {
           "q": "¿Desde cuántas personas sale?",
-          "a": "Desde 2 personas: con dos ya se abre la salida."
+          "a": "Se reserva desde 1 persona. Si vas solo, pagas el precio normal más $700; desde 2 personas, cada quien paga el precio normal."
         },
         {
           "q": "¿Se puede bajar todo el año?",
@@ -1039,7 +1048,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1197,7 +1206,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla (traslado redondo incluido) o en Ciudad Valles, con $400 MÁS POR RESERVA, no por persona (no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado cuesta $400 más por reserva (no por persona).",
       "recogidaTipo": "hospedaje",
@@ -1345,7 +1354,7 @@
         "Peticiones especiales fuera del recorrido, que el jardín cotiza aparte",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla a tiempo para su horario fijo (8:00 AM lun, mié, jue y vie · 7:00 AM sáb y dom · 5:00 PM de mié a lun). Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -1505,7 +1514,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1653,7 +1662,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1797,7 +1806,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles (traslado redondo incluido; no necesitas hospedarte con nosotros).",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM.",
       "recogidaTipo": "hospedaje",
@@ -1927,7 +1936,7 @@
       "noIncluye": [
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, entre 8:00 y 9:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -2050,7 +2059,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA, en el propio RZR (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta. Al recogerlo le entregamos el casco y la lámpara frontal: desde el inicio, no al llegar.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla, en RZR, a las 7:40 PM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -2195,7 +2204,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 4:00 y 4:30 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -2350,7 +2359,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla a las 4:00 AM al amanecer o 3:00–4:00 PM al atardecer. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -2501,7 +2510,7 @@
         "Propinas y gastos personales",
         "Seguro de viajero: opcional, $80 por persona (pídelo al reservar)"
       ],
-      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.",
+      "seguro": "NO incluye seguro: Seguro de viajero: opcional, $80 por persona (pídelo al reservar). Solo los tours de aventura (rafting y RZR) lo traen.",
       "puntoEncuentro": "Pasamos por ti a tu hospedaje EN XILITLA (traslado redondo incluido). Desde Ciudad Valles NO va incluido, pero SÍ podemos ir por el cliente con un COSTO EXTRA de traslado que se cotiza aparte; la otra opción es que suba a Xilitla por su cuenta.",
       "salida": "Pasamos por ti a tu hospedaje en Xilitla entre 7:00 y 8:00 AM. Desde Ciudad Valles el traslado tiene costo adicional: te lo cotizamos por WhatsApp.",
       "recogidaTipo": "hospedaje-xilitla",
@@ -5061,7 +5070,7 @@
     },
     "mejorTemporada": "Se puede venir todo el año. Del 30 de octubre a mayo el agua baja clara; el turquesa más intenso es de marzo a mayo, y es cuando más gente hay. Junio es de transición: llegan las primeras lluvias. De julio a octubre las cascadas van a todo caudal y el agua puede bajar con sedimento; el rafting depende del nivel del río ese día y, si el río crece, se reprograma sin costo. Del 30 de octubre a diciembre es «la mejor temporada para venir» (aflojan las lluvias, el agua se aclara y todavía no llegan las multitudes de primavera), pero el turquesa más intenso es de marzo a mayo: no lo prometas para esas fechas.",
     "salida": "No hay un punto de salida único ni hace falta hospedarse en nuestro hotel (hotel, hostal, cabaña o Airbnb, da igual). La mayoría de los recorridos pasa por ti a tu hospedaje en Xilitla o Ciudad Valles entre 8:00 y 9:00 AM. Rappel en el Sótano del Cepillo (7:00–8:00 AM), Rappel en el Sótano de las Huahuas (7:00–8:00 AM) y Rappel en el Sótano de las Golondrinas (7:00–8:00 AM) tienen otro horario. Recogen solo en tu hospedaje de Xilitla, con horario propio: Travesía del Café (8:00–9:00 AM), Gruta de Xilo (7:40 PM), Amanecer de Nubes (4:00–4:30 AM), Olla de la Luz (7:00–8:00 AM), El Edén en el Jardín (horario según el día) y Sótano de las Golondrinas (4:00 AM al amanecer o 3:00–4:00 PM al atardecer); desde Ciudad Valles, esos tienen costo adicional que te cotizamos por WhatsApp. Recorrido en RZR por Xilitla (9:00 AM–5:00 PM): nos vemos en nuestra base en Xilitla; el transporte hasta Xilitla no va incluido. Recorrido en RZR por Xilitla: el cliente elige la hora de inicio, entre 9:00 AM y 5:00 PM.",
-    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
+    "ninos": "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo. Rappel en la Cascada de Tamul, Rappel en el Sótano del Cepillo, Rappel en el Sótano de las Huahuas, Rappel en el Sótano de las Golondrinas, Rafting en el Río Tampaón, Gruta de Xilo, Amanecer de Nubes, Olla de la Luz: a partir de 8 años. Sótano de las Golondrinas: a partir de 3 años.",
     "cancelacion": "Cancela gratis hasta 48 h antes.",
     "cancelacionCompleta": [
       "Operamos con lluvia ligera: la Huasteca es selva y las cascadas lucen más espectaculares con agua.",
@@ -5236,7 +5245,7 @@
     {
       "tema": "ninos-y-edades",
       "titulo": "Niños y edades",
-      "texto": "En los tours que se cobran por persona: niños de 4 a 7 años pagan el 50 % del precio de adulto; de 3 años o menos van GRATIS (ocupan lugar en la camioneta, pero no cuentan para el mínimo de personas); de 8 años en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. En las herramientas: los de 8 en adelante van en `adultos`, los de 4 a 7 en `ninosSmall` y los de 0 a 3 en `bebes`. Cada tour tiene su edad mínima en su ficha (`edadMinima` y `edadNota`): rafting, rappel, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz son desde 8 años, así que ahí no hay precio de niño. En el RZR los niños van según el vehículo (cada unidad dice cuántos adultos y niños lleva). Pregunta las edades junto con el número de personas, antes de proponer. Una excepción a la edad mínima no la decides tú: la confirma el equipo.",
+      "texto": "En los tours que se cobran por persona: niños de 4 a 7 años pagan el 50 % del precio de adulto; de 3 años o menos van GRATIS (ocupan lugar en la camioneta, pero no cuentan para el mínimo de personas); de 8 años en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo. En las herramientas: los de 8 en adelante van en `adultos`, los de 4 a 7 en `ninosSmall` y los de 0 a 3 en `bebes`. Cada tour tiene su edad mínima en su ficha (`edadMinima` y `edadNota`): rafting, rappel, Gruta de Xilo, Amanecer de Nubes y Olla de la Luz son desde 8 años, así que ahí no hay precio de niño. En el RZR los niños van según el vehículo (cada unidad dice cuántos adultos y niños lleva). Pregunta las edades junto con el número de personas, antes de proponer. Una excepción a la edad mínima no la decides tú: la confirma el equipo.",
       "claves": [
         "niños",
         "niño",
@@ -5261,7 +5270,7 @@
     {
       "tema": "minimos-y-viajero-solo",
       "titulo": "Mínimos de personas y viajero solo",
-      "texto": "Cada tour tiene mínimo y máximo de personas (`groupMin` y `groupMax` de su ficha). Por WhatsApp el mínimo SÍ es mínimo: con menos personas NO se cotiza ni se reserva. Dilo al vender, sobre todo en los de mínimo alto: Rappel en la Cascada de Tamul, desde 4 personas y Rafting en el Río Tampaón, desde 5 personas. Si no les alcanza, ofrece una alternativa: otro tour cuyo mínimo sí cumplan, que completen el grupo, o el tour privado si su ficha lo permite (lo cotiza el equipo). Viajero solo (como lo hace Erick): puede sumarse a un grupo que ya esté armado para esa fecha —eso lo revisa el equipo en el calendario— o ir privado con costo adicional. No le cotices tú a una persona bajo el mínimo: avisa al equipo. Nunca llevamos grupos de más de 12 por salida. Una excepción al mínimo no la decides tú: la decide el equipo.",
+      "texto": "Cada tour tiene mínimo y máximo de personas (`groupMin` y `groupMax` de su ficha). Por WhatsApp el mínimo SÍ es mínimo: con menos personas NO se cotiza ni se reserva. Dilo al vender, sobre todo en los de mínimo alto: Rafting en el Río Tampaón, desde 5 personas. Si no les alcanza, ofrece una alternativa: otro tour cuyo mínimo sí cumplan, que completen el grupo, o el tour privado si su ficha lo permite (lo cotiza el equipo). Viajero solo (como lo hace Erick): puede sumarse a un grupo que ya esté armado para esa fecha —eso lo revisa el equipo en el calendario— o ir privado con costo adicional. No le cotices tú a una persona bajo el mínimo: avisa al equipo. Nunca llevamos grupos de más de 12 por salida. Una excepción al mínimo no la decides tú: la decide el equipo.",
       "claves": [
         "mínimo",
         "mínimo de personas",
@@ -5488,7 +5497,7 @@
     {
       "tema": "rappel",
       "titulo": "Rappel en la Cascada de Tamul",
-      "texto": "Incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona, el punto de encuentro lo confirma el equipo. Sale con mínimo de 4 personas. No incluye alimentos. Las fotos y el video los toma el guía (ya NO lleva dron ni fotógrafo aparte). No se necesita experiencia previa. Desde el 27 nov 2026 también hay RAPPEL EN SÓTANOS, cada uno es un recorrido propio: `rappel-sotano-del-cepillo`, `rappel-sotano-de-las-huahuas` y `rappel-sotano-de-las-golondrinas` (usa obtener_tour para precio e incluye; no escribas cifras de memoria). Salen desde 2 personas, mayores de 8 años y hasta 100 kg; incluyen traslado desde Xilitla o Ciudad Valles, desayuno, equipo y briefing; el instructor tiene la constancia DC-3 (NOM-009-STPS-2011). El de Golondrinas NO es la visita para ver las aves (`tour-sotano-de-las-golondrinas`). El rappel en otros lugares (por ejemplo la Cascada de los Comales) no está en el catálogo.",
+      "texto": "Incluye el traslado desde Ciudad Valles: pasamos por el cliente a su hospedaje en Ciudad Valles y vamos al embarcadero del Río Tampaón. Si se hospeda en otra zona, el punto de encuentro lo confirma el equipo. Se reserva y sale desde 1 persona (UNA sola persona paga el precio normal + $700). Sin descuento de niños. Incluye desayuno (no comida). Termina alrededor de las 2:00 PM. Incluye fotos y video con GoPro 13 y video con dron del descenso, y nado en las pozas antes de bajar. No se necesita experiencia previa. Desde el 27 nov 2026 también hay RAPPEL EN SÓTANOS, cada uno es un recorrido propio: `rappel-sotano-del-cepillo`, `rappel-sotano-de-las-huahuas` y `rappel-sotano-de-las-golondrinas` (usa obtener_tour para precio e incluye; no escribas cifras de memoria). Se reservan desde 1 persona (si va UNA sola, paga el precio normal + $700; desde 2, precio normal), mayores de 8 años y hasta 100 kg, sin descuento de niños; incluyen traslado desde Xilitla o Ciudad Valles, desayuno, equipo y briefing; el instructor tiene la constancia DC-3 (NOM-009-STPS-2011). El de Golondrinas NO es la visita para ver las aves (`tour-sotano-de-las-golondrinas`). El rappel en otros lugares (por ejemplo la Cascada de los Comales) no está en el catálogo.",
       "claves": [
         "rappel",
         "descenso",
@@ -6743,7 +6752,7 @@
         "¿Incluye seguro?",
         "¿Tienen seguro de viajero?"
       ],
-      "respuesta": "Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
+      "respuesta": "Los tours de aventura (rafting y RZR) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
       "nota": "Si lo quieren agregar, avisa al equipo (otro, avisar) para que lo sume a su reserva."
     },
     {

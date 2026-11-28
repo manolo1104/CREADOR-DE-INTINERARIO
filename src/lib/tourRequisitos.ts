@@ -46,7 +46,7 @@ export interface TourRequisitos {
 export const NO_INCLUYE_BASE = [
   "Cómo llegar a la Huasteca (autobús o vuelo hasta Ciudad Valles o Xilitla)",
   "Comidas y cenas fuera del desayuno",
-  // 17 nov 2026 (Manolo): el seguro solo va incluido en rafting, RZR y el rappel en Tamul,
+  // 17 nov 2026 (Manolo): el seguro solo va incluido en rafting y RZR,
   // y los tres reemplazan esta base. En los demás es opcional.
   "Seguro de viajero: es opcional, $80 por persona (pídelo al reservar)",
   "Propinas (opcionales, siempre agradecidas)",
@@ -86,10 +86,10 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
   },
 
   "tour-rappel-tamul": {
-    // El traslado desde Ciudad Valles o Xilitla SÍ va incluido (27 nov 2026);
-    // lo que no va son los alimentos.
+    // El traslado desde Ciudad Valles o Xilitla y el desayuno SÍ van incluidos
+    // (27 nov 2026); la comida no.
     noIncluye: [
-      "Alimentos: este recorrido no lleva desayuno ni comida incluidos",
+      "Comida: va incluido el desayuno",
       "Cómo llegar hasta Ciudad Valles o Xilitla, que es de donde sale la unidad",
       "Propinas y gastos personales",
     ],
@@ -102,7 +102,8 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
     ],
     requisitos: [
       "No se necesita experiencia previa: el primer descenso es 100 % guiado por guías de alta montaña",
-      "Las fotos y el video que te toma tu guía van incluidos, sin costo extra",
+      "Las fotos y el video con GoPro 13 y el video con dron van incluidos, sin costo extra",
+      "Se reserva desde 1 persona: si vas solo, se suman $700 al precio",
     ],
     edadMinima: 8,
     edadNota: "Si viajas con menores, cuéntanos su edad y complexión al reservar: confirmamos contigo que el descenso sea apto.",
@@ -129,7 +130,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Edad mínima 8 años y peso máximo 100 kg por persona: dinos el peso de cada quien al reservar",
       "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
       "Es un día completo en la sierra de Aquismón: el descenso es de más de 120 metros",
-      "Sale con mínimo 2 personas",
+      "Se reserva desde 1 persona: si vas solo, se suman $700 al precio",
     ],
     edadMinima: 8,
   },
@@ -154,7 +155,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "No se necesita experiencia previa: antes de bajar hay briefing de seguridad con el instructor",
       "Es un día largo en la sierra: conviene buena condición física",
       "El sótano es Monumento Natural: se respetan las reglas de la comunidad (sin drones, sin basura y en silencio cerca de las aves)",
-      "Sale con mínimo 2 personas",
+      "Se reserva desde 1 persona: si vas solo, se suman $700 al precio",
     ],
     edadMinima: 8,
   },
@@ -180,7 +181,7 @@ export const TOUR_REQUISITOS: Record<string, TourRequisitos> = {
       "Es un día largo y el descenso es de 376 metros en caída libre: conviene buena condición física",
       "Se baja solo cuando las aves ya salieron y la comunidad lo permite; en temporada de anidación se cierra, así que al reservar confirmamos que tu fecha esté abierta",
       "El sótano es Monumento Natural: sin drones, sin basura y en silencio cerca de las aves",
-      "Sale con mínimo 2 personas",
+      "Se reserva desde 1 persona: si vas solo, se suman $700 al precio",
     ],
     edadMinima: 8,
   },

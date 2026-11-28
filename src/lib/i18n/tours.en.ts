@@ -166,10 +166,11 @@ export const TOURS_EN: Record<string, TourTranslation> = {
 
   "rappel-tamul": {
     itinerario: [
-      { momento: "Pickup", texto: "We pick you up at your lodging and head out to the Río Tampaón landing." },
+      { momento: "Pickup and breakfast", texto: "We pick you up at your lodging and head out to the Río Tampaón landing. Breakfast is included, on the way." },
       { momento: "Río Tampaón landing", texto: "You reach the river and meet the mountain guides who will rappel down with you. Whatever doesn't go down the wall stays here." },
       { momento: "Gear and briefing", texto: "Harness, helmet and gloves, and the descent technique practised on dry ground before you look over the edge. No experience needed: your first rappel is fully guided." },
-      { momento: "The descent", texto: "You come down the canyon wall with Tamul Waterfall in front of you, the tallest in San Luis Potosí. Your guide takes photos and video as you go." },
+      { momento: "Swim in the pools", texto: "Before the descent, a swim in the turquoise pools the river forms right before it drops over Tamul Waterfall." },
+      { momento: "The descent", texto: "You come down the canyon wall with Tamul Waterfall in front of you, the tallest in San Luis Potosí. The drone films from the air and the GoPro 13 from your helmet." },
       { momento: "Facing the curtain of water", texto: "The stretch where the wall turns into a carpet of vegetation and the sound of the water drowns out everything else." },
       { momento: "The canyon from below", texto: "Back on solid ground, the turquoise river and the wall you just came down look like a different place." },
       { momento: "Return", texto: "Back to your lodging." },
@@ -180,9 +181,9 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     tipo: "Extreme Adventure",
     urgencia: "Small group for safety — book ahead",
     descripcion:
-      "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides, and the photos and video your guide takes so you can tell the story. The most extreme experience in the Huasteca Potosina, and suitable too for people who have never rappelled before.",
+      "Rappel down the wall of the Tampaón canyon with Tamul Waterfall roaring beside you. Professional gear, certified guides, a swim in the pools before you go down, and your descent filmed with a GoPro 13 and a drone. The most extreme experience in the Huasteca Potosina, and suitable too for people who have never rappelled before.",
     descripcionLarga:
-      "There are few places in the world where you can hang from a rope facing a 344-foot (105 m) waterfall. Tamul Waterfall — 344 feet (105 m) of water plunging into the Tampaón River — is the backdrop of this experience, and the moment you peer over the canyon edge you understand why everyone who does it can't stop talking about it.\n\nWe pick you up at your lodging in Ciudad Valles or Xilitla and start at the river dock, where we hand you the full gear and our high-mountain guides give you a technique briefing. No prior experience needed: the first descent is guided step by step and most of our visitors had never touched a rope before. All you need is the will to do it.\n\nOnce secured to the harness, you begin to descend the limestone wall draped in vegetation, with the waterfall beside you spraying cool mist over you and the river's turquoise water waiting below. The sound is deafening, the scenery unreal, and for those minutes nothing else in the world exists. Your guide takes photos and video of your descent, included in your booking at no extra cost.\n\nThe activity lasts 3 to 5 hours depending on the group and the weather. The price includes the transfer from your lodging in Ciudad Valles or Xilitla, all the safety gear, and the photos and video your guide takes; meals are not included. If you're after the story you'll tell for the rest of your life, it starts here.",
+      "There are few places in the world where you can hang from a rope facing a 344-foot (105 m) waterfall. Tamul Waterfall — 344 feet (105 m) of water plunging into the Tampaón River — is the backdrop of this experience, and the moment you peer over the canyon edge you understand why everyone who does it can't stop talking about it.\n\nWe pick you up at your lodging in Ciudad Valles or Xilitla and start at the river dock, where we hand you the full gear and our high-mountain guides give you a technique briefing. No prior experience needed: the first descent is guided step by step and most of our visitors had never touched a rope before. All you need is the will to do it.\n\nOnce secured to the harness, you begin to descend the limestone wall draped in vegetation, with the waterfall beside you spraying cool mist over you and the river's turquoise water waiting below. The sound is deafening, the scenery unreal, and for those minutes nothing else in the world exists. Before going down you swim in the turquoise pools, and the whole descent is filmed with a GoPro 13 and a drone, included in your booking at no extra cost.\n\nWe pick you up between 8:00 and 9:00 AM and you're done around 2:00 PM. The price includes the transfer from your lodging in Ciudad Valles or Xilitla, breakfast, all the safety gear, the swim in the pools, and your descent filmed with a GoPro 13 and a drone. If you're after the story you'll tell for the rest of your life, it starts here.",
     destinos: [
       "Tampaón River dock (start of the descent)",
       "Rappel wall facing Tamul Waterfall",
@@ -190,10 +191,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     ],
     incluye: [
       "Round-trip transfer from your lodging in Xilitla or Ciudad Valles",
+      "Breakfast",
       "Full rappel and safety gear (harness, helmet, gloves and professional ropes)",
       "Certified high-mountain guides",
       "Briefing and descent technique — beginner-friendly",
-      "Traveler insurance for every participant",
+      "Photos and video of your descent with a GoPro 13",
+      "Drone video of your descent",
+      "Swim in the pools before the descent",
     ],
     gallery: [
       "Rappeller with a helmet camera smiling mid-wall in the canyon, with Tamul Waterfall plunging in the background — Huasteca Potosina",
@@ -203,6 +207,13 @@ export const TOURS_EN: Record<string, TourTranslation> = {
       "Wide view of the rappel descent over the imposing Tamul Waterfall — the tallest in San Luis Potosí",
       "Rappeller seen from behind descending the Tampaón canyon wall beside the curtain of Tamul",
       "Woman in a helmet smiling and giving a thumbs up while rappelling, with birds flying in front of Tamul Waterfall",
+      "A rappeller waving from the rope above the turquoise river, with Tamul Waterfall alongside",
+      "A rappeller coming down the canyon wall through the mist of Tamul Waterfall",
+      "A rappeller in helmet and harness coming down the wall beside Tamul Waterfall, with the river at the bottom of the canyon",
+      "A rappeller shouting with excitement, arm raised, hanging from the rope in front of Tamul Waterfall",
+      "A rappeller looking up halfway down the wall, with Tamul Waterfall and the turquoise Tampaón River below",
+      "A 360 view from above: two rappellers on the green wall beside Tamul Waterfall, with the turquoise river at its foot",
+      "The turquoise river pools right before the drop of Tamul Waterfall, where you swim before the rappel",
       "Tamul Waterfall from the air: the river drops over the canyon rim between jungle and mist",
       "Tamul Waterfall at the end of the Tampaón canyon, with the turquoise river between rock walls",
     ],
@@ -214,7 +225,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "El Cepillo Sinkhole Rappel",
     tagline: "One rope, one shaft of light and 120+ meters to the bottom",
     tipo: "Sinkhole Rappel",
-    urgencia: "Small group for safety — runs from 2 people",
+    urgencia: "Small group for safety — book from 1 person",
     descripcion:
       "Rappel more than 120 meters into El Cepillo sinkhole, in the Aquismón sierra, following the shaft of light from the mouth down to a pool and rock formations at the bottom. Pickup at your lodging in Xilitla or Ciudad Valles, breakfast, safety gear and a safety briefing included. {precio} per person.",
     descripcionLarga:
@@ -251,7 +262,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Huahuas Sinkhole Rappel",
     tagline: "One of Mexico's deepest abysses, seen from the inside",
     tipo: "Sinkhole Rappel",
-    urgencia: "Small group for safety — runs from 2 people",
+    urgencia: "Small group for safety — book from 1 person",
     descripcion:
       "The Huahuas sinkhole is 478 meters deep, one of the deepest abysses in Mexico. You rappel with a vertical-work instructor to a green bottom almost nobody reaches. Pickup at your lodging in Xilitla or Ciudad Valles, breakfast, safety gear and a safety briefing included. {precio} per person.",
     descripcionLarga:
@@ -294,7 +305,7 @@ export const TOURS_EN: Record<string, TourTranslation> = {
     nombreCorto: "Cave of Swallows Rappel",
     tagline: "Mexico's second-deepest drop, hanging from a rope",
     tipo: "Sinkhole Rappel",
-    urgencia: "Confirmed with the community — runs from 2 people",
+    urgencia: "Confirmed with the community — book from 1 person",
     descripcion:
       "The Cave of Swallows (Sótano de las Golondrinas) has a 376-meter free fall: the second-deepest drop in Mexico. You go down hanging from a rope, with a vertical-work instructor, to a floor the size of three football fields. Pickup at your lodging in Xilitla or Ciudad Valles, breakfast, safety gear and a safety briefing included. {precio} per person.",
     descripcionLarga:

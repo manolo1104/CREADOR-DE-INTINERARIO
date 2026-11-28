@@ -10,7 +10,7 @@ import { GOOGLE_RATING } from "@/lib/resenas";
 // 🔴 28 sep 2026: el cuarto decía «Transporte, desayuno y guía incluidos», y
 // solo 5 de los 14 recorridos llevan desayuno (el RZR y el buceo, ni traslado).
 // Queda lo que sí trae TODO recorrido: guía NOM-09. (El seguro de viaje
-// salió el 17 nov 2026: solo lo incluyen rafting, RZR y el rappel en Tamul.)
+// salió el 17 nov 2026: solo lo incluyen rafting y RZR.)
 // 🔴 La cancelación gratis NO es de todo recorrido: el Edén no reembolsa. Los
 // nombres llegan por prop (`sinReembolso`, calculado del catálogo en el
 // servidor) para no meter TOURS_DB al bundle del cliente.

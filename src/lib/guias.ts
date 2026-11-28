@@ -165,9 +165,49 @@ export const CONSTANCIA_DC3 = {
  * tocar /nosotros, el inicio ni las frases de «todos los guías» (TODOS_NOM09).
  * Mientras esté vacía, la ficha pinta solo la constancia, sin cara.
  */
-export const INSTRUCTORES_RAPPEL: Guia[] = [];
+/**
+ * Un instructor puede salir en la ficha antes de mandar foto o idiomas
+ * (27 nov 2026): sin foto, la tarjeta lleva su inicial; sin certificaciones
+ * ni idiomas, no se pinta ningún sello. Nada se inventa en su nombre.
+ * `oficio` cambia «Guía desde» por lo que hace (p. ej. «Técnico vertical»).
+ */
+export type GuiaFicha = Omit<Guia, "foto" | "fotoCara" | "fotoPos" | "fotoAlt" | "idiomas">
+  & Partial<Pick<Guia, "foto" | "fotoCara" | "fotoPos" | "fotoAlt" | "idiomas">>
+  & { oficio?: { es: string; en: string } };
+
+/** Los cuatro rappeles: la tarjeta dice «Quién te baja». */
+export const RAPPELES = ["rappel-tamul", ...RAPPELES_SOTANOS];
+
+export const INSTRUCTORES_RAPPEL: GuiaFicha[] = [
+  {
+    // 27 nov 2026 (Manolo): «Ignacio Delgado: Nacho. Técnico vertical hace 8
+    // años. Cd Valles SLP, 29 años». Hace el descenso de Tamul. 🟡 Faltan su
+    // foto, sus certificaciones, sus idiomas y si también baja en los sótanos
+    // (entonces se suman RAPPELES_SOTANOS a `tours` y CONSTANCIA_DC3 si es él).
+    // La frase es redacción nuestra, como las de los demás. La edad no se publica.
+    nombre: "Ignacio Delgado",
+    apodo: "Nacho",
+    // Su foto (selfie en la pared, 27 nov 2026), mandada por Manolo.
+    foto: "/guias/nacho.jpg",
+    fotoCara: "/guias/nacho-cara.jpg",
+    fotoPos: "30% 45%",
+    fotoAlt: {
+      es: "Nacho, técnico vertical de Tours Huasteca Potosina, con casco y cuerdas colgado en una pared de roca",
+      en: "Nacho, rope access technician at Tours Huasteca Potosina, in a helmet with his ropes on a rock wall",
+    },
+    desde: 2018,
+    origen: "Ciudad Valles, S.L.P.",
+    oficio: { es: "Técnico vertical", en: "Rope access technician" },
+    certificaciones: { es: [], en: [] },
+    frase: {
+      es: "Antes de que bajes reviso cada nudo, cada cuerda y tu arnés. Tú solo preocúpate por mirar la cascada.",
+      en: "Before you go down I check every knot, every rope and your harness. All you have to do is look at the waterfall.",
+    },
+    tours: ["rappel-tamul"],
+  },
+];
 
 /** Los guías que salen en la ficha de un tour. */
-export function guiasDeTour(slug: string): Guia[] {
+export function guiasDeTour(slug: string): GuiaFicha[] {
   return [...GUIAS, ...INSTRUCTORES_RAPPEL].filter((g) => g.tours.includes(slug));
 }

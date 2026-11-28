@@ -29,7 +29,12 @@ const CSP = [
 
 const nextConfig = {
   // `src/instrumentation.ts`: el reloj de los recordatorios de seguimiento (3 nov 2026).
-  experimental: { instrumentationHook: true },
+  experimental: {
+    instrumentationHook: true,
+    // El PDF del panel (27 nov 2026): react-pdf se carga tal cual en el servidor,
+    // sin pasar por el empaquetador (trae su motor de acomodo en WebAssembly).
+    serverComponentsExternalPackages: ["@react-pdf/renderer"],
+  },
   transpilePackages: ["leaflet", "react-leaflet"],
   compress: true,
   images: {

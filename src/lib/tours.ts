@@ -112,7 +112,7 @@ export interface TourVehiculo {
  * calcule "qué incluye" debe sumarlo.
  *
  * 🔴 17 nov 2026 (Manolo): el seguro de viajero YA NO va en todos. Solo lo
- * traen los tours de aventura —rafting, RZR y el rappel en Tamul—, y está en el `incluye`
+ * traen los tours de aventura —rafting y RZR—, y está en el `incluye`
  * de cada uno. En los demás es opcional: $80 por persona, se pide al reservar.
  * No lo vuelvas a meter aquí o todos los tours lo prometerían otra vez.
  */
@@ -553,6 +553,19 @@ export interface Tour {
    * lo del seguro»).
    */
   sinSeguro?:       boolean;
+  /**
+   * Sin descuento de menores: de 4 años en adelante todos pagan el precio
+   * completo (Manolo, 27 nov 2026: los 4 rappeles, RZR, Travesía del Café,
+   * El Edén y la Gruta de Xilo). Los bebés de 0 a 3 siguen sin pagar donde
+   * pueden ir. Lo lee `totalRecorrido` (web, carrito, cobro) y el panel.
+   */
+  sinDescuentoNinos?: boolean;
+  /**
+   * Cargo extra (MXN, por reserva) cuando la reserva es de UNA sola persona
+   * que paga (Manolo, 27 nov 2026: los 4 rappeles, «lo normal de una persona
+   * más 700»). Lo suma `totalRecorrido` (web, carrito, cobro) y el panel.
+   */
+  recargoUnaPersona?: number;
   /** true = actividad solo para adultos/edad mínima alta (oculta selectores de niños en la reserva). */
   soloAdultos?:     boolean;
   gallery:          GalleryImage[];
@@ -1123,6 +1136,7 @@ export const TOURS_DESTACADOS: readonly string[] = TOURS_RANKING.slice(0, 4);
 const TOURS_RAW: Tour[] = [
   {
     id:               "tour-rzr-xilitla",
+    sinDescuentoNinos: true,
     slug:             "rzr-xilitla",
     categoria:        "aventura",
     icon:             "Compass",
@@ -1230,24 +1244,31 @@ const TOURS_RAW: Tour[] = [
   },
   {
     id:               "tour-rappel-tamul",
+    recargoUnaPersona: 700,
+    sinDescuentoNinos: true,
+    sinSeguro: true,
     revisado: "2026-11-27",
     slug:             "rappel-tamul",
     categoria:        "extremo",
     icon:             "Mountain",
     tipo:             "Aventura Extrema",
-    dificultad:       "alta",
-    duracion_hrs:     5,
+    // 27 nov 2026 (Manolo): «la dificultad cámbiala a moderada».
+    dificultad:       "media",
+    // 27 nov 2026 (Manolo): termina a las 2:00 PM (recogida 8:00 → 6 h).
+    duracion_hrs:     6,
     reviewCount:      58,
-    groupMin:         4,
+    // 27 nov 2026 (Manolo): como los demás rappeles, se reserva y sale desde
+    // 1 persona sin aviso de grupo; una sola persona paga $700 más.
+    groupMin:         1,
     groupMax:         10,
     privateAvailable: false,
     nombre:           "Rappel en la Cascada de Tamul — Descenso Frente a la Cascada Más Alta de San Luis Potosí",
     nombreCorto:      "Rappel en la Cascada de Tamul",
     articulo:         "el",
     tagline:          "Adrenalina pura colgado de la pared, frente a 105 metros de agua",
-    // 27 nov 2026 (Manolo): sube de $1,700 a $2,450 y deja de llevar el dron y
-    // las fotos «profesionales»: las fotos y el video los toma el guía (lo dice
-    // `INCLUYE_SIEMPRE`, por eso ya no van en su `incluye`).
+    // 27 nov 2026 (Manolo): sube de $1,700 a $2,450. Ese mismo día quitó el dron
+    // y luego lo devolvió: lleva fotos y video con GoPro 13 y video con dron
+    // incluidos, y nado en las pozas antes del descenso.
     precio:           2450,
     // 🔴 Decía "máximo 8 personas por día" justo debajo del "máximo 10 personas
     // por salida" que la ficha lee de `groupMax`: dos cupos distintos en la
@@ -1255,9 +1276,9 @@ const TOURS_RAW: Tour[] = [
     // `groupMax`. (Pendiente de Manolo: si el tope real es 8, se baja ahí.)
     urgencia:         "Grupo chico por seguridad — se reserva con anticipación",
     descripcion:
-      "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados y las fotos y el video que te toma tu guía para que lo cuentes. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
+      "Desciende en rappel por la pared del cañón del Tampaón con la Cascada de Tamul rugiendo a tu lado. Equipo profesional, guías certificados, nado en las pozas antes de bajar y tu descenso grabado con GoPro 13 y con dron. La experiencia más extrema de la Huasteca Potosina, apta también para quienes nunca han hecho rappel.",
     descripcionLarga:
-      "Hay pocos lugares en el mundo donde puedas colgarte de una cuerda frente a una cascada de 105 metros. La Cascada de Tamul —105 metros de agua desplomándose sobre el Río Tampaón— es el telón de fondo de esta experiencia, y desde el momento en que te asomas al borde del cañón entiendes por qué quienes la hacen no dejan de hablar de ella.\n\nPasamos por ti a tu hospedaje en Ciudad Valles o en Xilitla y empezamos en el embarcadero del río, donde te entregamos el equipo completo y nuestros guías de alta montaña te dan el briefing de técnica. No necesitas experiencia previa: el primer descenso es guiado paso a paso y la mayoría de nuestros visitantes nunca habían tocado una cuerda antes. Lo único que necesitas son ganas.\n\nUna vez asegurado al arnés, comienzas a bajar por la pared de roca caliza tapizada de vegetación, con la cascada a un costado lanzando su rocío fresco sobre ti y el agua turquesa del río esperándote abajo. El sonido es ensordecedor, el paisaje es irreal y, durante esos minutos, no existe nada más en el mundo. Tu guía te va tomando fotos y video del descenso, incluidos en tu reserva sin costo extra.\n\nLa actividad dura entre 3 y 5 horas según el grupo y el clima. El precio incluye el traslado desde tu hospedaje en Ciudad Valles o Xilitla, todo el equipo de seguridad y las fotos y el video que toma tu guía; no incluye alimentos. Si buscas la historia que vas a contar el resto de tu vida, empieza aquí.",
+      "Hay pocos lugares en el mundo donde puedas colgarte de una cuerda frente a una cascada de 105 metros. La Cascada de Tamul —105 metros de agua desplomándose sobre el Río Tampaón— es el telón de fondo de esta experiencia, y desde el momento en que te asomas al borde del cañón entiendes por qué quienes la hacen no dejan de hablar de ella.\n\nPasamos por ti a tu hospedaje en Ciudad Valles o en Xilitla y empezamos en el embarcadero del río, donde te entregamos el equipo completo y nuestros guías de alta montaña te dan el briefing de técnica. No necesitas experiencia previa: el primer descenso es guiado paso a paso y la mayoría de nuestros visitantes nunca habían tocado una cuerda antes. Lo único que necesitas son ganas.\n\nUna vez asegurado al arnés, comienzas a bajar por la pared de roca caliza tapizada de vegetación, con la cascada a un costado lanzando su rocío fresco sobre ti y el agua turquesa del río esperándote abajo. El sonido es ensordecedor, el paisaje es irreal y, durante esos minutos, no existe nada más en el mundo. Antes de bajar nadas en las pozas turquesa, y todo el descenso queda grabado con GoPro 13 y con dron, incluido en tu reserva sin costo extra.\n\nPasamos por ti entre 8:00 y 9:00 AM y terminas alrededor de las 2:00 PM. El precio incluye el traslado desde tu hospedaje en Ciudad Valles o Xilitla, el desayuno, todo el equipo de seguridad, el nado en las pozas y tu descenso grabado con GoPro 13 y con dron. Si buscas la historia que vas a contar el resto de tu vida, empieza aquí.",
     destinos: [
       "Embarcadero del Río Tampaón (inicio del descenso)",
       "Pared de rappel frente a la Cascada de Tamul",
@@ -1266,34 +1287,44 @@ const TOURS_RAW: Tour[] = [
     incluye: [
       // 27 nov 2026 (Manolo): todos los rappeles salen de Ciudad Valles o Xilitla.
       "Traslado redondo desde tu hospedaje en Xilitla o Ciudad Valles",
+      "Desayuno",
       "Equipo completo de rappel y seguridad (arnés, casco, guantes y cuerdas profesionales)",
       "Guías de alta montaña certificados",
       "Briefing y técnica de descenso — apto para principiantes",
-      "Seguro de viajero para cada participante",
+      "Fotos y video del descenso con GoPro 13",
+      "Video con dron del descenso",
+      "Nado en las pozas antes del descenso",
     ],
     imagen_hero: "/imagenes/tours/rappel-tamul/hero.jpg",
+    // 27 nov 2026: video de Manolo (IMG_1688), las pozas de arriba con la brisa
+    // de Tamul al fondo; 15 s, mudo, 720×1280. Solo en celular (ver la interfaz).
+    videoHeroMovil:   "/videos/tours/rappel-tamul-v1.mp4",
     itinerario: [
-      { hora: "8:00–9:00 AM", momento: "Recogida",
-        texto: "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón.",
+      { hora: "8:00–9:00 AM", momento: "Recogida y desayuno",
+        texto: "Pasamos por ti a tu hospedaje y salimos rumbo al embarcadero del Río Tampaón. El desayuno va incluido, en el camino.",
         foto: "/imagenes/tours/tamul/recogida-hotel.jpg" },
-      { hora: "10:00 AM", momento: "Embarcadero del Tampaón",
+      { hora: "10:30 AM", momento: "Embarcadero del Tampaón",
         texto: "Llegas al río y conoces a los guías de alta montaña que van a bajar contigo. Aquí se queda lo que no baja a la pared.",
         foto: "/imagenes/tours/tamul/canoas-en-el-embarcadero.jpg" },
-      { hora: "10:30 AM", momento: "Equipo y briefing",
+      { hora: "11:00 AM", momento: "Equipo y briefing",
         texto: "Arnés, casco y guantes, y la técnica de descenso practicada en seco antes de asomarte. No necesitas experiencia: el primer rappel es 100 % guiado." },
-      { hora: "11:30 AM", momento: "El descenso",
-        texto: "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. Tu guía te va tomando fotos y video.",
-        foto: "/imagenes/tours/rappel-tamul/hero.jpg",
-        fotosExtra: ["/imagenes/tours/rappel-tamul/gallery-2.jpg", "/imagenes/tours/rappel-tamul/gallery-3.jpg"] },
-      { hora: "12:00 PM", momento: "Frente a la cortina de agua",
+      { hora: "11:30 AM", momento: "Nado en las pozas",
+        texto: "Antes del descenso, un chapuzón en las pozas turquesa que forma el río justo antes de caer por la Cascada de Tamul.",
+        foto: "/imagenes/tours/rappel-tamul/pozas-arriba-de-la-cascada.jpg" },
+      { hora: "12:00 PM", momento: "El descenso",
+        texto: "Bajas la pared del cañón con la Cascada de Tamul enfrente, la más alta de San Luis Potosí. El dron graba desde el aire y la GoPro 13 desde tu casco.",
+        // 27 nov 2026: fotos de Manolo del descenso (la de portada ya sale arriba).
+        foto: "/imagenes/tours/rappel-tamul/rapelista-gritando-frente-a-tamul.jpg",
+        fotosExtra: ["/imagenes/tours/rappel-tamul/bajando-junto-a-la-cascada.jpg", "/imagenes/tours/rappel-tamul/gallery-3.jpg"] },
+      { hora: "12:30 PM", momento: "Frente a la cortina de agua",
         texto: "El tramo en el que la pared se tapiza de vegetación y el ruido del agua tapa todo lo demás.",
         foto: "/imagenes/tours/rappel-tamul/gallery-1.jpg",
         fotosExtra: ["/imagenes/tours/rappel-tamul/gallery-6.jpg", "/imagenes/tours/rappel-tamul/tamul-desde-el-aire.jpg"] },
-      { hora: "12:30 PM", momento: "El cañón desde abajo",
+      { hora: "1:00 PM", momento: "El cañón desde abajo",
         texto: "Con los pies en el suelo, el río turquesa y la pared que acabas de bajar se ven de otra manera.",
         foto: "/imagenes/tours/rappel-tamul/gallery-4.jpg",
         fotosExtra: ["/imagenes/tours/rappel-tamul/canon-del-tampaon-y-tamul.jpg", "/imagenes/tours/tamul/cascada-de-tamul-desde-el-rio.jpg"] },
-      { hora: "1:00 PM", momento: "Regreso",
+      { hora: "2:00 PM", momento: "Regreso",
         texto: "De vuelta a tu hospedaje." },
     ],
     collage: [
@@ -1313,8 +1344,16 @@ const TOURS_RAW: Tour[] = [
       { src: "/imagenes/tours/rappel-tamul/gallery-4.jpg", alt: "Vista amplia del descenso en rappel sobre la imponente Cascada de Tamul — la más alta de San Luis Potosí", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-5.jpg", alt: "Rapelista de espaldas descendiendo la pared del cañón del Tampaón junto a la cortina de agua de Tamul", hasRealPeople: true },
       { src: "/imagenes/tours/rappel-tamul/gallery-6.jpg", alt: "Mujer con casco sonriendo y haciendo pulgar arriba en rappel, con pájaros volando frente a la Cascada de Tamul", hasRealPeople: true },
+      // 27 nov 2026: dos fotos más de Manolo.
+      { src: "/imagenes/tours/rappel-tamul/rapelista-saludando-sobre-el-rio.jpg", alt: "Rapelista saludando colgado de la cuerda sobre el río turquesa, con la Cascada de Tamul a un lado", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-tamul/descenso-entre-la-brisa.jpg", alt: "Rapelista bajando la pared del cañón entre la brisa de la Cascada de Tamul", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-tamul/bajando-junto-a-la-cascada.jpg", alt: "Rapelista con casco y arnés bajando la pared junto a la Cascada de Tamul, con el río al fondo del cañón", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-tamul/rapelista-gritando-frente-a-tamul.jpg", alt: "Rapelista gritando de emoción con el brazo en alto, colgado de la cuerda frente a la Cascada de Tamul", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-tamul/mirando-arriba-sobre-el-rio.jpg", alt: "Rapelista mirando hacia arriba a media pared, con la Cascada de Tamul y el río turquesa del Tampaón abajo", hasRealPeople: true },
+      { src: "/imagenes/tours/rappel-tamul/pared-y-cascada-vista-360.jpg", alt: "Vista 360 desde lo alto: dos rapelistas en la pared verde junto a la Cascada de Tamul y el río turquesa al pie", hasRealPeople: true },
       // 27 nov 2026: Manolo pidió más fotos del rappel en Tamul. De rappel en Tamul no hay
       // ninguna con licencia libre (Commons, Openverse/Flickr); entran 2 de la cascada.
+      { src: "/imagenes/tours/rappel-tamul/pozas-arriba-de-la-cascada.jpg", alt: "Las pozas turquesa del río justo antes de caer por la Cascada de Tamul, donde se nada antes del descenso en rappel" },
       { src: "/imagenes/tours/rappel-tamul/tamul-desde-el-aire.jpg",       alt: "La Cascada de Tamul desde el aire: el río cae por el borde del cañón entre la selva y la neblina" },
       { src: "/imagenes/tours/rappel-tamul/canon-del-tampaon-y-tamul.jpg", alt: "La Cascada de Tamul al fondo del cañón del Tampaón, con el río turquesa entre paredes de roca" },
     ],
@@ -1339,6 +1378,8 @@ const TOURS_RAW: Tour[] = [
   // `reviewCount: 0` apaga la calificación y el bloque de opiniones.
   {
     id:               "tour-rappel-cepillo",
+    recargoUnaPersona: 700,
+    sinDescuentoNinos: true,
     sinSeguro: true,
     revisado: "2026-11-27",
     fuentes: [
@@ -1353,7 +1394,9 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [8, 10],
     recogida:         { tipo: "hospedaje", horaInicio: 7, ventanaHrs: 1 },
     reviewCount:      0,
-    groupMin:         2,
+    // 27 nov 2026 (Manolo): se reservan y salen desde 1 persona, sin aviso de
+    // grupo; una sola persona paga $700 más (`recargoUnaPersona`).
+    groupMin:         1,
     groupMax:         10,
     privateAvailable: false,
     clima: {
@@ -1377,7 +1420,7 @@ const TOURS_RAW: Tour[] = [
     tagline:          "Una cuerda, un haz de luz y más de 120 metros hasta el fondo",
     precio:           3200,
     precioUnidad:     "persona",
-    urgencia:         "Grupo chico por seguridad — sale desde 2 personas",
+    urgencia:         "Grupo chico por seguridad — se reserva desde 1 persona",
     descripcion:
       "Bajas en rappel más de 120 metros dentro del Sótano del Cepillo, en la sierra de Aquismón, siguiendo el haz de luz que entra por la boca hasta una poza y formaciones de roca en el fondo. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. {precio} por persona.",
     descripcionLarga:
@@ -1429,6 +1472,8 @@ const TOURS_RAW: Tour[] = [
   },
   {
     id:               "tour-rappel-huahuas",
+    recargoUnaPersona: 700,
+    sinDescuentoNinos: true,
     sinSeguro: true,
     revisado: "2026-11-27",
     fuentes: [
@@ -1443,7 +1488,9 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [9, 11],
     recogida:         { tipo: "hospedaje", horaInicio: 7, ventanaHrs: 1 },
     reviewCount:      0,
-    groupMin:         2,
+    // 27 nov 2026 (Manolo): se reservan y salen desde 1 persona, sin aviso de
+    // grupo; una sola persona paga $700 más (`recargoUnaPersona`).
+    groupMin:         1,
     groupMax:         10,
     privateAvailable: false,
     clima: {
@@ -1467,7 +1514,7 @@ const TOURS_RAW: Tour[] = [
     tagline:          "Uno de los abismos más profundos de México, visto desde adentro",
     precio:           4200,
     precioUnidad:     "persona",
-    urgencia:         "Grupo chico por seguridad — sale desde 2 personas",
+    urgencia:         "Grupo chico por seguridad — se reserva desde 1 persona",
     descripcion:
       "El Sótano de las Huahuas mide 478 metros de profundidad, uno de los abismos más hondos de México. Bajas en rappel con un instructor de trabajos verticales hasta un fondo verde al que casi nadie llega. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. {precio} por persona.",
     descripcionLarga:
@@ -1537,6 +1584,8 @@ const TOURS_RAW: Tour[] = [
   },
   {
     id:               "tour-rappel-golondrinas",
+    recargoUnaPersona: 700,
+    sinDescuentoNinos: true,
     sinSeguro: true,
     revisado: "2026-11-27",
     fuentes: [
@@ -1554,7 +1603,9 @@ const TOURS_RAW: Tour[] = [
     duracionRango:    [10, 12],
     recogida:         { tipo: "hospedaje", horaInicio: 7, ventanaHrs: 1 },
     reviewCount:      0,
-    groupMin:         2,
+    // 27 nov 2026 (Manolo): se reservan y salen desde 1 persona, sin aviso de
+    // grupo; una sola persona paga $700 más (`recargoUnaPersona`).
+    groupMin:         1,
     groupMax:         10,
     privateAvailable: false,
     clima: {
@@ -1585,7 +1636,7 @@ const TOURS_RAW: Tour[] = [
     tagline:          "El segundo tiro más profundo de México, colgado de una cuerda",
     precio:           5200,
     precioUnidad:     "persona",
-    urgencia:         "Se confirma con la comunidad — sale desde 2 personas",
+    urgencia:         "Se confirma con la comunidad — se reserva desde 1 persona",
     descripcion:
       "El Sótano de las Golondrinas tiene 376 metros de caída libre: el segundo tiro más profundo de México. Bajas colgado de una cuerda, con un instructor de trabajos verticales, hasta un fondo del tamaño de tres campos de fútbol. Traslado desde tu hospedaje en Xilitla o Ciudad Valles, desayuno, equipo de seguridad y briefing incluidos. {precio} por persona.",
     descripcionLarga:
@@ -2019,6 +2070,7 @@ const TOURS_RAW: Tour[] = [
   },
   {
     id:               "tour-eden-jardin",
+    sinDescuentoNinos: true,
     slug:             "eden-en-el-jardin",
     categoria:        "ecoturismo",
     icon:             "Sparkles",
@@ -2555,6 +2607,7 @@ const TOURS_RAW: Tour[] = [
   },
   {
     id:               "tour-travesia-cafe",
+    sinDescuentoNinos: true,
     slug:             "travesia-del-cafe",
     categoria:        "ecoturismo",
     icon:             "Leaf",
@@ -2647,6 +2700,7 @@ const TOURS_RAW: Tour[] = [
 
   {
     id:               "tour-gruta-xilo",
+    sinDescuentoNinos: true,
     slug:             "gruta-de-xilo",
     categoria:        "aventura",
     icon:             "Compass",

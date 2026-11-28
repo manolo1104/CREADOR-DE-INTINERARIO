@@ -46,8 +46,8 @@ export function lugaresQueOcupan(adults: number, ninos = 0, bebes = 0, ninosAnte
 
 /** La regla, dicha en una línea. */
 export const REGLA_NINOS = {
-  es: "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.",
-  en: "Kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.",
+  es: "Niños de 4 a 7 años pagan el 50 %; de 3 años o menos van gratis (ocupan lugar); de 8 en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo.",
+  en: "Kids 4–7 pay 50 %; ages 3 and under ride free (they still take a seat); 8 and up pay the adult price. No children's discount on the rappels, the RZR, the Coffee Route, El Edén en el Jardín or the Xilo Cave: everyone pays the full price there.",
 } as const;
 
 /** Etiquetas de los contadores (web, carrito, panel). */

@@ -108,7 +108,8 @@ describe("middleware: nadie de la oficina pierde lo que usa hoy", () => {
   const PUBLICAS = ["/api/admin/login", "/api/admin/logout"];
   // Las que usan varias pestañas a la vez (Reservas, Calendario, Cotizaciones, Viaje CDMX…): las cuida cada handler.
   // + verificar un cobro y los bancos de Banxico (12 nov 2026): el cuadro de cobros de Reservas, Calendario, Cotizaciones, Viaje CDMX y Cobros.
-  const COMPARTIDAS = ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple", "/api/admin/tareas", "/api/admin/sesion", "/api/admin/cobros", "/api/admin/banxico"];
+  // + el PDF de verdad de la confirmación y la cotización (27 nov 2026): Reservas y Cotizaciones.
+  const COMPARTIDAS = ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple", "/api/admin/tareas", "/api/admin/sesion", "/api/admin/cobros", "/api/admin/banxico", "/api/admin/documento"];
   it(`cada una de las ${rutas.length} APIs del panel es pública, de una pestaña o compartida a propósito`, () => {
     expect(rutas.length).toBeGreaterThan(40);
     const sueltas = rutas.filter(r => !PUBLICAS.includes(r) && !seccionRestringida(r) && !COMPARTIDAS.some(c => r === c || r.startsWith(`${c}/`)));

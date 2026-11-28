@@ -1,5 +1,6 @@
 "use client";
 
+import { descargarArchivo } from "@/lib/admin/descargarArchivo";
 import DescuentoEditor from "@/components/admin/DescuentoEditor";
 import { descuentoDeMeta, historialDeMeta, type Descuento, type EventoDescuento } from "@/lib/admin/descuento";
 import { useState, useMemo, useEffect, useRef } from "react";
@@ -36,7 +37,6 @@ import { Package } from "lucide-react";
 import { grupoDe, grupoParaGuardar, lineasDe, type ConLineas, type LineaTour } from "@/lib/admin/reserva";
 import ExtrasEditor from "@/components/admin/ExtrasEditor";
 import { escapeHtml } from "@/lib/escapeHtml";
-import { htmlCotizacion } from "@/lib/documentos/htmlCotizacion";
 import {
   type ExtraItem, type PresetExtra, EXTRAS_PRESET, extrasDe, totalExtras,
   normalizarExtra,
@@ -847,14 +847,10 @@ export default function CotizacionesClient(
   }
 
   function downloadPDF(q: TourQuote) {
-    const win = window.open("", "_blank");
-    if (!win) { flash("❌ Permite las ventanas emergentes en tu navegador para descargar el PDF"); return; }
     // Descargar el PDF es mandarla: su lead pasa a Cotizado (3 nov 2026).
     fetch(`/api/admin/cotizaciones/${q.id}/pdf`, { method: "POST", keepalive: true }).then(() => router.refresh()).catch(() => {});
-
-    win.document.write(htmlCotizacion(q, window.location.origin));
-    win.document.close();
-    setTimeout(() => win.print(), 1000);
+    // 27 nov 2026: un PDF de verdad, armado en el servidor (igual en el celular).
+    descargarArchivo(`/api/admin/documento/${encodeURIComponent(q.quoteNumber)}`, `Cotización ${q.quoteNumber}.pdf`);
   }
 
   /**

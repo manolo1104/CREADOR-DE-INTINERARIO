@@ -353,9 +353,10 @@ const BANCOS_BANXICO = "/api/admin/banxico";
 /** Las APIs que llama la página de cada pestaña (lo compartido va en cada una que lo usa). */
 export const APIS_POR_SECCION: Record<SeccionAdmin, ApiDePestana[]> = {
   inicio:        ["/api/admin/permisos", "/api/admin/revision-semanal", "/api/admin/cupo-paquete", "/api/admin/rio-estado", "/api/admin/migrate-images"],
-  reservas:      ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple", VERIFICAR_COBRO, BANCOS_BANXICO],
+  // «/api/admin/documento» (27 nov 2026): el PDF de la confirmación y de la cotización.
+  reservas:      ["/api/admin/reservas", "/api/admin/evidencia", "/api/admin/codigos-cumple", VERIFICAR_COBRO, BANCOS_BANXICO, "/api/admin/documento"],
   calendario:    ["/api/admin/fechas-cerradas", COBROS_DE_RESERVA, CHECKIN_DE_RESERVA, "/api/admin/evidencia", VERIFICAR_COBRO, BANCOS_BANXICO],
-  cotizaciones:  ["/api/admin/cotizaciones", "/api/admin/codigos-cumple", COBROS_DE_RESERVA, "/api/admin/evidencia", VERIFICAR_COBRO, BANCOS_BANXICO],
+  cotizaciones:  ["/api/admin/cotizaciones", "/api/admin/codigos-cumple", COBROS_DE_RESERVA, "/api/admin/evidencia", VERIFICAR_COBRO, BANCOS_BANXICO, "/api/admin/documento"],
   cotizador:     ["/api/admin/costos", "/api/admin/precios-extras", "/api/admin/tarifas-proveedor"],
   clientes:      ["/api/admin/clientes"],
   ingresos:      ["/api/admin/kpis"],

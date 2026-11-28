@@ -585,11 +585,11 @@ export function getQueHacer(locale: Locale): QueHacerContent {
         },
         {
           q: "Is the Huasteca Potosina good for kids?",
-          a: "Yes. There are low-difficulty activities that work very well for families: the Micos waterfalls, Minas Viejas, the Edward James Surrealist Route and the spring-fed swimming spots. Kids pay less on our tours: ages 4–7 pay 50 %, ages 3 and under ride free (they still take a seat) and 8 and up pay the adult price. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group.",
+          a: "Yes. There are low-difficulty activities that work very well for families: the Micos waterfalls, Minas Viejas, the Edward James Surrealist Route and the spring-fed swimming spots. Kids pay less on our tours: ages 4–7 pay 50 %, ages 3 and under ride free (they still take a seat) and 8 and up pay the adult price. No children's discount on the rappels, the RZR, the Coffee Route, El Edén en el Jardín or the Xilo Cave: everyone pays the full price there.",
         },
         {
           q: "How much do these activities cost?",
-          a: `Guided day tours range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person.${NO_POR_PERSONA.length ? ` Some aren't priced per head: ${listaEn(NO_POR_PERSONA.map((t) => `${nombreEn(t)} (${etiquetaUnidad(t, true)})`))}.` : ""} All include the photos and video your guide takes, and adventure tours (rafting, RZR and the Tamul rappel) also include traveler insurance; on the others it's optional: MXN $80 per person. Each tour's page details what else is included. Our pricing page has the full list.`,
+          a: `Guided day tours range from ${fmtMoney(rango.min, "en")} to ${fmtMoney(rango.max, "en")} per person.${NO_POR_PERSONA.length ? ` Some aren't priced per head: ${listaEn(NO_POR_PERSONA.map((t) => `${nombreEn(t)} (${etiquetaUnidad(t, true)})`))}.` : ""} All include the photos and video your guide takes, and adventure tours (rafting and RZR) also include traveler insurance; on the others it's optional: MXN $80 per person. Each tour's page details what else is included. Our pricing page has the full list.`,
         },
         {
           q: "Can I visit the Huasteca on my own, without a tour?",
@@ -662,11 +662,11 @@ export function getQueHacer(locale: Locale): QueHacerContent {
       },
       {
         q: "¿La Huasteca Potosina es para ir con niños?",
-        a: "Sí. Hay actividades de dificultad baja muy aptas para familias: las cascadas de Micos, Minas Viejas, la Ruta Surrealista de Edward James y los balnearios de nacimientos. Los niños pagan con descuento en nuestros tours: de 4 a 7 años, el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo.",
+        a: "Sí. Hay actividades de dificultad baja muy aptas para familias: las cascadas de Micos, Minas Viejas, la Ruta Surrealista de Edward James y los balnearios de nacimientos. Los niños pagan con descuento en nuestros tours: de 4 a 7 años, el 50 %; de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan como adulto. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo.",
       },
       {
         q: "¿Cuánto cuesta hacer estas actividades?",
-        a: `Los recorridos guiados de un día van de ${money(rango.min)} a ${money(rango.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${listaEs(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen las fotos y el video que toma tu guía, y los tours de aventura (rafting, RZR y el rappel en Tamul) también el seguro de viajero; en los demás es opcional: $80 por persona. La ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
+        a: `Los recorridos guiados de un día van de ${money(rango.min)} a ${money(rango.max)} MXN por persona.${NO_POR_PERSONA.length ? ` Algunos no se cobran por cabeza: ${listaEs(NO_POR_PERSONA.map((t) => `${t.nombreCorto} (${etiquetaUnidad(t)})`))}.` : ""} Todos incluyen las fotos y el video que toma tu guía, y los tours de aventura (rafting y RZR) también el seguro de viajero; en los demás es opcional: $80 por persona. La ficha de cada uno detalla qué más incluye. En nuestra página de precios está la lista completa.`,
       },
       {
         q: "¿Puedo visitar la Huasteca por mi cuenta, sin tour?",

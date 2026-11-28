@@ -22,8 +22,8 @@ Momentos que vas a vivir:
 - Llegas al embarcadero del río y, tras el briefing de técnica, te asomas al borde de la pared del cañón del Tampaón. A tu lado, 105 metros de agua se desploman: es la Cascada de Tamul, la más alta de San Luis Potosí, rugiendo mientras te preparas para descender.
 - El primer paso al vacío es puro vértigo controlado. Los guías de alta montaña te aseguran con equipo profesional y vas bajando poco a poco por la pared tapizada de vegetación, con el río turquesa esperándote abajo y el rocío de la cascada mojándote la cara.
 - A media pared te detienes colgado del arnés y miras alrededor: el cañón abierto, los pájaros cruzando frente a la cortina de agua, el verde de la selva en todas direcciones. Es el tipo de imagen que normalmente solo se ve desde un dron — y aquí estás tú, dentro de ella.
-- Mientras desciendes, tu guía te va tomando fotos y video. Terminas tocando el agua con la adrenalina al máximo y la prueba grabada de que sí lo hiciste. Apto incluso para quienes nunca han hecho rappel.
-NOTA: Es una actividad enfocada (3–5 h), no un tour de día completo. El equipo, los guías y las fotos/video que toma el guía están incluidos (ya NO hay dron); el traslado desde Ciudad Valles SÍ va incluido y los alimentos NO.`,
+- Antes de bajar nadas en las pozas turquesa. Mientras desciendes, un dron te sigue y la GoPro 13 graba desde tu casco. Terminas tocando el agua con la adrenalina al máximo y la prueba grabada de que sí lo hiciste. Apto incluso para quienes nunca han hecho rappel.
+NOTA: Pasamos por ti entre 8:00 y 9:00 AM y termina alrededor de las 2:00 PM. El equipo, los guías, el desayuno, el nado en pozas, las fotos/video con GoPro 13 y el video con dron están incluidos; el traslado desde Ciudad Valles o Xilitla SÍ va incluido y la comida NO.`,
 
   "tour-rappel-cepillo": `
 Momentos que vas a vivir:

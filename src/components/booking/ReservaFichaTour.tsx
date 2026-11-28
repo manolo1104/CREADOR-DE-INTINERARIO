@@ -49,6 +49,8 @@ export function ReservaFichaTour({
   nombre,
   tourId,
   tarifaGrupo,
+  sinDescuentoNinos = false,
+  edadMinima = 0,
 }: {
   slug: string;
   precio: number;
@@ -65,6 +67,10 @@ export function ReservaFichaTour({
    * el 70 % de nada.
    */
   tarifaGrupo?: number[];
+  /** Sin descuento de menores (27 nov 2026): no hay contador de 4 a 7; todos pagan completo. */
+  sinDescuentoNinos?: boolean;
+  /** Edad mínima del recorrido: con 4 o más no hay contador de bebés. */
+  edadMinima?: number;
 }) {
   const { locale, lp } = useLocale();
   const t = getBooking(locale).carrito;
@@ -93,6 +99,8 @@ export function ReservaFichaTour({
     groupMin,
     tarifaGrupo,
     precioUnidad: porGrupo ? "grupo" as const : "persona" as const,
+    sinDescuentoNinos,
+    recargoUnaPersona: tourCat?.recargoUnaPersona,
   };
   // Con tarifa de grupo se respeta el mínimo real del recorrido —el Edén sale
   // con UNA persona—. Los que salen desde 2 bajan a UN adulto con la tarifa de
@@ -305,8 +313,16 @@ export function ReservaFichaTour({
 
       <div className="space-y-2.5 border-t border-white/8 pt-4">
         <p className="text-[9px] tracking-[2px] uppercase text-crema/35 font-dm">{tf.cuantosVan}</p>
-        <Contador etiqueta={porGrupo ? tf.personas : (soloMayores ? t.adultos : t.adultos8)} valor={adultos} set={(n) => { setAdultos(n); trackParticipants(nombre, n, ninosSmall + bebes); }} min={minAdultos} />
-        {!porGrupo && !soloMayores && (
+        <Contador etiqueta={porGrupo ? tf.personas : (soloMayores ? t.adultos : sinDescuentoNinos
+          ? (edadMinima >= 4
+              ? (locale === "en" ? `people (${edadMinima}+)` : `personas (${edadMinima}+ años)`)
+              : (locale === "en" ? "people (4+)" : "personas (4+ años)"))
+          : t.adultos8)} valor={adultos} set={(n) => { setAdultos(n); trackParticipants(nombre, n, ninosSmall + bebes); }} min={minAdultos} />
+        {/* Sin descuento de menores: solo el contador de bebés, y solo donde pueden ir. */}
+        {!porGrupo && !soloMayores && sinDescuentoNinos && edadMinima < 4 && (
+          <Contador etiqueta={`${t.bebes} · ${t.gratis}`} valor={bebes} set={setBebes} min={0} />
+        )}
+        {!porGrupo && !soloMayores && !sinDescuentoNinos && (
           <>
             <Contador etiqueta={`${t.ninos4a7} · 50 %`} valor={ninosSmall} set={setNinosSmall} min={0} />
             <Contador etiqueta={`${t.bebes} · ${t.gratis}`} valor={bebes} set={setBebes} min={0} />
@@ -322,6 +338,17 @@ export function ReservaFichaTour({
             grupo, y no al final, en el correo. Desde el 8 oct 2026 el precio ya
             es proporcional —antes se cobraban dos lugares— y lo único que hay
             que avisar es la condición. */}
+        {/* Una sola persona en un rappel (27 nov 2026): su lugar + el cargo. */}
+        {!porGrupo && tourCat?.recargoUnaPersona && pagan === 1 ? (
+          <p role="status" className="font-dm text-[11px] text-crema/75 leading-snug border-l-2 border-dorado/60 pl-2.5">
+            {locale === "en"
+              ? <><strong className="text-crema">Just one person:</strong> the regular price plus ${tourCat.recargoUnaPersona.toLocaleString("en-US")} MXN for booking alone.</>
+              : <><strong className="text-crema">Una sola persona:</strong> el precio normal más ${tourCat.recargoUnaPersona.toLocaleString("es-MX")} por reservar para una persona.</>}
+          </p>
+        ) : null}
+        {/* El aviso de salida compartida solo sale donde el mínimo para salir es
+            mayor que lo reservado (Tamul pide 4); los sótanos salen desde 1. Con
+            una persona en Tamul van los dos avisos: el cargo y la salida. */}
         {viajaSolo && (
           <p role="status" className="font-dm text-[11px] text-crema/75 leading-snug border-l-2 border-verde-vivo/60 pl-2.5">
             <strong className="text-crema">{tf.viajeroSoloTitulo}</strong> {tf.viajeroSolo(CONFIRMA_SALIDA_DIAS)}

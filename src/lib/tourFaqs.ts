@@ -69,11 +69,11 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     {
       q: "¿Está incluido el transporte?",
       // 27 nov 2026 (Manolo): sale de Ciudad Valles o Xilitla, como los demás rappeles.
-      a: "Sí, el traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla va incluido; de ahí vamos al embarcadero del río. Lo que no incluye el precio son los alimentos.",
+      a: "Sí, el traslado redondo desde tu hospedaje en Ciudad Valles o Xilitla va incluido; de ahí vamos al embarcadero del río. También va incluido el desayuno; la comida no.",
     },
     {
       q: "¿Las fotos y el video tienen costo extra?",
-      a: "No, están incluidos: tu guía te toma fotos y video del descenso, sin costo adicional. Ya no incluye dron ni fotógrafo aparte.",
+      a: "No, están incluidos: tu descenso queda grabado con GoPro 13 y con video de dron, sin costo adicional.",
     },
     {
       q: "¿Qué equipo debo llevar?",
@@ -100,7 +100,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Desde cuántas personas sale?",
-      a: "Desde 2 personas: con dos ya se abre la salida.",
+      a: "Se reserva desde 1 persona. Si vas solo, pagas el precio normal más $700; desde 2 personas, cada quien paga el precio normal.",
     },
     {
       q: "¿Qué tan profundo es el Sótano del Cepillo?",
@@ -122,7 +122,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Desde cuántas personas sale?",
-      a: "Desde 2 personas: con dos ya se abre la salida.",
+      a: "Se reserva desde 1 persona. Si vas solo, pagas el precio normal más $700; desde 2 personas, cada quien paga el precio normal.",
     },
     {
       q: "¿Qué tan profundo es el Sótano de las Huahuas?",
@@ -144,7 +144,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Desde cuántas personas sale?",
-      a: "Desde 2 personas: con dos ya se abre la salida.",
+      a: "Se reserva desde 1 persona. Si vas solo, pagas el precio normal más $700; desde 2 personas, cada quien paga el precio normal.",
     },
     {
       q: "¿Se puede bajar todo el año?",
@@ -393,7 +393,7 @@ export const TOUR_FAQS: Record<string, FAQ[]> = {
     },
     {
       q: "¿Llevan dron?",
-      a: "No. En Las Pozas están prohibidos los drones y los tripiés, así que no forman parte de este recorrido. Las fotos se hacen con cámara en mano.",
+      a: "No. En Las Pozas están prohibidos los drones y los tripiés, así que no forman parte de este recorrido. Las fotos se hacen con cámara en mano. El único recorrido nuestro con video de dron es el Rappel en la Cascada de Tamul.",
     },
     {
       q: "¿Por qué el Día 1 no sale los martes?",

@@ -21,6 +21,7 @@
 // `calcularCotizacionBot` es PURA (no toca la base): la usa `/api/bot/precio`,
 // que solo pregunta. `guardarCotizacionBot` la llama y guarda.
 
+import { recargoUnaPersonaDe } from "@/lib/tourBooking";
 import { FACTOR_NINO, FACTOR_NINO_ANTERIOR } from "@/lib/ninos";
 import { randomInt } from "crypto";
 import type { TourQuote } from "@prisma/client";
@@ -228,6 +229,10 @@ export function subtotalPanel(l: LineItem): number {
         const unidades = Math.max(1, l.unidades ?? 1);
         return (veh?.precios[rutaIdx] ?? t.precio) * unidades;
       })()
+    : t.sinDescuentoNinos
+    // Sin descuento de menores (27 nov 2026): todos pagan el precio completo,
+    // y una sola persona paga además su cargo (`recargoUnaPersonaDe`).
+    ? porCabeza * pagan + recargoUnaPersonaDe(t, pagan)
     : (
         porCabeza * l.adults +
         Math.round(porCabeza * FACTOR_NINO_ANTERIOR) * (l.childrenMid   ?? 0) +

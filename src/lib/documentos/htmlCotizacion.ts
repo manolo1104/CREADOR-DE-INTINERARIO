@@ -8,196 +8,30 @@
  * `origen`: de dónde salen los logos (la URL del sitio).
  */
 import type { TourQuote } from "@prisma/client";
-import { TOURS_LISTA, partesRecogida, cargoVallesDe, opcionDeEleccion, incluyePropioDeTour, claveIncluye, INCLUYE_SIEMPRE, sinLugarDelDesayuno, type Tour } from "@/lib/tours";
-import { resumenSalidas } from "@/lib/recogidaTexto";
-import type { PackageItem, LineItem } from "@/components/admin/ReservaModal";
-import { calcTourLine, calcPackageLine, addOnsDeTour, cantidadAddOn } from "@/lib/admin/lineasPrecio";
-import { VIGENCIAS, calcularVencimiento, fechaLimite, vigenciaDe } from "@/lib/vencimientoCotizacion";
-import { desgloseCotizacion } from "@/lib/admin/totalesCotizacion";
-import { grupoDe, grupoLargo } from "@/lib/admin/reserva";
 import { escapeHtml } from "@/lib/escapeHtml";
-import { extrasDe, totalExtras, calcExtraLine, extrasCobrados, extrasIncluidos } from "@/lib/admin/extras";
+import { datosCotizacion, incluyeDeCotizacion } from "@/lib/documentos/datosCotizacion";
+
+// Vive en `datosCotizacion.ts`; se reexporta para quien ya lo importaba de aquí.
+export { incluyeDeCotizacion };
 
 const esc = escapeHtml;
-const calcLine = calcTourLine;
-const fDate = (d: string) => d ? new Date(d + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" }) : "—";
-function getMeta(pkgs: any[]): { anticipo?: number; vigencia?: string; numPersonas?: number | null; priceOverride?: number | null; discountType?: "percent" | "fixed"; discountValue?: number | null } {
-  return pkgs.find((p: any) => p._meta) || {};
-}
-function cleanPackages(pkgs: any[]): PackageItem[] {
-  return pkgs.filter((p: any) => !p._meta);
-}
-
-/** Lo corto de un renglón de «incluye»: antes de « — » o «:», y sin pasarse de 70 letras. */
-function corto(x: string): string {
-  const base = x.split(" — ")[0].split(":")[0].split(" (")[0].trim();
-  return base.length > 70 ? `${base.slice(0, 67).trim()}…` : base;
-}
-
-/**
- * «Sí incluye» de verdad (16 nov 2026). Antes iba fijo —desayuno, entradas a
- * los parques— también en un RZR, que no lleva ni uno ni otro. Lo propio de
- * cada recorrido cotizado (sin el traslado, que ya va en su renglón), con el
- * nombre del recorrido cuando no lo llevan todos, más lo que va siempre.
- */
-export function incluyeDeCotizacion(tours: Tour[]): string[] {
-  const unicos = tours.filter((t, i) => tours.findIndex((x) => x.slug === t.slug) === i);
-  if (!unicos.length) return ["Guía certificado NOM-09 SECTUR", ...INCLUYE_SIEMPRE];
-  const porClave = new Map<string, { texto: string; de: Set<string> }>();
-  for (const t of unicos) {
-    for (const x of incluyePropioDeTour(t).map(sinLugarDelDesayuno)) {
-      if (/^traslado/i.test(x)) continue;
-      const k = claveIncluye(corto(x));
-      const e = porClave.get(k) ?? { texto: corto(x), de: new Set<string>() };
-      e.de.add(t.nombreCorto);
-      porClave.set(k, e);
-    }
-  }
-  const lista = Array.from(porClave.values()).map((e) =>
-    e.de.size === unicos.length || unicos.length === 1 ? e.texto : `${e.texto} (${Array.from(e.de).join(", ")})`,
-  );
-  return [...lista.slice(0, 12), ...INCLUYE_SIEMPRE];
-}
 
 export function htmlCotizacion(q: TourQuote, origen: string, hoy: Date = new Date()): string {
-    const rawPkgs  = (q as any).packageItems ?? [];
-    const meta     = getMeta(rawPkgs);
-    const pkgs: PackageItem[] = cleanPackages(rawPkgs);
-    // Sin el `_meta` de seguimiento: no es una línea de tour.
-    const lineasTour = Array.isArray((q as any).lineItems) ? (q as any).lineItems.filter((l: any) => l && !l._meta) : [];
-    const items: LineItem[] = lineasTour.length
-      // Sin desglose (renglón viejo) los menores se leen como el tramo de antes; con
-      // bebés o niños de 4 a 7 guardados, `children` ya no se reparte.
-      ? lineasTour.map((l: any) => ({ ...l, childrenMid: l.childrenMid ?? (l.childrenSmall === undefined && l.infants === undefined ? (l.children ?? 0) : 0), childrenSmall: l.childrenSmall ?? 0 }))
-      : [{ tourSlug: q.tourSlug, tourName: q.tourName, tourDate: q.tourDate, adults: q.adults, childrenMid: q.children ?? 0, childrenSmall: 0, subtotal: q.totalAmount }];
+    // Los datos salen de `datosCotizacion` (27 nov 2026), el mismo lugar del que
+    // lee el PDF del panel. 🔴 Lo que vino de la base (nombre, notas, hotel,
+    // conceptos a mano) entra al HTML escapado con `esc`.
+    const d = datosCotizacion(q, hoy);
+    const folioQ      = esc(d.folio);
+    const numPersonas = d.personas;
+    const desgloseQ   = d.desglosePersonas;
+    const recogidaTexto = d.recogida.map(esc).join("<br/>");
+    const varios      = d.recogida.length > 1;
+    const cancelTexto = esc(d.cancelacion);
+    const incluyeLis  = d.siIncluye.map(x => `<li>${esc(x)}</li>`).join("");
+    const noIncluyeLis = d.noIncluye.map(x => `<li>${esc(x)}</li>`).join("");
+    const filas = d.renglones.map(r => `<div class="row"><div><div class="tour-name">${esc(r.nombre)}</div>${r.subs.map(x => `<div class="tour-sub">${esc(x)}</div>`).join("")}${r.opcionales.length ? `<div class="tour-sub" style="color:var(--terracota)">${r.opcionales.map(esc).join("<br/>")}</div>` : ""}</div><div class="num">${r.fecha}</div><div class="num right">${esc(r.cantidad)}</div><div class="amt right">$${r.importe.toLocaleString("es-MX")}</div></div>`).join("");
 
-    const today    = hoy;
-    // La vigencia es la fecha límite GUARDADA. Antes se contaba desde el día en
-    // que se imprimía el PDF, así que cada descarga le alargaba el plazo.
-    const vigDate  = new Date(`${fechaLimite(q) ?? calcularVencimiento(today, vigenciaDe(rawPkgs), q.tourDate)}T12:00:00`);
-    const vigLabel = (VIGENCIAS[meta.vigencia ?? ""] ?? VIGENCIAS["7dias"]).label;
-    const fmt      = (d: Date) => d.toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" });
-
-    const toursTotal  = items.reduce((s, l) => s + calcLine(l), 0);
-    const pkgsTotal   = pkgs.reduce((s, p) => s + calcPackageLine(p), 0);
-    // Los extras cobrados son parte del precio: sin contarlos aquí, la comida
-    // aparte se pintaba en el PDF como si fuera un "descuento aplicado".
-    const extrasQ         = extrasDe((q as any).extraItems);
-    const extrasCobradosQ = extrasCobrados(extrasQ);
-    const extrasIncluidosQ = extrasIncluidos(extrasQ);
-    const extrasTotalQ    = totalExtras(extrasQ);
-    // El desglose sale de un solo sitio, el mismo que usa el correo: si se
-    // calculara aquí a mano, el papel y el correo de la misma cotización
-    // podrían decir cosas distintas.
-    const sumaLineas  = toursTotal + pkgsTotal + extrasTotalQ;
-    const desglose    = desgloseCotizacion(sumaLineas, q.totalAmount, meta as any);
-    const descuento   = desglose.descuento;
-    const ajuste      = desglose.ajuste;
-    const anticipoNum = desglose.anticipo;
-    const saldo       = desglose.saldo;
-
-    const tourDates    = items.map(l => l.tourDate).filter(Boolean).sort();
-    const checkouts    = pkgs.map(p => p.checkout).filter(Boolean).sort();
-    const fechaInicio  = tourDates[0] || q.tourDate;
-    const fechaFin     = checkouts.length ? checkouts[checkouts.length - 1] : tourDates[tourDates.length - 1] || q.tourDate;
-    const d1 = new Date(fechaInicio + "T12:00:00");
-    const d2 = new Date(fechaFin + "T12:00:00");
-    const duracion     = Math.max(1, Math.round((d2.getTime() - d1.getTime()) / 86400000) + 1);
-    // Tamaño REAL del grupo (no sumar por tour: es el mismo grupo en todos los tours).
-    // Prioridad: el número capturado en la cotización → máximo por tour → total guardado.
-    const perTourMax   = items.length ? Math.max(...items.map(l => l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0) + ((l as { infants?: number }).infants ?? 0))) : 0;
-    const grupoQ       = grupoDe(q as any);
-    const desgloseQ     = grupoLargo(grupoQ);
-    const numPersonas  = Number(meta.numPersonas) > 0
-      ? Number(meta.numPersonas)
-      : (perTourMax > 0 ? perTourMax : q.adults + (q.children ?? 0));
-    // 🔴 Todo lo que sale de la base y pudo escribir un cliente o el bot (nombre,
-    // notas, hotel, conceptos a mano) entra al HTML escapado con `esc`: este
-    // PDF se abre con `document.write` dentro de la sesión del panel.
-    const hospNombre   = pkgs.length ? esc(pkgs[0].hotel) : "No incluye";
-    const folioQ       = esc(q.quoteNumber);
-    // 🔴 La recogida sale de los recorridos cotizados. Decía "Pasamos por ti a
-    // tu hospedaje en Xilitla o Ciudad Valles" en todas las cotizaciones, y la
-    // Gruta, el Edén y otros solo recogen en Xilitla (desde Valles, con costo
-    // aparte); el RZR y el buceo no recogen. Con renglones libres o solo
-    // hospedaje no hay recorrido del que leerla: frase neutra, sin hora.
-    const toursCotizados = items
-      .map(l => TOURS_LISTA.find(t => t.slug === l.tourSlug))
-      .filter((t): t is Tour => !!t);
-    const recogidaTexto = toursCotizados.length
-      ? resumenSalidas(toursCotizados, "es").map(esc).join("<br/>")
-      : "La hora y el punto de recogida te los confirmamos por WhatsApp.";
-    // 🔴 "Sí incluye: Transporte desde y hacia tu hotel" iba fijo, y dos
-    // recuadros más arriba la Recogida dice, para el RZR, que el transporte no
-    // va incluido y, para el buceo, que llegas por tu cuenta. Solo se afirma
-    // si TODOS los recorridos cotizados llevan traslado; si no, remite a la
-    // Recogida. Los que solo recogen en Xilitla cobran aparte desde Valles.
-    const trasladoTodos = toursCotizados.every(t => partesRecogida(t, false).incluyeTraslado);
-    const conCostoValles = toursCotizados.filter(t => partesRecogida(t, false).valles).length;
-    // Y los que recogen en las dos pero cobran el traslado desde Valles (la
-    // Ruta Surrealista, +$400 por reserva): también «con costo adicional».
-    const conCargoValles = toursCotizados.filter(t => cargoVallesDe(t) > 0).length;
-    const notaValles    = conCostoValles + conCargoValles === 0 ? ""
-      : conCostoValles + conCargoValles === toursCotizados.length ? " (desde Ciudad Valles, con costo adicional)"
-      : " (desde Ciudad Valles, en algunos con costo adicional)";
-    const trasladoLi    = trasladoTodos
-      ? `Transporte desde y hacia tu hotel${notaValles}`
-      : "Traslado según se indica en «Recogida»";
-    // 🔴 El Edén no se reembolsa (`cancelacion` en tours.ts): el pie prometía
-    // "cancelación gratuita hasta 48 h" también en su cotización.
-    const cancelPropias = toursCotizados
-      .filter((t, n) => !!t.cancelacion && toursCotizados.findIndex(x => x.slug === t.slug) === n);
-    const todasPropias  = cancelPropias.length > 0 && toursCotizados.every(t => t.cancelacion);
-    const cancelEstandar = "Cancelación gratuita hasta 48 h antes del primer tour; posteriores aplican cargo del 50%.";
-    const cancelTexto   = todasPropias
-      ? cancelPropias.map(t => esc(t.cancelacion!.es)).join(" ")
-      : [cancelEstandar, ...cancelPropias.map(t => `${esc(t.nombreCorto)}: ${esc(t.cancelacion!.es)}`)].join(" ");
-
-    const incluyeLis = incluyeDeCotizacion(toursCotizados).map(x => `<li>${esc(x)}</li>`).join("");
-
-    const tourRows = items.map(l => {
-      const esVeh = !!l.vehiculo; // línea por vehículo (RZR): sin conteo de personas
-      const un    = Math.max(1, Number(l.unidades) || 1);
-      const bebes = (l as { infants?: number }).infants ?? 0;
-      const total = l.adults + (l.childrenMid ?? 0) + (l.childrenSmall ?? 0) + bebes;
-      const sub   = esVeh
-        ? "Precio por vehículo · gasolina, equipo y guía incluidos"
-        : [
-            l.adults > 0 ? `${l.adults} adulto${l.adults !== 1 ? "s" : ""}` : "",
-            (l.childrenMid ?? 0) > 0 ? `${l.childrenMid} niño${l.childrenMid !== 1 ? "s" : ""} (6-10)` : "",
-            (l.childrenSmall ?? 0) > 0 ? `${l.childrenSmall} niño${l.childrenSmall !== 1 ? "s" : ""} (4-7, 50 %)` : "",
-            bebes > 0 ? `${bebes} bebé${bebes !== 1 ? "s" : ""} (0-3, gratis)` : "",
-          ].filter(Boolean).join(" · ");
-      const fd = l.tourDate ? new Date(l.tourDate + "T12:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" }) : "—";
-      // La actividad opcional se cobra dentro de este renglón: si no se nombra,
-      // el cliente ve un importe más alto que el precio del tour sin explicación.
-      // El precio se lee del catálogo, el mismo que usó el cobro.
-      const opcionales = addOnsDeTour(l.tourSlug)
-        .map(a => ({ a, n: cantidadAddOn(l, a.id) }))
-        .filter(x => x.n > 0)
-        .map(({ a, n }) => `+ ${esc(a.nombre)} · ${n} ${n === 1 ? "persona" : "personas"} · $${(a.precio * n).toLocaleString("es-MX")}`)
-        .join("<br/>");
-      // Lo que eligió el cliente (Ruta Acuática): a dónde va el grupo y, si la
-      // opción suma, por qué el renglón cuesta más que el precio de lista.
-      const opcion   = opcionDeEleccion(TOURS_LISTA.find(t => t.slug === l.tourSlug) ?? {}, l.eleccion);
-      const eleccion = opcion
-        ? `Elección: ${esc(opcion.nombre)}${opcion.extraPorPersona ? ` (+$${opcion.extraPorPersona.toLocaleString("es-MX")} por persona, incluido)` : ""}`
-        : (l.eleccion ? `Elección: ${esc(l.eleccion)}` : "");
-      return `<div class="row"><div><div class="tour-name">${esc(l.tourName)}</div><div class="tour-sub">${sub}</div>${eleccion ? `<div class="tour-sub">${eleccion}</div>` : ""}${opcionales ? `<div class="tour-sub" style="color:var(--terracota)">${opcionales}</div>` : ""}</div><div class="num">${fd}</div><div class="num right">${esVeh ? `${un} veh.` : total}</div><div class="amt right">$${calcLine(l).toLocaleString("es-MX")}</div></div>`;
-    }).join("");
-
-    const hospRows = pkgs.map(p => {
-      const fechas = [p.checkin ? fDate(p.checkin) : "", p.checkout ? fDate(p.checkout) : ""].filter(Boolean).join(" → ");
-      const ocupacion = p.huespedes ? ` · ${p.huespedes} ${p.huespedes === 1 ? "persona" : "personas"} por habitación` : "";
-      return `<div class="row"><div><div class="tour-name">Hospedaje · ${p.noches} noche${p.noches !== 1 ? "s" : ""}</div><div class="tour-sub">${esc(p.hotel)} — ${esc(p.habitacion)}${ocupacion}</div></div><div class="num">${fechas}</div><div class="num right">${p.habitaciones} hab.</div><div class="amt right">$${calcPackageLine(p).toLocaleString("es-MX")}</div></div>`;
-    }).join("");
-
-    const extraRows = extrasCobradosQ.map(ex => {
-      const sub = ex.detalle ? esc(ex.detalle) : "Servicio adicional contratado";
-      return `<div class="row"><div><div class="tour-name">${esc(ex.concepto)}</div><div class="tour-sub">${sub}</div></div><div class="num">—</div><div class="num right">${ex.cantidad}</div><div class="amt right">$${calcExtraLine(ex).toLocaleString("es-MX")}</div></div>`;
-    }).join("");
-
-    return `<!doctype html><html lang="es"><head><meta charset="utf-8"/><title>Cotización ${folioQ}</title>
+    return `<!doctype html><html lang="es"><head><meta charset="utf-8"/><meta name="viewport" content="width=820"/><title>Cotización ${folioQ}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=DM+Sans:wght@200;300;400;500;700&display=swap" rel="stylesheet">
 <style>
@@ -339,8 +173,8 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
   <div class="title-block">
     <div><h1>Cotización<br/><em class="ital">№ ${folioQ}</em></h1></div>
     <div class="meta">
-      <div class="row"><span class="k">Emitida</span><span class="v">${fmt(today)}</span></div>
-      <div class="row"><span class="k">Vigencia</span><span class="v">${fmt(vigDate)}</span></div>
+      <div class="row"><span class="k">Emitida</span><span class="v">${d.emitida}</span></div>
+      <div class="row"><span class="k">Vigencia</span><span class="v">${d.vigencia}</span></div>
     </div>
   </div>
 
@@ -348,56 +182,53 @@ html,body{margin:0;padding:0;background:#2a2a2a;font-family:var(--dm);color:var(
     <div class="card">
       <h3>Cliente</h3>
       <div class="field">
-        <div><div class="k">Nombre</div><div class="v">${esc(q.customerName)}</div></div>
+        <div><div class="k">Nombre</div><div class="v">${esc(d.cliente.nombre)}</div></div>
         <div><div class="k">Personas</div><div class="v">${numPersonas}</div><div class="v" style="font-size:7pt;color:rgba(14,23,16,.5)">${desgloseQ}</div></div>
-        <div><div class="k">WhatsApp</div><div class="v">${esc(q.customerPhone) || "—"}</div></div>
-        <div><div class="k">Email</div><div class="v" style="font-size:7.5pt">${esc(q.customerEmail) || "—"}</div></div>
-        ${q.notes ? `<div style="grid-column:1/-1"><div class="k">Notas</div><div class="v" style="font-size:7.5pt">${esc(q.notes)}</div></div>` : ""}
+        <div><div class="k">WhatsApp</div><div class="v">${esc(d.cliente.telefono) || "—"}</div></div>
+        <div><div class="k">Email</div><div class="v" style="font-size:7.5pt">${esc(d.cliente.email) || "—"}</div></div>
+        ${d.cliente.notas ? `<div style="grid-column:1/-1"><div class="k">Notas</div><div class="v" style="font-size:7.5pt">${esc(d.cliente.notas)}</div></div>` : ""}
       </div>
     </div>
     <div class="card dark">
       <h3>Detalles del viaje</h3>
       <div class="field">
-        <div><div class="k">Fecha inicio</div><div class="v">${fDate(fechaInicio)}</div></div>
-        <div><div class="k">Fecha fin</div><div class="v">${fDate(fechaFin)}</div></div>
-        <div><div class="k">Duración</div><div class="v">${duracion} día${duracion !== 1 ? "s" : ""}</div></div>
-        <div><div class="k">Hospedaje</div><div class="v" style="font-size:8pt">${hospNombre}</div></div>
-        <div style="grid-column:1/-1"><div class="k">Recogida</div><div class="v"${toursCotizados.length > 1 ? ` style="font-size:7.5pt"` : ""}>${recogidaTexto}</div></div>
+        <div><div class="k">Fecha inicio</div><div class="v">${d.fechaInicio}</div></div>
+        <div><div class="k">Fecha fin</div><div class="v">${d.fechaFin}</div></div>
+        <div><div class="k">Duración</div><div class="v">${d.duracionDias} día${d.duracionDias !== 1 ? "s" : ""}</div></div>
+        <div><div class="k">Hospedaje</div><div class="v" style="font-size:8pt">${esc(d.hospedaje)}</div></div>
+        <div style="grid-column:1/-1"><div class="k">Recogida</div><div class="v"${varios ? ` style="font-size:7.5pt"` : ""}>${recogidaTexto}</div></div>
       </div>
     </div>
   </div>
 
   <div class="tour-table">
     <div class="head-row"><span>Concepto</span><span>Fecha</span><span class="right">Pers.</span><span class="right">Subtotal MXN</span></div>
-    ${tourRows}${hospRows}${extraRows}
+    ${filas}
   </div>
 
   <div class="totals">
-    <div class="note"><strong>Sobre los precios:</strong> Todos los importes están en <strong>pesos mexicanos (MXN)</strong>. Vigencia: <strong>${vigLabel}</strong>, hasta el <strong>${fmt(vigDate)}</strong>. Tarifas sujetas a disponibilidad al confirmar.</div>
+    <div class="note"><strong>Sobre los precios:</strong> Todos los importes están en <strong>pesos mexicanos (MXN)</strong>. Vigencia: <strong>${d.vigenciaLabel}</strong>, hasta el <strong>${d.vigencia}</strong>. Tarifas sujetas a disponibilidad al confirmar.</div>
     <div class="calc">
-      <div class="line"><span>Subtotal tours</span><span class="num">$${toursTotal.toLocaleString("es-MX")}</span></div>
-      ${pkgsTotal > 0 ? `<div class="line"><span>Subtotal hospedaje</span><span class="num">$${pkgsTotal.toLocaleString("es-MX")}</span></div>` : ""}
-      ${extrasTotalQ > 0 ? `<div class="line"><span>Subtotal extras</span><span class="num">$${extrasTotalQ.toLocaleString("es-MX")}</span></div>` : ""}
-      ${ajuste !== 0 ? `<div class="line"><span>Ajuste de precio</span><span class="num">${ajuste > 0 ? "+" : "−"}$${Math.abs(ajuste).toLocaleString("es-MX")}</span></div>` : ""}
-      ${descuento > 0 ? `<div class="line sub-line"><span>Descuento aplicado</span><span class="num">−$${descuento.toLocaleString("es-MX")}</span></div>` : ""}
-      <div class="line grand"><span class="k">Total</span><span class="v">$${q.totalAmount.toLocaleString("es-MX")}</span></div>
-      <div class="line deposit"><span>Anticipo para reservar (${desglose.anticipoPct} %)</span><span class="num">$${anticipoNum.toLocaleString("es-MX")}</span></div>
-      <div class="line"><span>Saldo al inicio del tour</span><span class="num">$${saldo.toLocaleString("es-MX")}</span></div>
+      <div class="line"><span>Subtotal tours</span><span class="num">$${d.toursTotal.toLocaleString("es-MX")}</span></div>
+      ${d.pkgsTotal > 0 ? `<div class="line"><span>Subtotal hospedaje</span><span class="num">$${d.pkgsTotal.toLocaleString("es-MX")}</span></div>` : ""}
+      ${d.extrasTotal > 0 ? `<div class="line"><span>Subtotal extras</span><span class="num">$${d.extrasTotal.toLocaleString("es-MX")}</span></div>` : ""}
+      ${d.ajuste !== 0 ? `<div class="line"><span>Ajuste de precio</span><span class="num">${d.ajuste > 0 ? "+" : "−"}$${Math.abs(d.ajuste).toLocaleString("es-MX")}</span></div>` : ""}
+      ${d.descuento > 0 ? `<div class="line sub-line"><span>Descuento aplicado</span><span class="num">−$${d.descuento.toLocaleString("es-MX")}</span></div>` : ""}
+      <div class="line grand"><span class="k">Total</span><span class="v">$${d.total.toLocaleString("es-MX")}</span></div>
+      <div class="line deposit"><span>Anticipo para reservar (${d.anticipoPct} %)</span><span class="num">$${d.anticipo.toLocaleString("es-MX")}</span></div>
+      <div class="line"><span>Saldo al inicio del tour</span><span class="num">$${d.saldo.toLocaleString("es-MX")}</span></div>
     </div>
   </div>
 
   <div class="checks">
     <div><h4>Sí incluye</h4>
       <ul class="yes">
-        <li>${trasladoLi}</li>${incluyeLis}
-        ${extrasIncluidosQ.map(ex => `<li>${esc(ex.concepto)}${ex.detalle ? ` — ${esc(ex.detalle)}` : ""}</li>`).join("")}
+        ${incluyeLis}
       </ul>
     </div>
     <div><h4>No incluye</h4>
       <ul class="no">
-        <li>Vuelos o transporte a Xilitla</li><li>Comidas y cenas</li>
-        <li>Actividades opcionales</li><li>Propinas</li>
-        <li>Bebidas alcohólicas</li><li>Gastos personales</li>
+        ${noIncluyeLis}
       </ul>
     </div>
   </div>

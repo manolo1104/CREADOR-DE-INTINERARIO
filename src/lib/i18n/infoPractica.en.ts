@@ -701,7 +701,7 @@ const ES: InfoPracticaContent = {
       items: [
         "INE o pasaporte vigente",
         "Efectivo en pesos mexicanos (ver sección Presupuesto)",
-        "Seguro de viajero: incluido en rafting, RZR y el rappel en Tamul; en los demás tours es opcional ($80 por persona, al reservar)",
+        "Seguro de viajero: incluido en rafting y RZR; en los demás tours es opcional ($80 por persona, al reservar)",
         "Reservaciones descargadas en el celular (sin internet en cascadas)",
         "Número de emergencias guardado: ver sección Seguridad",
       ],
@@ -802,7 +802,7 @@ const ES: InfoPracticaContent = {
           q: "¿Pueden participar niños?",
           // "En los que se cobran por persona": el Edén se cobra por grupo
           // completo y el RZR por vehículo; ahí no hay tramos de menor.
-          a: "Sí. En los recorridos que se cobran por persona, los niños de 4 a 7 años pagan el 50 % del precio de adulto; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan tarifa completa. No aplica al RZR (se cobra por vehículo) ni a los tours que se cobran por grupo. Algunos recorridos son a partir de 8 años: la ficha de cada tour lo indica.",
+          a: "Sí. En los recorridos que se cobran por persona, los niños de 4 a 7 años pagan el 50 % del precio de adulto; los de 3 años o menos van gratis (ocupan lugar), y de 8 en adelante pagan tarifa completa. Sin descuento de niños en los rappeles, el RZR, la Travesía del Café, El Edén en el Jardín ni la Gruta de Xilo: ahí todos pagan el precio completo. Algunos recorridos son a partir de 8 años: la ficha de cada tour lo indica.",
         },
         {
           q: "¿Pueden participar personas mayores?",
@@ -1330,7 +1330,7 @@ const EN: InfoPracticaContent = {
       items: [
         "Valid ID or passport",
         "Cash in Mexican pesos (see the Budget section)",
-        "Traveler insurance: included on rafting, RZR and the Tamul rappel; optional on the other tours (MXN $80 per person, when you book)",
+        "Traveler insurance: included on rafting and RZR; optional on the other tours (MXN $80 per person, when you book)",
         "Bookings downloaded on your phone (no internet at the waterfalls)",
         "Emergency numbers saved: see the Safety section",
       ],
@@ -1424,7 +1424,7 @@ const EN: InfoPracticaContent = {
         },
         {
           q: "Can children take part?",
-          a: "Yes. On tours priced per person, kids 4–7 pay 50 % of the adult price; ages 3 and under ride free (they still take a seat); 8 and up pay the full rate. Doesn't apply to the RZR (priced per vehicle) or to tours priced per group. Some tours are for ages 8 and up: each tour page says so.",
+          a: "Yes. On tours priced per person, kids 4–7 pay 50 % of the adult price; ages 3 and under ride free (they still take a seat); 8 and up pay the full rate. No children's discount on the rappels, the RZR, the Coffee Route, El Edén en el Jardín or the Xilo Cave: everyone pays the full price there. Some tours are for ages 8 and up: each tour page says so.",
         },
         {
           q: "Can older people take part?",

@@ -638,7 +638,7 @@ export const RESPUESTAS_EQUIPO: RespuestaEquipo[] = [
   {
     id: "seguro", tema: "seguridad",
     preguntas: ["¿Incluye seguro?", "¿Tienen seguro de viajero?"],
-    respuesta: "Los tours de aventura (rafting, RZR y el rappel en Tamul) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
+    respuesta: "Los tours de aventura (rafting y RZR) incluyen seguro de viajero. En los demás es opcional: $80 por persona, y lo agregas al reservar. En Tamul se firma una responsiva.",
     nota: "Si lo quieren agregar, avisa al equipo (otro, avisar) para que lo sume a su reserva.",
   },
   {

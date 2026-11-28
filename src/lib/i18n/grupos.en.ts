@@ -236,7 +236,7 @@ function construir(locale: Locale): GruposContent {
         },
         {
           q: "¿Los guías están certificados?",
-          a: "Sí. Todos nuestros recorridos van con guía certificado NOM-09. El seguro de viajero va incluido en los tours de aventura (rafting, RZR y el rappel en Tamul) y en los demás se agrega por $80 por persona. Para grupos escolares eso no es un detalle —es el requisito que normalmente pide la escuela—, así que dinos si lo necesitan y va en la propuesta.",
+          a: "Sí. Todos nuestros recorridos van con guía certificado NOM-09. El seguro de viajero va incluido en los tours de aventura (rafting y RZR) y en los demás se agrega por $80 por persona. Para grupos escolares eso no es un detalle —es el requisito que normalmente pide la escuela—, así que dinos si lo necesitan y va en la propuesta.",
         },
       ],
 
@@ -378,7 +378,7 @@ function construir(locale: Locale): GruposContent {
       },
       {
         q: "Are the guides certified?",
-        a: "Yes. All our tours come with a NOM-09 certified guide. Traveler insurance is included on adventure tours (rafting, RZR and the Tamul rappel) and can be added on the others for MXN $80 per person. For school groups that's not a detail — it's the requirement schools usually ask for — so tell us if you need it and it goes into the proposal.",
+        a: "Yes. All our tours come with a NOM-09 certified guide. Traveler insurance is included on adventure tours (rafting and RZR) and can be added on the others for MXN $80 per person. For school groups that's not a detail — it's the requirement schools usually ask for — so tell us if you need it and it goes into the proposal.",
       },
     ],
 

@@ -51,7 +51,7 @@ const NO_INCLUYE: Record<string, string[]> = {
   "rzr-xilitla": ["Transporte hasta Xilitla", "Alimentos"],
   // 6 oct 2026, Manolo: el rappel SÍ incluye el traslado desde Ciudad Valles
   // (como dicen su "incluye" y su ficha); lo que no va es llegar hasta Valles.
-  "rappel-tamul": ["Cómo llegar hasta Ciudad Valles o Xilitla: de ahí sale la unidad", "Alimentos (no lleva desayuno ni comida)", "Propinas y gastos personales"],
+  "rappel-tamul": ["Cómo llegar hasta Ciudad Valles o Xilitla: de ahí sale la unidad", "Comida (sí lleva desayuno)", "Propinas y gastos personales"],
   // 6 oct 2026, Manolo: el rafting SÍ incluye comida. Lo que no lleva es el
   // desayuno buffet de los otros tours (`tourRequisitos.ts`).
   "rafting-rio-tampaon": ["Desayuno: lo que va incluido es una comida, que el cliente elige antes o después del descenso", "Bebidas alcohólicas", "Propinas y gastos personales"],
@@ -112,7 +112,7 @@ const TRANSPORTE: Record<string, { incluido: boolean; detalle: string }> = {
 /** Qué comida se incluye. NINGÚN tour es "todo incluido". */
 const ALIMENTOS: Record<string, { desayuno: boolean; comida: boolean; detalle: string }> = {
   "rzr-xilitla": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento." },
-  "rappel-tamul": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento." },
+  "rappel-tamul": { desayuno: true, comida: false, detalle: "Incluye SOLO el desayuno, en el camino. No lleva comida." },
   "buceo-media-luna": { desayuno: false, comida: false, detalle: "NO incluye ningún alimento. En la laguna hay puestos y restaurantes donde comprar." },
   // 6 oct 2026, Manolo: el rafting incluye COMIDA. Decía "solo desayuno" y
   // contradecía al "incluye" del mismo tour ("Comida incluida — la eliges antes
@@ -142,8 +142,8 @@ const FOTOS: Record<string, string> = {
   // que ser los mismos que en `tours.ts` (incluye), en `tourFaqs.ts` y en
   // `lib/bot/politicas.ts` (tema "fotos").
   "huasteca-instagrameable": "Es el recorrido de fotografía: SÍ se promete entrega. De 25 a 30 fotografías EDITADAS, en una carpeta privada, dentro de 3 días. Las toma el guía con una cámara Fujifilm X-T30 II. NO va un fotógrafo aparte del guía y NO hay dron: en Las Pozas están prohibidos el dron y el tripié. El grupo es de máximo 6 personas, y eso es parte de lo que hace posible la entrega.",
-  // 27 nov 2026 (Manolo): ya NO lleva dron ni fotos profesionales.
-  "rappel-tamul": "Fotos y video del descenso que toma el guía, sin costo extra. Ya NO incluye dron ni fotógrafo aparte. NO las describas como 'profesionales'.",
+  // 27 nov 2026 (Manolo): lleva GoPro 13 y video con dron (los quitó y los devolvió ese día).
+  "rappel-tamul": "Fotos y video del descenso con GoPro 13 y video con dron, sin costo extra. NO las describas como 'profesionales'.",
 };
 const FOTOS_DEFAULT =
   "Fotos y video del recorrido que va tomando tu guía durante el día, sin costo extra. NO las describas como 'profesionales' ni prometas un fotógrafo dedicado, sesión, edición ni entrega en un plazo determinado.";
@@ -589,7 +589,7 @@ const tours = TOURS_DB.map((t) => ({
     ? "SÍ incluye seguro de viajero (es tour de aventura)."
     : t.sinSeguro
     ? "No incluye seguro de viajero. No lo menciones ni lo ofrezcas; si el cliente pregunta por seguro, pásalo al equipo."
-    : `NO incluye seguro: ${SEGURO_OPCIONAL}. Solo los tours de aventura (rafting, RZR y el rappel en Tamul) lo traen.`,
+    : `NO incluye seguro: ${SEGURO_OPCIONAL}. Solo los tours de aventura (rafting y RZR) lo traen.`,
   puntoEncuentro: puntoEncuentro(t),
   // La recogida de ESTE tour (dónde, en qué, a qué hora y qué pasa con Valles).
   // Sin esto la herramienta del bot devolvía la salida GLOBAL junto a la ficha
